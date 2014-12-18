@@ -1,4 +1,5 @@
 # Copyright (C) 2010-2014 GRNET S.A.
+
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +26,7 @@ from django.core.cache import cache
 from astakos.im import settings
 from astakos.im import register
 from astakos.im.quotas import get_user_quotas, service_get_quotas, \
-    service_get_project_quotas, project_ref
+    service_get_project_quotas, project_ref, Project
 
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
@@ -49,6 +50,8 @@ def quotas(request):
     visible_resources = get_visible_resources()
     resource_names = [r.name for r in visible_resources]
     memberships = request.user.projectmembership_set.actually_accepted()
+    memberships = memberships.exclude(project__state__in=Project.SKIP_STATES)
+
     sources = [project_ref(m.project.uuid) for m in memberships]
     result = get_user_quotas(request.user, resources=resource_names,
                              sources=sources)

@@ -366,6 +366,22 @@ For more information on how to setup snf-vncauthproxy check the
 snf-vncauthproxy `documentation <https://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html#usage-with-synnefo>`_
 and `upgrade notes <https://www.synnefo.org/docs/snf-vncauthproxy/latest/upgrade/upgrade-1.6.html>`_.
 
+4.4 Re-register service and resource definitions
+------------------------------------------------
+
+The Cyclades service definition has been updated and needs to be registered
+again. On the Astakos node, run::
+
+    astakos-host$ snf-component-register cyclades
+
+This will detect that the Cyclades component is already registered and ask
+to re-register. Answer positively. You need to enter the base URL and the UI
+URL for Cyclades, just like during the initial registration.
+
+.. note::
+
+   You can run ``snf-manage component-list -o name,base_url,ui_url`` to
+   inspect the currently registered base and UI URLs.
 
 
 5. Inspect and adjust resource limits

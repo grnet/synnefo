@@ -206,7 +206,7 @@
                                i.get_owner_uuid() != snf.user.get_username() &&
                                !i.is_public();
             });
-        },
+        }
 
     })
         

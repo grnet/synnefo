@@ -585,7 +585,7 @@ $(document).ready(function() {
 		trigger: 'click',
 		html: true,
 		content: filtersListHTML,
-		placement: 'bottom',
+		placement: 'bottom'
 	});
 
 	$('#select-filters').attr('title', $('#select-filters').attr('link-title'));

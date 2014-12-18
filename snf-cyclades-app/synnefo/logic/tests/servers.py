@@ -18,6 +18,7 @@
 from django.test import TransactionTestCase
 #from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
+from synnefo.logic import backend
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
 from mock import patch, Mock
@@ -152,6 +153,34 @@ class ServerTest(TransactionTestCase):
         self.assertEqual(nics[1], "-1")
         self.assertEqual(nics[2]["ip"], None)
         self.assertEqual(nics[2]["network"], net.backend_id)
+
+    def test_attach_wait_for_sync(self, mrapi):
+        """Test wait_for_sync when attaching volume to instance.
+
+        """
+        volume = mfactory.VolumeFactory()
+        vm = volume.machine
+        # Test Started VM
+        vm.operstate = "STARTED"
+        vm.save()
+        mrapi().ModifyInstance.return_value = 1
+        for sync in [True, False]:
+            with override_settings(settings, GANETI_DISKS_WAIT_FOR_SYNC=sync):
+                jobid = backend.attach_volume(vm, volume)
+                self.assertEqual(jobid, 1)
+                name, args, kwargs = mrapi().ModifyInstance.mock_calls[-1]
+                self.assertEqual(kwargs['wait_for_sync'], sync)
+
+        # Test Stopped VM. We do not pass wait_for_sync.
+        vm.operstate = "STOPPED"
+        vm.save()
+        mrapi().ModifyInstance.return_value = 1
+        for sync in [True, False]:
+            with override_settings(settings, GANETI_DISKS_WAIT_FOR_SYNC=sync):
+                jobid = backend.attach_volume(vm, volume)
+                self.assertEqual(jobid, 1)
+                name, args, kwargs = mrapi().ModifyInstance.mock_calls[-1]
+                self.assertFalse('wait_for_sync' in kwargs)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

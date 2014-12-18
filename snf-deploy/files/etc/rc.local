@@ -1,15 +1,11 @@
 #!/bin/bash
 
-brctl addbr %COMMON_BRIDGE%
-ip link set %COMMON_BRIDGE% up
+test -e /etc/network/interfaces.synnefo && \
+  ifup --interfaces=/etc/network/interfaces.synnefo %VM_PUBLIC_BRIDGE%
 
-iptables -t mangle -A PREROUTING -i %COMMON_BRIDGE% -p udp -m udp --dport 67 -j NFQUEUE --queue-num 42
+test -e /etc/network/interfaces.synnefo && \
+  ifup --interfaces=/etc/network/interfaces.synnefo %VM_PRIVATE_BRIDGE%
 
-if [ %ROUTER_IP% == %NODE_IP% ]; then
-  iptables -t nat -A POSTROUTING -o %PUBLIC_IFACE% -s %SUBNET% -j MASQUERADE
-  echo 1 > /proc/sys/net/ipv4/ip_forward
-  ip addr add %GATEWAY% dev %COMMON_BRIDGE%
-  ip route add %SUBNET% dev %COMMON_BRIDGE% src %GATEWAY%
-fi
+test -e /disk &&  losetup -j /disk || losetup -f --show /disk
 
 exit 0

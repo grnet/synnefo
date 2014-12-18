@@ -111,6 +111,8 @@ external world. Also documents all Synnefo external REST APIs.
    Developer's Guide <dev-guide>
    API Guide <api-guide>
 
+* :ref:`Upgrade notes <upgrade-notes>`
+* :ref:`Changelog and NEWS <changelog-news>`
 
 Synnefo tools
 =============

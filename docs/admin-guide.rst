@@ -2941,6 +2941,8 @@ Ganeti level or by the administrator.
 In the future Synnefo will also support moving VMs across different Regions.
 
 
+.. _upgrade-notes:
+
 Upgrade Notes
 =============
 
@@ -2958,10 +2960,13 @@ Upgrade Notes
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
 
 
+.. _changelog-news:
+
 Changelog, NEWS
 ===============
 
 
+* v0.16.1rc1 :ref:`Changelog <Changelog-0.16.1rc1>`, :ref:`NEWS <NEWS-0.16.1rc1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`

@@ -23,7 +23,6 @@ Astakos
 * Exclude terminated projects from responses of project list and user quota
   api calls.
 * Improve UI handling of inactive, terminated and empty projects.
-* Replace ASTAKOS_SITENAME setting with BRANDING_SERVICE_NAME.
 * Change default pagination in projects list view.
 
 Cyclades UI
@@ -45,7 +44,7 @@ Stats
 Branding
 --------
 
-* Add CLOUDBAR_HOME_URL setting.
+* Add CLOUDBAR_HOME_URL setting to allow Cloudbar home icon customization.
 
 
 .. _Changelog-0.16:

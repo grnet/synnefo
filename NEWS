@@ -16,11 +16,9 @@ The Synnefo 0.16.1 release is mostly a bug fix version. The most notable
 changes are:
 
 * Improved handling of projects (both API- and UI-wise).
-* Improved handling for password and SSH keys customization for images that do
-  not support it.
 * Updates and fixes for snf-deploy.
 * Various bug fixes and improvements across Synnefo. Please see the Synnefo
-  `Changelog` for a complete list.
+  :ref:`Changelog <Changelog-0.16.1rc1>` for a complete list.
 
 
 .. _NEWS-0.16:

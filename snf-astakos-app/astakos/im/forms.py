@@ -246,9 +246,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         pending.delete()
         return user
 
+autofocus_widget = forms.TextInput(attrs={'autofocus': 'autofocus'})
 
 class LoginForm(AuthenticationForm):
-    username = EmailField(label=_("Email"))
+    username = EmailField(label=_("Email"), widget=autofocus_widget)
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(
         widget=RecaptchaWidget, label='')

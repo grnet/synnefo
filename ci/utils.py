@@ -462,6 +462,9 @@ class SynnefoCI(object):
         self.logger.debug("Setup apt")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
+        echo 'Package: python-gevent' >> /etc/apt/preferences.d/00-gevent
+        echo 'Pin: release o=Debian' >> /etc/apt/preferences.d/00-gevent
+        echo 'Pin-Priority: 990' >> /etc/apt/preferences.d/00-gevent
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install -q=2 curl --yes --force-yes

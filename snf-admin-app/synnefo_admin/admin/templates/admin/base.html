@@ -16,7 +16,9 @@
     {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,700,300,600' rel='stylesheet' type='text/css'>
+    {% for url in BRANDING_FONTS_CSS_URLS %}
+    <link href="{{ url }}" rel="stylesheet" type="text/css" >
+    {% endfor %}
   </head>
 
     {% block custom-css %}

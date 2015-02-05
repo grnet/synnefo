@@ -2046,7 +2046,7 @@ package by running on node1:
 
 .. code-block:: console
 
-   # yum install snf-cyclades-app memcached python-memcached
+   # yum install snf-cyclades-app memcached python-memcached snf-vncauthproxy
 
 If all packages install successfully, then Cyclades are installed and we
 proceed with their configuration.

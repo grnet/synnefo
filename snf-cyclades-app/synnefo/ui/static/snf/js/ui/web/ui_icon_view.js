@@ -940,7 +940,7 @@
     views.IconView.VM_OS_ICON_TPLS = function() {
         return {
             "medium": snf.config.machines_icons_url + "medium/{0}-sprite.png",
-            "medium2": snf.config.machines_icons_url + "medium/{0}-sprite2.png",
+            "medium2": snf.config.machines_icons_url + "medium/{0}-sprite2.png"
         }
     }
 

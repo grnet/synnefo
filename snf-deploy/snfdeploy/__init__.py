@@ -259,12 +259,6 @@ def parse_options():
 
 def get_actions(*args):
     actions = {
-        "ganeti": [
-            "setup_ganeti"
-        ],
-        "ganeti-qa": [
-            "setup_qa",
-        ],
         "synnefo": [
             "setup_synnefo",
         ],

@@ -20,7 +20,7 @@ def cpustats(data=None):
     for file in glob("/var/run/ganeti/kvm-hypervisor/pid/*"):
         instance = os.path.basename(file)
         try:
-            pid = int(open(file, "r").read())
+            pid = int(open(file, "r").readline())
             proc = open("/proc/%d/stat" % pid, "r")
             cputime = [int(proc.readline().split()[42])]
         except EnvironmentError:

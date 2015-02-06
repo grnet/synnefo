@@ -436,11 +436,9 @@ class CycladesTests(BurninTests):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except paramiko.SSHException as err:
-            if err.args[0] == "Error reading SSH protocol banner":
-                raise Retry()
-            else:
-                raise
+        except (paramiko.SSHException, socket.error) as err:
+            self.warning("%s", err.message)
+            raise Retry()
         _, stdout, _ = ssh.exec_command(command)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
@@ -470,17 +468,25 @@ class CycladesTests(BurninTests):
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""
-        self.info("Fetching file %s from remote server", remotepath)
-        transport = paramiko.Transport((hostip, 22))
-        transport.connect(username=username, password=password)
-        with tempfile.NamedTemporaryFile() as ftmp:
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            sftp.get(remotepath, ftmp.name)
-            sftp.close()
-            transport.close()
-            self.info("Comparing file contents")
-            remote_content = base64.b64encode(ftmp.read())
-            self.assertEqual(content, remote_content)
+        def check_fun():
+            """Fetch file"""
+            try:
+                transport = paramiko.Transport((hostip, 22))
+                transport.connect(username=username, password=password)
+                with tempfile.NamedTemporaryFile() as ftmp:
+                    sftp = paramiko.SFTPClient.from_transport(transport)
+                    sftp.get(remotepath, ftmp.name)
+                    sftp.close()
+                    transport.close()
+                    self.info("Comparing file contents")
+                    remote_content = base64.b64encode(ftmp.read())
+                    self.assertEqual(content, remote_content)
+            except paramiko.SSHException as err:
+                self.warning("%s", err.message)
+                raise Retry()
+        opmsg = "Fetching file %s from remote server" % remotepath
+        self.info(opmsg)
+        self._try_until_timeout_expires(opmsg, check_fun)
 
     # ----------------------------------
     # Networks
@@ -636,6 +642,18 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % portid
         self._try_until_timeout_expires(opmsg, check_fun)
 
+    def _delete_arp_entry(self, fip):
+        """Delete floating IP from ARP table"""
+        cmd = (["/usr/sbin/arp", "-d",  fip])
+        subp = subprocess.Popen(
+            cmd, shell=False, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        subp.communicate()
+        ret = subp.wait()
+        if ret != 0:
+            self.warning("Could not remove floating IP %s from arp cache"
+                         % fip)
+
     def _disconnect_from_network(self, server, network=None):
         """Disconnnect server from network"""
         if network is None:
@@ -662,6 +680,9 @@ class CycladesTests(BurninTests):
             self.info("Destroying port with id %s", port['id'])
             self.clients.network.delete_port(port['id'])
             self._insist_on_port_deletion(port['id'])
+
+        for fip in fips:
+            self._delete_arp_entry(fip['floating_ip_address'])
 
         # Then delete the floating IPs
         self._delete_floating_ips(fips)

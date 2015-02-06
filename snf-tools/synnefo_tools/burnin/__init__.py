@@ -90,6 +90,10 @@ def parse_arguments(args):
         type="string", default=None, dest="token",
         help="The token to use for authentication to the API")
     parser.add_option(
+        "--ignore-ssl", "-k", action="store_true",
+        default=None, dest="ignore_ssl",
+        help="Don't verify SSL certificates")
+    parser.add_option(
         "--failfast", action="store_true",
         default=False, dest="failfast",
         help="Fail immediately if one of the tests fails")

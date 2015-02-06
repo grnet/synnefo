@@ -73,7 +73,6 @@ def send_plain(user, sender=settings.SERVER_EMAIL,
                                    'user': user,
                                    'text': text,
                                    'baseurl': settings.BASE_URL,
-                                   'site_name': settings.SITENAME,
                                    'support': settings.CONTACT_EMAIL})
 
     send_mail(subject, message, sender, [user.email],
@@ -92,7 +91,6 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'user': user,
                                'url': url,
                                'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     send_mail(_(astakos_messages.VERIFICATION_EMAIL_SUBJECT), message, sender,
@@ -153,7 +151,6 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                                'invitation': invitation,
                                'url': url,
                                'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [invitation.username],
@@ -177,7 +174,6 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                                'user': user,
                                'url': join_urls(settings.BASE_HOST, index_url),
                                'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [user.email],
@@ -206,7 +202,6 @@ def send_change_email(ec, request, email_template_name=(
     url = ec.get_url()
     url = request.build_absolute_uri(url)
     c = {'url': url,
-         'site_name': settings.SITENAME,
          'support': settings.CONTACT_EMAIL,
          'ec': ec}
     message = render_to_string(email_template_name, c)

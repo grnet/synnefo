@@ -36,12 +36,15 @@ from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients.utils import https
 from kamaki.clients import ClientError
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
 # Is our terminal a colorful one?
 USE_COLORS = True
+# Ignore SSL verification
+IGNORE_SSL = False
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -92,6 +95,26 @@ def _check_fabric(fun):
             self.fabric_installed = True
         return fun(self, *args, **kwargs)
     return wrapper
+
+
+def _kamaki_ssl(ignore_ssl=None):
+    """Patch kamaki to use the correct CA certificates
+
+    Read kamaki's config file and decide if we are going to use
+    CA certificates and patch kamaki clients accordingly.
+
+    """
+    config = kamaki_config.Config()
+    if ignore_ssl is None:
+        ignore_ssl = config.get("global", "ignore_ssl").lower() == "on"
+    ca_file = config.get("global", "ca_certs")
+
+    if ignore_ssl:
+        # Skip SSL verification
+        https.patch_ignore_ssl()
+    else:
+        # Use ca_certs path found in kamakirc
+        https.patch_with_certs(ca_file)
 
 
 def _check_kamaki(fun):
@@ -202,6 +225,9 @@ class SynnefoCI(object):
         Setup cyclades_client, image_client and compute_client
         """
 
+        # Patch kamaki for SSL verification
+        _kamaki_ssl(ignore_ssl=IGNORE_SSL)
+
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
             try:
@@ -215,7 +241,7 @@ class SynnefoCI(object):
         auth_url = config.get_cloud(self.kamaki_cloud, "url")
         self.logger.debug("Authentication URL is %s" % _green(auth_url))
         token = config.get_cloud(self.kamaki_cloud, "token")
-        #self.logger.debug("Token is %s" % _green(token))
+        # self.logger.debug("Token is %s" % _green(token))
 
         self.astakos_client = AstakosClient(auth_url, token)
         endpoints = self.astakos_client.authenticate()
@@ -239,6 +265,51 @@ class SynnefoCI(object):
         self.logger.debug("Compute API url is %s" % _green(compute_url))
         self.compute_client = ComputeClient(compute_url, token)
         self.compute_client.CONNECTION_RETRY_LIMIT = 2
+
+    __quota_cache = None
+
+    def _get_available_project(self, skip_config=False, **resources):
+        self.project_uuid = None
+        if self.config.has_option("Deployment", "project"):
+            self.project_uuid = self.config.get("Deployment",
+                                                "project").strip() or None
+
+        # user requested explicit project
+        if self.project_uuid and not skip_config:
+            return self.project_uuid
+
+        def _filter_projects(_project):
+            uuid, project_quota = _project
+            can_fit = False
+            for resource, required in resources.iteritems():
+                # transform dots in order to permit direct keyword
+                # arguments to be used.
+                # (cyclades__disk=1) -> 'cyclades.disk': 1
+                resource = resource.replace("__", ".")
+                project_resource = project_quota.get(resource)
+                if not project_resource:
+                    raise Exception("Requested resource does not exist %s" \
+                                    % resource)
+
+                plimit, ppending, pusage, musage, mlimit, mpending = \
+                    project_resource.values()
+
+                pavailable = plimit - ppending - pusage
+                mavailable = mlimit - mpending - musage
+
+                can_fit = (pavailable - required) >= 0 and \
+                            (mavailable - required) >= 0
+                if not can_fit:
+                    return None
+            return uuid
+
+        self.__quota_cache = quota = self.__quota_cache or \
+            self.astakos_client.get_quotas()
+        projects = filter(bool, map(_filter_projects, quota.iteritems()))
+        if not len(projects):
+            raise Exception("No project available for %r" % resources)
+        return projects[0]
+
 
     def _wait_transition(self, server_id, current_status, new_status):
         """Wait for server to go from current_status to new_status"""
@@ -287,13 +358,15 @@ class SynnefoCI(object):
 
     def _create_floating_ip(self):
         """Create a new floating ip"""
+        project_id = self._get_available_project(cyclades__floating_ip=1)
         networks = self.network_client.list_networks(detail=True)
         pub_nets = [n for n in networks
                     if n['SNF:floating_ip_pool'] and n['public']]
         for pub_net in pub_nets:
             # Try until we find a public network that is not full
             try:
-                fip = self.network_client.create_floatingip(pub_net['id'])
+                fip = self.network_client.create_floatingip(
+                    pub_net['id'], project_id=project_id)
             except ClientError as err:
                 self.logger.warning("%s", str(err.message).strip())
                 continue
@@ -327,6 +400,16 @@ class SynnefoCI(object):
         # Find a flavor to use
         flavor_id = self._find_flavor(flavor)
 
+        # get available project
+        flavor = self.cyclades_client.get_flavor_details(flavor_id)
+        quota = {
+            'cyclades.disk': flavor['disk'] * 1024 ** 3,
+            'cyclades.ram': flavor['ram'] * 1024 ** 2,
+            'cyclades.cpu': flavor['vcpus'],
+            'cyclades.vm': 1
+        }
+        project_id = self._get_available_project(**quota)
+
         # Create Server
         networks = []
         if self.config.get("Deployment", "allocate_floating_ip") == "True":
@@ -341,7 +424,8 @@ class SynnefoCI(object):
             server_name = self.config.get("Deployment", "server_name")
             server_name = "%s(BID: %s)" % (server_name, self.build_id)
         server = self.cyclades_client.create_server(
-            server_name, flavor_id, image_id, networks=networks)
+            server_name, flavor_id, image_id, networks=networks,
+            project_id=project_id)
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
@@ -378,6 +462,9 @@ class SynnefoCI(object):
         self.logger.debug("Setup apt")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
+        echo 'Package: python-gevent' >> /etc/apt/preferences.d/00-gevent
+        echo 'Pin: release o=Debian' >> /etc/apt/preferences.d/00-gevent
+        echo 'Pin-Priority: 990' >> /etc/apt/preferences.d/00-gevent
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install -q=2 curl --yes --force-yes
@@ -1092,7 +1179,8 @@ class SynnefoCI(object):
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)
-        self.fetch_compressed("webclient_build-area", dest)
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            self.fetch_compressed("webclient_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 

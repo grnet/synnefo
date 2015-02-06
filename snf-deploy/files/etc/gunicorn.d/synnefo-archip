@@ -4,8 +4,8 @@ CONFIG = {
    'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
  },
  'working_dir': '/etc/synnefo',
- 'user': 'www-data',
- 'group': 'archipelago',
+ 'user': 'synnefo',
+ 'group': 'synnefo',
  'args': (
    '--bind=127.0.0.1:8080',
    '--workers=6',
@@ -13,5 +13,6 @@ CONFIG = {
    '--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py',
    # '--worker-class=sync',
    '--log-level=debug',
+   '--log-file=/var/log/synnefo/gunicorn.log',
  ),
 }

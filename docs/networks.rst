@@ -122,14 +122,14 @@ Existing network flavors are the following:
 Flavor Name      Mode      Link                              MAC prefix              Tags
 ==============   =======   ===============================   ======================  ==================
 IP_LESS_ROUTED   routed    ``snf-link-$network_id``          ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
-MAC_FILTERED     bridged   ``DEFAULT_MAC_FILTERED_BRIDGE``   'pool'                  'private'filtered'
-PHYSICAL_VLAN    bridged   'pool'                            ``DEFAULT_MAC_PREFIX``  'physical-vlan'
+MAC_FILTERED     bridged   ``DEFAULT_MAC_FILTERED_BRIDGE``   ``pool``                'private'filtered'
+PHYSICAL_VLAN    bridged   ``pool``                          ``DEFAULT_MAC_PREFIX``  'physical-vlan'
 CUSTOM           bridged   ``DEFAULT_BRIDGE``                ``DEFAULT_MAC_PREFIX``
 ==============   =======   ===============================   ======================  ==================
 
 ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``,
 ``DEFAULT_MAC_FILTERED_BRIDGE`` are all configurable settings in
-``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used to denote that a
+``/etc/synnefo/20-snf-cyclades-app-api.conf``. ``pool`` is used to denote that a
 link or MAC prefix will be allocated from the corresponding Pool. Finally,
 most of these attributes, may be overridden when creating networks with
 `snf-manage network-create command`.
@@ -258,7 +258,7 @@ issuing:
 
    # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 --network6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --network-type=public --tags=nfdhcpd snf-net-1
 
-   # gnt-network connect snf-net-1 default bridged br100
+   # gnt-network connect --nic-parameters mode=bridged,link=br100 snf-net-1
    # gnt-network list snf-net-1
    Network   Subnet     Gateway NetworkType MacPrefix GroupList               Tags
    snf-net-1 5.6.7.0/27 5.6.7.1 public      None      default(bridged, br100) nfdhcpd
@@ -313,7 +313,7 @@ issuing:
 
    # gnt-network add --network=5.6.7.0/27 --gateway=5.6.7.1 --network6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1  --network-type=public  --tags=nfdhcpd,ip-less-routed  snf-net-2
 
-   # gnt-network connect snf-net-2 default bridged br100
+   # gnt-network connect --nic-parameters mode=bridged,link=br100 snf-net-2
    # gnt-network list snf-net-2
    Network      Subnet            Gateway        NetworkType MacPrefix GroupList                   Tags
    dimara-net-1 62.217.123.128/27 62.217.123.129 public      None      default(routed, snf_public) nfdhcpd,ip-less-routed
@@ -370,7 +370,7 @@ issuing:
 
    # gnt-network add --network=192.168.1.0/24  --gateway=192.168.1.1  --network-type=private  --tags=nfdhcpd,private-filtered snf-net-3
 
-   # gnt-network connect snf-net-3 default bridged prv0
+   # gnt-network connect --nic-parameters mode=bridged,link=prv0 snf-net-3
    # gnt-network list snf-net-3
    Network   Subnet         Gateway     NetworkType MacPrefix GroupList               Tags
    snf-net-3 192.168.1.0/24 192.168.1.1 private     aa:00:01  default(bridged, prv0) nfdhcpd,private-filtered
@@ -432,7 +432,7 @@ issuing:
 
    # gnt-network add --network=192.168.1.0/24 --gateway=192.168.1.1 --network-type=private --tags=nfdhcpd,physica-vlan snf-net-4
 
-   # gnt-network connect snf-net-4 default bridged prv1
+   # gnt-network connect --nic-parameters mode=bridged,link=prv1 snf-net-4
    # gnt-network list snf-net-4
    Network   Subnet         Gateway     NetworkType MacPrefix GroupList               Tags
    snf-net-4 192.168.1.0/24 192.168.1.1 private     None      default(bridged, prv1)  nfdhcpd,physical-vlan
@@ -466,7 +466,7 @@ issuing:
 
    # gnt-network add --network=192.168.1.0/24 --gateway=192.168.1.1 --network-type=private --tags=nfdhcpd snf-net-5
 
-   # gnt-network connect snf-net-5 default bridged br200
+   # gnt-network connect --nic-parameters mode=bridged,link=br200 snf-net-5
    # gnt-network list snf-net-5
    Network   Subnet         Gateway     NetworkType MacPrefix GroupList               Tags
    snf-net-5 192.168.1.0/24 192.168.1.1 private     bb:00:55  default(bridged, br200) nfdhcpd,private-filtered

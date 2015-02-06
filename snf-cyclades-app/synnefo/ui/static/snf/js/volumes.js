@@ -168,7 +168,7 @@
           error: err || function() {},
           silent: true
         });
-      },
+      }
 
     });
     

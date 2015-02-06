@@ -290,7 +290,7 @@
             }
           }
         });
-      },
+      }
     });
     
     models.CombinedPublicNetwork = models.Network.extend({

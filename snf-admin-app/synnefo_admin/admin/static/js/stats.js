@@ -48,7 +48,7 @@ $(document).ready(function() {
             dataType: "json",
             success: function(data){
                 spinner.hide();
-            },
+            }
         })
     });
 

@@ -182,7 +182,7 @@
 
           synnefo.storage.keys.create({
             content: data.key, 
-            name: data.name,
+            name: data.name
           }, params);
         },
 

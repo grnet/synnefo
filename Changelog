@@ -6,77 +6,53 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.16:
+.. _Changelog-0.16.1:
 
-v0.16rc3
-========
+v0.16.1
+=======
 
-Released: Wed Oct 15 14:14:33 EEST 2014
-
-Synnefo-wide
-------------
-
-* Update upgrade notes and installation guide to conform with
-  Archipelago 0.16rc2.
-* Add Synnefo wide accessible gunicorn hooks for Archipelago.
+Released: Fri Feb  6 12:05:44 EET 2015
 
 Astakos
 -------
 
-* Explicitly specify the lists in which every notification will be sent.
+* Include additional validation checks in project modification form to ensure
+  members limit is always set lower or equal than total limit.
+* Prevent members limit from automatically being set to unlimited in project
+  modification form.
+* Exclude terminated projects from responses of project list and user quota
+  api calls.
+* Improve UI handling of inactive, terminated and empty projects.
+* Change default pagination in projects list view.
 
-Cyclades
---------
+Cyclades UI
+-----------
 
-* Remove stale '--public' and '--user' options from 'image-show' and
-  'snapshot-show' management commands.
+* Improve handling of terminated projects in reassign view.
+* Remove the COPYRECT encoding from the preferred noVNC client encodings, and
+  prefer TIGHT_PNG by default.
+* Fix handling of SSH keys and password customization steps to images that
+  do not support them, e.g. snapshots.
+* Add OS icons for Scientific Linux and CoreOS.
+* Change project reassign button style for VMs and boot disks.
 
-Pithos
-------
-
-* Remove custom Gunicorn worker.
-
-
-v0.16rc2
-========
-
-Released: Tue Sep 30 10:39:13 EEST 2014
-
-Admin
+Stats
 -----
 
-* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
+* Aggregate the traffic of every VM interface in the net stats graphs.
 
-  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
-    is installed.
-
-UI
---
-
-* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED
-  setting to resolve whether or not snapshot functionality should be enabled.
-
-Cyclades
+Branding
 --------
 
-* Make snf-dispatcher update status of snapshots when Ganeti job fails.
-* Implement reconciliation for stale snapshots.
-
-Pithos
-------
-
-* Restore PostgreSQL 8.4 compatibility.
-
-Tools
------
-
-* Extend snf-burnin to include testing of snapshots.
+* Add CLOUDBAR_HOME_URL setting to allow Cloudbar home icon customization.
 
 
-v0.16rc1
-========
+.. _Changelog-0.16:
 
-Released: Mon Sep  8 17:26:35 EEST 2014
+v0.16
+=====
+
+Released: Tue Nov 11 10:44:57 EET 2014
 
 Synnefo-wide
 ------------
@@ -175,6 +151,8 @@ Astakos
   * Display system projects in admin project list view.
   * Handle display of infinite resource quota values.
 
+* Explicitly specify the lists in which every notification will be sent.
+
 
 Cyclades
 --------
@@ -189,6 +167,7 @@ Cyclades
     commands for handling of snapshots.
   * Implement 'volume-type-{create, list, modify, show, remove}` management
     commands for handling of volume types.
+  * Implement reconciliation for stale snapshots.
   * Add new settings:
 
     * GANETI_MAX_DISKS_PER_INSTANCE: Maximum number of disks that each Ganeti
@@ -208,6 +187,9 @@ Cyclades
     attribute.
 
 * Add support for snf-vncauthproxy 1.6 (configurable VNC console types).
+* Change the ``CYCLADES_VNCAUTHPROXY_OPTS`` setting to a list of dictionaries
+  and support configurable vncauthproxy proxy addresses (added in
+  snf-vncauthproxy-1.6).
 * Add support for more types of VM console:
 
   * Modify the current 'console' action to support VNC WebSockets (requires
@@ -242,6 +224,8 @@ Cyclades
 * Fix mishandling of `MAX_CIDR_BLOCK` setting. Allowed CIDR sizes
   changed from (MAX_CIDR_BLOCK, 29) to [MAX_CIDR_BLOCK, 29].
 * Fix various minor bugs.
+* Remove stale '--public' and '--user' options from 'image-show' and
+  'snapshot-show' management commands.
 
 Cyclades UI
 -----------
@@ -302,6 +286,17 @@ Admin
   * Intuitive filtering.
   * Multiple actions and notifications.
   * Charts and statistics generation.
+
+* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
+
+  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
+    is installed.
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of snapshots.
+
 
 .. _Changelog-0.15.2:
 

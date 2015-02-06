@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,6 +94,8 @@ class Command(ListCommand):
         "status": (get_status, "Project Status"),
         "pending_app": (get_pending_app,
                         "An application pending for the project"),
+        "description": ("description", "Project Description"),
+        "end_date": ("end_date", "Project Termination Date"),
     }
 
     fields = ["id", "name", "owner", "status", "pending_app"]

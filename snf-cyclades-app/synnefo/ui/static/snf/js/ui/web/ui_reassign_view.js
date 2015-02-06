@@ -122,6 +122,18 @@
         this.update_disabled = _.bind(this.update_disabled, this);
         views.ProjectSelectView.__super__.initialize.apply(this);
       },
+    
+      do_disable_view: function(view) {
+        if (view._is_current) { return false }
+        return true;
+      },
+
+      post_disable_view: function(view) {
+        var selected = this.get_selected();
+        if (!selected) {
+          this.select_any();
+        }
+      },
 
       get_selected: function() {
         var selected = undefined;
@@ -153,7 +165,6 @@
       _model_bindings: {},
 
       bind_custom_view_handlers: function(view, model) {
-        var func
         model.quotas.bind('change', _.bind(function() {
           this.update_disabled(view)
         }, this));
@@ -219,6 +230,7 @@
         init_collection_view: function(collection) {
             if (this.collection_view) { this.collection_view.destroy() }
             this.collection_view = new views.ProjectSelectView({
+              __current: this.model.get('project'),
               collection: collection,
               el: this.list,
               filter_func: _.bind(this.can_fit_func, this),
@@ -229,13 +241,13 @@
                 this.handle_project_change(item.model);
             }, this);
 
-            this.collection_view.show(true);
             this.collection_view.model_usage = this.model_usage;
             this.collection_view.resource_model = this.model;
+            this.collection_view.show(true);
             var project = this.model.get('project');
+            this.collection_view.set_current(project);
             if (project && !(project.get('missing') && !project.get('resolved'))) {
-              this.collection_view.set_current(this.model.get('project'));
-              this.collection_view.set_selected(this.model.get('project'));
+              this.collection_view.set_selected(project);
             }
             this.list.append($(this.collection_view.el));
             this.handle_project_change();

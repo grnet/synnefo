@@ -33,6 +33,7 @@ backend-id.
 
 class Command(SynnefoCommand):
     help = "Create a new VM." + HELP_MSG
+    umask = 0o007
 
     option_list = SynnefoCommand.option_list + (
         make_option("--backend-id", dest="backend_id",

@@ -33,6 +33,7 @@ from snf_django.management.utils import parse_bool
 
 class Command(SynnefoCommand):
     can_import_settings = True
+    umask = 0o007
 
     help = 'Reconcile contents of Synnefo DB with state of Ganeti backend'
     option_list = SynnefoCommand.option_list + (

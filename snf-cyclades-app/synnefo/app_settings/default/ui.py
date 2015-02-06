@@ -19,7 +19,8 @@ DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
 # A list of allowed icons for OS Images
 IMAGE_ICONS = ["rhel", "ubuntu", "debian", "windows", "gentoo", "archlinux",
                "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
-               "sles", "opensuse", "kubuntu", "oraclelinux"]
+               "sles", "opensuse", "kubuntu", "oraclelinux", "coreos",
+               "scientificlinux"]
 
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000

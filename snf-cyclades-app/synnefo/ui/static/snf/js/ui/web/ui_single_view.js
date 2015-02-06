@@ -133,7 +133,7 @@
             'disk': '.machine-detail.disk',
             'image_name': '.machine-detail.image-name',
             'image_size': '.machine-detail.image-size'
-        },
+        }
     
     })
 

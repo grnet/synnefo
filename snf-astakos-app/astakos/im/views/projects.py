@@ -115,7 +115,7 @@ def project_list(request, template_name="im/projects/project_list.html"):
         query = query & ~Q(Q(is_base=True) & \
                           ~Q(realname="system:%s" % request.user.uuid))
 
-    query = query & ~Q(state=Project.DELETED)
+    query = query & ~Q(state__in=Project.SKIP_STATES)
     mode = "default"
     if not request.user.is_project_admin():
         mode = "related"
@@ -480,6 +480,9 @@ def project_members(request, project_uuid, members_status_filter=None,
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
         return redirect(reverse('index'))
+
+    if not project.is_alive:
+        return redirect(reverse('project_list'))
 
     if request.method == 'POST':
         addmembers_form = AddProjectMembersForm(

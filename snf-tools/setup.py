@@ -42,7 +42,7 @@ INSTALL_REQUIRES = [
     "IPy",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.13rc3",
+    "kamaki >= 0.13rc5",
 ]
 
 setup(

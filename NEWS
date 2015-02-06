@@ -5,12 +5,12 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
-.. _NEWS-0.16.1rc1:
+.. _NEWS-0.16.1:
 
-v0.16.1rc1
-==========
+v0.16.1
+=======
 
-Released: Thu Dec 18 17:02:14 EET 2014
+Released: Fri Feb  6 12:06:25 EET 2015
 
 The Synnefo 0.16.1 release is mostly a bug fix version. The most notable
 changes are:
@@ -18,7 +18,7 @@ changes are:
 * Improved handling of projects (both API- and UI-wise).
 * Updates and fixes for snf-deploy.
 * Various bug fixes and improvements across Synnefo. Please see the Synnefo
-  :ref:`Changelog <Changelog-0.16.1rc1>` for a complete list.
+  :ref:`Changelog <Changelog-0.16.1>` for a complete list.
 
 
 .. _NEWS-0.16:

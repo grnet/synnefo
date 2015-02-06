@@ -6,12 +6,12 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.16.1rc1:
+.. _Changelog-0.16.1:
 
-v0.16.1rc1
-==========
+v0.16.1
+=======
 
-Released: Thu Dec 18 16:39:29 EET 2014
+Released: Fri Feb  6 12:05:44 EET 2015
 
 Astakos
 -------

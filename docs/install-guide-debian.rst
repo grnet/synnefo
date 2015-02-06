@@ -2124,7 +2124,7 @@ package by running on node1:
 
 .. code-block:: console
 
-   # apt-get install snf-cyclades-app memcached python-memcache snf-pithos-backend
+   # apt-get install snf-cyclades-app memcached python-memcache snf-pithos-backend snf-vncauthproxy
 
 If all packages install successfully, then Cyclades are installed and we
 proceed with their configuration.

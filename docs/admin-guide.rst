@@ -2966,7 +2966,7 @@ Changelog, NEWS
 ===============
 
 
-* v0.16.1rc1 :ref:`Changelog <Changelog-0.16.1rc1>`, :ref:`NEWS <NEWS-0.16.1rc1>`
+* v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`

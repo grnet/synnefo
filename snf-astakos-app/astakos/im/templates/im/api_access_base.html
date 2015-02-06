@@ -72,12 +72,12 @@
                 {% block page.body.api_advanced %}
                 <h2>API advanced usage</h2>
                 <p>
-                Apart from using the kamaki command line client, you can also import the
-                kamaki library inside your code and use it directly. More details on how
+                Apart from using the Kamaki command line client, you can also import the
+                Kamaki library inside your code and use it directly. More details on how
                 to do that on the corresponding  
-                <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">kamaki </a>page.</p> 
+                <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">Kamaki</a> page.</p>
                 <p>You can also implement the REST API calls by yourself, without
-                using the official kamaki library if you feel confident with your
+                using the official Kamaki library if you feel confident with your
                 programming skills. To do so, you first need to get a good grasp of the
                 API itself; for more information take a look at the corresponding page
                 inside the 
@@ -108,14 +108,14 @@
     <div class="two-cols dotted clearfix">
         <div class="rt">
            <h2>Other clients</h2>
-           <p>If you are using a client different from kamaki that supports the OpenStack
+           <p>If you are using a client different from Kamaki that supports the OpenStack
 APIs and needs a username/password combination to operate, please use
 the following:</p>
 
 <p>username:  <span class="user-data">{{ user.uuid }}</span>
 password:  <span class="user-data">{{ user.auth_token }}</span></p>
 
-<p>The username is your  {{ BRANDING_SERVICE_NAME }} user ID (UUID) and the password
+<p>The username is your {{ BRANDING_SERVICE_NAME }} user ID (UUID) and the password
 is your Token. As you can see, its the same shown in the
 previous section. </p>
         </div>
@@ -125,22 +125,22 @@ previous section. </p>
             <p><a href="{{ client_url }}" alt="kamaki">Kamaki</a> is the official
     {{ BRANDING_SERVICE_NAME }} command line client. You can use it to control your virtual
     resources from the command line or use it inside your scripts.</p>
-            <p>Kamaki allows you to execute all the operations you do from the Web UI. You can use kamaki to<br><br>
+            <p>Kamaki allows you to execute all the operations you do from the Web UI. You can use Kamaki to<br><br>
             - register images,<br>- spawn clusters of customized VMs,<br>- connect them to
     Private Virtual Networks,<br>- have them executing computations dynamically<br> <br>and
     many other neat things.</p>
             <p> Kamaki is available for most Linux distributions,
-    Windows and Mac OS X. To use it you will need to set it up using your
+    Windows, and Mac OS X. To use it you will need to set it up using your
     Token and the Authentication URL, found above. To
-    learn more about kamaki and how to install, configure and use, take a look
+    learn more about Kamaki and how to install, configure and use, take a look
     at its <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">corresponding page</a>.
             </p>
-             <p class="download">You can download kamaki 
+             <p class="download">You can download Kamaki
     from the <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">project homepage</a>.</p>
-             <p>If you are using kamaki, you can download a pre-configured .kamakirc
+             <p>If you are using Kamaki, you can download a pre-configured .kamakirc
 file that contains your Authentication URL and Token. Store this file
-under your home directory (~/.kamakirc) and kamaki will be able to
-access  {{ BRANDING_SERVICE_NAME }} automatically without the need of extra
+under your home directory (~/.kamakirc) and Kamaki will be able to
+access {{ BRANDING_SERVICE_NAME }} automatically without the need of extra
 manual configuration.</p>
 
 <a href="{% url api_access_config %}" class="submit">Download your .kamakirc</a> 

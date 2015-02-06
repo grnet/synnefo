@@ -16,7 +16,9 @@
     {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,700,300,600' rel='stylesheet' type='text/css'>
+    {% for url in BRANDING_FONTS_CSS_URLS %}
+    <link href="{{ url }}" rel="stylesheet" type="text/css" >
+    {% endfor %}
   </head>
 
     {% block custom-css %}
@@ -36,9 +38,8 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a>
+                    <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_CLOUDBAR_HOME_URL }}" alt="{{BRANDING_SERVICE_NAME}}" /></a>
                 </div>
-
                 <div class="collapse navbar-collapse" id="navbar-collapse-1">
                     <ul class="nav navbar-nav navbar-left">
                         {% for view, view_dict in views.items %}

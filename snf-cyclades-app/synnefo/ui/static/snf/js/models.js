@@ -454,6 +454,13 @@
             return this.get('description') || "No description available."
         },
 
+        has_metadata: function() {
+            if (this.get('metadata')) {
+                return !_.isEmpty(this.get('metadata'));
+            }
+            return false;
+        },
+
         get_meta: function(key) {
             if (this.get('metadata') && this.get('metadata')) {
                 if (!this.get('metadata')[key]) { return null }
@@ -563,13 +570,28 @@
             var os = this.get_os();
             if (exclude_list.indexOf(os) > -1) {
                 return false;
+            } else if (!this.has_metadata() ||
+                       this.get_meta("EXCLUDE_ALL_TASKS") != null ||
+                       this.get_meta("EXCLUDE_TASK_ENFORCEPERSONALITY") != null) {
+                return false;
             }
             return true;
+        },
+
+        _supports_password: function () {
+          if (!this.has_metadata() ||
+              this.get_meta('EXCLUDE_ALL_TASKS') != null ||
+              this.get_meta("EXCLUDE_TASK_CHANGEPASSWORD") != null) {
+              return false;
+          }
+          return true;
         },
 
         supports: function(feature) {
             if (feature == "ssh") {
                 return this._supports_ssh()
+            } else if (feature == "password") {
+                return this._supports_password()
             }
             return false;
         },
@@ -2868,6 +2890,10 @@
             if (project.id == synnefo.user.get_username()) {
               project.name = "System project"
             }
+            // missing means the project exists in a relation to a resource
+            // but does not appear in user projects list. Once the project
+            // appears in projects list set missing flag to false.
+            project.missing = false;
           }, this);
           return resp;
         },

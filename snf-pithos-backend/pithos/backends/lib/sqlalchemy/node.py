@@ -599,6 +599,27 @@ class Node(DBWorker):
             d[project][DEFAULT_DISKSPACE_RESOURCE] = usage
         return d
 
+    def node_container_usage(self, path=None, cluster=0):
+        """Return container usage"""
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+        p = self.policy.alias('p')
+        v = self.versions.alias('v')
+
+        s = select([func.sum(v.c.size)])
+        s = s.where(p.c.key == 'project')
+        s = s.where(p.c.node == n2.c.node)
+        s = s.where(n1.c.node == v.c.node)
+        s = s.where(n1.c.parent == n2.c.node)
+        s = s.where(n2.c.path == path)
+        s = s.where(v.c.cluster == cluster)
+
+        r = self.conn.execute(s)
+        row = r.fetchone()
+        r.close()
+        return row[0]
+
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
                    self.policy.c.node == node)

@@ -111,7 +111,7 @@ $(document).ready(function() {
 						return data;
 					}
 				}
-			},
+			}
 		],
 		"order": [0, "asc"],
 		"createdRow": function(row, data, dataIndex) {
@@ -250,7 +250,7 @@ $(document).ready(function() {
 			"orderable": false,
 			"render": function(data, type, rowData) {
 				return extraTemplate(data);
-			},
+			}
 		},
 			// "targets": '_all' this must be the last item of the array
 			{
@@ -263,7 +263,7 @@ $(document).ready(function() {
 						return data;
 					}
 				}
-			},
+			}
 		],
 		"order": [0, "asc"],
 		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
@@ -276,7 +276,7 @@ $(document).ready(function() {
 			row.id = 'selected-'+data[extraIndex].id.value; //sets the dom id
 			clickDetails(row);
 			clickSummary(row);
-		},
+		}
 	});
 
 	function keepSelected(data, drawNow) {
@@ -486,7 +486,7 @@ $(document).ready(function() {
                 $summaryContent.css({
                     width: summaryContentWidth,
                     right: summaryContPos,
-                    paddingTop: summaryContentHeight,
+                    paddingTop: summaryContentHeight
                 });
             }
 		    

@@ -246,9 +246,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         pending.delete()
         return user
 
+autofocus_widget = forms.TextInput(attrs={'autofocus': 'autofocus'})
 
 class LoginForm(AuthenticationForm):
-    username = EmailField(label=_("Email"))
+    username = EmailField(label=_("Email"), widget=autofocus_widget)
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(
         widget=RecaptchaWidget, label='')
@@ -436,7 +437,6 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             c = {
                 'email': user.email,
                 'url': url,
-                'site_name': settings.SITENAME,
                 'user': user,
                 'baseurl': settings.BASE_URL,
                 'support': settings.CONTACT_EMAIL
@@ -845,6 +845,18 @@ class ProjectApplicationForm(forms.ModelForm):
                     raise forms.ValidationError("Resource %s does not exist" %
                                                 resource.name)
 
+                if is_project_limit:
+                    member_limit = data.get(prefix + '_m_uplimit')
+                    try:
+                        pvalue = int(value)
+                        mvalue = int(member_limit)
+                    except:
+                        raise forms.ValidationError("Invalid format")
+
+                    if mvalue > pvalue:
+                        msg = "%s per member limit exceeds total limit"
+                        raise forms.ValidationError(msg % resource.name)
+
                 # keep only resource limits for selected resource groups
                 if data.get('is_selected_%s' % \
                                      resource.group, "0") == "1":
@@ -984,7 +996,8 @@ class ProjectApplicationForm(forms.ModelForm):
         except AstakosUser.DoesNotExist:
             pass
 
-        exclude_keys = ['owner', 'comments', 'project_id', 'start_date']
+        exclude_keys = ['owner', 'comments', 'project_id', 'start_date',
+                        'limit_on_members_number']
 
         # is_valid changes instance attributes
         instance = self.instance

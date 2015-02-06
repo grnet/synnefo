@@ -296,10 +296,12 @@ EOF
 
     def add_qa_instances(self):
         instances = [
-            ("xen-test-inst1", "1.2.3.4"),
-            ("xen-test-inst2", "1.2.3.5"),
-            ("xen-test-inst3", "1.2.3.6"),
-            ("xen-test-inst4", "1.2.3.7"),
+            ("test-inst1", "1.2.3.4"),
+            ("test-inst2", "1.2.3.5"),
+            ("test-inst3", "1.2.3.6"),
+            ("test-inst4", "1.2.3.7"),
+            ("test-inst-rename", "1.2.3.10"),
+            ("test-cluster-rename", "1.2.3.11"),
             ]
         for name, ip in instances:
             info = {
@@ -494,6 +496,7 @@ class VMC(base.Component):
         self.MASTER.add_node(self.node)
         self.MASTER.enable_lvm()
         self.MASTER.enable_drbd()
+        self.MASTER.modify_os()
 
 
 class LVM(base.Component):
@@ -662,7 +665,10 @@ class Master(base.Component):
         cmd = """
 echo ganeti-qa qa_example_passwd write >> /var/lib/ganeti/rapi/users
 """
-        return [cmd]
+        return [
+            cmd,
+            "gnt-cluster redist-conf",
+            ]
 
     def _add_rapi_user(self):
         user = config.synnefo_user
@@ -700,10 +706,10 @@ gnt-node modify --master-capable=yes {0}
             # This is needed because MIN_VG_SIZE is constant and set to 20G
             # and cluster modify --vg-name may result to:
             # volume group 'ganeti' too small
-            # But this check is made only ff a vm-capable node is found
+            # But this check is made only if a vm-capable node is found
             "gnt-cluster modify --enabled-disk-templates file,ext,plain \
+                                --ipolicy-disk-template file,ext,plain \
                                 --vg-name=%s" % vg,
-            "gnt-cluster modify --ipolicy-disk-template file,ext,plain",
             ]
 
     @base.run_cmds
@@ -711,11 +717,21 @@ gnt-node modify --master-capable=yes {0}
         vg = self.cluster.vg
         return [
             "gnt-cluster modify --enabled-disk-templates file,ext,plain,drbd \
+                                --ipolicy-disk-template file,ext,plain,drbd \
                                 --drbd-usermode-helper=/bin/true",
-            "gnt-cluster modify --ipolicy-disk-template file,ext,plain,drbd",
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
+
+    @base.run_cmds
+    def modify_os(self):
+        os = """
+gnt-os modify \
+  --os-parameters=img_passwd={0},img_format={1},img_id={2},img_properties={3} \
+  snf-image+default
+        """.format("12345678", "diskdump", "debian_base",
+                   "'{\"OSFAMILY\":\"linux\"\\,\"ROOT_PARTITION\":\"1\"}'")
+        return [os]
 
     @base.run_cmds
     def initialize(self):
@@ -828,42 +844,76 @@ class GTools(base.Component):
 
 class Network(base.Component):
     REQUIRED_PACKAGES = [
+        "ferm",
         "python-nfqueue",
         "snf-network",
         "nfdhcpd",
         ]
 
+    @base.run_cmds
+    def prepare(self):
+        # Needed to flush default configuration
+        return [
+              "/etc/init.d/ferm stop",
+              ]
+
     def _configure(self):
+        is_router = self.node.ip == self.ctx.router.ip
         r1 = {
             "ns_node_ip": self.ctx.ns.ip
             }
         r2 = {
-            "common_bridge": config.common_bridge,
-            "public_iface": self.node.public_iface,
-            "subnet": config.synnefo_public_network_subnet,
-            "gateway": config.synnefo_public_network_gateway,
-            "router_ip": self.ctx.router.ip,
-            "node_ip": self.node.ip,
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_private_bridge": config.vm_private_bridge,
             }
         r3 = {
             "domain": self.node.domain,
             "server": self.ctx.ns.ip,
             "keyfile": config.ddns_private_key,
             }
+        r4 = {
+            "public_iface": self.node.public_iface,
+            "subnet": config.synnefo_public_network_subnet,
+            "gateway": config.synnefo_public_network_gateway,
+            "router": 1 if is_router else 0,
+            "vm_public_iface": self.node.vm_public_iface
+                if self.node.vm_public_iface else self.node.public_iface,
+            }
+        r5 = {
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_public_iface": self.node.vm_public_iface
+                if self.node.vm_public_iface else "none",
+            "address": config.synnefo_public_network_gateway \
+                if is_router else "0.0.0.0",
+            "netmask": config.synnefo_public_network_netmask \
+                if is_router else "255.255.255.255",
+            "vm_private_bridge": config.vm_private_bridge,
+            "vm_private_iface": self.node.vm_private_iface
+                if self.node.vm_private_iface else "none",
+            }
 
         return [
             ("/etc/nfdhcpd/nfdhcpd.conf", r1, {}),
             ("/etc/rc.local", r2, {"mode": 0755}),
             ("/etc/default/snf-network", r3, {}),
+            ("/etc/ferm/ferm.conf", {}, {}),
+            ("/etc/ferm/masq.ferm", r4, {}),
+            ("/etc/network/interfaces.synnefo", r5, {}),
             ]
 
     @base.run_cmds
     def initialize(self):
-        return ["/etc/init.d/rc.local start"]
+        return [
+            "/etc/init.d/rc.local start",
+            "/etc/init.d/ferm start",
+            ]
 
     @base.run_cmds
     def restart(self):
-        return ["/etc/init.d/nfdhcpd restart"]
+        return [
+            "/etc/init.d/nfdhcpd restart",
+            "/etc/init.d/ferm restart",
+            ]
 
 
 class Apache(base.Component):
@@ -1004,6 +1054,13 @@ class Astakos(base.Component):
         return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, Webproject]
 
     @base.run_cmds
+    def make_user_admin_user(self):
+        user_id = context.user_id
+        return [
+            "snf-manage user-modify %s --add-group=admin" % user_id
+            ]
+
+    @base.run_cmds
     def setup_user(self):
         self._debug("Setting up user")
         return self._set_default_quota() + \
@@ -1138,14 +1195,22 @@ class Astakos(base.Component):
         return [h, c, p, a]
 
     @base.run_cmds
+    def restart(self):
+        return [
+            "/etc/init.d/gunicorn restart",
+            ]
+
+    @base.run_cmds
     def add_user(self):
         info = (
+            config.user_email,
             config.user_passwd,
             config.user_email,
             config.user_name,
             config.user_lastname,
             )
-        cmd = "snf-manage user-add --password %s %s %s %s" % info
+        cmd = "snf-manage user-show %s || \
+            snf-manage user-add --password %s %s %s %s" % info
         return [cmd]
 
     @update_admin
@@ -1425,7 +1490,7 @@ class Cyclades(base.Component):
         subnet = config.synnefo_public_network_subnet
         gw = config.synnefo_public_network_gateway
         ntype = config.synnefo_public_network_type
-        link = config.common_bridge
+        link = config.vm_public_bridge
 
         cmd = """
 snf-manage network-create --subnet={0} --gateway={1} --public \
@@ -1440,7 +1505,7 @@ snf-manage network-create --subnet={0} --gateway={1} --public \
         subnet = "babe::/64"
         gw = "babe::1"
         ntype = config.synnefo_public_network_type
-        link = config.common_bridge
+        link = config.vm_public_bridge
 
         cmd = """
 snf-manage network-create --subnet6={0} \
@@ -1497,6 +1562,8 @@ snf-manage network-create --subnet6={0} \
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
             "common_bridge": config.common_bridge,
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_private_bridge": config.vm_private_bridge,
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,
             "STATS": self.ctx.stats.cname,
@@ -1617,6 +1684,9 @@ class VNC(base.Component):
 class Admin(base.Component):
     REQUIRED_PACKAGES = [
         "python-django-eztables",
+        "python-astakosclient",
+        "snf-astakos-app",
+        "snf-cyclades-app",
         "snf-admin-app"
         ]
 
@@ -1640,6 +1710,7 @@ class Admin(base.Component):
         f = "/etc/synnefo/cyclades.conf"
         self.CYCLADES.get(f, "/tmp/cyclades.conf")
         self.put("/tmp/cyclades.conf", f)
+        self.ASTAKOS.run("snf-manage group-add admin")
 
     def _configure(self):
         r1 = {
@@ -1650,23 +1721,11 @@ class Admin(base.Component):
             ]
 
     @base.run_cmds
-    def initialize(self):
-        return [
-            "snf-manage group-add admin"
-            ]
-
-    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart"
             ]
 
-    @base.run_cmds
-    def make_user_admin_user(self):
-        user_id = context.user_id
-        return [
-            "snf-manage user-modify %s --add-group=admin" % user_id
-            ]
 
 class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
@@ -1679,7 +1738,7 @@ class Kamaki(base.Component):
         self.ASTAKOS.add_user()
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
-        self.ADMIN.make_user_admin_user()
+        self.ASTAKOS.make_user_admin_user()
         self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
         self.put("/tmp/cacert.pem",
           "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")
@@ -1858,20 +1917,11 @@ class Archip(base.Component):
 class ArchipSynnefo(base.Component):
     REQUIRED_PACKAGES = []
 
-    @base.run_cmds
-    def prepare(self):
-        return [
-            "mkdir -p /etc/synnefo/gunicorn-hooks",
-            "chmod 750 /etc/synnefo/gunicorn-hooks",
-            "chmod g+s /etc/synnefo/gunicorn-hooks",
-            ]
-
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
-            ("/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py", {}, {}),
             ]
 
     @base.run_cmds
@@ -1888,6 +1938,10 @@ class ArchipGaneti(base.Component):
 
 
 class ExtStorage(base.Component):
+    REQUIRED_PACKAGES = [
+        "git",
+        ]
+
     @base.run_cmds
     def prepare(self):
         return ["mkdir -p /usr/local/lib/ganeti/"]
@@ -1913,105 +1967,12 @@ class Client(base.Component):
 
 
 class GanetiDev(base.Component):
-    REQUIRED_PACKAGES = [
-        "automake",
-        "bridge-utils",
-        "cabal-install",
-        "fakeroot",
-        "fping",
-        "ghc",
-        "ghc-haddock",
-        "git",
-        "graphviz",
-        "hlint",
-        "hscolour",
-        "iproute",
-        "iputils-arping",
-        "libcurl4-openssl-dev",
-        "libghc-attoparsec-dev",
-        "libghc-crypto-dev",
-        "libghc-curl-dev",
-        "libghc-haddock-dev",
-        "libghc-hinotify-dev",
-        "libghc-hslogger-dev",
-        "libghc-hunit-dev",
-        "libghc-json-dev",
-        "libghc-network-dev",
-        "libghc-parallel-dev",
-        "libghc-quickcheck2-dev",
-        "libghc-regex-pcre-dev",
-        "libghc-snap-server-dev",
-        "libghc-temporary-dev",
-        "libghc-test-framework-dev",
-        "libghc-test-framework-hunit-dev",
-        "libghc-test-framework-quickcheck2-dev",
-        "libghc-base64-bytestring-dev",
-        "libghc-text-dev",
-        "libghc-utf8-string-dev",
-        "libghc-vector-dev",
-        "libghc-comonad-transformers-dev",
-        "libpcre3-dev",
-        "libghc6-zlib-dev",
-        "libghc-lifted-base-dev",
-        "libcurl4-openssl-dev",
-        "shelltestrunner",
-        "lvm2",
-        "make",
-        "ndisc6",
-        "openssl",
-        "pandoc",
-        "pep8",
-        "pylint",
-        "python",
-        "python-bitarray",
-        "python-coverage",
-        "python-epydoc",
-        "python-ipaddr",
-        "python-openssl",
-        "python-pip",
-        "python-pycurl",
-        "python-pyinotify",
-        "python-pyparsing",
-        "python-setuptools",
-        "python-simplejson",
-        "python-sphinx",
-        "python-yaml",
-        "qemu-kvm",
-        "socat",
-        "ssh",
-        "vim"
-        ]
-
-    CABAL = [
-        "json",
-        "network",
-        "parallel",
-        "utf8-string",
-        "curl",
-        "hslogger",
-        "Crypto",
-        "hinotify==0.3.2",
-        "regex-pcre",
-        "vector",
-        "lifted-base==0.2.0.3",
-        "lens==3.10",
-        "base64-bytestring==1.0.0.1",
-        ]
-
-    def _cabal(self):
-        ret = ["cabal update"]
-        for p in self.CABAL:
-            ret.append("cabal install %s" % p)
-        return ret
 
     @base.run_cmds
     def prepare(self):
-        src = config.src_dir
-        url1 = "git://git.ganeti.org/ganeti.git"
-        url2 = "https://code.grnet.gr/git/ganeti-local"
-        return self._cabal() + [
-            "git clone %s %s/ganeti" % (url1, src),
-            "git clone %s %s/snf-ganeti" % (url2, src)
+        return [
+            "mkdir -p %s" % config.src_dir,
+            "git clone %s %s/ganeti" % (config.ganeti_url, config.src_dir),
             ]
 
     def _configure(self):
@@ -2023,27 +1984,26 @@ class GanetiDev(base.Component):
                 "secondary": n.ip,
                 })
 
-        repl = {
+        r1 = {
             "CLUSTER_NAME": self.cluster.name,
             "VG": self.cluster.vg,
             "CLUSTER_NETDEV": self.cluster.netdev,
             "NODES": simplejson.dumps(sample_nodes),
-            "DOMAIN": self.cluster.domain
+            "DOMAIN": self.cluster.domain,
+            "COMMON_BRIDGE": config.common_bridge
             }
-        c8 = os.path.join(config.src_dir, "ganeti", "configure-2.8")
-        c10 = os.path.join(config.src_dir, "ganeti", "configure-2.10")
-        return [
-            ("/root/qa-sample.json", repl, {}),
-            ("/tmp/configure-2.8", {}, {"remote": c8, "mode": 0755}),
-            ("/tmp/configure-2.10", {}, {"remote": c10, "mode": 0755}),
-            ]
 
-    @base.run_cmds
-    def initialize(self):
-        d = os.path.join(config.src_dir, "ganeti")
+        r2 = {
+            "GANETI_SRC_DIR": "%s/ganeti" % config.src_dir,
+            }
+
+        remote1 = "%s/qa-init.sh" % config.src_dir
+        remote2 = "%s/configure-ganeti" % config.src_dir
+
         return [
-            "cd %s; ./autogen.sh" % d,
-            "cd %s; ./configure" % d,
+            ("/root/qa-sample.json", r1, {}),
+            ("/tmp/qa-init.sh", {}, {"remote": remote1, "mode": 0755}),
+            ("/tmp/configure-ganeti", r2, {"remote": remote2, "mode": 0755}),
             ]
 
     @base.run_cmds

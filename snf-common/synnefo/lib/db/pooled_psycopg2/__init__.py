@@ -136,8 +136,10 @@ def _get_pool(kw):
         _init_pool(kw)
 
     if _pool_kwargs != kw:
-        raise NotImplementedError(("Requested pooled psycopg2 connection with "
-                                   "args %s != %s." % (kw, _pool_kwargs)))
+        log.debug("INIT-POOL: Requested connection args differ from pool "
+                  "args: %s != %s." % (kw, _pool_kwargs))
+        raise Exception("Requested pooled psycopg2 connection with args "
+                        "that differ from the current pool args")
     return _pool
 
 

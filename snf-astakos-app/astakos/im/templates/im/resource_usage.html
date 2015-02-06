@@ -4,7 +4,7 @@
 
 {% block headjs %}
 {{ block.super }}
-<script src="{{ IM_STATIC_URL }}js/usage.js"></script>	
+<script src="{{ IM_STATIC_URL }}js/usage.js"></script>
 {% endblock %}
 
 {% block page.title %}Usage{% endblock %}
@@ -13,16 +13,19 @@
 <script id="projectQuotaTpl" type="text/template">
   {% verbatim %}
   <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}
-      {{^system_project}}no-base-project{{/system_project}} 
-      {{#system_project}}base-project{{/system_project}}" 
+      {{^system_project}}no-base-project{{/system_project}}
+      {{#system_project}}base-project{{/system_project}}"
       data-project="{{ id }}">
-      <div class="info {{#not_a_member}}warn{{/not_a_member}}" data-currvalue="" data-maxvalue="">
+      {{^hide_project_resource}}
+      <div class="info {{#warn}}warn{{/warn}}" data-currvalue="" data-maxvalue="">
           <h3>
             <a href="{{ details_url }}">{{{ display_name }}}</a>
+            {{#terminated}}<span class="warn-msg">[TERMINATED]</span>{{/terminated}}
+            {{#suspended}}<span class="warn-msg">[SUSPENDED]</span>{{/suspended}}
             {{#not_a_member}}<span class="warn-msg">[NOT A MEMBER]</span>{{/not_a_member}}
           </h3>
         <p>
-          <span class="currValue">{{ usage.curr }}</span> out of 
+          <span class="currValue">{{ usage.curr }}</span> out of
           <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
           (<span class="leftValue">{{ usage.left }}</span> left)
         </p>
@@ -36,12 +39,13 @@
           <span style="width:{{ usage.ratio }}%" class="member"></span>
           <span style="width:{{ usage.project_warn_ratio}}%"
             class="project"></span>
-            <em class="value" 
+            <em class="value"
                 style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
                 {{ usage.ratio }}%
             </em>
         </div>
       </div>
+      {{/hide_project_resource}}
   </div>
   {% endverbatim %}
 </script>
@@ -49,7 +53,7 @@
 <script id="quotaTpl" type="text/template">
   {% verbatim %}
   {{#resources}}
-  <li class="clearfix {{ resource_name }} {{ usage.cls }}" 
+  <li class="clearfix {{ resource_name }} {{ usage.cls }}"
   data-resource="{{ name }}">
   <div class="img-wrap">&nbsp;</div>
   <h2>{{ display_name }}</h2>
@@ -60,7 +64,7 @@
   {% endverbatim %}
 </script>
 
-<div class="maincol {% block innerpage.class %}{% endblock %}"> 
+<div class="maincol {% block innerpage.class %}{% endblock %}">
     <h2>RESOURCE USAGE</h2>
     <div id="quota-container" class='filter-base'>
     </div>

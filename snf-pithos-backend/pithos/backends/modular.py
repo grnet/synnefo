@@ -809,11 +809,12 @@ class ModularBackend(object):
         if PROJECT in policy:
             from_project = self._get_project(node)
             to_project = policy[PROJECT]
+            usage = self.node.node_container_usage(path)
+            if usage is None:
+                usage = 0
             provisions = {
-                (from_project, to_project, 'pithos.diskspace'):
-                self.get_container_meta(
-                    user, account, container,
-                    include_user_defined=False)['bytes']}
+                (from_project, to_project, 'pithos.diskspace'): usage
+                }
 
             if self.using_external_quotaholder:
                 serial = self.astakosclient.issue_resource_reassignment(

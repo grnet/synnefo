@@ -259,7 +259,7 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
             key = pv.holding_key()
             h = holdings.get(key)
             if h is None:
-                raise CorruptedError("Corrupted provision '%s'" % key)
+                raise CorruptedError("Corrupted provision '%s'" % str(key))
 
             provision_ids.append(pv.id)
             quantity = pv.quantity

@@ -377,25 +377,6 @@ set True, run:
    snf-deploy setup --setup synnefo --cluster ganeti2 -vvv
 
 
-snf-deploy for Ganeti
-=====================
-
-`snf-deploy` can be used to deploy a Ganeti cluster on pre-existing nodes
-by issuing:
-
-.. code-block:: console
-
-   snf-deploy ganeti --setup ganeti -vvv
-
-
-It will install a nameserver, nfs server and a Ganeti cluster. To
-install a development node along with a Ganeti cluster ready for QA, run:
-
-.. code-block:: console
-
-   snf-deploy ganeti-qa --setup qa -vvv
-
-
 snf-deploy as a DevTool
 =======================
 
@@ -407,8 +388,7 @@ option to ``True``. Then run:
 
 .. code-block:: console
 
-   snf-deploy setup --setup SETUP --node nodeX \
-        --role ROLE --cluster CLUSTER
+   snf-deploy setup --setup SETUP --node nodeX --component COMPONENT
 
 to setup a specific role on a target node of a specific cluster and setup.
 
@@ -416,10 +396,36 @@ For instance, to add another node to an existing ganeti backend run:
 
 .. code-block:: console
 
-   snf-deploy setup --node node5 --role vmc --cluster ganeti3 --setup synnefo
+   snf-deploy setup --node node5 --component VMC  --cluster ganeti3 --setup synnefo
 
 `snf-deploy` keeps track of installed components per node in
 ``/var/lib/snf-deploy/snf_deploy_status``. If a deployment command
 fails, the developer can make the required fix and then re-run the same
 command; `snf-deploy` will not re-install components that have been
 already setup and their status is ``ok``.
+
+To create a Ganeti QA environment use:
+
+.. code-block:: console
+
+   snf-deploy setup --setup qa --cluster ganeti-qa \
+       --component GanetiDev --node qa1
+
+Then on node qa1:
+
+.. code-block:: console
+
+  # cd /srv/src/ganeti
+  # ./qa-init.sh
+  # git checkout stable-2.10
+  # ./configure-ganeti
+  # make && make install
+  # cp doc/examples/ganeti.initd /etc/init.d/ganeti
+  # /etc/init.d/ganeti restart
+
+To run the QA:
+
+.. code-block:: console
+
+  # cd /srv/src/ganeti/qa
+  # PYTHONPATH=/srv/src/ganeti/ ./ganeti-qa.py --yes-do-it /root/qa-sample.json

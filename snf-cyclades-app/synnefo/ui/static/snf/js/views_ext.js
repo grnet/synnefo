@@ -212,7 +212,7 @@
         options['el'] = $(this.$(this.collection_view_selector).get(0));
         this.collection_view = this.create_view(this.collection_view_cls, options);
         this.add_subview(this.collection_view);
-      },
+      }
     });
 
     views.ext.CollectionView = views.ext.View.extend({
@@ -339,6 +339,15 @@
         this.empty_el.hide();
       },
 
+      select_any: function() {
+          var selected = false;
+          _.each(this._model_views, function(v) {
+            if (selected) { return }
+            if (!v.disabled) { v.select(); selected = v }
+          });
+          return selected;
+      },
+
       check_empty: function() {
         if (this.collection.length == 0) {
           this.show_empty();
@@ -404,6 +413,13 @@
           }, this);
       },
 
+      do_disable_view: function(view) { return true },
+      post_disable_view: function(view) {},
+      enabled_model_views: function(cb) {
+          return _.filter(this._model_views, function(v) {
+              return !v.disabled
+          }, this);
+      },
       check_disabled: function(view) {
         var disabled = this.disabled_filter(view.model);
         // forced models are always disabled
@@ -411,6 +427,8 @@
           disabled = true;
         }
         if (disabled) { 
+            var do_disable = this.do_disable_view(view);
+            if (!do_disable) { return }
             view.disable && view.disable(disabled); 
             if (_.isString(disabled)) {
                 var el = view.el;
@@ -421,6 +439,7 @@
                 };
                 snf.util.set_tooltip(el, disabled, tooltip);
             }
+            this.post_disable_view(view);
         } else {
             var el = view.el;
             snf.util.unset_tooltip(el);
@@ -567,15 +586,6 @@
         return selected;
       },
         
-      select_any: function() {
-          var selected = false;
-          _.each(this._model_views, function(v) { 
-            if (selected) { return }
-            if (!v.disabled) { v.select(); selected = v }
-          });
-          return selected;
-      },
-
       post_add_model_view: function(view, model) {
         view.bind('deselected', function(view) {
             var selected = this.get_selected();

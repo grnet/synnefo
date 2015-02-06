@@ -893,6 +893,33 @@ class TestProjects(TestCase):
         self.assertEqual(Project.objects.filter(is_base=False,
             state=Project.O_ACTIVE).count(), 1)
 
+        # submit a modification
+        post_url = reverse('project_modify', args=(app1.chain.uuid,)) + '?verify=0&edit=1'
+        modification_data = {
+            'name': 'project.synnefo.org',
+            'homepage': 'https://www.synnefo.org',
+            'start_date': dfrom.strftime("%Y-%m-%d"),
+            'end_date': dto.strftime("%Y-%m-%d"),
+            'member_join_policy': 2,
+            'member_leave_policy': 1,
+            'limit_on_members_number_0': '5',
+            'service1.resource_m_uplimit': 300,
+            'service1.resource_p_uplimit': 100,
+            'is_selected_service1.resource': "1",
+            'user': self.user.pk
+        }
+        resp = self.user_client.post(post_url, modification_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['form'].is_valid())
+        modification_data['service1.resource_m_uplimit'] = 3
+        post_url = reverse('project_modify', args=(app1.chain.uuid,)) + '?verify=0&edit=0'
+        resp = self.user_client.post(post_url, modification_data)
+        self.assertEqual(resp.status_code, 302)
+
+        app = ProjectApplication.objects.get(state=ProjectApplication.PENDING,
+                                             chain=app1.chain)
+        self.assertEqual(app.limit_on_members_number, 5)
+
         # login
         self.member_client.get(reverse("edit_profile"))
         # cannot join project2 (not approved yet)

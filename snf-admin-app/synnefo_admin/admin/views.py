@@ -152,7 +152,6 @@ default_dict = {
         'subject': sample_subject,
         'body': render_to_string('im/plain_email.txt', {
             'baseurl': astakos_settings.BASE_URL,
-            'site_name': astakos_settings.SITENAME,
             'support': astakos_settings.CONTACT_EMAIL}).replace('\n\n\n', '\n'),
         'legend': {
             'Full name': "{{ full_name }}",

@@ -95,25 +95,34 @@ def draw_cpu_bar(fname, outfname=None):
 
 
 def draw_net_bar(fname, outfname=None):
-    fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
-    if not os.path.isfile(fname):
+    dname = os.path.join(fname, "interface")
+
+    if not os.path.isdir(dname):
         raise faults.ItemNotFound("VM has no attached NICs")
 
-    try:
-        values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
-    except rrdtool.error:
-        values = [(0.0, 0.0)]
+    fnames = [os.path.join(dname, rrdfile) for rrdfile in os.listdir(dname)]
 
-    v = [x for x in values if x[0] is not None and x[1] is not None]
-    if not v:
-        # Fallback in case we only get NaNs
-        v = [(0.0, 0.0)]
+    if not fnames:
+        raise faults.ItemNotFound("VM has no attached NICs")
 
-    rx_value, tx_value = v[-1]
+    rx_value = 0
+    tx_value = 0
+    for fname in fnames:
+        try:
+            values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
+        except rrdtool.error:
+            values = [(0.0, 0.0)]
 
-    # Convert to bits
-    rx_value = rx_value * 8 / 10 ** 6
-    tx_value = tx_value * 8 / 10 ** 6
+        v = [x for x in values if x[0] is not None and x[1] is not None]
+        if not v:
+            # Fallback in case we only get NaNs
+            v = [(0.0, 0.0)]
+
+        rxv, txv = v[-1]
+
+        # Convert to bits
+        rx_value += rxv * 8 / 10 ** 6
+        tx_value += txv * 8 / 10 ** 6
 
     max_value = (int(max(rx_value, tx_value) / 50) + 1) * 50.0
 
@@ -178,45 +187,83 @@ def draw_cpu_ts_w(fname, outfname):
 
 
 def draw_net_ts(fname, outfname):
-    fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net.png"
-    if not os.path.isfile(fname):
+
+    dname = os.path.join(fname, "interface")
+
+    if not os.path.isdir(dname):
         raise faults.ItemNotFound("VM has no attached NICs")
+
+    fnames = [os.path.join(dname, rrdfile) for rrdfile in os.listdir(dname)]
+
+    if not fnames:
+        raise faults.ItemNotFound("VM has no attached NICs")
+
+    args = ["DEF:rx%d=%s:rx:AVERAGE" % t for t in enumerate(fnames)]
+    args += ["DEF:tx%d=%s:tx:AVERAGE" % t for t in enumerate(fnames)]
+
+    rxsum = ""
+    txsum = ""
+    if len(fnames) > 1:
+        rxsum = ",%s,+" % ',+,'.join(["rx%d" % i for i in range(1,
+                                                                len(fnames))])
+        txsum = ",%s,+" % ',+,'.join(["tx%d" % i for i in range(1,
+                                                                len(fnames))])
+
+    args += ["CDEF:rxbits=rx0%s,8,*" % rxsum]
+    args += ["CDEF:txbits=tx0%s,8,*" % txsum]
+
+    args += ["LINE1:rxbits#00ff00:Incoming",
+             "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
+             "LINE1:txbits#0000ff:Outgoing",
+             "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n"]
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
                   "--units", "si",
                   "-v", "Bits/s",
                   "COMMENT:\t\t\tAverage network traffic\\n",
-                  "DEF:rx=%s:rx:AVERAGE" % fname,
-                  "DEF:tx=%s:tx:AVERAGE" % fname,
-                  "CDEF:rxbits=rx,8,*",
-                  "CDEF:txbits=tx,8,*",
-                  "LINE1:rxbits#00ff00:Incoming",
-                  "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
-                  "LINE1:txbits#0000ff:Outgoing",
-                  "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
+                  *args)
 
     return read_file(outfname)
 
 
 def draw_net_ts_w(fname, outfname):
-    fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net-weekly.png"
-    if not os.path.isfile(fname):
+
+    dname = os.path.join(fname, "interface")
+
+    if not os.path.isdir(dname):
         raise faults.ItemNotFound("VM has no attached NICs")
+
+    fnames = [os.path.join(dname, rrdfile) for rrdfile in os.listdir(dname)]
+
+    if not fnames:
+        raise faults.ItemNotFound("VM has no attached NICs")
+
+    args = ["DEF:rx%d=%s:rx:AVERAGE" % t for t in enumerate(fnames)]
+    args += ["DEF:tx%d=%s:tx:AVERAGE" % t for t in enumerate(fnames)]
+
+    rxsum = ""
+    txsum = ""
+    if len(fnames) > 1:
+        rxsum = ",%s,+" % ',+,'.join(["rx%d" % i for i in range(1,
+                                                                len(fnames))])
+        txsum = ",%s,+" % ',+,'.join(["tx%d" % i for i in range(1,
+                                                                len(fnames))])
+
+    args += ["CDEF:rxbits=rx0%s,8,*" % rxsum]
+    args += ["CDEF:txbits=tx0%s,8,*" % txsum]
+
+    args += ["LINE1:rxbits#00ff00:Incoming",
+             "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
+             "LINE1:txbits#0000ff:Outgoing",
+             "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n"]
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
                   "--units", "si",
                   "-v", "Bits/s",
                   "COMMENT:\t\t\tAverage network traffic\\n",
-                  "DEF:rx=%s:rx:AVERAGE" % fname,
-                  "DEF:tx=%s:tx:AVERAGE" % fname,
-                  "CDEF:rxbits=rx,8,*",
-                  "CDEF:txbits=tx,8,*",
-                  "LINE1:rxbits#00ff00:Incoming",
-                  "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
-                  "LINE1:txbits#0000ff:Outgoing",
-                  "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
+                  *args)
 
     return read_file(outfname)
 

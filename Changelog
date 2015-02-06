@@ -19,6 +19,47 @@ Pithos
 * Remove obsolete billing code
 
 
+.. _Changelog-0.16.1:
+
+v0.16.1
+=======
+
+Released: Fri Feb  6 12:05:44 EET 2015
+
+Astakos
+-------
+
+* Include additional validation checks in project modification form to ensure
+  members limit is always set lower or equal than total limit.
+* Prevent members limit from automatically being set to unlimited in project
+  modification form.
+* Exclude terminated projects from responses of project list and user quota
+  api calls.
+* Improve UI handling of inactive, terminated and empty projects.
+* Change default pagination in projects list view.
+
+Cyclades UI
+-----------
+
+* Improve handling of terminated projects in reassign view.
+* Remove the COPYRECT encoding from the preferred noVNC client encodings, and
+  prefer TIGHT_PNG by default.
+* Fix handling of SSH keys and password customization steps to images that
+  do not support them, e.g. snapshots.
+* Add OS icons for Scientific Linux and CoreOS.
+* Change project reassign button style for VMs and boot disks.
+
+Stats
+-----
+
+* Aggregate the traffic of every VM interface in the net stats graphs.
+
+Branding
+--------
+
+* Add CLOUDBAR_HOME_URL setting to allow Cloudbar home icon customization.
+
+
 .. _Changelog-0.16:
 
 v0.16

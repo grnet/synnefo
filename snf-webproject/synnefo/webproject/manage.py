@@ -43,6 +43,7 @@ import sys
 import locale
 import os
 import imp
+import errno
 
 _commands = None
 
@@ -318,7 +319,11 @@ class EncodedStream(object):
     def write(self, string):
         if isinstance(string, unicode):
             string = string.encode(self.encoding, errors="replace")
-        self.original_stream.write(string)
+        try:
+            self.original_stream.write(string)
+        except IOError as e:
+            if e.errno != errno.EPIPE:
+                raise
 
     def __getattr__(self, name):
         return getattr(self.original_stream, name)

@@ -15,6 +15,7 @@
 
 from django.conf import settings
 import astakos.im.settings as astakos_settings
+import synnefo_branding.settings as branding_settings
 
 
 LOGGED_IN_WARNING = 'It seems that you are already logged in.'
@@ -331,7 +332,7 @@ AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
     " <a href='{profile_url}'>profile page</a>")
 
 # Email subjects
-_SITENAME = astakos_settings.SITENAME
+_SITENAME = branding_settings.SERVICE_NAME
 PLAIN_EMAIL_SUBJECT = 'New email from %s' % _SITENAME
 INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
 GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME

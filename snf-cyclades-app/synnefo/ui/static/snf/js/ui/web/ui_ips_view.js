@@ -111,7 +111,7 @@
         'DOWN': 'status-inactive',
         'DISCONNECTED': 'status-inactive',
         'UP': 'status-active',
-        'REMOVING': 'status-progress destroying-state',
+        'REMOVING': 'status-progress destroying-state'
       },
 
       tpl: '#ip-view-tpl',
@@ -313,7 +313,7 @@
 
     views.IpsPaneView = views.ext.PaneView.extend({
       el: '#ips-pane',
-      collection_view_cls: views.IpCollectionView,
+      collection_view_cls: views.IpCollectionView
     });
 
     views.IPConnectVmOverlay = views.NetworkConnectVMsOverlay.extend({

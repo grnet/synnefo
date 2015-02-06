@@ -46,14 +46,13 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
-  snf-vncauthproxy (> 1.5),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
   python-django-south (>= 0.7.3),
   python-requests (>= 0.12.1)
 Provides: ${python:Provides}
 Replaces: snf-network
-Recommends: snf-webproject
+Recommends: snf-vncauthproxy (> 1.5)
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Compute/Network/Image package
  This package provides the Synnefo Compute, Network and Image functionality.

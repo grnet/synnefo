@@ -1851,7 +1851,7 @@ settings of their nodes. As a result, when installing Admin in a node, the
 Astakos and Cyclades packages will also be installed.
 
 In order to disable the Astakos/Cyclades API in the Admin node, the
-administrator can add the following line in ``99-locals.conf`` (you can create
+administrator can add the following line in ``99-local.conf`` (you can create
 it if doesn't exist):
 
 .. code-block:: console
@@ -1890,9 +1890,16 @@ example setup is the following:
 
 You may notice that there are three databases instead of two. That's because
 Django requires that every ``DATABASES`` setting has a *default* database. In
-our case, we suggest that you use as default the Cyclades database. Finally,
-you must not forget to add the ``DATABASE_ROUTERS`` setting in the above
-example that must always be used in multi-db setups.
+our case, we suggest that you use as default the Cyclades database.
+
+You should also make sure not to enable database (psycopg) connection pooling
+(as described in the `installation guide <install-guide-debian.html#enable-pooling>`_)
+by omitting (deleting or commenting out) all the relevant pooling options from
+the DB configuration (i.e. the ``synnefo_poolsize`` option).
+
+Finally, you must not forget to add the ``DATABASE_ROUTERS`` setting in the
+above example that must always be used in multi-db setups.
+
 
 Disabling Admin
 ---------------
@@ -2303,6 +2310,7 @@ Image            Name/extension  convention    Usage
 ===============  ============================  =========
 Favicon          favicon.ico                   Favicon for all services
 Dashboard logo   dashboard_logo.png            Visible in all Astakos UI pages
+Cloudbar icon    cloudbar_home.png             Homepage icon for admin & cloudbar
 Compute logo     compute_logo.png              Visible in all Cyclades UI pages
 Console logo     console_logo.png              Visible in the Cyclades Console Window
 Storage logo     storage_logo.png              Visible in all Pithos UI pages
@@ -2933,6 +2941,8 @@ Ganeti level or by the administrator.
 In the future Synnefo will also support moving VMs across different Regions.
 
 
+.. _upgrade-notes:
+
 Upgrade Notes
 =============
 
@@ -2950,10 +2960,13 @@ Upgrade Notes
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
 
 
+.. _changelog-news:
+
 Changelog, NEWS
 ===============
 
 
+* v0.16.1rc1 :ref:`Changelog <Changelog-0.16.1rc1>`, :ref:`NEWS <NEWS-0.16.1rc1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`

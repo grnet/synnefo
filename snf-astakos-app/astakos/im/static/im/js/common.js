@@ -155,7 +155,7 @@ function tableSort(tableEl, iDisplayLength, bFilter) {
     "bStateSave": true,
     "aoColumnDefs": [
          { "sType": "num-html", "aTargets": numHTMLArr },
-         { "sType": "date-uk", "aTargets": dateArr },
+         { "sType": "date-uk", "aTargets": dateArr }
     ],
     "oLanguage": {
       "sLengthMenu": 'Pagination <select>'+
@@ -164,7 +164,7 @@ function tableSort(tableEl, iDisplayLength, bFilter) {
            '<option value="50">50</option>'+
            '<option value="-1">All</option>'+
            '</select>'
-    },
+    }
   });
 
   $('.dataTables_wrapper').addClass('clearfix');
@@ -496,7 +496,7 @@ $('#members-table tr .check input').click(function(e){
 
   tableSort($('.projects-intro').siblings('table#projects-list'), 10, true );
   tableSort($('.search-projects').siblings('table#projects-list'), 25, true);
-  tableSort($('#members-table'), 3, true);
+  tableSort($('#members-table'), 10, true);
 
 
 });

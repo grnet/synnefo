@@ -266,6 +266,51 @@ class SynnefoCI(object):
         self.compute_client = ComputeClient(compute_url, token)
         self.compute_client.CONNECTION_RETRY_LIMIT = 2
 
+    __quota_cache = None
+
+    def _get_available_project(self, skip_config=False, **resources):
+        self.project_uuid = None
+        if self.config.has_option("Deployment", "project"):
+            self.project_uuid = self.config.get("Deployment",
+                                                "project").strip() or None
+
+        # user requested explicit project
+        if self.project_uuid and not skip_config:
+            return self.project_uuid
+
+        def _filter_projects(_project):
+            uuid, project_quota = _project
+            can_fit = False
+            for resource, required in resources.iteritems():
+                # transform dots in order to permit direct keyword
+                # arguments to be used.
+                # (cyclades__disk=1) -> 'cyclades.disk': 1
+                resource = resource.replace("__", ".")
+                project_resource = project_quota.get(resource)
+                if not project_resource:
+                    raise Exception("Requested resource does not exist %s" \
+                                    % resource)
+
+                plimit, ppending, pusage, musage, mlimit, mpending = \
+                    project_resource.values()
+
+                pavailable = plimit - ppending - pusage
+                mavailable = mlimit - mpending - musage
+
+                can_fit = (pavailable - required) >= 0 and \
+                            (mavailable - required) >= 0
+                if not can_fit:
+                    return None
+            return uuid
+
+        self.__quota_cache = quota = self.__quota_cache or \
+            self.astakos_client.get_quotas()
+        projects = filter(bool, map(_filter_projects, quota.iteritems()))
+        if not len(projects):
+            raise Exception("No project available for %r" % resources)
+        return projects[0]
+
+
     def _wait_transition(self, server_id, current_status, new_status):
         """Wait for server to go from current_status to new_status"""
         self.logger.debug("Waiting for server to become %s" % new_status)
@@ -313,13 +358,15 @@ class SynnefoCI(object):
 
     def _create_floating_ip(self):
         """Create a new floating ip"""
+        project_id = self._get_available_project(cyclades__floating_ip=1)
         networks = self.network_client.list_networks(detail=True)
         pub_nets = [n for n in networks
                     if n['SNF:floating_ip_pool'] and n['public']]
         for pub_net in pub_nets:
             # Try until we find a public network that is not full
             try:
-                fip = self.network_client.create_floatingip(pub_net['id'])
+                fip = self.network_client.create_floatingip(
+                    pub_net['id'], project_id=project_id)
             except ClientError as err:
                 self.logger.warning("%s", str(err.message).strip())
                 continue
@@ -353,6 +400,16 @@ class SynnefoCI(object):
         # Find a flavor to use
         flavor_id = self._find_flavor(flavor)
 
+        # get available project
+        flavor = self.cyclades_client.get_flavor_details(flavor_id)
+        quota = {
+            'cyclades.disk': flavor['disk'] * 1024 ** 3,
+            'cyclades.ram': flavor['ram'] * 1024 ** 2,
+            'cyclades.cpu': flavor['vcpus'],
+            'cyclades.vm': 1
+        }
+        project_id = self._get_available_project(**quota)
+
         # Create Server
         networks = []
         if self.config.get("Deployment", "allocate_floating_ip") == "True":
@@ -367,7 +424,8 @@ class SynnefoCI(object):
             server_name = self.config.get("Deployment", "server_name")
             server_name = "%s(BID: %s)" % (server_name, self.build_id)
         server = self.cyclades_client.create_server(
-            server_name, flavor_id, image_id, networks=networks)
+            server_name, flavor_id, image_id, networks=networks,
+            project_id=project_id)
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
@@ -1118,7 +1176,8 @@ class SynnefoCI(object):
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)
-        self.fetch_compressed("webclient_build-area", dest)
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            self.fetch_compressed("webclient_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 

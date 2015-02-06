@@ -5546,10 +5546,10 @@
                 length: length,
                 duration: isValue(args.duration) ? args.duration : $$.config.transition_duration,
                 done: args.done,
-                orgDataCount: orgDataCount,
+                orgDataCount: orgDataCount
             },
             withLegend: true,
-            withTransition: orgDataCount > 1,
+            withTransition: orgDataCount > 1
         });
     };
 

@@ -48,9 +48,9 @@ var that           = {},  // Public API methods
 
     // In preference order
     encodings      = [
-        ['COPYRECT',         0x01 ],
-        ['TIGHT',            0x07 ],
+        //['COPYRECT',         0x01 ],
         ['TIGHT_PNG',        -260 ],
+        ['TIGHT',            0x07 ],
         ['HEXTILE',          0x05 ],
         ['RRE',              0x02 ],
         ['RAW',              0x00 ],

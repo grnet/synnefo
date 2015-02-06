@@ -56,7 +56,6 @@ class TestUserUtils(TestCase):
             'user': self.user1,
             'text': text,
             'baseurl': astakos_settings.BASE_URL,
-            'site_name': astakos_settings.SITENAME,
             'support': astakos_settings.CONTACT_EMAIL})
 
         # Test 1 - Check if a simple test mail is sent properly.

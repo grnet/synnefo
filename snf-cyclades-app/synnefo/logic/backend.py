@@ -1246,9 +1246,15 @@ def attach_volume(vm, volume, depends=[]):
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("add", "-1", disk)],
-        "wait_for_sync": settings.GANETI_DISKS_WAIT_FOR_SYNC,
         "depends": depends,
     }
+
+    if vm.operstate == "STARTED":
+        # Pass '--no-wait-for-sync' Ganeti option only if the instance is
+        # started because Ganeti will complain that this option cannot be
+        # used for deactivated disks.
+        kwargs["wait_for_sync"] = settings.GANETI_DISKS_WAIT_FOR_SYNC
+
     if vm.backend.use_hotplug():
         kwargs["hotplug_if_possible"] = True
     if settings.TEST:

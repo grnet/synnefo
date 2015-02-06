@@ -203,15 +203,27 @@
             this.show_password();
         },
 
-        show: function(pass, vm_id) {
+        show: function(pass, vm_id, image) {
             this.pass = pass;
             this.vm_id = vm_id;
+            this.image = image;
             var self = this;
             this.password.unbind("click").click(function() {
                 self.password.selectRange(0);
             });
 
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
+            if (this.image.supports("password")) {
+                this.$(".password-cont").show();
+                this.$(".subinfo.description").show();
+                this.$(".disabled.password-cont").hide();
+                this.$(".disabled.subinfo.description").hide();
+            } else {
+                this.$(".password-cont").hide();
+                this.$(".subinfo.description").hide();
+                this.$(".disabled.password-cont").show();
+                this.$(".disabled.subinfo.description").show();
+            }
         }
     })
 
@@ -1904,8 +1916,7 @@
           return project;
         },
 
-        set_project: function(project) {
-          var trigger = false;
+        set_project: function(project, trigger) {
           if (project != this.project) {
             trigger = true;
           }
@@ -1997,8 +2008,9 @@
                       ip.set({'status': 'connecting'});
                     });
                     this.close_all();
-                    this.password_view.show(data.server.adminPass, 
-                                            data.server.id);
+                    this.password_view.show(data.server.adminPass,
+                                            data.server.id,
+                                            this.get_params().image);
                     var self = this;
                     window.setTimeout(function() {
                       self.submiting = false;
@@ -2049,7 +2061,7 @@
 
         beforeOpen: function() {
             var project = this.get_available_project();
-            this.set_project(project);
+            this.set_project(project, true);
             if (!this.skip_reset_on_next_open) {
                 this.submiting = false;
                 this.reset();

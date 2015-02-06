@@ -134,7 +134,7 @@ _.extend(UsageView.prototype, {
     this.container.append(this.el.main);
     var ul = this.container.find("ul");
     this.el.list = this.render('quotas', {
-      'resources': this.resources_ordered,
+      'resources': this.resources_ordered
     });
     ul.append(this.el.list).hide();
     _.each(this.resources_ordered, function(resource) {
@@ -459,10 +459,21 @@ _.extend(UsageView.prototype, {
         
         // update indexes
         _.each(resource.projects_list, function(p, index) {
-            if (!_.contains(active_project_uuids, p.id)) {
+            if (p.state == "terminated") {
+                p.terminated = true;
+            } else if (p.state == "suspended") {
+                p.suspended = true;
+            } else if (!_.contains(active_project_uuids, p.id)) {
                 p.not_a_member = true;
-            } else {
-                p.not_a_member = false;
+            }
+
+            // Check if we need to warn the user
+            if (p.terminated || p.suspended || p.not_a_member) {
+                warn = true;
+            }
+            // Hide project if not active and no usage
+            if ((p.terminated || p.not_a_member ) && (p.usage.usage == 0)) {
+                p.hide_project_resource = true;
             }
             p.index = index;
         });
@@ -476,7 +487,7 @@ _.extend(UsageView.prototype, {
       'url': url || this.url,
       'headers': {
         'X-Auth-Token': token
-      },
+      }
     }
   },
   

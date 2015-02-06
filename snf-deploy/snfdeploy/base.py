@@ -61,6 +61,8 @@ def _setup_fabric_env(fn):
         env.host_string = cl.node.ip
         env.password = cl.node.password
         env.user = cl.node.user
+        env.always_use_pty = False
+        env.pty = False
         env.shell = "/bin/bash -c"
         env.key_filename = config.ssh_key
         return fn(*args, **kwargs)

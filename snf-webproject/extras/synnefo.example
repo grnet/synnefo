@@ -10,7 +10,7 @@ CONFIG = {
    '--bind=127.0.0.1:8080',
    '--worker-class=gevent',
    '--workers=8',
-   '--log-level=debug',
+   '--log-level=info',
    '--timeout=43200',
    '--log-file=/var/log/synnefo/gunicorn.log',
  ),

@@ -23,6 +23,9 @@ IMAGE_MEDIA_URL = getattr(settings, 'BRANDING_IMAGE_MEDIA_URL',
 # The service favicon
 FAVICON_URL = getattr(settings, 'BRANDING_FAVICON_URL',
                       IMAGE_MEDIA_URL+'favicon.ico')
+# Cloudbar icon used in Cloudbar and Admin pages
+CLOUDBAR_HOME_URL = getattr(settings, 'BRANDING_CLOUDBAR_HOME_URL',
+                            IMAGE_MEDIA_URL+'cloudbar_home.png')
 # Logo used in Dashboard pages (Astakos)
 DASHBOARD_LOGO_URL = getattr(settings, 'BRANDING_DASHBOARD_LOGO_URL',
                              IMAGE_MEDIA_URL+'dashboard_logo.png')

@@ -204,9 +204,13 @@ def users_create(request):
         ver_res = activation_backend.handle_verification(user, code)
         if ver_res.is_error():
             raise Exception(ver_res.message)
-        mod_res = activation_backend.handle_moderation(user, accept=True)
-        if mod_res.is_error():
-            raise Exception(ver_res.message)
+
+        # in case of auto moderation user moderation is handled within the
+        # verification process, no need to reapply moderation process
+        if not user.moderated:
+            mod_res = activation_backend.handle_moderation(user, accept=True)
+            if mod_res.is_error():
+                raise Exception(ver_res.message)
 
     except Exception, e:
         raise faults.BadRequest(e.message)

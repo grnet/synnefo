@@ -187,7 +187,7 @@ def users_create(request):
     if not last_name:
         raise faults.BadRequest("Invalid last_name")
 
-    has_signed_terms = not(get_latest_terms())
+    has_signed_terms = True
 
     try:
         user = make_local_user(email, first_name=first_name,

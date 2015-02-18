@@ -2175,7 +2175,7 @@ class ProjectMembership(models.Model):
             s = self.ACTION_STATES[action]
         except KeyError:
             raise ValueError("No such action '%s'" % action)
-        if action == "accept":
+        if s == self.ACCEPTED:
             self.initialized = True
         return self.set_state(s, actor=actor, reason=reason)
 

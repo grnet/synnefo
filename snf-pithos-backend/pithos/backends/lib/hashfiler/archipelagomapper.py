@@ -13,6 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from hashlib import new as newhasher
+from binascii import hexlify
+
 import ctypes
 import ConfigParser
 import logging
@@ -24,6 +27,7 @@ from archipelago.common import (
     string_at,
     XF_ASSUMEV0,
     XF_MAPFLAG_READONLY,
+    XF_MAPFLAG_ZERO,
     )
 
 from pithos.workers import (
@@ -42,6 +46,9 @@ class ArchipelagoMapper(object):
     """
 
     namelen = None
+    hashtype = None
+    hashlen = None
+    emptyhash = None
 
     def __init__(self, **params):
         self.params = params
@@ -52,12 +59,27 @@ class ArchipelagoMapper(object):
         self.dst_port = int(cfg.getint('mapperd', 'blockerm_port'))
         self.mapperd_port = int(cfg.getint('vlmcd', 'mapper_port'))
 
+        hashtype = params['hashtype']
+        try:
+            hasher = newhasher(hashtype)
+        except ValueError:
+            msg = "Variable hashtype '%s' is not available from hashlib"
+            raise ValueError(msg % (hashtype,))
+
+        hasher.update("")
+        emptyhash = hasher.digest()
+
+        self.hashtype = hashtype
+        self.hashlen = len(emptyhash)
+        self.emptyhash = emptyhash
+
     def map_retr(self, maphash, size):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        hashes = ()
+        archip_emptyhash = hexlify(self.emptyhash)
+        hashes = []
         ioctx = self.ioctx_pool.pool_get()
         req = Request.get_mapr_request(ioctx, self.mapperd_port,
                                        maphash, offset=0, size=size)
@@ -72,8 +94,12 @@ class ArchipelagoMapper(object):
             data = req.get_data(xseg_reply_map)
             Segsarray = xseg_reply_map_scatterlist * data.contents.cnt
             segs = Segsarray.from_address(ctypes.addressof(data.contents.segs))
-            hashes = [string_at(segs[idx].target, segs[idx].targetlen)
-                      for idx in xrange(len(segs))]
+            for idx in xrange(len(segs)):
+                if segs[idx].flags & XF_MAPFLAG_ZERO:
+                    hashes.append(archip_emptyhash)
+                else:
+                    hashes.append(string_at(segs[idx].target,
+                                  segs[idx].targetlen))
             req.put()
         else:
             req.put()
@@ -94,8 +120,12 @@ class ArchipelagoMapper(object):
     def map_stor(self, maphash, hashes, size, block_size):
         """Store hashes in the given hashes map."""
         objects = list()
+        archip_emptyhash = hexlify(self.emptyhash)
         for h in hashes:
-            objects.append({'name': h, 'flags': XF_MAPFLAG_READONLY})
+            if h == archip_emptyhash:
+                objects.append({'name': '', 'flags': XF_MAPFLAG_ZERO})
+            else:
+                objects.append({'name': h, 'flags': XF_MAPFLAG_READONLY})
         ioctx = self.ioctx_pool.pool_get()
         req = Request.get_create_request(ioctx, self.mapperd_port,
                                          maphash,

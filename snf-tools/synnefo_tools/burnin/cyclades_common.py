@@ -491,12 +491,12 @@ class CycladesTests(BurninTests):
     # ----------------------------------
     # Networks
     def _create_network(self, cidr="10.0.1.0/28", dhcp=True,
-                        project_id=None):
+                        project_id=None, gateway_ip=None):
         """Create a new private network"""
         name = self.run_id
         network = self.clients.network.create_network(
             "MAC_FILTERED", name=name, shared=False,
-            project_id=project_id)
+            project_id=project_id, gateway_ip=gateway_ip)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
             network['id'], cidr=cidr, enable_dhcp=dhcp)

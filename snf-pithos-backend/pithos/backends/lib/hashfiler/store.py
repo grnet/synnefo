@@ -43,6 +43,9 @@ class Store(object):
     def map_delete(self, name):
         pass
 
+    def map_copy(self, dst, src, size):
+        self.mapper.map_copy(dst, src, size)
+
     def block_get(self, hash):
         blocks = self.blocker.block_retr((hash,))
         if not blocks:

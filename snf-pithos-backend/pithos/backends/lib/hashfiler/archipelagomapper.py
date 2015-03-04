@@ -111,3 +111,24 @@ class ArchipelagoMapper(object):
             raise IOError("Could not write map %s" % maphash)
         req.put()
         self.ioctx_pool.pool_put(ioctx)
+
+    def map_copy(self, dst, src, size):
+        """Copies src map into dst."""
+        ioctx = self.ioctx_pool.pool_get()
+        req = Request.get_copy_request(ioctx, self.mapperd_port,
+                                       src, dst, size=size)
+
+        flags = req.get_flags()
+        flags |= XF_ASSUMEV0
+        req.set_flags(flags)
+        req.set_v0_size(size)
+
+        req.submit()
+        req.wait()
+        ret = req.success()
+        if ret is False:
+            req.put()
+            self.ioctx_pool.pool_put(ioctx)
+            raise IOError("Could not copy map %s to %s" % (src, dst))
+        req.put()
+        self.ioctx_pool.pool_put(ioctx)

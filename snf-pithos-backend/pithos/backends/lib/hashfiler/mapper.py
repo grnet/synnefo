@@ -35,3 +35,7 @@ class Mapper(object):
     def map_stor(self, maphash, hashes, size, blocksize):
         """Store hashes in the given hashes map."""
         self.archip_map.map_stor(maphash, hashes, size, blocksize)
+
+    def map_copy(self, dst, src, size):
+        """Copies the src mapfile into the dst map file."""
+        self.archip_map.map_copy(dst, src, size)

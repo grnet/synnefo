@@ -436,7 +436,7 @@ class CycladesTests(BurninTests):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except (paramiko.SSHException, socket.error) as err:
+        except (paramiko.SSHException, socket.error, EOFError) as err:
             self.warning("%s", err.message)
             raise Retry()
         _, stdout, _ = ssh.exec_command(command)
@@ -481,7 +481,7 @@ class CycladesTests(BurninTests):
                     self.info("Comparing file contents")
                     remote_content = base64.b64encode(ftmp.read())
                     self.assertEqual(content, remote_content)
-            except paramiko.SSHException as err:
+            except (paramiko.SSHException, socket.error, EOFError) as err:
                 self.warning("%s", err.message)
                 raise Retry()
         opmsg = "Fetching file %s from remote server" % remotepath

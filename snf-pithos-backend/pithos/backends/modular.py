@@ -1720,7 +1720,13 @@ class ModularBackend(object):
                 raise NotAllowedError("Copy is not permitted: failed to get "
                                       "source object's mapfile: %s" %
                                       src_mapfile)
-            self.store.map_put(dest_mapfile, hashmap, size, self.block_size)
+
+            if is_snapshot:
+                # Copy the mapfile
+                self.store.map_copy(dest_mapfile, src_mapfile, size)
+            else:
+                self.store.map_put(dest_mapfile, hashmap, size,
+                                   self.block_size)
 
         dest_versions.append(dest_version_id)
         occupied_space += size_delta

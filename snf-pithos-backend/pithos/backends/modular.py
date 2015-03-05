@@ -1373,7 +1373,7 @@ class ModularBackend(object):
                     raise IllegalOperationError(
                         'Unable to retrieve Archipelago volume hashmap')
         try:
-            hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
+            hashmap = self.store.map_get(props[self.MAPFILE], props[self.SIZE])
         except:  # map does not exist
             # Raising an exception results in db transaction rollback
             # However we have to force the update of the database

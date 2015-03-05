@@ -1361,6 +1361,12 @@ class ModularBackend(object):
             raise BrokenSnapshot("This Archipelago volume is broken.")
 
         if props[self.AVAILABLE] == MAP_UNAVAILABLE:
+            # Don't try to read a snapshot mapfile, until Cyclades mark it as
+            # available
+            if props[self.IS_SNAPSHOT]:
+                raise IllegalOperationError(
+                    'Unable to retrieve Archipelago volume hashmap')
+
             if props[self.MAP_CHECK_TIMESTAMP]:
                 elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
                 if elapsed_time < self.map_check_interval:

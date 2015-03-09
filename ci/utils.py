@@ -1098,7 +1098,7 @@ class SynnefoCI(object):
                          _green(dest))
 
     @_check_fabric
-    def deploy_synnefo(self, schema=None):
+    def deploy_synnefo(self, schema=None, local_package_dir=None):
         """Deploy Synnefo using snf-deploy"""
         self.logger.info("Deploy Synnefo..")
         if schema is None:
@@ -1116,6 +1116,15 @@ class SynnefoCI(object):
         fi
         """.format(work_dir, schema)
         _run(cmd, False)
+
+        if local_package_dir is None:
+            local_package_dir = self.config.get("Deployment",
+                                                "local_package_dir")
+
+        if local_package_dir:
+            self.logger.debug("Upload local package directory to the "
+                              "snf-deploy package dir.")
+            _put(local_package_dir + "/*", "/var/lib/snf-deploy/packages")
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """

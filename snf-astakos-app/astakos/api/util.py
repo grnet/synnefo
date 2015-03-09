@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -163,6 +163,12 @@ def get_uuid_displayname_catalogs(request, user_call=True):
         if uuids is None and user_call:
             uuids = []
         displaynames = input_data.get('displaynames', [])
+        if not isinstance(displaynames, list):
+            raise faults.BadRequest("Invalid displaynames: %s" % displaynames)
+        for item in displaynames:
+            if not isinstance(item, str):
+                raise faults.BadRequest("Items in 'displaynames' must be "
+                                        "strings")
         if displaynames is None and user_call:
             displaynames = []
         user_obj = AstakosUser.objects

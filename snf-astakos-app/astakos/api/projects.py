@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -600,6 +600,8 @@ def _get_memberships(query, request_user=None):
 
 def join_project(data, request_user):
     project_id = data.get("project")
+    if not isinstance(project_id, (basestring, int)):
+        raise faults.BadRequest("Invalid project ID: %s" % project_id)
     with ExceptionHandler():
         membership = functions.join_project(project_id, request_user)
     response = {"id": membership.id}
@@ -608,6 +610,8 @@ def join_project(data, request_user):
 
 def enroll_user(data, request_user):
     project_id = data.get("project")
+    if not isinstance(project_id, (basestring, int)):
+        raise faults.BadRequest("Invalid project ID: %s" % project_id)
     email = data.get("user")
     with ExceptionHandler():
         m = functions.enroll_member_by_email(
@@ -628,8 +632,7 @@ MEMBERSHIPS_ACTION = {
 @transaction.commit_on_success
 def post_memberships(request):
     user = request.user
-    data = request.body
-    input_data = json.loads(data)
+    input_data = utils.get_json_body(request)
     func, action_data = get_action(MEMBERSHIPS_ACTION, input_data)
     return func(action_data, user)
 

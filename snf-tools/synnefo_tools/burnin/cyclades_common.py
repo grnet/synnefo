@@ -445,7 +445,8 @@ class CycladesTests(BurninTests):
         ssh.close()
         return output, status
 
-    def _insist_get_hostname_over_ssh(self, hostip, username, password):
+    def _insist_get_hostname_over_ssh(self, hostip, username, password,
+                                      should_fail=False):
         """Connect to server using ssh and get it's hostname"""
         def check_fun():
             """Get hostname"""
@@ -460,7 +461,10 @@ class CycladesTests(BurninTests):
                 raise Retry()
         opmsg = "Connecting to server using ssh and get it's hostname"
         self.info(opmsg)
-        hostname = self._try_until_timeout_expires(opmsg, check_fun)
+        if should_fail:
+            hostname = self._try_once(opmsg, check_fun, should_fail=True)
+        else:
+            hostname = self._try_until_timeout_expires(opmsg, check_fun)
         self.info("Server's hostname is %s", hostname)
         return hostname
 

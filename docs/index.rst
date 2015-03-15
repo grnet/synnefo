@@ -132,6 +132,14 @@ There are also the following tools:
 Design
 ======
 
+v.0.17
+------
+
+.. toctree::
+   :maxdepth: 1
+
+    Detachable volumes <design/detachable-volumes>
+
 v0.16
 -----
 

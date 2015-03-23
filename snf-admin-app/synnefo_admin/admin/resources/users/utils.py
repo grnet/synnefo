@@ -100,6 +100,15 @@ def get_quotas(user):
 
             usage = units.show(usage, r.unit)
             limit = units.show(resource['limit'], r.unit)
+            taken_by_others = resource['project_usage'] - resource['usage']
+            effective_limit = min(resource['limit'], project_limit - taken_by_others)
+            if effective_limit < 0:
+                effective_limit = 0
+            effective_limit = units.show(effective_limit, r.unit)
+
+            if limit != effective_limit:
+                limit += " (Effective Limit: " + effective_limit + ")"
+
             q_res.append((r.report_desc, usage, limit,))
 
         quotas.append(source)

@@ -1680,6 +1680,8 @@ class Project(models.Model):
                    TERMINATED,
                    ]
 
+    HIDDEN_STATES = [DELETED]
+
     DEACTIVATED_STATES = [SUSPENDED, TERMINATED]
 
     state = models.IntegerField(default=UNINITIALIZED,

@@ -50,7 +50,7 @@ def quotas(request):
     visible_resources = get_visible_resources()
     resource_names = [r.name for r in visible_resources]
     memberships = request.user.projectmembership_set.actually_accepted()
-    memberships = memberships.exclude(project__state__in=Project.SKIP_STATES)
+    memberships = memberships.exclude(project__state__in=Project.HIDDEN_STATES)
 
     sources = [project_ref(m.project.uuid) for m in memberships]
     result = get_user_quotas(request.user, resources=resource_names,

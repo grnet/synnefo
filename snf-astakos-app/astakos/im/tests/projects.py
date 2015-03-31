@@ -911,6 +911,13 @@ class TestProjects(TestCase):
         resp = self.user_client.post(post_url, modification_data)
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['form'].is_valid())
+
+        del modification_data['service1.resource_p_uplimit']
+        resp = self.user_client.post(post_url, modification_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['form'].is_valid())
+
+        modification_data['service1.resource_p_uplimit'] = 100
         modification_data['service1.resource_m_uplimit'] = 3
         post_url = reverse('project_modify', args=(app1.chain.uuid,)) + '?verify=0&edit=0'
         resp = self.user_client.post(post_url, modification_data)

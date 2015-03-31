@@ -852,10 +852,17 @@ class ProjectApplicationForm(forms.ModelForm):
                         mvalue = int(member_limit)
                     except:
                         raise forms.ValidationError("Invalid format")
+                else:
+                    project_limit = data.get(prefix + '_p_uplimit')
+                    try:
+                        mvalue = int(value)
+                        pvalue = int(project_limit)
+                    except:
+                        raise forms.ValidationError("Invalid format")
 
-                    if mvalue > pvalue:
-                        msg = "%s per member limit exceeds total limit"
-                        raise forms.ValidationError(msg % resource.name)
+                if mvalue > pvalue:
+                    msg = "%s per member limit exceeds total limit"
+                    raise forms.ValidationError(msg % resource.name)
 
                 # keep only resource limits for selected resource groups
                 if data.get('is_selected_%s' % \

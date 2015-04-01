@@ -175,10 +175,12 @@ Click Create an application.
 
 Fill the necessary information and for callback URL give::
 
-    https://node1.example.com/ui/login/twitter/authenticated
+    https://node1.example.com/astakos/ui/login/twitter/authenticated
 
-Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set the
+corresponding variables ``ASTAKOS_TWITTER_TOKEN`` and
+``ASTAKOS_TWITTER_SECRET`` to reflect your newly created pair.
+Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list.
 
 Google Authentication
 ~~~~~~~~~~~~~~~~~~~~~
@@ -188,15 +190,14 @@ visit https://code.google.com/apis/console/.
 
 Under API Access select Create another client ID, select Web application,
 expand more options in Your site or hostname section and in Authorized
-Redirect URIs add:
+Redirect URIs add::
 
+    https://node1.example.com/astakos/ui/login/google/authenticated
 
-Fill the necessary information and for callback URL give::
-
-    https://node1.example.com/ui/login/google/authenticated
-
-Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set the
+corresponding variables ``ASTAKOS_GOOGLE_CLIENT_ID`` and
+``ASTAKOS_GOOGLE_SECRET`` to reflect your newly created pair.
+Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list.
 
 
 Working with Astakos
@@ -311,7 +312,11 @@ Currently astakos supports the following identity providers:
       (module name ``linkedin``)
 
 To enable any of the above modules (by default only ``local`` accounts are
-allowed), retrieve and set the required provider settings and append the
+allowed) you have to install oauth2 package. To do so run::
+
+    apt-get install python-oauth2
+
+Then retrieve and set the required provider settings and append the
 module name in ``ASTAKOS_IM_MODULES``.
 
 .. code-block:: python
@@ -322,7 +327,6 @@ module name in ``ASTAKOS_IM_MODULES``.
 
     # let users signup and login using their google account
     ASTAKOS_IM_MODULES = ['local', 'google']
-
 
 .. _auth_methods_policies:
 

@@ -1814,7 +1814,7 @@ class Project(models.Model):
         return self.O_STATE_DISPLAY.get(self.overall_state(), _('Unknown'))
 
     def expiration_info(self):
-        return (unicode(self.id), self.name, self.state_display(),
+        return (self.uuid, self.name, self.state_display(),
                 unicode(self.end_date))
 
     def last_deactivation(self):

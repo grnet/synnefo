@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -288,7 +288,7 @@ class SynnefoCI(object):
                 resource = resource.replace("__", ".")
                 project_resource = project_quota.get(resource)
                 if not project_resource:
-                    raise Exception("Requested resource does not exist %s" \
+                    raise Exception("Requested resource does not exist %s"
                                     % resource)
 
                 plimit, ppending, pusage, musage, mlimit, mpending = \
@@ -298,7 +298,7 @@ class SynnefoCI(object):
                 mavailable = mlimit - mpending - musage
 
                 can_fit = (pavailable - required) >= 0 and \
-                            (mavailable - required) >= 0
+                    (mavailable - required) >= 0
                 if not can_fit:
                     return None
             return uuid
@@ -309,7 +309,6 @@ class SynnefoCI(object):
         if not len(projects):
             raise Exception("No project available for %r" % resources)
         return projects[0]
-
 
     def _wait_transition(self, server_id, current_status, new_status):
         """Wait for server to go from current_status to new_status"""
@@ -1114,7 +1113,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install -U mock factory_boy nose coverage
+        pip install -U mock factory_boy==2.4.1 nose coverage
         """
         _run(cmd, False)
 

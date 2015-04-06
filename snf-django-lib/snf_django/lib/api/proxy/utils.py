@@ -28,13 +28,20 @@ except ImportError:
         return header_name.lower() in _hop_headers
 
 
+# Headers which don't get prefixed with HTTP_ but should get forwarded
+ALLOWED_PLAIN_HTTP_HEADERS = ['CONTENT_TYPE']
+
 def fix_header(k, v):
     prefix = 'HTTP_'
     if k.startswith(prefix):
         k = k[len(prefix):].title().replace('_', '-')
+
+    if k in ALLOWED_PLAIN_HTTP_HEADERS:
+        k = k.title().replace('_', '-')
+
     return k, v
 
 
 def forward_header(k):
-    return k.upper() not in ['HOST', 'CONTENT_LENGTH', 'CONTENT_TYPE'] and \
+    return k.upper() not in ['HOST', 'CONTENT_LENGTH'] and \
         not is_hop_by_hop(k) and not '.' in k

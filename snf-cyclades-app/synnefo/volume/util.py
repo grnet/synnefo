@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from django.conf import settings
 from synnefo.db import models
 from snf_django.lib.api import faults
 from synnefo.api.util import get_image_dict, get_vm
@@ -20,6 +21,27 @@ from synnefo.plankton import backend
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
+
+
+def is_volume_type_detachable(volume_type):
+    """Check if the volume type is detachable."""
+    if volume_type is None:
+        raise faults.BadRequest("Volume type must be provided")
+    if (volume_type.disk_template in
+            settings.CYCLADES_DETACHABLE_DISK_TEMPLATES):
+        return True
+    else:
+        return False
+
+
+def assert_detachable_volume_type(volume_type):
+    """Assert that the volume type is detachable.
+
+    Raise a BadRequest exception in case the volume type is not detachable.
+    """
+    if not is_volume_type_detachable(volume_type):
+        raise faults.BadRequest("Volume type '%s' is not detachable" %
+                                volume_type.name)
 
 
 def get_volume(user_id, volume_id, for_update=False,

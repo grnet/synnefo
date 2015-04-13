@@ -18,6 +18,7 @@ import django.test
 from django.test.utils import override_settings
 from synnefo.volume import util
 from snf_django.lib.api import faults
+from synnefo.db import models_factory as mf
 
 
 mock_templates = ("template1", "template2")
@@ -60,3 +61,63 @@ class DetachableVolumeTypesTest(django.test.TestCase):
         # Detachable template and assert
         volume_type = MockVolumeType("template1")
         util.assert_detachable_volume_type(volume_type)
+
+
+class VolumeUtilsTest(django.test.TestCase):
+
+    """Various tests for volume utils."""
+
+    wrong_msg = "Cannot set the index of volume '%s' to '%s', since it is" \
+                " used by another volume of server '%s'."
+
+    def test_assign_to_server(self):
+        """Test if volume assignment to server works properly."""
+        vm = mf.VirtualMachineFactory()
+
+        # Assign a volume to a server with no volumes.
+        vol1 = mf.VolumeFactory()
+        util.assign_volume_to_server(vm, vol1)
+        # Assert that the volume is associated with the server and that its
+        # index is 0.
+        self.assertEqual(vol1.machine, vm)
+        self.assertItemsEqual(vm.volumes.all(), [vol1])
+        self.assertEqual(vol1.index, 0)
+
+        # Assign a volume to a server with a volume.
+        vol2 = mf.VolumeFactory()
+        util.assign_volume_to_server(vm, vol2)
+        # Assert that the volume is associated with the server and that its
+        # index is 1.
+        self.assertEqual(vol2.machine, vm)
+        self.assertItemsEqual(vm.volumes.all(), [vol1, vol2])
+        self.assertEqual(vol2.index, 1)
+
+        # Assign a volume to a server with more than one volume and set its
+        # index to a custom value (e.g. 9)
+        vol3 = mf.VolumeFactory()
+        util.assign_volume_to_server(vm, vol3, index=9)
+        # Assert that the volume is associated with the server and that its
+        # index is set to 9.
+        self.assertEqual(vol3.machine, vm)
+        self.assertItemsEqual(vm.volumes.all(), [vol1, vol2, vol3])
+        self.assertEqual(vol3.index, 9)
+
+        # Assign a volume to a server with a volume whose index is 1 and a
+        # deleted volume whose index is 9.
+        vol1.machine = None
+        vol1.save()
+        vol3.deleted = True
+        vol3.save()
+        vol4 = mf.VolumeFactory()
+        util.assign_volume_to_server(vm, vol4)
+        # Assert that the volume is associated with the server and that its
+        # index is 2.
+        self.assertEqual(vol4.machine, vm)
+        self.assertItemsEqual(vm.volumes.filter(deleted=False), [vol2, vol4])
+        self.assertEqual(vol4.index, 2)
+
+        # Assert that the same index cannot be assigned to a different volume.
+        vol5 = mf.VolumeFactory()
+        with self.assertRaisesMessage(faults.BadRequest,
+                                      self.wrong_msg.format(vol5, 2, vm)):
+            util.assign_volume_to_server(vm, vol5, index=2)

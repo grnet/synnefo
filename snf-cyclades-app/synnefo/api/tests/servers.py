@@ -984,7 +984,7 @@ class ServerAttachments(ComputeAPITest):
                          0)
 
     def test_attach_detach_volume(self, mrapi):
-        vol = mfactory.VolumeFactory(status="AVAILABLE")
+        vol = mfactory.VolumeFactory(status="AVAILABLE", index=0)
         vm = vol.machine
         volume_type = vm.flavor.volume_type
         # Test that we cannot detach the root volume
@@ -1015,9 +1015,11 @@ class ServerAttachments(ComputeAPITest):
         vol1.volume_type = volume_type
         vol1.save()
         mrapi().ModifyInstance.return_value = 43
-        response = self.mypost("servers/%d/os-volume_attachments" %
-                               vm.id, vm.userid,
-                               request, "json")
+        with patch("synnefo.volume.util.is_volume_type_detachable") as m:
+            m.return_value = True
+            response = self.mypost("servers/%d/os-volume_attachments" %
+                                   vm.id, vm.userid,
+                                   request, "json")
         self.assertEqual(response.status_code, 202, response.content)
         attachment = json.loads(response.content)["volumeAttachment"]
         self.assertEqual(attachment, {"volumeId": vol1.id,

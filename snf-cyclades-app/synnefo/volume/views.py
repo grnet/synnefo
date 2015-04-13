@@ -137,9 +137,8 @@ def create_volume(request):
     # Reference to an Image stored in Glance
     source_image_id = utils.get_attribute(vol_dict, "imageRef", required=False)
 
-    # Get server ID to attach the volume. Since we currently do not supported
-    # detached volumes, server_id attribute is mandatory.
-    server_id = utils.get_attribute(vol_dict, "server_id", required=True)
+    # Get server ID to attach the volume.
+    server_id = utils.get_attribute(vol_dict, "server_id", required=False)
 
     # Create the volume
     volume = volumes.create(user_id=user_id, size=size, name=name,
@@ -149,7 +148,7 @@ def create_volume(request):
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server_id=server_id, project=project)
+                            server_id=server_id, project_id=project)
 
     # Render response
     data = json.dumps(dict(volume=volume_to_dict(volume, detail=False)))

@@ -31,27 +31,73 @@ log = logging.getLogger(__name__)
 def create(user_id, size, server_id, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
-           project=None):
+           project_id=None):
+    """Create a new volume and optionally attach it to a server.
 
-    # Currently we cannot create volumes without being attached to a server
-    if server_id is None:
-        raise faults.BadRequest("Volume must be attached to server")
-    server = util.get_server(user_id, server_id, for_update=True,
-                             non_deleted=True,
-                             exception=faults.BadRequest)
+    This function serves as the main entry-point for volume creation. It gets
+    the necessary data either from the API or from an snf-manage command and
+    then feeds that data to the lower-level functions that handle the actual
+    creation of the volume and the server attachments.
+    """
+    server = None
+    volume_type = None
 
-    server_vtype = server.flavor.volume_type
-    if volume_type_id is not None:
+    # If given a server id, assert that it exists and that it belongs to the
+    # user.
+    if server_id:
+        server = util.get_server(user_id, server_id, for_update=True,
+                                 non_deleted=True,
+                                 exception=faults.BadRequest)
+
+        volume_type = server.flavor.volume_type
+        # If the server's volume type conflicts with the provided volume type,
+        # raise an exception.
+        if volume_type_id and volume_type.id != volume_type_id:
+            raise faults.BadRequest("Cannot create a volume with type '%s' to"
+                                    " a server with volume type '%s'."
+                                    % (volume_type_id, volume_type.id))
+
+    # If the user has not provided a valid volume type, raise an exception.
+    if volume_type is None:
         volume_type = util.get_volume_type(volume_type_id,
                                            include_deleted=False,
                                            exception=faults.BadRequest)
-        if volume_type != server_vtype:
-            raise faults.BadRequest("Cannot create a volume with type '%s' to"
-                                    " a server with volume type '%s'."
-                                    % (volume_type.id, server_vtype.id))
-    else:
-        volume_type = server_vtype
 
+    # We cannot create a non-detachable volume without a server.
+    if server is None:
+        util.assert_detachable_volume_type(volume_type)
+
+    volume = create_common(user_id, size, name=name,
+                           description=description,
+                           source_image_id=source_image_id,
+                           source_snapshot_id=source_snapshot_id,
+                           source_volume_id=source_volume_id,
+                           volume_type=volume_type, metadata={},
+                           project_id=project_id)
+
+    if server is not None:
+        server_attachments.attach_volume(server, volume)
+    else:
+        quotas.issue_and_accept_commission(volume, action="BUILD")
+        # If the volume has been created in the DB, consider it available.
+        volume.status = "AVAILABLE"
+        volume.save()
+
+    return volume
+
+
+def create_common(user_id, size, name=None, description=None,
+                  source_volume_id=None, source_snapshot_id=None,
+                  source_image_id=None, volume_type=None, metadata=None,
+                  project_id=None):
+    """Common tasks and checks for the creation of a new volume.
+
+    This function processes the necessary arguments in order to call the
+    `_create_volume` function, which creates the volume in the DB.
+
+    The main duty of `create_common` is to handle the metadata creation of the
+    volume and to update the quota of the user.
+    """
     # Assert that not more than one source are used
     sources = filter(lambda x: x is not None,
                      [source_volume_id, source_snapshot_id, source_image_id])
@@ -71,8 +117,8 @@ def create(user_id, size, server_id, name=None, description=None,
         source_type = "blank"
         source_uuid = None
 
-    if project is None:
-        project = user_id
+    if project_id is None:
+        project_id = user_id
 
     if metadata is not None and \
        len(metadata) > settings.CYCLADES_VOLUME_MAX_METADATA:
@@ -80,53 +126,49 @@ def create(user_id, size, server_id, name=None, description=None,
                                 "items" %
                                 settings.CYCLADES_VOLUME_MAX_METADATA)
 
-    volume = _create_volume(server, user_id, project, size,
-                            source_type, source_uuid,
-                            volume_type=volume_type, name=name,
-                            description=description, index=None)
+    volume = _create_volume(user_id, project_id, size, source_type,
+                            source_uuid, volume_type=volume_type,
+                            name=name, description=description, index=None)
 
     if metadata is not None:
         for meta_key, meta_val in metadata.items():
             utils.check_name_length(meta_key, VolumeMetadata.KEY_LENGTH,
                                     "Metadata key is too long")
             utils.check_name_length(meta_val, VolumeMetadata.VALUE_LENGTH,
-                                    "Metadata key is too long")
+                                    "Metadata value is too long")
             volume.metadata.create(key=meta_key, value=meta_val)
-
-    server_attachments.attach_volume(server, volume)
 
     return volume
 
 
-def _create_volume(server, user_id, project, size, source_type, source_uuid,
+def _create_volume(user_id, project, size, source_type, source_uuid,
                    volume_type, name=None, description=None, index=None,
                    delete_on_termination=True):
+    """Create the volume in the DB.
 
+    This function can be called from two different places:
+    1) During server creation, when creating the volumes of a new server
+    2) During volume creation.
+    """
     utils.check_name_length(name, Volume.NAME_LENGTH,
                             "Volume name is too long")
     utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
                             "Volume description is too long")
     validate_volume_termination(volume_type, delete_on_termination)
 
-    if index is None:
-        # Counting a server's volumes is safe, because we have an
-        # X-lock on the server.
-        index = server.volumes.filter(deleted=False).count()
-
     if size is not None:
         try:
             size = int(size)
         except (TypeError, ValueError):
-            raise faults.BadRequest("Volume 'size' needs to be a positive"
-                                    " integer value.")
+            raise faults.BadRequest("Volume size must be a positive integer")
         if size < 1:
             raise faults.BadRequest("Volume size must be a positive integer")
         if size > settings.CYCLADES_VOLUME_MAX_SIZE:
-            raise faults.BadRequest("Maximum volume size is '%sGB'" %
+            raise faults.BadRequest("Maximum volume size is %sGB" %
                                     settings.CYCLADES_VOLUME_MAX_SIZE)
 
     # Only ext_ disk template supports cloning from another source. Otherwise
-    # is must be the root volume so that 'snf-image' fill the volume
+    # it must be the root volume so that 'snf-image' fill the volume
     can_have_source = (index == 0 or
                        volume_type.provider in settings.GANETI_CLONE_PROVIDERS)
     if not can_have_source and source_type != "blank":
@@ -200,10 +242,10 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
 
     volume = Volume.objects.create(userid=user_id,
                                    project=project,
+                                   index=index,
                                    size=size,
                                    volume_type=volume_type,
                                    name=name,
-                                   machine=server,
                                    description=description,
                                    delete_on_termination=delete_on_termination,
                                    source=source,

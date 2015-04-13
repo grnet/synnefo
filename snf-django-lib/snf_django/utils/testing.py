@@ -21,6 +21,37 @@ from django.utils.encoding import smart_unicode
 from mock import patch
 
 
+class MurphysLaw(Exception):
+
+    """Exception for test purposes.
+
+    This exception should be used in mock functions. It simulates a generic
+    error during a function call that would need a transaction rollback or
+    clean up code to ensure that the system remains in a sane state.
+
+    While no different than a common exception, it makes all the difference
+    when used in conjuction with "assertRaises". Consider the scenario where we
+    want to test the function `foo` and we have added an exception at some
+    point:
+
+    >>> with self.assertRaise(Exception):
+    ...     foo()
+    ... # Check that the foo function left no side-effects
+
+    If foo happened to have an error at some other point that would cause some
+    other exception to be raised, then we would falsely continue with the test.
+    Therefore, we need a special exception to make sure that foo crashed at the
+    point we wanted to. This is a better solution:
+
+    >>> with self.assertRaise(MurphysLaw):
+    ...     foo()
+    ... # Check that the foo function left no side-effects
+
+    """
+
+    pass
+
+
 @contextmanager
 def override_settings(settings, **kwargs):
     """

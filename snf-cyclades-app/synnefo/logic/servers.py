@@ -33,7 +33,7 @@ from synnefo.db.models import (NetworkInterface, VirtualMachine,
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
-from synnefo.volume.util import get_volume
+from synnefo.volume.util import get_volume, assign_volume_to_server
 from synnefo.logic import commands
 from synnefo import quotas
 
@@ -150,13 +150,10 @@ def create(userid, name, password, flavor, image_id, metadata={},
                 raise faults.BadRequest("Cannot use volume while it is in %s"
                                         " status" % v.status)
             v.delete_on_termination = vol_info["delete_on_termination"]
-            v.machine = vm
-            v.index = index
-            v.save()
         else:
-            v = _create_volume(server=vm, user_id=userid,
-                               volume_type=server_vtype, project=project,
-                               index=index, **vol_info)
+            v = _create_volume(user_id=userid, volume_type=server_vtype,
+                               project=project, index=index, **vol_info)
+        assign_volume_to_server(vm, v, index=index)
         server_volumes.append(v)
 
     # Create instance metadata

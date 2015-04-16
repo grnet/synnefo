@@ -129,7 +129,7 @@ def create_port(request):
                                non_deleted=True, for_update=True)
 
     ipaddress = None
-    if network.public:
+    if network.public and network.floating_ip_pool:
         # Creating a port to a public network is only allowed if the user has
         # already a floating IP address in this network which is specified
         # as the fixed IP address of the port
@@ -237,8 +237,8 @@ def delete_port(request, port_id):
 
     # Deleting port that is connected to a public network is allowed only if
     # the port has an associated floating IP address.
-    if port.network.public and not port.ips.filter(floating_ip=True,
-                                                   deleted=False).exists():
+    if (port.network.public and port.network.floating_ip_pool and
+        not port.ips.filter(floating_ip=True, deleted=False).exists()):
         raise faults.Forbidden("Cannot disconnect from public network.")
 
     vm = port.machine

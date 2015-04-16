@@ -51,6 +51,9 @@ DEFAULT_SYSTEM_IMAGES_UUID = [
     "04cbe33f-29b7-4ef1-94fb-015929e5fc06",  # testing (okeanos.io)
 ]
 
+# Working directory - Contains the code repository and the build directory
+work_dir = "/var/tmp"
+
 
 def _run(cmd, verbose):
     """Run fabric with verbose level"""
@@ -298,7 +301,7 @@ class SynnefoCI(object):
                 mavailable = mlimit - mpending - musage
 
                 can_fit = (pavailable - required) >= 0 and \
-                    (mavailable - required) >= 0
+                          (mavailable - required) >= 0
                 if not can_fit:
                     return None
             return uuid
@@ -467,7 +470,7 @@ class SynnefoCI(object):
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install -q=2 curl --yes --force-yes
-        echo -e "\n\n{0}" >> /etc/apt/sources.list
+        echo -e "{0}" >> /etc/apt/sources.list.d/synnefo.wheezy.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         """.format(self.config.get('Global', 'apt_repo'))
@@ -492,7 +495,8 @@ class SynnefoCI(object):
         echo 'Encoding=UTF-8' >> /usr/share/applications/xterm.desktop
         echo 'Icon=xterm-color_48x48' >> /usr/share/applications/xterm.desktop
         echo 'Categories=System;TerminalEmulator;' >> \
-                /usr/share/applications/xterm.desktop"""
+                /usr/share/applications/xterm.desktop
+        """
         if self.config.get("Global", "setup_x2go") == "True":
             self.logger.debug("Install x2goserver and firefox")
             _run(cmd, False)
@@ -576,8 +580,8 @@ class SynnefoCI(object):
                     "Trying to find an image with name \"%s\"" % img_value)
                 accepted_uuids = DEFAULT_SYSTEM_IMAGES_UUID + [user_uuid]
                 list_imgs = \
-                    [i for i in list_images if i['user_id'] in accepted_uuids
-                     and
+                    [i for i in list_images if i['user_id'] in
+                        accepted_uuids and
                      re.search(img_value, i['name'], flags=re.I) is not None]
             elif img_type == "id":
                 # Filter images by id
@@ -853,7 +857,9 @@ class SynnefoCI(object):
             # Use local_repo
             self.logger.debug("Push local repo to server")
             # Firstly create the remote repo
-            _run("git init synnefo", False)
+            _run("git init %s/synnefo" % work_dir, False)
+            # Create a symlink to the userdir
+            _run("ln -s %s/synnefo ~/synnefo" % work_dir, False)
             # Then push our local repo over ssh
             # We have to pass some arguments to ssh command
             # namely to disable host checking.
@@ -863,31 +869,37 @@ class SynnefoCI(object):
             cmd = """
             echo 'exec ssh -o "StrictHostKeyChecking no" \
                            -o "UserKnownHostsFile /dev/null" \
-                           -q "$@"' > {4}
-            chmod u+x {4}
-            export GIT_SSH="{4}"
-            echo "{0}" | git push --quiet --mirror ssh://{1}@{2}:{3}/~/synnefo
-            rm -f {4}
+                           -q "$@"' > {5}
+            chmod u+x {5}
+            export GIT_SSH="{5}"
+            echo "{0}" | git push -q --mirror ssh://{1}@{2}:{3}{4}/synnefo
+            #echo "{0}" | git push -q --mirror ssh://{1}@{2}:{3}/~/synnefo
+            rm -f {5}
             """.format(fabric.env.password,
                        fabric.env.user,
                        fabric.env.host_string,
                        fabric.env.port,
+                       work_dir,
                        temp_ssh_file)
             os.system(cmd)
         else:
             # Clone Synnefo from remote repo
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-            self._git_clone(synnefo_repo, directory="synnefo")
+            self._git_clone(synnefo_repo, directory="%s/synnefo" % work_dir)
 
         # Checkout the desired synnefo_branch
         self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
         cmd = """
-        cd synnefo
+        cd %s/synnefo
+        # Squelch the error message about pushing to master.
+        # Keep default behaviour but hide the error message.
+        git config receive.denyCurrentBranch refuse
+        #cd synnefo
         for branch in `git branch -a | grep remotes | grep -v HEAD`; do
             git branch --track ${branch##*/} $branch
         done
         git checkout %s
-        """ % (synnefo_branch)
+        """ % (work_dir, synnefo_branch)
         _run(cmd, False)
 
         # Apply a Github pull request
@@ -895,9 +907,9 @@ class SynnefoCI(object):
             self.logger.debug("Apply patches from pull request %s",
                               pull_number)
             cmd = """
-            cd synnefo
+            cd %s/synnefo
             git pull --no-edit --no-rebase {0} {1}
-            """.format(pull_repo[0], pull_repo[1])
+            """.format(work_dir, pull_repo[0], pull_repo[1])
             _run(cmd, False)
 
         return synnefo_branch
@@ -1011,9 +1023,9 @@ class SynnefoCI(object):
         self.logger.info("Build Synnefo packages..")
 
         cmd = """
-        devflow-autopkg snapshot -b ~/synnefo_build-area --no-sign
-        """
-        with fabric.cd("synnefo"):
+        devflow-autopkg snapshot -b %s/synnefo_build-area --no-sign
+        """ % work_dir
+        with fabric.cd("%s/synnefo" % work_dir):
             _run(cmd, True)
 
         # Install snf-deploy package
@@ -1023,15 +1035,15 @@ class SynnefoCI(object):
         apt-get -f install --yes --force-yes
         snf-deploy keygen
         """
-        with fabric.cd("synnefo_build-area"):
+        with fabric.cd("%s/synnefo_build-area" % work_dir):
             with fabric.settings(warn_only=True):
                 _run(cmd, True)
 
         # Setup synnefo packages for snf-deploy
         self.logger.debug("Copy synnefo debs to snf-deploy packages dir")
         cmd = """
-        cp ~/synnefo_build-area/*.deb /var/lib/snf-deploy/packages/
-        """
+        cp %s/synnefo_build-area/*.deb /var/lib/snf-deploy/packages/
+        """ % work_dir
         _run(cmd, False)
 
     @_check_fabric
@@ -1057,7 +1069,7 @@ class SynnefoCI(object):
         """Build Synnefo documentation"""
         self.logger.info("Build Synnefo documentation..")
         _run("pip install -U Sphinx", False)
-        with fabric.cd("synnefo"):
+        with fabric.cd("%s/synnefo" % work_dir):
             _run("devflow-update-version; "
                  "./ci/make_docs.sh synnefo_documentation", False)
 
@@ -1083,14 +1095,14 @@ class SynnefoCI(object):
 
         self.logger.debug("Update schema files to server")
         cmd = """
-        schema_dir="synnefo/ci/schemas/{0}"
+        schema_dir="{0}/synnefo/ci/schemas/{1}"
         if [ -d "$schema_dir" ]; then
             cp "$schema_dir"/* /etc/snf-deploy/
         else
             echo "$schema_dir" does not exist
             exit 1
         fi
-        """.format(schema)
+        """.format(work_dir, schema)
         _run(cmd, False)
 
         self.logger.debug("Change password in nodes.conf file")

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -352,13 +352,20 @@ class APT(base.Component):
     def prepare(self):
         return [
             "echo 'APT::Install-Suggests \"false\";' >> /etc/apt/apt.conf",
-            "curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | \
+            "curl  https://dev.grnet.gr/files/apt-grnetdev.pub | \
                 apt-key add -",
+            # Add key for ceph repo
+            "curl -L \
+            'https://ceph.com/git/?p=ceph.git;a=blob_plain;f=keys/release.asc' \
+            | apt-key add -"
             ]
 
     def _configure(self):
         return [
-            ("/etc/apt/sources.list.d/synnefo.wheezy.list", {}, {})
+            ("/etc/apt/sources.list.d/debian.backports.wheezy.list", {}, {}),
+            ("/etc/apt/sources.list.d/archipelago.wheezy.list", {}, {}),
+            ("/etc/apt/sources.list.d/synnefo.wheezy.list", {}, {}),
+            ("/etc/apt/sources.list.d/ceph.list", {}, {}),
             ]
 
     @base.run_cmds
@@ -877,19 +884,19 @@ class Network(base.Component):
             "gateway": config.synnefo_public_network_gateway,
             "router": 1 if is_router else 0,
             "vm_public_iface": self.node.vm_public_iface
-                if self.node.vm_public_iface else self.node.public_iface,
+            if self.node.vm_public_iface else self.node.public_iface,
             }
         r5 = {
             "vm_public_bridge": config.vm_public_bridge,
             "vm_public_iface": self.node.vm_public_iface
-                if self.node.vm_public_iface else "none",
-            "address": config.synnefo_public_network_gateway \
-                if is_router else "0.0.0.0",
-            "netmask": config.synnefo_public_network_netmask \
-                if is_router else "255.255.255.255",
+            if self.node.vm_public_iface else "none",
+            "address": config.synnefo_public_network_gateway
+            if is_router else "0.0.0.0",
+            "netmask": config.synnefo_public_network_netmask
+            if is_router else "255.255.255.255",
             "vm_private_bridge": config.vm_private_bridge,
             "vm_private_iface": self.node.vm_private_iface
-                if self.node.vm_private_iface else "none",
+            if self.node.vm_private_iface else "none",
             }
 
         return [
@@ -1340,8 +1347,8 @@ class NFS(base.Component):
             "mkdir -p %s" % config.ganeti_dir,
             "mkdir -p %s" % config.archip_dir,
             "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
-            "cd %s && chown archipelago:synnefo {maps,blocks,locks}" % \
-              config.archip_dir,
+            "cd %s && chown archipelago:synnefo {maps,blocks,locks}" %
+            config.archip_dir,
             "cd %s && chmod 770 {maps,blocks,locks}" % config.archip_dir,
             "cd %s && chmod g+s {maps,blocks,locks}" % config.archip_dir,
             ]
@@ -1399,7 +1406,7 @@ class Pithos(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            #FIXME: Workaround until snf-pithos-webclient creates conf
+            # FIXME: Workaround until snf-pithos-webclient creates conf
             # files properly with root:synnefo
             "chown root:synnefo /etc/synnefo/*snf-pithos-webclient*conf",
             ]
@@ -1741,7 +1748,7 @@ class Kamaki(base.Component):
         self.ASTAKOS.make_user_admin_user()
         self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
         self.put("/tmp/cacert.pem",
-          "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")
+                 "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")
 
     @base.run_cmds
     def prepare(self):
@@ -1766,23 +1773,31 @@ class Kamaki(base.Component):
             "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image)
             ]
 
+    def _fetch_image_meta(self):
+        url = config.debian_base_url + ".meta"
+        meta = "debian_base.diskdump.meta"
+        return [
+            "test -e /srv/images/%s || wget -4 %s -O /srv/images/%s" % (meta, url, meta)
+            ]
+
     def _upload_image(self):
         image = "debian_base.diskdump"
         return [
             "kamaki file upload --container images /tmp/%s %s" % (image, image)
             ]
 
+    def _upload_image_meta(self):
+        image = "debian_base.diskdump.meta"
+        return [
+            "kamaki file upload --container images /srv/images/%s %s" % (image, image)
+            ]
+
     def _register_image(self):
         image = "debian_base.diskdump"
         image_location = "/images/%s" % image
         cmd = """
-        kamaki image register --name "Debian Base" --location {0} \
-              --public --disk-format=diskdump \
-              --property OSFAMILY=linux --property ROOT_PARTITION=1 \
-              --property description="Debian Squeeze Base System" \
-              --property size=450M --property kernel=2.6.32 \
-              --property GUI="No GUI" --property sortorder=1 \
-              --property USERS=root --property OS=debian
+        kamaki image register --name "Debian Base" --location {0} --public \
+            --force --metafile /srv/{0}.meta
         """.format(image_location)
         return [
             "sleep 5",
@@ -1792,6 +1807,7 @@ class Kamaki(base.Component):
     @base.run_cmds
     def test(self):
         return self._fetch_image() + self._upload_image() + \
+            self._fetch_image_meta() + self._upload_image_meta() + \
             self._register_image()
 
 
@@ -1907,7 +1923,7 @@ class Archip(base.Component):
     @base.run_cmds
     def restart(self):
         return [
-            #FIXME: See https://github.com/grnet/archipelago/pull/44
+            # FIXME: See https://github.com/grnet/archipelago/pull/44
             "mkdir -p /dev/shm/posixfd",
             "chown -R synnefo:synnefo /dev/shm/posixfd",
             "archipelago restart",

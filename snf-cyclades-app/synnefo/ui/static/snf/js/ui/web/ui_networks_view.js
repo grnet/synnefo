@@ -934,6 +934,11 @@
     views.NetworkSelectPublicNetworks = views.NetworkSelectTypeView.extend({
       tpl: '#networks-select-public-tpl',
       model_view_cls: views.NetworkSelectPublicNetwork,
+      get_networks: function() {
+        return _.filter(_.map(this._subviews, function(view) {
+          if (view.selected) { return view.model.id }
+        }), function(id) { return id });
+      },
       get_floating_ips: function() {
         var ips = [];
         _.each(this._subviews, function(view) {
@@ -1200,6 +1205,14 @@
         }});
 
         this.public_networks = new Backbone.Collection();
+        // Get the public networks that are do not have floating IPs
+        this.non_floating_public = new Backbone.FilteredCollection(undefined, {
+          collection: synnefo.storage.networks,
+          collectionFilter: function(m) {
+            return m.get('is_public') && !m.get('is_floating')
+        }});
+        this.public_networks.add(this.non_floating_public.models);
+
         this.public_networks.comparator = function(m) {
           if (m.get('forced')) {
             return -1

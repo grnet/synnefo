@@ -731,6 +731,7 @@
 
             // images config
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};
+            synnefo.config.image_listing_users = {{ image_listing_users|safe }};
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });

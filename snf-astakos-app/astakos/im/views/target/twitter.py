@@ -138,13 +138,14 @@ def authenticated(request,
     username = access_token.get('screen_name', userid)
     provider_info = {'screen_name': username}
     affiliation = 'Twitter.com'
+    user_info = {'affiliation': affiliation}
 
     try:
         return handle_third_party_login(request, 'twitter', userid,
-                                        provider_info, affiliation)
+                                        provider_info, affiliation,
+                                        user_info=user_info)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation}
         return handle_third_party_signup(request, userid, 'twitter',
                                          third_party_key,
                                          provider_info,

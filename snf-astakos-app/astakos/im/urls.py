@@ -128,6 +128,7 @@ if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.views.target.local',
         url(r'^local/?$', 'login', name='local_login'),
+        url(r'^login/local/?$', 'login', name='local_login'),
         url(r'^password_change/?$', 'password_change', {
             'post_change_redirect': 'profile',
             'password_change_form': ExtendedPasswordChangeForm},
@@ -178,6 +179,12 @@ if 'linkedin' in settings.IM_MODULES:
         url(r'^login/linkedin/?$', 'linkedin.login'),
         url(r'^login/linkedin/authenticated/?$',
             'linkedin.authenticated'))
+
+if 'ldap' in settings.IM_MODULES:
+    urlpatterns += patterns(
+        'astakos.im.views.target',
+        url(r'^login/ldap/?$', 'ldap.login'),
+        url(r'^login/ldap/add/?$', 'ldap.add'))
 
 urlpatterns += patterns(
     'astakos.im.views',

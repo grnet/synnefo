@@ -46,7 +46,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
-           volumes=None):
+           volumes=None, helper=False):
 
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
@@ -125,7 +125,8 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        imageid=image["id"],
                                        image_version=image["version"],
                                        flavor=flavor,
-                                       operstate="BUILD")
+                                       operstate="BUILD",
+                                       helper=helper)
     log.info("Created entry in DB for VM '%s'", vm)
 
     # Associate the ports with the server

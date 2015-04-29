@@ -343,6 +343,7 @@ class VirtualMachine(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial,
                                related_name='virtual_machine', null=True,
                                on_delete=models.SET_NULL)
+    helper = models.BooleanField(default=False, null=False)
 
     # VM State
     # The following fields are volatile data, in the sense

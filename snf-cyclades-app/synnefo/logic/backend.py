@@ -502,16 +502,27 @@ def update_vm_disks(vm, disks, etime=None):
     # Disks that exist in DB but not in Ganeti
     for disk_name in (db_keys - gnt_keys):
         db_disk = db_disks[disk_name]
-        if db_disk.status != "DELETING" and skip_db_stale:
+
+        if db_disk.status not in ("DELETING", "DETACHING") and skip_db_stale:
             continue
-        if disk_is_stale(vm, disk):
+        if disk_is_detached(vm, db_disk):
+            # This function must always run before `disk_is_stale`.
+            log.debug("Marking disk '%s' as available", db_disk)
+            db_disk.status = "AVAILABLE"
+            db_disk.machine = None
+            db_disk.save()
+            changes.append(("modify", db_disk, {"status": "AVAILABLE"}))
+        elif disk_is_stale(vm, db_disk):
             log.debug("Removing stale disk '%s'", db_disk)
             db_disk.status = "DELETED"
             db_disk.deleted = True
             db_disk.save()
             changes.append(("remove", db_disk, {}))
         else:
-            log.info("disk '%s' is still being created" % db_disk)
+            log.info("disk '%s' is still being %s" %
+                     (db_disk, "created" if db_disk.status == "CREATING" else
+                      "detached")
+                     )
 
     # Disks that exist both in DB and in Ganeti
     for disk_name in (db_keys & gnt_keys):
@@ -975,8 +986,17 @@ def job_is_still_running(vm, job_id=None):
             raise e
 
 
+def disk_is_detached(vm, disk):
+    """Check if a disk is detached from the Ganeti backend."""
+    if (disk.status == "DETACHING" and
+            volume_actions.util.is_volume_type_detachable(disk.volume_type)):
+        if not job_is_still_running(vm, job_id=disk.backendjobid):
+            return True
+    return False
+
+
 def disk_is_stale(vm, disk, timeout=60):
-    """Check if a disk is stale or exists in the Ganeti backend."""
+    """Check if a disk is stale or if it exists in the Ganeti backend."""
     # First check the state of the disk
     if disk.status == "CREATING":
         if datetime.now() < disk.created + timedelta(seconds=timeout):
@@ -990,6 +1010,9 @@ def disk_is_stale(vm, disk, timeout=60):
             vm_info = get_instance_info(vm)
             if disk.backend_volume_uuid in vm_info["disk.names"]:
                 return False
+    elif disk.status == "AVAILABLE":
+        return False
+
     return True
 
 
@@ -1285,8 +1308,7 @@ def attach_volume(vm, volume, depends=[]):
         return client.ModifyInstance(**kwargs)
 
 
-def detach_volume(vm, volume, depends=[]):
-    log.debug("Removing volume %s from vm %s", volume, vm)
+def remove_volume(vm, volume, depends=[], keep_data=False):
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("remove", volume.backend_volume_uuid, {})],
@@ -1296,9 +1318,21 @@ def detach_volume(vm, volume, depends=[]):
         kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
+    if keep_data:
+        kwargs["keep_disks"] = True
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(**kwargs)
+
+
+def delete_volume(vm, volume, depends=[]):
+    log.debug("Removing volume %s from vm %s", volume, vm)
+    return remove_volume(vm, volume, depends)
+
+
+def detach_volume(vm, volume, depends=[]):
+    log.debug("Detaching volume %s from vm %s", volume, vm)
+    return remove_volume(vm, volume, depends, keep_data=True)
 
 
 def snapshot_instance(vm, volume, snapshot_name, snapshot_id):

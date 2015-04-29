@@ -354,7 +354,7 @@ def get_commission_info(resource, action, action_fields=None):
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
                 resources.update(online_resources)
             return resources
-        elif action in ["ATTACH_VOLUME", "DETACH_VOLUME", "MODIFY_VOLUME"]:
+        elif action in ["ATTACH_VOLUME", "DELETE_VOLUME", "MODIFY_VOLUME"]:
             if action_fields is not None:
                 volumes_changes = action_fields.get("disks")
                 if volumes_changes is not None:
@@ -364,7 +364,8 @@ def get_commission_info(resource, action, action_fields=None):
                             get_volume_size_delta(action, db_volume, info)
                 return resources
         else:
-            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE",
+            # "DETACH_VOLUME"]:
             return None
     elif isinstance(resource, Network):
         resources = {(project, "cyclades.network.private"): 1}

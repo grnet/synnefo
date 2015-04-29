@@ -60,7 +60,7 @@ def validate_server_action(vm, action):
          (action in ["CONNECT", "DISCONNECT"]
           and operstate != "STOPPED"
           and not settings.GANETI_USE_HOTPLUG) or \
-         (action in ["ATTACH_VOLUME", "DETACH_VOLUME"]
+         (action in ["ATTACH_VOLUME", "DETACH_VOLUME", "DELETE_VOLUME"]
           and operstate != "STOPPED"
           and not settings.GANETI_USE_HOTPLUG):
         raise faults.BadRequest("Cannot perform '%s' action while server is"

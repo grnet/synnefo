@@ -495,6 +495,70 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         self.assertEqual(disk_kwargs["name"], vol.backend_volume_uuid)
         self.assertEqual(disk_kwargs["size"], vol.size << 10)
 
+    def test_detach(self, mrapi):
+        """Test the detach functionality."""
+        # Fail to detach a non-detachable volume
+        vol = mf.VolumeFactory(volume_type=self.file_vt, machine=self.file_vm,
+                               userid=self.userid, status="IN_USE")
+        message = "Volume type '{}' is not detachable".format(
+            self.file_vt.disk_template)
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.detach(vol.id)
+
+        # Fail to detach a volume that has never been attached to any server
+        vol = mf.VolumeFactory(userid=self.userid, volume_type=self.archip_vt,
+                               machine=None)
+        message = "Volume is already detached"
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.detach(vol.id)
+
+        # Fail to detach a volume that is not in use
+        vol = mf.VolumeFactory(userid=self.userid, volume_type=self.archip_vt)
+        vol.machine = self.archip_vm
+        vol.status = "CREATING"
+        vol.save()
+        message = "Cannot detach volume while volume is in '{}' status".format(
+            vol.status)
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.detach(vol.id)
+
+        # Fail to detach the root volume of a vm
+        vol.status = "IN_USE"
+        vol.index = 0
+        vol.save()
+        message = "Cannot detach the root volume of server {}.".format(
+            self.archip_vm)
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.detach(vol.id)
+
+        # Fail to detach a volume from a server of another user
+        vol.userid = "other_user"
+        vol.save()
+        message = "Server %s not found" % self.archip_vm.id
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.detach(vol.id)
+
+        # Detach a volume from a server
+        vol.userid = self.userid
+        vol.index = 1
+        vol.save()
+        mrapi().ModifyInstance.return_value = 42
+        with mocked_quotaholder() as m:
+            vol = volumes.detach(vol.id)
+        # Assert that the VM has just one volume, the volume has an appropriate
+        # status and that no commission was sent.
+        self.assertEqual(self.archip_vm.volumes.all().count(), 1)
+        self.assertEqual(vol.status, "DETACHING")
+        self.assertNoCommission(m)
+        # Assert that Ganeti was instructed to keep the disks and that the
+        # ModifyInstance command corresponds to the target volume and server.
+        gnt_args = self.get_ganeti_args(mrapi)
+        self.assertIn("keep_disks", gnt_args)
+        disk_args = self.get_ganeti_disk_args(mrapi)
+        self.assertEqual(disk_args[0], "remove")
+        self.assertEqual(disk_args[1], vol.backend_volume_uuid)
+        self.assertEqual(disk_args[2], {})
+
     def test_delete(self, mrapi):
         # We can not delete detached volumes
         vol = mf.VolumeFactory(machine=None, status="AVAILABLE")

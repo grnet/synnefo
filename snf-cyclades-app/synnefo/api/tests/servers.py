@@ -1033,6 +1033,8 @@ class ServerAttachments(ComputeAPITest):
         vm.task = None
         vm.save()
         vm.volumes.all().update(status="IN_USE")
-        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
-                                 (vm.id, vol1.id), vm.userid)
+        with patch("synnefo.volume.util.is_volume_type_detachable") as m:
+            m.return_value = True
+            response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                     (vm.id, vol1.id), vm.userid)
         self.assertEqual(response.status_code, 202, response.content)

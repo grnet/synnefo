@@ -86,17 +86,16 @@ def detach_volume(vm, volume):
     status of the volume to 'DETACHING'.
 
     """
-
+    util.assert_detachable_volume_type(volume.volume_type)
     _check_attachment(vm, volume)
     if volume.status not in ["IN_USE", "ERROR"]:
         raise faults.BadRequest("Cannot detach volume while volume is in"
                                 " '%s' status." % volume.status)
     if volume.index == 0:
-        raise faults.BadRequest("Cannot detach the root volume of a server")
+        raise faults.BadRequest("Cannot detach the root volume of server %s." %
+                                vm)
 
-    action_fields = {"disks": [("remove", volume, {})]}
-    comm = commands.server_command("DETACH_VOLUME",
-                                   action_fields=action_fields)
+    comm = commands.server_command("DETACH_VOLUME")
     return comm(_detach_volume)(vm, volume)
 
 
@@ -104,6 +103,37 @@ def _detach_volume(vm, volume):
     """Detach a Volume from a VM and update the Volume's status"""
     jobid = backend.detach_volume(vm, volume)
     log.info("Detached volume '%s' from server '%s'. JobID: '%s'", volume.id,
+             volume.machine_id, jobid)
+    volume.backendjobid = jobid
+    volume.status = "DETACHING"
+    volume.save()
+    return jobid
+
+
+def delete_volume(vm, volume):
+    """Delete attached volume and update its status
+
+    The volume must be in 'IN_USE' status in order to be deleted. This
+    function will send the corresponding job to Ganeti backend and update the
+    status of the volume to 'DELETING'.
+    """
+    _check_attachment(vm, volume)
+    if volume.status not in ["IN_USE", "ERROR"]:
+        raise faults.BadRequest("Cannot delete volume while volume is in"
+                                " '%s' status." % volume.status)
+    if volume.index == 0:
+        raise faults.BadRequest("Cannot delete the root volume of server %s." %
+                                vm)
+
+    action_fields = {"disks": [("remove", volume, {})]}
+    comm = commands.server_command("DELETE_VOLUME",
+                                   action_fields=action_fields)
+    return comm(_delete_volume)(vm, volume)
+
+
+def _delete_volume(vm, volume):
+    jobid = backend.delete_volume(vm, volume)
+    log.info("Deleted volume '%s' from server '%s'. JobID: '%s'", volume.id,
              volume.machine_id, jobid)
     volume.backendjobid = jobid
     if volume.delete_on_termination:
@@ -118,4 +148,4 @@ def _check_attachment(vm, volume):
     """Check that the Volume is attached to the VM"""
     if volume.machine_id != vm.id:
         raise faults.BadRequest("Volume '%s' is not attached to server '%s'"
-                                % volume.id, vm.id)
+                                % (volume.id, vm.id))

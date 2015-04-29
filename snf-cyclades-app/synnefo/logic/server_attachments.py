@@ -37,6 +37,8 @@ def attach_volume(vm, volume):
     if volume.status not in ["AVAILABLE", "CREATING"]:
         raise faults.BadRequest("Cannot attach volume while volume is in"
                                 " '%s' status." % volume.status)
+    elif volume.status == "AVAILABLE":
+        util.assert_detachable_volume_type(volume.volume_type)
 
     # Check that disk templates are the same
     if volume.volume_type_id != vm.flavor.volume_type_id:
@@ -53,7 +55,7 @@ def attach_volume(vm, volume):
     if volume.status == "CREATING":
         action_fields = {"disks": [("add", volume, {})]}
     else:
-        action_fields = {}
+        action_fields = None
     comm = commands.server_command("ATTACH_VOLUME",
                                    action_fields=action_fields)
     return comm(_attach_volume)(vm, volume)

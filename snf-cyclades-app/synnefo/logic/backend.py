@@ -29,6 +29,7 @@ from synnefo.logic import rapi
 from synnefo import volume as volume_actions
 from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
+from synnefo.volume.util import is_volume_type_detachable
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -1224,6 +1225,23 @@ def set_firewall_profile(vm, profile, nic):
     return None
 
 
+def add_attach_params(volume, disk):
+    """Add attach params for detachable volumes
+
+    Detachable volumes may exist only in the database and use the provider
+    scripts to implement the attach and detach functionality. In this case, we
+    will need to provide the necessary context to these scripts via the disk
+    parameters.
+
+    For the attach action, we must inform the provider if the volume data have
+    been initialized or not. This is shown if the backendjobid is set or not.
+    """
+    if volume.backendjobid:
+        disk["reuse_data"] = "True"
+    else:
+        disk["reuse_data"] = "False"
+
+
 def attach_volume(vm, volume, depends=[]):
     log.debug("Attaching volume %s to vm %s", volume, vm)
 
@@ -1242,6 +1260,9 @@ def attach_volume(vm, volume, depends=[]):
                                 .get(disk_provider)
     if extra_disk_params is not None:
         disk.update(extra_disk_params)
+
+    if volume_actions.util.is_volume_type_detachable(volume.volume_type):
+        add_attach_params(volume, disk)
 
     kwargs = {
         "instance": vm.backend_vm_id,

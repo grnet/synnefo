@@ -439,6 +439,62 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], "snf-snapshot-43")
 
+    def test_attach(self, mrapi):
+        """Test the attach functionality."""
+        # Fail to attach a non-detachable volume
+        vol = mf.VolumeFactory(userid=self.userid, volume_type=self.file_vt,
+                               machine=None, backendjobid="1134",
+                               status="AVAILABLE")
+        message = "Volume type '{}' is not detachable".format(
+            self.file_vt.disk_template)
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.attach(self.archip_vm.id, vol.id)
+
+        # Fail to attach a volume to a server of another user
+        vol.volume_type = self.archip_vt
+        vol.userid = "other_user"
+        vol.save()
+        message = "Server %s not found" % self.archip_vm.id
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.attach(self.archip_vm.id, vol.id)
+
+        # Fail to attach a volume that is in use
+        vol.userid = "test_user"
+        vol.status = "IN_USE"
+        vol.save()
+        message = "Cannot attach volume while volume is in '{}' status".format(
+            vol.status)
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.attach(self.archip_vm.id, vol.id)
+
+        # Fail to attach a volume to a server with a different volume type
+        message = "Volume and server must have the same volume type"
+        vol.status = "AVAILABLE"
+        vol.save()
+        with self.assertRaises(faults.BadRequest) as e:
+            volumes.attach(self.file_vm.id, vol.id)
+        self.assertIn(message, e.exception.message)
+
+        # Attach a volume to a server
+        mrapi().ModifyInstance.return_value = 42
+        with mocked_quotaholder() as m:
+            vol = volumes.attach(self.archip_vm.id, vol.id)
+        # Assert that the volume is assigned to the VM, it has an appropriate
+        # status and that no commission was sent.
+        self.assertEqual(vol.machine, self.archip_vm)
+        self.assertEqual(vol.volume_type, self.archip_vm.flavor.volume_type)
+        self.assertEqual(vol.index, 0)
+        self.assertEqual(vol.status, "ATTACHING")
+        self.assertNoCommission(m)
+
+        disk_args = self.get_ganeti_disk_args(mrapi)
+        self.assertEqual(disk_args[0], "add")
+        self.assertEqual(disk_args[1], '-1')
+        disk_kwargs = disk_args[2]
+        self.assertEqual(disk_kwargs["reuse_data"], "True")
+        self.assertEqual(disk_kwargs["name"], vol.backend_volume_uuid)
+        self.assertEqual(disk_kwargs["size"], vol.size << 10)
+
     def test_delete(self, mrapi):
         # We can not delete detached volumes
         vol = mf.VolumeFactory(machine=None, status="AVAILABLE")

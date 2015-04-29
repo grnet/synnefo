@@ -27,6 +27,11 @@ from synnefo import quotas
 log = logging.getLogger(__name__)
 
 
+def get_volume(volume_id):
+    """Simple function to get and lock a Volume."""
+    return Volume.objects.select_for_update().get(id=volume_id, deleted=False)
+
+
 @transaction.commit_on_success
 def create(user_id, size, server_id, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
@@ -253,6 +258,16 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
                                    origin=origin,
                                    origin_size=origin_size,
                                    status="CREATING")
+
+    return volume
+
+
+def attach(server_id, volume_id):
+    """Attach a volume to a server."""
+    volume = get_volume(volume_id)
+    server = util.get_server(volume.userid, server_id, for_update=True,
+                             non_deleted=True, exception=faults.BadRequest)
+    server_attachments.attach_volume(server, volume)
 
     return volume
 

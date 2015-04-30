@@ -926,16 +926,17 @@ class SynnefoCI(object):
         # Clone pithos-webclient from remote repo
         self.logger.debug("Clone pithos-webclient from %s" %
                           pithos_webclient_repo)
-        self._git_clone(pithos_webclient_repo, directory="pithos-web-client")
+        self._git_clone(pithos_webclient_repo, directory="%s/pithos-web-client"
+                        % work_dir)
 
         # Track all pithos-webclient branches
         cmd = """
-        cd pithos-web-client
+        cd %s/pithos-web-client
         for branch in `git branch -a | grep remotes | grep -v HEAD`; do
             git branch --track ${branch##*/} $branch > /dev/null 2>&1
         done
         git --no-pager branch --no-color
-        """
+        """ % work_dir
         webclient_branches = _run(cmd, False)
         webclient_branches = webclient_branches.split()
 
@@ -966,9 +967,9 @@ class SynnefoCI(object):
         self.logger.debug("Checkout \"%s\" branch" %
                           _green(pithos_webclient_branch))
         cmd = """
-        cd pithos-web-client
-        git checkout {0}
-        """.format(pithos_webclient_branch)
+        cd {0}/pithos-web-client
+        git checkout {1}
+        """.format(work_dir, pithos_webclient_branch)
         _run(cmd, False)
 
     def _git_clone(self, repo, directory=""):
@@ -1052,16 +1053,16 @@ class SynnefoCI(object):
         self.logger.info("Build pithos-web-client packages..")
 
         cmd = """
-        devflow-autopkg snapshot -b ~/webclient_build-area --no-sign
-        """
-        with fabric.cd("pithos-web-client"):
+        devflow-autopkg snapshot -b %s/webclient_build-area --no-sign
+        """ % work_dir
+        with fabric.cd("%s/pithos-web-client" % work_dir):
             _run(cmd, True)
 
         # Setup pithos-web-client packages for snf-deploy
         self.logger.debug("Copy webclient debs to snf-deploy packages dir")
         cmd = """
-        cp ~/webclient_build-area/*.deb /var/lib/snf-deploy/packages/
-        """
+        cp %s/webclient_build-area/*.deb /var/lib/snf-deploy/packages/
+        """ % work_dir
         _run(cmd, False)
 
     @_check_fabric
@@ -1189,9 +1190,9 @@ class SynnefoCI(object):
         dest = os.path.abspath(os.path.expanduser(dest))
         if not os.path.exists(dest):
             os.makedirs(dest)
-        self.fetch_compressed("synnefo_build-area", dest)
+        self.fetch_compressed("%s/synnefo_build-area" % work_dir, dest)
         if self.config.get("Global", "build_pithos_webclient") == "True":
-            self.fetch_compressed("webclient_build-area", dest)
+            self.fetch_compressed("%s/webclient_build-area" % work_dir, dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 

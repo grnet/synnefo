@@ -583,7 +583,7 @@ class CA(base.Component):
             "domain": self.node.domain,
             }
         return [
-            ("/root/create_root_ca.sh", {}, {"mode": 0755}),
+            ("/root/create_root_ca.sh", r1, {"mode": 0755}),
             ("/root/ca/ca-x509-extensions.cnf", r1, {}),
             ("/root/ca/x509-extensions.cnf", r1, {}),
             ]

@@ -35,7 +35,7 @@ openssl genpkey -algorithm RSA -out $KEY -pkeyopt rsa_keygen_bits:2048
 
 echo [$CSR] Generating certificate request for services...
 openssl req -new -key $KEY -days 1096 -extensions v3_ca -batch \
-  -out $CSR -utf8 -subj '/OU=SynnefoCloudServices/CN=synnefo.live'
+  -out $CSR -utf8 -subj '/OU=SynnefoCloudServices/CN=%DOMAIN%'
 
 echo [$CERT] Generating certificate for services...
 openssl x509 -req -sha256 -days 1096 -in $CSR \

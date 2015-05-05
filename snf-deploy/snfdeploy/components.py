@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -947,7 +947,7 @@ class Apache(base.Component):
             ]
 
     def _configure(self):
-        r1 = {"HOST": self.node.fqdn}
+        r1 = {"domain": self.node.domain}
         return [
             ("/etc/apache2/sites-available/synnefo", r1, {}),
             ("/etc/apache2/sites-available/synnefo-ssl", r1, {}),

@@ -14,6 +14,7 @@ CSR=$DIR/cert.csr
 CERT=$DIR/cert.pem
 ROOT_CNF=$DIR/ca-x509-extensions.cnf
 CNF=$DIR/x509-extensions.cnf
+HOSTNAME=$(hostname -f)
 
 mkdir -p $DIR
 
@@ -22,11 +23,11 @@ openssl genpkey -algorithm RSA -out $ROOT_CA_KEY -pkeyopt rsa_keygen_bits:4096
 
 echo [$ROOT_CA_CSR] Generating certificate request for root CA...
 openssl req -new -key $ROOT_CA_KEY -days 5480 -extensions v3_ca -batch \
-  -out $ROOT_CA_CSR -utf8 -subj '/C=GR/O=Synnefo/OU=SynnefoCloudSoftware'
+  -out $ROOT_CA_CSR -utf8 -subj '/C=GR/CN=Synnefo Demo CA @ '$HOSTNAME'/O=Synnefo/OU=SynnefoCloudSoftware'
 
 echo [$ROOT_CA_CERT] Generating certificate for root CA...
 openssl x509 -req -sha256 -days 3650 -in $ROOT_CA_CSR -signkey $ROOT_CA_KEY \
-  -set_serial 1 -extfile $ROOT_CNF -out $ROOT_CA_CERT
+  -extfile $ROOT_CNF -out $ROOT_CA_CERT
 
 
 
@@ -39,5 +40,5 @@ openssl req -new -key $KEY -days 1096 -extensions v3_ca -batch \
 
 echo [$CERT] Generating certificate for services...
 openssl x509 -req -sha256 -days 1096 -in $CSR \
-  -CAkey $ROOT_CA_KEY -CA $ROOT_CA_CERT -set_serial 100 \
+  -CAkey $ROOT_CA_KEY -CA $ROOT_CA_CERT -set_serial 1 \
   -out $CERT -extfile $CNF

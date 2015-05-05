@@ -281,7 +281,7 @@ server {1}
 {2}
 send
 EOF
-""".format(config.ddns_private_key, self.ctx.ns.ip, cmd)
+""".format(config.ddns_private_key, self.ctx.ns.fqdn, cmd)
         return ret
 
     @base.run_cmds
@@ -437,10 +437,10 @@ su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
     def allow_db_access(self):
         user = "all"
         method = "md5"
-        ip = self.ctx.admin_node.ip
+        fqdn = self.ctx.admin_node.fqdn
         f = "/etc/postgresql/*/main/pg_hba.conf"
-        cmd1 = "echo host all %s %s/32 %s >> %s" % \
-            (user, ip, method, f)
+        cmd1 = "echo host all %s %s %s >> %s" % \
+            (user, fqdn, method, f)
         cmd2 = "sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' %s" % f
         return [cmd1, cmd2]
 
@@ -876,7 +876,7 @@ class Network(base.Component):
             }
         r3 = {
             "domain": self.node.domain,
-            "server": self.ctx.ns.ip,
+            "server": self.ctx.ns.fqdn,
             "keyfile": config.ddns_private_key,
             }
         r4 = {

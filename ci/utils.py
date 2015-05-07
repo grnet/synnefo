@@ -1178,7 +1178,7 @@ class SynnefoCI(object):
         tar xzf %s
         cp -r %s/* %s
         rm -r %s
-        """ % (tmp_dir, tar_file, src, dest, tmp_dir)
+        """ % (tmp_dir, tar_file, basename, dest, tmp_dir)
         os.system(cmd)
         self.logger.info("Downloaded %s to %s" %
                          (src, _green(dest)))

@@ -22,7 +22,7 @@ from astakos.im.models import AstakosUser, Project
 from astakos.im import auth_providers
 
 from synnefo_admin.admin.queries_common import (query, model_filter,
-                                                get_model_field)
+                                                get_model_field, process_queries)
 
 from .utils import get_groups
 
@@ -39,7 +39,7 @@ auth_providers = [(key, '_') for key in auth_providers.PROVIDERS.iterkeys()]
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     return queryset.filter(q)
 
 

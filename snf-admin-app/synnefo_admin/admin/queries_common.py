@@ -16,6 +16,7 @@
 import functools
 import logging
 from operator import or_, and_
+import re
 
 from django.db.models import Q
 from django.core.exceptions import FieldError
@@ -26,7 +27,7 @@ from synnefo_admin.admin.utils import model_dict
 from synnefo_admin import admin_settings
 
 sign = admin_settings.ADMIN_FIELD_SIGN
-
+or_sign = admin_settings.ADMIN_OR_SIGN
 
 def prefix_strip(query):
     """Remove the prefix from the ID of Cyclades models.
@@ -73,42 +74,13 @@ def model_filter(func):
     b) Concatenate terms that have the ADMIN_FIELD_SIGN ("=") between them.
     b) Ignore any empty queries.
     """
-    def process_terms(terms):
-        """Generic term processing.
-
-        This function does the following:
-        * Concatenate terms that have the admin_settings.ADMIN_FIELD_SIGN ("=")
-          between them. E.g. the following list:
-
-              ['first_name', '=', 'john', 'doe', 'last_name=', 'd']
-
-          becomes:
-
-              ['first_name=john', 'doe', 'last_name=d']
-        """
-        new_terms = []
-        cand = ''
-        for term in terms:
-            # Check if the current term can be concatenated with the previous
-            # (candidate) ones.
-            if term.startswith(sign) or cand.endswith(sign):
-                cand = cand + term
-                continue
-            # If the candidate cannot be concatenated with the current term,
-            # append it to the `new_terms` list.
-            if cand:
-                new_terms.append(cand)
-            cand = term
-        # Always append the last candidate, if valid
-        if cand:
-            new_terms.append(cand)
-        return new_terms
-
     @functools.wraps(func)
     def wrapper(queryset, query, *args, **kwargs):
         if isinstance(query, basestring):
+            # Remove whitespaces before and after or_sign and sign
+            query = re.sub("^\s+|\s*" + or_sign + "\s*|\s+$", or_sign, query)
+            query = re.sub("^\s+|\s*" + sign + "\s*|\s+$", sign, query)
             query = query.split()
-            query = process_terms(query)
 
         if query:
             try:
@@ -179,8 +151,42 @@ def query_and(*qobjects, **queries):
     return reduce(and_, ql)
 
 
+def process_queries(model, queries):
+    """Parse and split queries to detect when to perform OR, AND operation
+
+    This function splits queries by or_sign to perform an OR operation
+    between or_sign separated terms. Otherwise, when queries are separated
+    by whitespace, an AND operation is performed. Evaluation order is from
+    left to right.
+
+    E.g.    a, b    -->     a OR b
+            a b     -->     a AND b
+            a, b c  -->     (a OR b) AND c
+            a b, c  -->     (a AND b) OR c
+    """
+    q = Q()
+    andFound = False
+    for qu in queries:
+        if or_sign in qu:
+            parts = qu.split(or_sign)
+            i = 0
+            for p in parts:
+                if p:
+                    if i == 0 and andFound:
+                        q &= query(model, [p])
+                    else:
+                        q |= query(model, [p])
+                    andFound = False
+                    i += 1
+        else:
+            andFound = True
+            q &= query(model, [qu])
+    return q
+
+
 # ----------------- MODEL QUERIES --------------------#
 # The following functions implement the query logic for each model
+
 
 def query(model, queries):
     """Common entry point for getting a Q object for a model."""

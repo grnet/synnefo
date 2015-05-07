@@ -1082,7 +1082,8 @@ class SynnefoCI(object):
         dest = os.path.abspath(dest)
         if not os.path.exists(dest):
             os.makedirs(dest)
-        self.fetch_compressed("synnefo/synnefo_documentation", dest)
+        self.fetch_compressed("%s/synnefo/synnefo_documentation" % work_dir,
+                              dest)
         self.logger.info("Downloaded documentation to %s" %
                          _green(dest))
 

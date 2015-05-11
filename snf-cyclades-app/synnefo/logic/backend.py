@@ -26,7 +26,7 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
-from synnefo import volume
+from synnefo import volume as volume_actions
 from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
 
@@ -610,7 +610,7 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
     if state != OBJECT_UNAVAILABLE:
         log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
                   state)
-        volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
+        volume_actions.util.update_snapshot_state(snapshot_id, user_id, state=state)
 
 
 @transaction.commit_on_success
@@ -818,15 +818,15 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     kw['disk_template'] = volumes[0].volume_type.template
     disks = []
-    for vol in volumes:
-        disk = {"name": vol.backend_volume_uuid,
-                "size": vol.size * 1024}
-        provider = vol.volume_type.provider
+    for volume in volumes:
+        disk = {"name": volume.backend_volume_uuid,
+                "size": volume.size * 1024}
+        provider = volume.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
             if provider in settings.GANETI_CLONE_PROVIDERS:
-                disk["origin"] = vol.origin
-                disk["origin_size"] = vol.origin_size
+                disk["origin"] = volume.origin
+                disk["origin_size"] = volume.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:

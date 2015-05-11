@@ -98,7 +98,7 @@ class AstakosClientExceptionHandler(object):
 
 
 def issue_commission(resource, action, name="", force=False, auto_accept=False,
-                     action_fields=None):
+                     action_fields=None, for_user=None):
     """Issue a new commission to the quotaholder.
 
     Issue a new commission to the quotaholder, and create the
@@ -112,7 +112,8 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
     if provisions is None:
         return None
 
-    user = resource.userid
+    user = for_user if for_user is not None else resource.userid
+
     projects = set(p for (p, r) in provisions.keys())
 
     qh = Quotaholder.get()
@@ -417,7 +418,7 @@ def reverse_quantities(resources):
 
 def handle_resource_commission(resource, action, commission_name,
                                force=False, auto_accept=False,
-                               action_fields=None):
+                               action_fields=None, for_user=None):
     """Handle a issuing of a commission for a resource.
 
     Create a new commission for a resource based on the action that
@@ -435,7 +436,7 @@ def handle_resource_commission(resource, action, commission_name,
 
     serial = issue_commission(resource, action, name=commission_name,
                               force=force, auto_accept=auto_accept,
-                              action_fields=action_fields)
+                              action_fields=action_fields, for_user=for_user)
 
     # Correlate the serial with the resource. Resolved serials are not
     # attached to resources

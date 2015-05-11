@@ -110,6 +110,31 @@ def stats_encrypt(plaintext):
     return quote(urlsafe_b64encode(enc))
 
 
+def get_random_helper_vm(for_update=False, prefetch_related=None):
+    """Find a random helper VirtualMachine instance.
+
+    This function will fetch a random helper vm that resides in an online,
+    undrained Ganeti backend. For security reasons, we require the status of
+    the VM to be "STOPPED".
+    """
+    try:
+        servers = VirtualMachine.objects
+        if for_update:
+            servers = servers.select_for_update()
+        if prefetch_related is not None:
+            if isinstance(prefetch_related, list):
+                servers = servers.prefetch_related(*prefetch_related)
+            else:
+                servers = servers.prefetch_related(prefetch_related)
+
+        vms = servers.filter(helper=True, backend__offline=False,
+                             backend__drained=False,
+                             operstate="STOPPED")
+        return choice(vms)
+    except IndexError, VirtualMachine.DoesNotExist:
+        raise faults.ItemNotFound('Helper server not found.')
+
+
 def get_vm(server_id, user_id, for_update=False, non_deleted=False,
            non_suspended=False, prefetch_related=None):
     """Find a VirtualMachine instance based on ID and owner."""

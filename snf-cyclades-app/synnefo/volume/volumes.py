@@ -23,6 +23,7 @@ from synnefo.volume import util
 from synnefo.logic import server_attachments, utils, commands
 from synnefo.plankton.backend import OBJECT_AVAILABLE
 from synnefo import quotas
+from synnefo.api.util import get_random_helper_vm
 
 log = logging.getLogger(__name__)
 
@@ -272,11 +273,64 @@ def attach(server_id, volume_id):
     return volume
 
 
+def delete_detached_volume(volume):
+    """Delete a detached volume.
+
+    There is actually no way (that involves Ganeti) to delete a detached
+    volume. Instead, we need to attach it to a helper VM and then delete it.
+    The purpose of this function is to do the first step; find an available
+    helper VM and attach the volume to it. In order to differentiate this
+    action from a common attach action, we set the volume status as DELETING.
+    Then, the dispatcher will handle the deletion of the volume.
+    """
+    # Fetch a random helper VM from an online and undrained Ganeti backend
+    server = get_random_helper_vm(for_update=True)
+    if server is None:
+        raise faults.ItemNotFound("Cannot find an available helper server")
+    log.debug("Using helper server %s for the removal of volume %s",
+              server, volume)
+
+    # Attach the volume to the helper server, in order to delete it
+    # internally later.
+    server_attachments.attach_volume(server, volume)
+    volume.status = "DELETING"
+    volume.save()
+
+    return volume
+
+
+def delete_volume_from_helper(volume, helper_vm):
+    """Delete a volume that has been attached to a helper VM.
+
+    This special-purpose function should be called only by the dispatcher, when
+    we are notified that a detached volume has been attached to a helper VM.
+    """
+    if not helper_vm.helper:
+        raise faults.BadRequest("Server %s is not a helper server" %
+                                helper_vm.backend_vm_id)
+    log.debug("Attempting to delete volume '%s' from helper server '%s'",
+              volume.id, helper_vm.id)
+    server_attachments.delete_volume(helper_vm, volume)
+    log.info("Deleting volume '%s' from server '%s', job: %s",
+             volume.id, helper_vm.id, volume.backendjobid)
+
+
 @transaction.commit_on_success
 def delete(volume):
-    """Delete a Volume"""
-    # A volume is deleted by detaching it from the server that is attached.
-    # Deleting a detached volume is not implemented.
+    """Delete a Volume.
+
+    The canonical way of deleting a volume is to send a command to Ganeti to
+    remove the volume from a specific server. There are two cases however when
+    a volume may not be attached to a server:
+
+    * Case 1: The volume has been created only in DB and was never attached to
+    a server. In this case, we can simply mark the volume as deleted without
+    using Ganeti to do so.
+    * Case 2: The volume has been detached from a VM. This means that there are
+    still data in the storage backend. Thus, in order to delete the volume
+    safely, we must attach it to a helper VM, thereby handing the delete action
+    to the dispatcher.
+    """
     server_id = volume.machine_id
     if server_id is not None:
         server = util.get_server(volume.userid, server_id, for_update=True,
@@ -285,9 +339,21 @@ def delete(volume):
         server_attachments.delete_volume(server, volume)
         log.info("Deleting volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
+    elif volume.backendjobid is None:
+        # Case 1: Uninitialized volume
+        if volume.status not in ("AVAILABLE", "ERROR"):
+            raise faults.BadRequest("Volume is in invalid state: %s" %
+                                    volume.status)
+        log.debug("Attempting to delete uninitialized volume %s.", volume)
+        util.mark_volume_as_deleted(volume, immediate=True)
+        quotas.issue_and_accept_commission(volume, action="DESTROY")
+        log.info("Deleting uninitialized volume '%s'", volume.id)
     else:
-        raise faults.BadRequest("Deleting a detached initialized volume"
-                                " will be available soon.")
+        # Case 2: Detached volume
+        log.debug("Attempting to delete detached volume %s", volume)
+        delete_detached_volume(volume)
+        log.info("Deleting volume '%s' from helper server '%s', job: %s",
+                 volume.id, volume.machine.id, volume.backendjobid)
 
     return volume
 

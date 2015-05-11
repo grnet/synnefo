@@ -23,6 +23,17 @@ from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
 
 
+def mark_volume_as_deleted(volume, immediate=False):
+    if volume.delete_on_termination:
+        volume.status = "DELETED" if immediate else "DELETING"
+    else:
+        volume.status = "DETACHING"
+
+    if immediate:
+        volume.deleted = True
+    volume.save()
+
+
 def is_volume_type_detachable(volume_type):
     """Check if the volume type is detachable."""
     if volume_type is None:

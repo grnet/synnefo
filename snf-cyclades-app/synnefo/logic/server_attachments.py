@@ -127,7 +127,8 @@ def delete_volume(vm, volume):
 
     action_fields = {"disks": [("remove", volume, {})]}
     comm = commands.server_command("DELETE_VOLUME",
-                                   action_fields=action_fields)
+                                   action_fields=action_fields,
+                                   for_user=volume.userid)
     return comm(_delete_volume)(vm, volume)
 
 
@@ -136,11 +137,7 @@ def _delete_volume(vm, volume):
     log.info("Deleted volume '%s' from server '%s'. JobID: '%s'", volume.id,
              volume.machine_id, jobid)
     volume.backendjobid = jobid
-    if volume.delete_on_termination:
-        volume.status = "DELETING"
-    else:
-        volume.status = "DETACHING"
-    volume.save()
+    util.mark_volume_as_deleted(volume)
     return jobid
 
 

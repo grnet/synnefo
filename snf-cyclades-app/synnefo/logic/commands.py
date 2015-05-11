@@ -68,7 +68,7 @@ def validate_server_action(vm, action):
     return
 
 
-def server_command(action, action_fields=None):
+def server_command(action, action_fields=None, for_user=None):
     """Handle execution of a server action.
 
     Helper function to validate and execute a server action, handle quota
@@ -91,14 +91,18 @@ def server_command(action, action_fields=None):
         @wraps(func)
         @transaction.commit_on_success
         def wrapper(vm, *args, **kwargs):
-            user_id = vm.userid
+            user_id = for_user
+            if user_id is None:
+                user_id = vm.userid
+
             validate_server_action(vm, action)
             vm.action = action
 
             commission_name = "client: api, resource: %s" % vm
             quotas.handle_resource_commission(vm, action=action,
                                               action_fields=action_fields,
-                                              commission_name=commission_name)
+                                              commission_name=commission_name,
+                                              for_user=user_id)
             vm.save()
 
             # XXX: Special case for server creation!

@@ -153,6 +153,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     new_operstate = None
     new_flavor = None
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
+    deferred_jobs = []
 
     if status == rapi.JOB_STATUS_SUCCESS:
         if state_for_success is not None:
@@ -179,7 +180,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             # the diff between the DB and Ganeti disks. This is required in
             # order to update quotas for disks that changed, but not from this
             # job!
-            disk_changes = update_vm_disks(vm, disks, etime)
+            disk_changes, deferred_jobs = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
 
     vm_deleted = False
@@ -227,6 +228,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         vm.flavor = new_flavor
 
     vm.save()
+
+    # Before exiting, do any deferred jobs that are left.
+    for (job, args, kwargs) in deferred_jobs:
+        job(*args, **kwargs)
 
 
 def find_new_flavor(vm, cpu=None, ram=None):
@@ -484,6 +489,7 @@ def update_vm_disks(vm, disks, etime=None):
     skip_db_stale = False
 
     changes = []
+    deferred_jobs = []
 
     # Disks that exist in Ganeti but not in DB
     for disk_name in (gnt_keys - db_keys):
@@ -536,11 +542,18 @@ def update_vm_disks(vm, disks, etime=None):
             if db_disk.status == "CREATING":
                 # Disk has been created
                 changes.append(("add", db_disk, {}))
+            if db_disk.status == "DELETING" and vm.helper is True:
+                # Detached disk has been attached to a helper server in order
+                # to be deleted.
+                fn = volume_actions.volumes.delete_volume_from_helper
+                args = (db_disk, vm)
+                deferred_jobs.append((fn, args, {}))
+
             # Update the disk in DB with the values from Ganeti disk
             [setattr(db_disk, f, gnt_disk[f]) for f in DISK_FIELDS]
             db_disk.save()
 
-    return changes
+    return changes, deferred_jobs
 
 
 def disks_are_equal(db_disk, gnt_disk):
@@ -1314,6 +1327,7 @@ def remove_volume(vm, volume, depends=[], keep_data=False):
         "disks": [("remove", volume.backend_volume_uuid, {})],
         "depends": depends,
     }
+
     if vm.backend.use_hotplug():
         kwargs["hotplug_if_possible"] = True
     if settings.TEST:

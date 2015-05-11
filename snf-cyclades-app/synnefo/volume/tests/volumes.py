@@ -18,7 +18,7 @@ from django.test.utils import override_settings
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       MurphysLaw)
 from synnefo.db import models_factory as mf
-from synnefo.db.models import Volume
+from synnefo.db.models import Volume, VirtualMachine
 from synnefo.volume import volumes
 from snf_django.lib.api import faults
 from mock import patch
@@ -35,9 +35,10 @@ class QuotaAssertions(django.test.SimpleTestCase):
 
     def assertCommissionEqual(self, mqh, expected_commission):
         """Assert that the latest quota commission was the expected one."""
-        _, args, __ = mqh.issue_one_commission.mock_calls[-1]
+        #_, args, __ = mqh.issue_one_commission.mock_calls[-1]
+        _, args, __ = mqh.issue_one_commission.mock_calls[0]
         commission_resources = args[1]
-        self.assertItemsEqual(commission_resources, expected_commission)
+        self.assertEqual(commission_resources, expected_commission)
 
     def assertNoCommission(self, mqh):
         """Assert that no commission was sent."""
@@ -58,7 +59,7 @@ class QuotaAssertions(django.test.SimpleTestCase):
 
     def assertPendingSerial(self, mqh, expected_serial):
         """Assert that a serial is pending."""
-        # Find all accepted serials
+        # Find all pending serials
         self.assertIsNotNone(expected_serial)
         pending_serials = []
         for _, args, __ in mqh.resolve_commissions.mock_calls:
@@ -483,7 +484,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         # status and that no commission was sent.
         self.assertEqual(vol.machine, self.archip_vm)
         self.assertEqual(vol.volume_type, self.archip_vm.flavor.volume_type)
-        self.assertEqual(vol.index, 0)
+        self.assertEqual(vol.index, 1)
         self.assertEqual(vol.status, "ATTACHING")
         self.assertNoCommission(m)
 
@@ -559,33 +560,72 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         self.assertEqual(disk_args[1], vol.backend_volume_uuid)
         self.assertEqual(disk_args[2], {})
 
-    def test_delete(self, mrapi):
-        # We can not delete detached volumes
-        vol = mf.VolumeFactory(machine=None, status="AVAILABLE")
-        self.assertRaises(faults.BadRequest,
-                          volumes.delete,
-                          vol)
-
-        vm = mf.VirtualMachineFactory(userid=vol.userid)
-        # Also we cannot delete root volume
-        vol.index = 0
-        vol.machine = vm
-        vol.status = "IN_USE"
-        vol.save()
+    def test_delete_attached(self, mrapi):
+        # Test that we cannot delete root volume
+        vm = mf.VirtualMachineFactory(userid=self.userid)
+        vol = mf.VolumeFactory(machine=vm, userid=self.userid, status="IN_USE",
+                               index=0, size=self.size)
         self.assertRaises(faults.BadRequest,
                           volumes.delete,
                           vol)
 
         # We can delete everything else
         vol.index = 1
+        vol.save()
         mrapi().ModifyInstance.return_value = 42
-        with mocked_quotaholder():
+        with mocked_quotaholder() as m:
             volumes.delete(vol)
         self.assertEqual(vol.backendjobid, 42)
         args, kwargs = mrapi().ModifyInstance.call_args
+
+        expected_commission = {(self.userid, "cyclades.disk"):
+                               - (self.size << 30)}
+        self.assertCommissionEqual(m, expected_commission)
+        self.assertEqual(vol.status, "DELETING")
+
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(kwargs["disks"][0], ("remove",
                                               vol.backend_volume_uuid, {}))
+
+    def test_delete_uninitialized(self, mrapi):
+        """Test if we can delete an uninitialized volume."""
+        # We cannot delete an uninitialized volume in invalid state
+        vol = mf.VolumeFactory(machine=None, status="DELETING",
+                               userid=self.userid, size=self.size)
+        message = "Volume is in invalid state: %s" % vol.status
+        with self.assertRaisesMessage(faults.BadRequest, message):
+            volumes.delete(vol)
+
+        # Test if the deletion and quota logic works as expected
+        vol.status = "AVAILABLE"
+        vol.save()
+        with mocked_quotaholder() as m:
+            vol = volumes.delete(vol)
+        expected_commission = {(self.userid, "cyclades.disk"):
+                               - (self.size << 30)}
+        self.assertCommissionEqual(m, expected_commission)
+        self.assertAcceptedSerial(m, vol.serial)
+        self.assertEqual(vol.machine, None)
+        self.assertEqual(vol.status, "DELETED")
+        self.assertEqual(vol.deleted, True)
+
+    def test_delete_detached(self, mrapi):
+        """Test the deletion of a detached volume."""
+        vol = mf.VolumeFactory(machine=None, status="AVAILABLE",
+                               userid=self.userid, backendjobid=42,
+                               volume_type=self.archip_vt)
+        vm = mf.VirtualMachineFactory(userid=self.userid, helper=True,
+                                      operstate="STOPPED",
+                                      flavor__volume_type=self.archip_vt)
+
+        mrapi().ModifyInstance.return_value = 42
+        with mocked_quotaholder() as m:
+            vol = volumes.delete(vol)
+
+        self.assertNoCommission(m)
+        self.assertEqual(vol.machine, vm)
+        self.assertEqual(vol.status, "DELETING")
+        self.assertEqual(vol.deleted, False)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

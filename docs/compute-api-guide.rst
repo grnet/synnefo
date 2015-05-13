@@ -69,8 +69,6 @@ Limitations
 
 * Limits are currently not supported.
 
-* Extensions are currently not supported.
-
 
 API Operations
 ==============

@@ -89,6 +89,19 @@ This is the Cyclades/Compute API:
    Compute API (Compute) <compute-api-guide>
 
 
+Compute Service API Extensions (Cyclades)
+=========================================
+
+The Compute API extensions cover some Compute actions that are not included by
+default in the Openstack Compute API.
+
+This is the Cyclades/Compute API Extensions guide:
+
+.. toctree::
+   :maxdepth: 2
+
+   Compute API Extensions (Compute) <compute-api-extensions-guide>
+
 
 Network Service API (Cyclades)
 ==============================

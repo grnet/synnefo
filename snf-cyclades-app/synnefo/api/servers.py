@@ -1208,7 +1208,7 @@ def get_volume_info(request, server_id, volume_id):
     vm = util.get_vm(server_id, user_id, for_update=False)
     volume = get_volume(user_id, volume_id, for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
-    servers._check_attachment(vm, volume)
+    server_attachments._check_attachment(vm, volume)
     attachment = volume_to_attachment(volume)
     data = json.dumps({'volumeAttachment': attachment})
     return HttpResponse(data, status=200)

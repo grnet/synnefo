@@ -500,10 +500,10 @@ class CycladesTests(BurninTests):
         name = self.run_id
         network = self.clients.network.create_network(
             "MAC_FILTERED", name=name, shared=False,
-            project_id=project_id, gateway_ip=gateway_ip)
+            project_id=project_id)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
-            network['id'], cidr=cidr, enable_dhcp=dhcp)
+            network['id'], cidr=cidr, enable_dhcp=dhcp, gateway_ip=gateway_ip)
         self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas

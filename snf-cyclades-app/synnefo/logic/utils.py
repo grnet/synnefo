@@ -166,7 +166,8 @@ OPCODE_TO_ACTION = {
     "OP_INSTANCE_STARTUP": "START",
     "OP_INSTANCE_SHUTDOWN": "STOP",
     "OP_INSTANCE_REBOOT": "REBOOT",
-    "OP_INSTANCE_REMOVE": "DESTROY"}
+    "OP_INSTANCE_REMOVE": "DESTROY",
+    "OP_INSTANCE_GROW_DISK": "MODIFY_VOLUME"}
 
 
 def get_action_from_opcode(opcode, job_fields):

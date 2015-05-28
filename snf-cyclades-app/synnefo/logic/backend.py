@@ -234,25 +234,26 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         job(*args, **kwargs)
 
 
-def find_new_flavor(vm, cpu=None, ram=None):
-    """Find VM's new flavor based on the new CPU and RAM"""
-    if cpu is None and ram is None:
-        return None
+def find_new_flavor(vm, cpu=None, ram=None, disk=None):
+    """Find VM's new flavor based on the new CPU, RAM and disk size"""
 
     old_flavor = vm.flavor
     ram = ram if ram is not None else old_flavor.ram
     cpu = cpu if cpu is not None else old_flavor.cpu
-    if cpu == old_flavor.cpu and ram == old_flavor.ram:
+    disk = disk if disk is not None else old_flavor.disk
+
+    if (cpu == old_flavor.cpu and ram == old_flavor.ram and
+        disk == old_flavor.disk):
         return None
 
     try:
         new_flavor = Flavor.objects.get(
-            cpu=cpu, ram=ram, disk=old_flavor.disk,
+            cpu=cpu, ram=ram, disk=disk,
             volume_type_id=old_flavor.volume_type_id)
     except Flavor.DoesNotExist:
         raise Exception("There is no flavor to match the instance specs!"
                         " Instance: %s CPU: %s RAM %s: Disk: %s VolumeType: %s"
-                        % (vm.backend_vm_id, cpu, ram, old_flavor.disk,
+                        % (vm.backend_vm_id, cpu, ram, disk,
                            old_flavor.volume_type_id))
     log.info("Flavor of VM '%s' changed from '%s' to '%s'", vm,
              old_flavor.name, new_flavor.name)
@@ -551,6 +552,15 @@ def update_vm_disks(vm, disks, etime=None):
 
             # Update the disk in DB with the values from Ganeti disk
             [setattr(db_disk, f, gnt_disk[f]) for f in DISK_FIELDS]
+
+            # Fix the flavor of the instance if root disk has changed
+            if (db_disk.index == 0 and db_disk.size != vm.flavor.disk):
+                try:
+                    new_flavor = find_new_flavor(vm, disk=db_disk.size)
+                    if new_flavor is not None:
+                        vm.flavor = new_flavor
+                except:
+                    pass
             db_disk.save()
 
     return changes, deferred_jobs

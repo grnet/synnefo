@@ -164,7 +164,8 @@ class GetCommissionInfoTest(TestCase):
                           (project, "cyclades.total_ram"): -1024 << 20,
                           (project, "cyclades.disk"): -20 << 30}, commission)
         commission = quotas.get_commission_info(vm, "RESIZE")
-        self.assertEqual(None, commission)
+        self.assertTrue((commission is None) or (not commission.keys()))
+
         commission = quotas.get_commission_info(vm, "RESIZE",
                                                 {"beparams": {"vcpus": 4,
                                                               "maxmem": 2048}})

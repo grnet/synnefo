@@ -35,6 +35,7 @@ class ServerReconciliationTest(TestCase):
                    "fix_stale": True,
                    "fix_orphans": True,
                    "fix_unsynced_nics": True,
+                   "fix_unsynced_disks": True,
                    "fix_unsynced_flavors": True}
         self.reconciler = reconciliation.BackendReconciler(self.backend,
                                                            options=options,
@@ -154,6 +155,8 @@ class ServerReconciliationTest(TestCase):
                                              deleted=False,
                                              flavor=flavor1,
                                              operstate="STARTED")
+        v1 = mfactory.VolumeFactory(machine=vm1, size=flavor1.disk,
+                volume_type=flavor1.volume_type)
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
              "beparams": {"maxmem": 2048,
@@ -161,9 +164,9 @@ class ServerReconciliationTest(TestCase):
                           "vcpus": 4},
              "oper_state": True,
              "mtime": time(),
-             "disk.sizes": ['1024'],
-             "disk.names": ['vol-name'],
-             "disk.uuids": ['vol-uuid'],
+             "disk.sizes": [1024],
+             "disk.names": [v1.backend_volume_uuid],
+             "disk.uuids": [v1.backend_disk_uuid],
              "nic.ips": [],
              "nic.names": [],
              "nic.macs": [],

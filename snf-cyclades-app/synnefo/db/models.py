@@ -1109,6 +1109,7 @@ class Volume(models.Model):
     source = models.CharField(max_length=128, null=True)
     source_version = models.IntegerField(null=True)
     origin = models.CharField(max_length=128, null=True)
+    origin_size = models.IntegerField("Origin size in GB", null=True)
 
     deleted = models.BooleanField("Deleted", default=False, null=False,
                                   db_index=True)

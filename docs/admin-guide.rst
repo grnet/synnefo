@@ -36,6 +36,12 @@ which serves Synnefo by default, needs read access to the configuration
 files and we don't want it to run as root, it must run with group
 ``synnefo``.
 
+.. warning:: If you want to add your own configuration file, do not forget to
+   declare the appropriate  encoding by adding the line
+   ``## -*- coding: utf-8 -*-`` at the beggining of the file.
+
+
+
 Cyclades and Pithos talk to Archipelago over some named pipes under
 ``/dev/shm/posixfd``. This directory is created by Archipelago, owned by
 the user/group that Archipelago runs as, and at the same time it must be

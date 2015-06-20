@@ -1131,13 +1131,23 @@ class Volume(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial, related_name='volume',
                                null=True, on_delete=models.SET_NULL)
 
+    # This field will be used only for pre 0.4.1-2 Archipelago volumes, since
+    # they used the Ganeti name and not the canonical name that Synnefo
+    # provides. For more info, please consult the design document for
+    # detachable volumes.
+    legacy_backend_volume_uuid = models.CharField("Legacy volume UUID in"
+                                                  " backend", max_length=128,
+                                                  null=True)
+
     @property
     def backend_volume_uuid(self):
-        return u"%svol-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+        return (self.legacy_backend_volume_uuid or
+                u"%svol-%d" % (settings.BACKEND_PREFIX_ID, self.id))
 
     @property
     def backend_disk_uuid(self):
-        return u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+        return (self.legacy_backend_volume_uuid or
+                u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id))
 
     @property
     def source_image_id(self):

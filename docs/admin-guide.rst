@@ -2968,6 +2968,7 @@ Upgrade Notes
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
    v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
+   v0.16.1 -> v0.16.2 <upgrade/upgrade-0.16.2>
 
 
 .. _changelog-news:
@@ -2976,6 +2977,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`

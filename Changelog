@@ -13,10 +13,30 @@ v0.16.2.rc1
 
 Released: UNRELEASED
 
+Admin
+-----
+
+* Display last login per auth provider if more than one exists.
+* Display `comments for review' in project applications.
+* Various minor fixes.
+
 Cyclades UI
 -----------
 
 * Change default private network gateway to 'None'.
+* Add UI_IMAGE_LISTING_USERS setting to enable custom defined image sections
+  in image selection view of the VM creation wizard.
+
+Cyclades
+--------
+
+* Update `snf-manage server-modify' to also change the owner of attached
+  disks.
+
+Tools
+-----
+
+* Small clean up and bug fixes on snf-deploy and CI.
 
 
 .. _Changelog-0.16.1:

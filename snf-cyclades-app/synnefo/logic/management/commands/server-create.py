@@ -26,7 +26,7 @@ from synnefo.logic import servers
 HELP_MSG = """
 
 Create a new VM without authenticating the user or checking the resource
-limits of the user. Also the allocator can be bypassed by specifing a
+limits of the user. Also the allocator can be bypassed by specifying a
 backend-id.
 """
 

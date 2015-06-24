@@ -1516,6 +1516,38 @@ snf-manage network-create --subnet6={0} \
 
         return [cmd]
 
+    @update_admin
+    @base.run_cmds
+    def sync_helper_servers(self):
+        """Create the smallest possible Archipelago helper VM.
+
+        If there is no Archipelago flavor, then we can exit.
+        """
+        storage_flavor = "ext_archipelago"
+        if storage_flavor not in config.flavor_storage:
+            return []
+        cpu_flavor = config.flavor_cpu[0]
+        ram_flavor = config.flavor_ram[0]
+        disk_flavor = config.flavor_disk[0]
+
+        # Get the admin user UUID
+        self.DB.get_user_info_from_db(config.user_email)
+
+        # Get the smallest Archipelago flavor by parsing the `snf-manage
+        # flavor-list` command.
+        flavor_id = """$(snf-manage flavor-list \
+--filter-by='cpu=%s,ram=%s,disk=%s,volume_type__disk_template=%s' | \
+awk 'END {print $1}')""" % (cpu_flavor, int(ram_flavor) * 1024, disk_flavor,
+                            storage_flavor)
+
+        # Get an image by parsing the `snf-manage image-list` command.
+        image_uuid = "$(snf-manage image-list | awk 'END {print $1}')"
+        cmd = """
+snf-manage helper-servers-sync --flavor %s --user %s --password %s --image %s
+""" % (flavor_id, context.user_uuid, config.user_passwd, image_uuid)
+
+        return [cmd]
+
     @base.run_cmds
     def export_service(self):
         f = config.jsonfile
@@ -1797,6 +1829,11 @@ class Kamaki(base.Component):
             "sleep 5",
             cmd
             ]
+
+    @update_admin
+    @update_cluster_admin
+    def admin_post(self):
+        self.CYCLADES.sync_helper_servers()
 
     @base.run_cmds
     def test(self):

@@ -147,6 +147,12 @@ def init(args):
     config.archip_dir = os.path.join(config.shared_dir, "archip")
     config.src_dir = os.path.join(config.shared_dir, "src")
 
+    # debian_base_url is given in config
+    # Here we set some config vars that will be frequently used
+    config.debian_base_name = "debian_base.diskdump"
+    config.debian_base_image = os.path.join(config.images_dir,
+                                            config.debian_base_name)
+
     if args.disable_colors:
         disable_color()
 

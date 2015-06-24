@@ -796,11 +796,9 @@ class Image(base.Component):
     @base.run_cmds
     def prepare(self):
         url = config.debian_base_url
-        d = config.images_dir
-        image = "debian_base.diskdump"
+        image = config.debian_base_image
         return [
-            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image),
-            "cp /tmp/%s %s/%s" % (image, d, image),
+            "test -e %s || wget -4 %s -O %s" % (image, url, image),
             "mv /etc/default/snf-image /etc/default/snf-image.orig",
             ]
 
@@ -1794,37 +1792,39 @@ class Kamaki(base.Component):
 
     def _fetch_image(self):
         url = config.debian_base_url
-        image = "debian_base.diskdump"
+        image = config.debian_base_image
         return [
-            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image)
+            "test -e %s || wget -4 %s -O %s" % (image, url, image)
             ]
 
     def _fetch_image_meta(self):
         url = config.debian_base_url + ".meta"
-        meta = "debian_base.diskdump.meta"
+        meta = config.debian_base_image + ".meta"
         return [
-            "test -e /srv/images/%s || wget -4 %s -O /srv/images/%s" % (meta, url, meta)
+            "test -e %s || wget -4 %s -O %s" % (meta, url, meta)
             ]
 
     def _upload_image(self):
-        image = "debian_base.diskdump"
+        local = config.debian_base_image
+        remote = config.debian_base_name
         return [
-            "kamaki file upload --container images /tmp/%s %s" % (image, image)
+            "kamaki file upload --container images %s %s" % (local, remote)
             ]
 
     def _upload_image_meta(self):
-        image = "debian_base.diskdump.meta"
+        local = config.debian_base_image + ".meta"
+        remote = config.debian_base_name + ".meta"
         return [
-            "kamaki file upload --container images /srv/images/%s %s" % (image, image)
+            "kamaki file upload --container images %s %s" % (local, remote)
             ]
 
     def _register_image(self):
-        image = "debian_base.diskdump"
-        image_location = "/images/%s" % image
+        meta = config.debian_base_image + ".meta"
+        image_location = "/images/%s" % config.debian_base_name
         cmd = """
         kamaki image register --name "Debian Base" --location {0} --public \
-            --force --metafile /srv/{0}.meta
-        """.format(image_location)
+            --force --metafile {1}
+        """.format(image_location, meta)
         return [
             "sleep 5",
             cmd

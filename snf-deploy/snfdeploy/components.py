@@ -281,7 +281,7 @@ server {1}
 {2}
 send
 EOF
-""".format(config.ddns_private_key, self.ctx.ns.fqdn, cmd)
+""".format(config.ddns_private_key, self.ctx.ns.ip, cmd)
         return ret
 
     @base.run_cmds

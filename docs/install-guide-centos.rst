@@ -2403,6 +2403,29 @@ skipped.
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
+Helper server creation
+----------------------
+
+Starting from Synnefo version 0.17, the administrator needs to create some
+helper servers for internal Synnefo actions regarding Archipelago. These helper
+servers will be spread in all Ganeti clusters and will be in STOPPED state so
+that they don't reserve any resources:
+
+.. code-block:: console
+
+  # snf-manage helper-servers-sync --flavor <flavor_id> --image <image_id> \
+        --user <admin_user_id> --password <password>
+
+
+The administrator must have in mind the following:
+
+#. These servers must be created under an administrator account. This account
+   must have the necessary quota to hold as many VMs as the Ganeti clusters.
+#. The ``<flavor_id>``, ``<image_id>`` and ``<password>`` variables will be
+   used for all the servers that will be created.
+#. While the flavor is of little importance, note that the disk template that
+   will be chosen must be Archipelago.
+
 VM stats configuration
 ----------------------
 

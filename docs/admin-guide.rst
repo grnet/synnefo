@@ -899,10 +899,21 @@ image to Cyclades:
 Deletion of an image is done via `kamaki image unregister` command, which will
 delete the Cyclades Images but will leave the Pithos file as is (unregister).
 
-Apart from using `kamaki` to see and hangle the available images, the
+Apart from using `kamaki` to see and handle the available images, the
 administrator can use `snf-manage image-list` and `snf-manage image-show`
 commands to list and inspect the available public images. Also, the `--user`
 option can be used the see the images of a specific user.
+
+Custom image listing sections
+`````````````````````````````
+
+Since Synnefo 0.16.2, the installation wizard supports custom image listing
+sections. Images with the ``LISTING_SECTION`` image property set, and whose
+owner uuid is listed in the ``UI_IMAGE_LISTING_USERS`` Cyclades setting (in
+``/etc/synnefo/20-snf-cyclades-app-ui.conf``) will be displayed in a separate
+section in the installation wizard. The name of the new section will be the
+value of the ``LISTING_SECTION`` image property.
+
 
 Virtual Servers
 ~~~~~~~~~~~~~~~

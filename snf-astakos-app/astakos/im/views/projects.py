@@ -115,7 +115,7 @@ def project_list(request, template_name="im/projects/project_list.html"):
         query = query & ~Q(Q(is_base=True) & \
                           ~Q(realname="system:%s" % request.user.uuid))
 
-    query = query & ~Q(state__in=Project.SKIP_STATES)
+    query = query & ~Q(state__in=Project.HIDDEN_STATES)
     mode = "default"
     if not request.user.is_project_admin():
         mode = "related"
@@ -208,6 +208,10 @@ def project_add_or_modify(request, project_uuid=None):
                                      fail_silently=True)
                     return redirect(restrict_reverse('project_list'))
         else:
+            # handle terminated projects for which the name attribute
+            # has been set to null
+            if project and not project.name:
+                project.name = project.realname
             form = form_class(instance=project)
 
         extra_context['form'] = form

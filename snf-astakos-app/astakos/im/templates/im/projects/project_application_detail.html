@@ -18,6 +18,9 @@
 {% block object.status %}
 {% if project.is_initialized %}
 {{ object.state_display|upper}}
+{% if project.state == project.TERMINATED %}
+<span class="warn">[PROJECT TERMINATED]</span>
+{% endif %}
 {% else %}
 PROJECT APPLICATION {{ object.state_display|upper}}
 {% endif %}

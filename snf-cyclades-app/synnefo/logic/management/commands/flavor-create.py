@@ -21,6 +21,11 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Flavor, VolumeType
 
+from logging import getLogger
+
+
+log = getLogger(__name__)
+
 
 HELP_MSG = """Create one or more flavors.
 
@@ -57,6 +62,14 @@ class Command(SynnefoCommand):
         rams = args[1].split(',')
         disks = args[2].split(',')
 
+        for i, r in enumerate(rams):
+            value = int(r)
+            if value % 4:
+                value += 4 - value % 4
+                log.warning("Rounding up RAM size: %s -> %s", r, value)
+
+            rams[i] = value
+
         volume_types = []
         volume_type_ids = args[3].split(',')
         for vol_t_id in volume_type_ids:
@@ -75,7 +88,7 @@ class Command(SynnefoCommand):
         for cpu, ram, disk, volume_type in product(cpus, rams, disks,
                                                    volume_types):
             try:
-                flavors.append((int(cpu), int(ram), int(disk), volume_type))
+                flavors.append((int(cpu), ram, int(disk), volume_type))
             except ValueError:
                 raise CommandError("Invalid values")
 

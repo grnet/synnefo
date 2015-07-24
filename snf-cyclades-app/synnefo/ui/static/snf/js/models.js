@@ -491,6 +491,14 @@
           return _.include(_.keys(synnefo.config.system_images_owners), owner)
         },
 
+        listing_section: function() {
+          var owner = this.get('owner_uuid');
+          if (_.include(synnefo.config.image_listing_users, owner)) {
+            var props = this.get('properties') || {};
+            return props.listing_section;
+          }
+        },
+
         owned_by: function(user) {
           if (!user) { user = synnefo.user }
           return user.get_username() == this.get('owner_uuid');
@@ -2035,7 +2043,23 @@
                         skip_api_error: true });
         },
         
-        get_images_for_type: function(type) {
+        get_listing_sections: function() {
+          return _.unique(_.filter(this.map(function(img) {
+            return img.listing_section();
+          }), function(r) { return r; }));
+        },
+
+        get_section_images: function(section) {
+          return this.filter(function(img) {
+            return (img.listing_section() == section);
+          });
+        },
+
+        get_images_for_type: function(type, isSection) {
+            if (isSection) {
+              return this.get_section_images(type);
+            }
+
             var method = 'get_{0}_images'.format(type.replace("-", "_"));
             if (this[method]) {
                 return this[method]();
@@ -2043,11 +2067,11 @@
             return this.active();
         },
 
-        update_images_for_type: function(type, onStart, onComplete, onError, force_load) {
+        update_images_for_type: function(type, isSection, onStart, onComplete, onError, force_load) {
             var load = false;
             error = onError || function() {};
             function complete(collection) { 
-                onComplete(collection.get_images_for_type(type)); 
+                onComplete(collection.get_images_for_type(type, isSection)); 
             }
             
             // do we need to fetch/update current collection entries

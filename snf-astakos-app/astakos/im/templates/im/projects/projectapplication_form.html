@@ -33,7 +33,7 @@
         {% block form_errors %}
         {% for key, err in form.errors.items %}
         {% if key == "__all__" %}
-        <div class="form-error">{{ err }}</div>
+        <div class="form-error clearfix">{{ err }}</div>
         {% endif %}
         {% endfor %}
         {% endblock %}

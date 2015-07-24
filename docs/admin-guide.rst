@@ -36,6 +36,12 @@ which serves Synnefo by default, needs read access to the configuration
 files and we don't want it to run as root, it must run with group
 ``synnefo``.
 
+.. warning:: If you want to add your own configuration file, do not forget to
+   declare the appropriate  encoding by adding the line
+   ``## -*- coding: utf-8 -*-`` at the beggining of the file.
+
+
+
 Cyclades and Pithos talk to Archipelago over some named pipes under
 ``/dev/shm/posixfd``. This directory is created by Archipelago, owned by
 the user/group that Archipelago runs as, and at the same time it must be
@@ -175,10 +181,12 @@ Click Create an application.
 
 Fill the necessary information and for callback URL give::
 
-    https://node1.example.com/ui/login/twitter/authenticated
+    https://node1.example.com/astakos/ui/login/twitter/authenticated
 
-Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set the
+corresponding variables ``ASTAKOS_TWITTER_TOKEN`` and
+``ASTAKOS_TWITTER_SECRET`` to reflect your newly created pair.
+Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list.
 
 Google Authentication
 ~~~~~~~~~~~~~~~~~~~~~
@@ -188,15 +196,14 @@ visit https://code.google.com/apis/console/.
 
 Under API Access select Create another client ID, select Web application,
 expand more options in Your site or hostname section and in Authorized
-Redirect URIs add:
+Redirect URIs add::
 
+    https://node1.example.com/astakos/ui/login/google/authenticated
 
-Fill the necessary information and for callback URL give::
-
-    https://node1.example.com/ui/login/google/authenticated
-
-Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set the
+corresponding variables ``ASTAKOS_GOOGLE_CLIENT_ID`` and
+``ASTAKOS_GOOGLE_SECRET`` to reflect your newly created pair.
+Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list.
 
 
 Working with Astakos
@@ -311,7 +318,11 @@ Currently astakos supports the following identity providers:
       (module name ``linkedin``)
 
 To enable any of the above modules (by default only ``local`` accounts are
-allowed), retrieve and set the required provider settings and append the
+allowed) you have to install oauth2 package. To do so run::
+
+    apt-get install python-oauth2
+
+Then retrieve and set the required provider settings and append the
 module name in ``ASTAKOS_IM_MODULES``.
 
 .. code-block:: python
@@ -322,7 +333,6 @@ module name in ``ASTAKOS_IM_MODULES``.
 
     # let users signup and login using their google account
     ASTAKOS_IM_MODULES = ['local', 'google']
-
 
 .. _auth_methods_policies:
 
@@ -889,10 +899,21 @@ image to Cyclades:
 Deletion of an image is done via `kamaki image unregister` command, which will
 delete the Cyclades Images but will leave the Pithos file as is (unregister).
 
-Apart from using `kamaki` to see and hangle the available images, the
+Apart from using `kamaki` to see and handle the available images, the
 administrator can use `snf-manage image-list` and `snf-manage image-show`
 commands to list and inspect the available public images. Also, the `--user`
 option can be used the see the images of a specific user.
+
+Custom image listing sections
+`````````````````````````````
+
+Since Synnefo 0.16.2, the installation wizard supports custom image listing
+sections. Images with the ``LISTING_SECTION`` image property set, and whose
+owner uuid is listed in the ``UI_IMAGE_LISTING_USERS`` Cyclades setting (in
+``/etc/synnefo/20-snf-cyclades-app-ui.conf``) will be displayed in a separate
+section in the installation wizard. The name of the new section will be the
+value of the ``LISTING_SECTION`` image property.
+
 
 Virtual Servers
 ~~~~~~~~~~~~~~~
@@ -2958,6 +2979,7 @@ Upgrade Notes
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
    v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
+   v0.16.1 -> v0.16.2 <upgrade/upgrade-0.16.2>
 
 
 .. _changelog-news:
@@ -2966,6 +2988,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`

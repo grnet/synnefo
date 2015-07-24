@@ -6,16 +6,36 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.16next:
+.. _Changelog-0.16.2:
 
-v0.16next
-=========
+v0.16.2
+=======
 
-Released: UNRELEASED
+Released: Fri Jul 24 14:13:24 EEST 2015
+
+Changelog
+---------
+
+* Switch to a more verbose Changelog style, which includes more details
+  regarding the commits of each relase. A summary of the changes is provided
+  with the NEWS file.
+
+Admin
+-----
+
+* Handle unicode chars in VM search field.
+* Check usage to decide if resource is useful.
+* Display last login per auth provider if more than one exists.
+* Display `comments for review' in project applications.
+* Display effective limit in user's quotas.
+* Fix IP updated time since timestamp.
+* Fetch image info using UUID and version.
+>>>>>>> master
 
 Astakos
 -------
 
+<<<<<<< HEAD
 * Support LDAP authentication by creating the 'LDAP' authentication
   provider.
 * Add 'autoverify' provider policy to automatically verify the user's
@@ -26,11 +46,77 @@ Astakos
   them (e.g. the user's email).
 * Minor changes so that 'local' authentication provider is treated
   in the same way as all other providers.
+=======
+* Always accept terms for users created via admin API.
+* Allow admin to update the 'signed terms' date for a user via the 'signTerms'
+  admin API action.
+* Improve admin API user creation process, in case that user moderation is
+  disabled.
+* Provide South migration to fix initialized state of enrolled memberships.
+* Handle empty project limit in application submission form.
+* Include terminated projects in project list views.
+* Display UUID in expired projects list.
+* Fix checkbox behaviour in project members list.
+* Fix style error in project creation form.
+* Add project_creation_date column to list.
+* Fix UI project tests.
+* Route oa2 models to Astakos database in Synnefo DB router.
+* Catch a couple of potential 500 errors.
+* Fix auth_provider limit enforcement.
+
+Bunrin
+------
+
+* Fix a race in public network detach.
+* Handle exceptions and retry during SSH.
+* Create private networks without a gateway.
+
+CI
+--
+
+* Pin Debian Wheezy image during ci runs.
+* Fix CI image flavor regexp.
+
+Cyclades
+--------
+
+* Round up memory sizes in flavor create.
+* Change volume ownership on server-modify.
+
+Cyclades UI
+-----------
+
+* Add UI_IMAGE_LISTING_USERS setting to enable custom defined image sections
+  in image selection view of the VM creation wizard. The sections are defined
+  using the LISTING_SECTION image property.
+* Change default private network gateway to 'None'.
+* Include machine icon images for bitnami.
+
+Deploy
+------
+
+* Substitute IPs with FQDNs.
+* Fix CA creation.
+* Use domain in ServerName.
+* Update qa-init.sh for Ganeti.
+* Disable v6 on loopback interface.
+
+
+Documentation
+-------------
+
+* Update install guide to use Debian Wheezy.
+
+>>>>>>> master
 
 Pithos
 ------
 
+<<<<<<< HEAD
 * Remove obsolete billing code
+=======
+* Fix off-by-one error in Pithos API tests.
+>>>>>>> master
 
 
 .. _Changelog-0.16.1:

@@ -467,9 +467,10 @@ $('#members-table tr th.check input').change(function(e){
   } else {
     $('#members-table tbody td.check input').removeAttr('checked');
   } 
+  check_form_actions_inactive()
 });
 
-$('#members-table tr .check input').click(function(e){
+$('#members-table tr td.check input').change(function(e){
   check_form_actions_inactive()
 });
 

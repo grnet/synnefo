@@ -194,3 +194,8 @@ UI_SYSTEM_IMAGES_OWNERS = {
     'admin@synnefo.org': 'system',
     'images@synnefo.org': 'system'
 }
+
+## A list of user uuids. Images owned by users in this list will incur extra
+## handling and be sectioned accordingly in image list view based on the
+## LISTING_SECTION property if set.
+UI_IMAGE_LISTING_USERS = []

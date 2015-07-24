@@ -1,5 +1,5 @@
 <VirtualHost *:80>
-  ServerName %HOST%
+  ServerName %DOMAIN%
 
   RewriteEngine On
   RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}

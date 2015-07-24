@@ -277,6 +277,7 @@ dl.alt-style dd									{ overflow:hidden; position:relative; margin-left: 0; }
 dl.resources dd                                 { width: 60%; }
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
+.projects h2 span.warn  						{ color:#F62211;}
 .projects h2 span.prefix						{}
 .projects h2 em									{ float:right; }
 .projects h3									{ font-size:1.154em; }
@@ -746,3 +747,5 @@ table.cols-3 tr.links td 						{ font-size:1.154em}
 .form-actions.inactive form.link-like input[type="submit"]		{ background:#e8e8e8;   cursor:default; }
 
 .search-projects + #projects-list_wrapper table caption { font-size: 1.308em;}
+
+.warn-msg { color: #f00; }

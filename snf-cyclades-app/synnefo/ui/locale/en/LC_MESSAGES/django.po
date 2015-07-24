@@ -415,12 +415,12 @@ msgid ""
 msgstr ""
 
 #: templates/home.html:452 templates/home.html.py:496
-msgid "thank you for submiting your feedback"
+msgid "Thank you for submitting your feedback"
 msgstr ""
 
 #: templates/home.html:455 templates/home.html.py:499
 msgid ""
-"some error occured submiting submiting your feedback, please try again later"
+"An error occurred while submitting your feedback, please try again later"
 msgstr ""
 
 #: templates/home.html:458
@@ -452,7 +452,7 @@ msgid "submit feedback"
 msgstr ""
 
 #: templates/home.html:494
-msgid "submiting your data....."
+msgid "Submitting your data....."
 msgstr ""
 
 #: templates/home.html:497 templates/home.html.py:500

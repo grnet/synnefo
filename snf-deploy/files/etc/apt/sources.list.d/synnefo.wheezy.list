@@ -1,9 +1,6 @@
-deb http://ftp.de.debian.org/debian wheezy main
-deb http://ftp.de.debian.org/debian wheezy-backports main
-
+# Synnefo packages
 deb http://apt.dev.grnet.gr wheezy/
 deb http://apt.dev.grnet.gr unstable/
-# This is for archipelago packages
-deb http://apt.dev.grnet.gr experimental/
 
-deb http://eu.ceph.com/debian-dumpling/ wheezy main
+# X2Go repo
+deb http://packages.x2go.org/debian wheezy main

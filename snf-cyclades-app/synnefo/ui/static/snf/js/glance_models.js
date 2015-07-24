@@ -85,7 +85,7 @@
         meta_labels: {'OS':'OS', 'osfamily':'OS Family', 'GUI':'GUI'},
         display_extra_metadata: true,
         read_method: 'head',
-
+        
         // custom glance api parser
         parse: function (resp, xhr) {
             if (_.isArray(resp)) {

@@ -156,7 +156,8 @@ def image_info(vm):
 
     # Check if Cyclades DB has any info about this Image.
     try:
-        image_info = Image.objects.get(uuid=vm.imageid)
+        image_info = Image.objects.get(uuid=vm.imageid,
+                                       version=vm.image_version)
     except ObjectDoesNotExist:
         # If all else fails, gather whatever info are available from the
         # VirtualMachine instance.

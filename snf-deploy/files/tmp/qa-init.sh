@@ -1,60 +1,70 @@
-apt-get install \
-        gawk \
+apt-get install -y \
+        autoconf \
         automake \
         bridge-utils \
+        bridge-utils \
+        build-essential \
         cabal-install \
+        debhelper \
         fakeroot \
+        fping \
         fping \
         ghc \
         ghc-haddock \
         git \
+        git-email \
         graphviz \
-        hlint \
+        happy \
         hscolour \
         iproute \
+        iproute \
         iputils-arping \
+        iputils-arping \
+        less \
         libghc-attoparsec-dev \
-        libcurl4-gnutls-dev \
+        libghc-base64-bytestring-dev \
+        libghc-cabal-dev \
         libghc-crypto-dev \
         libghc-curl-dev \
-        libghc-haddock-dev \
         libghc-hinotify-dev \
         libghc-hslogger-dev \
-        libghc-hunit-dev \
         libghc-json-dev \
+        libghc-lifted-base-dev \
         libghc-network-dev \
         libghc-parallel-dev \
-        libghc-quickcheck2-dev \
+        libghc-psqueue-dev \
         libghc-regex-pcre-dev \
         libghc-snap-server-dev \
         libghc-temporary-dev \
         libghc-test-framework-dev \
         libghc-test-framework-hunit-dev \
         libghc-test-framework-quickcheck2-dev \
-        libghc-base64-bytestring-dev \
-        libghc-text-dev \
-        libcurl4-gnutls-dev \
         libghc-utf8-string-dev \
         libghc-vector-dev \
-        libghc-comonad-transformers-dev \
+        libpcre3 \
         libpcre3-dev \
-        libghc6-zlib-dev \
-        libghc-lifted-base-dev \
-        shelltestrunner \
+        locales \
         lvm2 \
-        make \
+        lvm2 \
         ndisc6 \
+        ndisc6 \
+        openssh-client \
+        openssl \
         openssl \
         pandoc \
         pep8 \
         pylint \
-        python \
         python-bitarray \
         python-coverage \
+        python-dev \
+        python-epydoc \
         python-epydoc \
         python-ipaddr \
+        python-mock \
+        python-mock \
         python-openssl \
-        python-pip \
+        python-openssl \
+        python-paramiko \
         python-pycurl \
         python-pyinotify \
         python-pyparsing \
@@ -62,29 +72,39 @@ apt-get install \
         python-simplejson \
         python-sphinx \
         python-yaml \
-        qemu-kvm \
+        qemu-utils \
+        qemu-utils \
+        quilt \
+        rsync \
+        shelltestrunner \
         socat \
         ssh \
-        vim \
-        python-fdsend
+        ssh \
+        vim
+
+
+easy_install \
+        jsonpointer \
+        jsonpatch \
+        logilab-astng==0.24.1 \
+        logilab-common==0.58.3 \
+        mock==1.0.1 \
+        pep8==1.3.3 \
+        psutil \
+        pylint==0.26.0 \
+        pyinotify==0.9.4
 
 
 cabal update
 cabal install \
-        json \
-        network \
-        parallel \
-        utf8-string \
-        curl \
-        hslogger \
-        Crypto \
-        hinotify==0.3.2 \
-        regex-pcre \
-        vector \
-        lifted-base==0.2.0.3 \
-        lens==3.10 \
-        base64-bytestring==1.0.0.1
+        'base64-bytestring>=1' \
+        lens-3.10.2 \
+        'lifted-base>=0.1.2' \
+        'hlint>=1.9.12'
 
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+
+locale-gen
 
 # cluster is not initialized
 if ! gnt-cluster getmaster; then

@@ -29,6 +29,7 @@ Package: snf-webproject
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}),
+  snf-branding (= ${binary:Version}),
   python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}

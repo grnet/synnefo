@@ -24,6 +24,7 @@ from synnefo.db import models_factory as mf
 from astakos.im import settings as astakos_settings
 from snf_django.lib.api import faults
 from snf_django.utils.testing import override_settings
+from synnefo.util.units import PRACTICALLY_INFINITE
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin import views
@@ -53,6 +54,12 @@ class MockRequest(object):
 
     def update(self, content):
         self.POST.update(content)
+
+
+class MockResource(object):
+
+    def __init__(self, unit):
+        self.unit = unit
 
 
 def reload_settings():
@@ -168,6 +175,25 @@ class TestAdminUtilsUnit(unittest.TestCase):
             self.assertEqual(utils.default_view(), 'user')
 
         reload_settings()
+
+    def test_is_resource_useful(self):
+        """Test if is_resource_useful function works as expected."""
+
+        # Check if `is_resource_useful` produces the expected results,
+        # regardless of the resource's unit.
+        for unit in (None, "bytes"):
+            r = MockResource(unit=unit)
+
+            # Test if resource is useful, when its usage is zero
+            self.assertTrue(utils.is_resource_useful(r, 2048))
+            self.assertFalse(utils.is_resource_useful(r, 0))
+            self.assertFalse(utils.is_resource_useful(r, PRACTICALLY_INFINITE))
+
+            # Test if resource is useful, when its usage is not zero
+            self.assertTrue(utils.is_resource_useful(r, 2048, 1024))
+            self.assertTrue(utils.is_resource_useful(r, 0, 1024))
+            self.assertFalse(utils.is_resource_useful(r, PRACTICALLY_INFINITE,
+                                                      1024))
 
 
 class TestAdminUtilsIntegration(AdminTestCase):

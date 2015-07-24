@@ -1405,7 +1405,7 @@ specific to Synnefo.
 Kamaki Installation and Configuration
 -------------------------------------
 
-To install kamaki run:
+To install Kamaki run:
 
 .. code-block:: console
 
@@ -1419,7 +1419,7 @@ log in and click on ``API access``. Scroll all the way to the bottom of the
 page, click on the orange ``Download your .kamakirc`` button and save the file
 as ``.kamakirc`` in your home directory.
 
-That's all, kamaki is now configured and you can start using it. For a list of
+That's all, Kamaki is now configured and you can start using it. For a list of
 commands, see the `official documentantion <http://www.synnefo.org/docs/kamaki/latest/commands.html>`_.
 
 Cyclades Prerequisites
@@ -1713,7 +1713,7 @@ also supports three (3) different locations for the above Images to be stored:
     * On a remote host (accessible via public URL e.g: http://... or ftp://...)
     * On Pithos (accessible natively, not only by its public URL)
 
-For the purpose of this guide, we will use the Debian Squeeze Base Image found
+For the purpose of this guide, we will use the Debian Wheezy Base Image found
 on the official `snf-image page
 <http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_. The
 image is of type ``diskdump``. We will store it in our new Pithos installation.
@@ -1723,14 +1723,14 @@ To do so, do the following:
 a) Download the Image from the official snf-image page.
 
 b) Upload the Image to your Pithos installation, either using the Pithos Web
-   UI or the command line client `kamaki
+   UI or the command line client `Kamaki
    <http://www.synnefo.org/docs/kamaki/latest/index.html>`_.
 
-To upload the file using kamaki, run:
+To upload the file using Kamaki, run:
 
 .. code-block:: console
 
-   # kamaki file upload debian_base-6.0-x86_64.diskdump pithos
+   # kamaki file upload debian_base-7.0-x86_64.diskdump pithos
 
 Once the Image is uploaded successfully, download the Image's metadata file
 from the official snf-image page. You will need it, for spawning a VM from
@@ -1747,9 +1747,9 @@ Spawning a VM from a Pithos Image, using Ganeti
 
 Now, it is time to test our installation so far. So, we have Astakos and
 Pithos installed, we have a working Ganeti installation, the snf-image
-definition installed on all VM-capable nodes, a Debian Squeeze Image on
-Pithos and kamaki installed and configured. Make sure you also have the
-`metadata file <http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump.meta>`_
+definition installed on all VM-capable nodes, a Debian Wheezy Image on
+Pithos and Kamaki installed and configured. Make sure you also have the
+`metadata file <https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_
 for this image.
 
 To spawn a VM from a Pithos file, we need to know:
@@ -1757,7 +1757,7 @@ To spawn a VM from a Pithos file, we need to know:
     1) The mapfile name of the file
     2) The size of the file
 
-If you uploaded the file with kamaki as described above, run on the Astakos
+If you uploaded the file with Kamaki as described above, run on the Astakos
 node:
 
 .. code-block:: console
@@ -1777,9 +1777,9 @@ Then on the Pithos node run the following:
 
 .. code-block:: console
 
-   # snf-manage file-show <user uuid> pithos debian_base-6.0-x86_64.diskdump
+   # snf-manage file-show <user uuid> pithos debian_base-7.0-x86_64.diskdump
 
-Replace ``pithos`` and ``debian_base-6.0-x86_64.diskdump`` with the
+Replace ``pithos`` and ``debian_base-7.0-x86_64.diskdump`` with the
 container and filename you used, when uploading the file.
 This will output the following info (among others): the name of the pithos
 mapfile (``mapfile`` field) and the size of the image (``bytes`` field).
@@ -1960,7 +1960,7 @@ Fetch the Debian Old Base image locally (in all nodes), by running:
 
 .. code-block:: console
 
-   # wget http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump -O /var/lib/snf-image/debian_base-6.0-x86_64.diskdump
+   # wget https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump -O /var/lib/snf-image/debian_base-7.0-x86_64.diskdump
 
 Also in all nodes, bring all ``br*`` interfaces up:
 
@@ -1974,7 +1974,7 @@ Finally, run on the GANETI-MASTER (node1):
 .. code-block:: console
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       testvm2
@@ -2013,14 +2013,14 @@ means that the instances will have a second NIC connected to the ``br2``.
    # gnt-network connect --nic-parameters mode=bridged,link=br2 test-net-prv-mac
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac \
                       -n node1.example.com testvm3
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac -n node2 \
@@ -2544,24 +2544,24 @@ though you may already have uploaded an Image on Pithos from a :ref:`previous
 We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
 command line client to do the uploading and registering of the Image.
 
-Installation of `kamaki`
+Installation of `Kamaki`
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can install `kamaki` anywhere you like, since it is a standalone client of
-the APIs and talks to the installation over `http`. For the purpose of this
-guide we will assume that we have downloaded the `Debian Squeeze Base Image
-<https://pithos.okeanos.grnet.gr/public/9epgb>`_ and stored it under node1's
-``/srv/images`` directory. For that reason we will install `kamaki` on node1,
-too. We do this by running:
+You can install `Kamaki` anywhere you like, since it is a standalone client of
+the APIs and talks to the installation over `https`. For the purpose of this
+guide we will assume that we have downloaded the `Debian Wheezy Base Image
+<https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump>`_ and stored it under
+node1's ``/srv/images`` directory. For that reason we will install `Kamaki` on
+node1, too. We do this by running:
 
 .. code-block:: console
 
    # apt-get install kamaki
 
-Configuration of kamaki
+Configuration of Kamaki
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Now we need to setup kamaki, by adding the appropriate URLs and tokens of our
+Now we need to setup Kamaki, by adding the appropriate URLs and tokens of our
 installation. We do this by running:
 
 .. code-block:: console
@@ -2580,7 +2580,7 @@ either by checking the editable file ``~/.kamakirc`` or by running:
 
    $ kamaki config list
 
-A quick test to check that kamaki is configured correctly, is to try to
+A quick test to check that Kamaki is configured correctly, is to try to
 authenticate a user based on his/her token (in this case the user is you):
 
 .. code-block:: console
@@ -2593,14 +2593,14 @@ user id) which might prove useful in some operations.
 Upload an Image file to Pithos
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now, that we have set up `kamaki` we will upload the Image that we have
+Now, that we have set up `Kamaki` we will upload the Image that we have
 downloaded and stored under ``/srv/images/``. Although we can upload the Image
 under the root ``Pithos`` container (as you may have done when uploading the
 Image from the Pithos Web UI), we will create a new container called ``images``
 and store the Image under that container. We do this for two reasons:
 
 a) To demonstrate how to create containers other than the default ``Pithos``.
-   This can be done only with the `kamaki` client and not through the Web UI.
+   This can be done only with the `Kamaki` client and not through the Web UI.
 
 b) As a best organization practise, so that you won't have your Image files
    tangled along with all your other Pithos files and directory structures.
@@ -2622,7 +2622,7 @@ Then, we upload the Image file to that container:
 
 .. code-block:: console
 
-   $ kamaki file upload /srv/images/debian_base-6.0-7-x86_64.diskdump /images
+   $ kamaki file upload /srv/images/debian_base-7.0-x86_64.diskdump images
 
 The first is the local path and the second is the remote container on Pithos.
 Check if the file has been uploaded, by listing the container contents:
@@ -2637,8 +2637,12 @@ Register an existing Image file to Cyclades
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For the purposes of the following example, we assume that the user has uploaded
-a file in container ``pithos`` called ``debian_base-6.0-x86_64``. Moreover,
-he should have the appropriate `metadata file <http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump.meta>`_.
+a file in container ``pithos`` called ``debian_base-7.0-x86_64.diskdump``. Moreover,
+he should have the appropriate `metadata file <https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_.
+
+.. code-block:: console
+
+   $ wget https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta
 
 Once the Image file has been successfully uploaded on Pithos then we register
 it to Cyclades, by running:
@@ -2646,13 +2650,9 @@ it to Cyclades, by running:
 .. code-block:: console
 
    $ kamaki image register --name "Debian Base" \
-                           --location /images/debian_base-6.0-11-x86_64.diskdump \
+                           --location /images/debian_base-7.0-x86_64.diskdump \
                            --public \
-                           --disk-format=diskdump \
-                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
-                           --property description="Debian Squeeze Base System" \
-                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
-                           --property sortorder=1 --property USERS=root --property OS=debian
+                           --metafile debian_base-7.0-x86_64.diskdump.meta
 
 This command registers a Pithos file as an Image in Cyclades. This Image will
 be public (``--public``), so all users will be able to spawn VMs from it.

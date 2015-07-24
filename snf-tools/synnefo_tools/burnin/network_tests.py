@@ -79,7 +79,7 @@ class NetworkTestSuite(CycladesTests):
 
     def test_006_create_network(self):
         """Submit a create network request"""
-        self.network = self._create_network()
+        self.network = self._create_network(gateway_ip='')
 
         self._insist_on_network_transition(
             self.network, ["BUILD"], "ACTIVE")

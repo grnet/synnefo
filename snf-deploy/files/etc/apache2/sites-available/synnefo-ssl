@@ -1,6 +1,6 @@
 <IfModule mod_ssl.c>
 <VirtualHost _default_:443>
-  ServerName %HOST%
+  ServerName %DOMAIN%
 
   Alias /static "/usr/share/synnefo/static"
 

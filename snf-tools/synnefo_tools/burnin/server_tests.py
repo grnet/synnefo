@@ -167,8 +167,14 @@ class GeneratedServerTestSuite(CycladesTests):
         """Detach server from public network"""
         self._disconnect_from_network(self.server)
 
-        # Test that server is unreachable
-        self._insist_on_ping(self.ipv4[0], should_fail=True)
+        try:
+            # Test that server is unreachable
+            self._insist_on_ping(self.ipv4[0], should_fail=True)
+        except AssertionError:
+            # If the IP is reachable, test if we can SSH to the server, to
+            # make sure that is wasn't attached to another VM.
+            self._insist_get_hostname_over_ssh(
+                self.ipv4[0], self.username, self.password, should_fail=True)
 
     def test_011b_attach_network(self):
         """Re-Attach a public IP to our server"""

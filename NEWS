@@ -5,6 +5,29 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.16.2:
+
+v0.16.2
+=======
+
+Released: Fri Jul 24 14:13:49 EEST 2015
+
+The Synnefo 0.16.2 release is mostly a bug fix version. The most notable
+changes are:
+
+* Added custom image sections in the Cyclades UI.
+* Round up memory sizes in flavor create.
+* Change volume ownership, when reassigning VMs.
+* Improved handling of projects (both API- and UI-wise).
+* Provide South migration to fix initialized state of enrolled project
+  memberships.
+* Add a `signTerms` admin API action.
+* Include machine icon images for bitnami.
+* Usability fixes for the admin app.
+* Updates and fixes for snf-deploy.
+* Various bug fixes and improvements across Synnefo. Please see the Synnefo
+  :ref:`Changelog <Changelog-0.16.1>` for a complete list.
+
 .. _NEWS-0.16.1:
 
 v0.16.1

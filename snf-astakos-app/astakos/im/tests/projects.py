@@ -796,9 +796,11 @@ class TestProjects(TestCase):
             'member_join_policy': 2,
             'member_leave_policy': 1,
             'limit_on_members_number_0': 5,
+            'service1.resource_p_uplimit': 100,
             'service1.resource_m_uplimit': 100,
             'is_selected_service1.resource': "1",
-            'astakos.pending_app_m_uplimit': 100,
+            'astakos.pending_app_m_uplimit': 10,
+            'astakos.pending_app_p_uplimit': 100,
             'is_selected_accounts': "1",
             'user': self.user.pk
         }
@@ -807,6 +809,7 @@ class TestProjects(TestCase):
         self.assertEqual(form.is_valid(), False)
 
         del application_data['astakos.pending_app_m_uplimit']
+        del application_data['astakos.pending_app_p_uplimit']
         del application_data['is_selected_accounts']
         form = forms.ProjectApplicationForm(data=application_data)
         self.assertEqual(form.is_valid(), True)
@@ -911,6 +914,13 @@ class TestProjects(TestCase):
         resp = self.user_client.post(post_url, modification_data)
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['form'].is_valid())
+
+        del modification_data['service1.resource_p_uplimit']
+        resp = self.user_client.post(post_url, modification_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(resp.context['form'].is_valid())
+
+        modification_data['service1.resource_p_uplimit'] = 100
         modification_data['service1.resource_m_uplimit'] = 3
         post_url = reverse('project_modify', args=(app1.chain.uuid,)) + '?verify=0&edit=0'
         resp = self.user_client.post(post_url, modification_data)

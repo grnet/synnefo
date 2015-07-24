@@ -86,6 +86,7 @@ MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = \
     getattr(settings, "UI_FLAVORS_DISK_TEMPLATES_INFO", {})
 SYSTEM_IMAGES_OWNERS = getattr(settings, "UI_SYSTEM_IMAGES_OWNERS", {})
+IMAGE_LISTING_USERS = getattr(settings, "UI_IMAGE_LISTING_USERS", [])
 CUSTOM_IMAGE_HELP_URL = getattr(settings, "UI_CUSTOM_IMAGE_HELP_URL", None)
 
 # MEDIA PATHS
@@ -212,6 +213,7 @@ def home(request):
         'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
         'use_glance': json.dumps(ENABLE_GLANCE),
         'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+        'image_listing_users': json.dumps(IMAGE_LISTING_USERS),
         'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
         'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
         'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),

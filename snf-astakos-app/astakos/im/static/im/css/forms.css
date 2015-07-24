@@ -107,6 +107,8 @@ form.withlabels .with-checkbox .extra-img	{ display:none; }
 .errorlist									{ margin:0; padding:0;}
 .errorlist li								{ list-style:none outside;}
 
+.quotas-form fieldset ul.errorlist li       { float: none; margin: 0;}
+
 form .with-hidden							{ display:none; }
 
 

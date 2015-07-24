@@ -55,6 +55,8 @@ urlpatterns = patterns(
         'project_add_or_modify', {}, name='project_add'),
     url(r'^projects/search/?$',
         'project_search', {}, name='project_search'),
+    url(r'^projects/how_it_works/?$',
+        'how_it_works', {}, name='how_it_works'),
     url(r'^projects/(?P<project_uuid>[^/]+)/?$',
         'project_or_app_detail', {}, name='project_detail'),
 
@@ -110,7 +112,6 @@ urlpatterns = patterns(
     url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<application_id>\d+)/cancel?$',
         'project_app_cancel', {}, name='project_app_cancel'),
 
-    url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},
         name='remove_auth_provider'),
 )

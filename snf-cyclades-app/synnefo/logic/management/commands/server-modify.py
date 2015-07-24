@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,7 +42,10 @@ class Command(SynnefoCommand):
             '--user',
             dest='user',
             metavar='USER_UUID',
-            help="Change ownership of server. Value must be a user UUID"),
+            help="Change ownership of server. Value must be a user UUID."
+                 " This also changes the ownership of all volumes attached"
+                 " to the server. Finally, it assigns both the volumes and"
+                 " the server to the system project of the destination user."),
         make_option(
             "--suspended",
             dest="suspended",
@@ -100,9 +103,25 @@ class Command(SynnefoCommand):
                 raise CommandError("Invalid user UUID.")
             old_owner = server.userid
             server.userid = new_owner
+            old_project = server.project
+            server.project = new_owner
             server.save()
             msg = "Changed the owner of server '%s' from '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_owner, new_owner))
+            msg = "Changed the project of server '%s' from '%s' to '%s'.\n"
+            self.stdout.write(msg % (server, old_project, new_owner))
+            for vol in server.volumes.all():
+                vol.userid = new_owner
+                vol_old_project = vol.project
+                vol.project = new_owner
+                vol.save()
+                msg = "Changed the owner of volume '%s' from '%s' to '%s'.\n"
+                self.stdout.write(msg % (vol, old_owner, new_owner))
+                msg = "Changed the project of volume '%s' from '%s' to '%s'.\n"
+                self.stdout.write(msg % (vol, vol_old_project, new_owner))
+            self.stdout.write("WARNING: User quotas should be out of sync now,"
+                              " run `snf-manage reconcile-resources-cyclades'"
+                              " to review and update them.\n")
 
         wait = parse_bool(options["wait"])
         new_flavor_id = options.get("flavor")

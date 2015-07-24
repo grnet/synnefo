@@ -53,7 +53,10 @@
                         <dt>Deactivation reason</dt><dd>{{ user.deactivated_reason }}</dd>
                     {% endif %}
                     <dt>Last profile update at</dt><dd>{{ user.updated }}</dd>
-                    <dt>Last logged-in at</dt><dd>{{ user.last_login }}</dd>
+                    <dt>Last logged-in</dt>
+                        {% for auth in user.auth_providers.all %}
+                            <dd>{{ auth.module }} : {{ auth.last_login_at|default:"-"}}</dd>
+                        {% endfor %}
 
                 </dl>
             </div>

@@ -211,6 +211,10 @@ class AuthProvider(object):
         self.log('removed')
 
     def add_to_user(self, **params):
+        # db lock
+        objects = self.user.__class__.objects
+        self.user = objects.select_for_update().get(pk=self.user.pk)
+
         if self._instance:
             raise Exception("Cannot add an existing provider")
 

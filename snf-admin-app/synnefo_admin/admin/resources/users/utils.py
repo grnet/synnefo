@@ -93,12 +93,22 @@ def get_quotas(user):
         for resource_name, resource in resource_dict.iteritems():
             # Chech if the resource is useful to display
             project_limit = resource['project_limit']
+            usage = resource['usage']
             r = get_resource(resource_name)
-            if not is_resource_useful(r, project_limit):
+            if not is_resource_useful(r, project_limit, usage):
                 continue
 
-            usage = units.show(resource['usage'], r.unit)
+            usage = units.show(usage, r.unit)
             limit = units.show(resource['limit'], r.unit)
+            taken_by_others = resource['project_usage'] - resource['usage']
+            effective_limit = min(resource['limit'], project_limit - taken_by_others)
+            if effective_limit < 0:
+                effective_limit = 0
+            effective_limit = units.show(effective_limit, r.unit)
+
+            if limit != effective_limit:
+                limit += " (Effective Limit: " + effective_limit + ")"
+
             q_res.append((r.report_desc, usage, limit,))
 
         quotas.append(source)

@@ -57,8 +57,16 @@ class UpdateDBTest(TestCase):
         self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
-        update_db(client, {})
-        client.basic_reject.assert_called_once()
+        update_db(client, None)
+        self.assertEqual(1, client.basic_reject.call_count)
+
+    def test_not_json(self, client):
+        update_db(client, {'body': ''})
+        self.assertEqual(1, client.basic_nack.call_count)
+
+    def test_malformed_json(self, client):
+        update_db(client, {'body': '{}'})
+        self.assertEqual(1, client.basic_nack.call_count)
 
     def test_missing_instance(self, client):
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
@@ -162,7 +170,7 @@ class UpdateDBTest(TestCase):
                               instance=vm2.backend_vm_id)
         with mocked_quotaholder():
             update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertEqual(2, client.basic_ack.call_count)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
@@ -369,8 +377,16 @@ class UpdateNetTest(TestCase):
         self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
-        update_db(client, {})
-        client.basic_reject.assert_called_once()
+        update_db(client, None)
+        self.assertEqual(1, client.basic_reject.call_count)
+
+    def test_not_json(self, client):
+        update_db(client, {'body': ''})
+        self.assertEqual(1, client.basic_nack.call_count)
+
+    def test_malformed_json(self, client):
+        update_db(client, {'body': '{}'})
+        self.assertEqual(1, client.basic_nack.call_count)
 
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
@@ -444,8 +460,16 @@ class UpdateNetworkTest(TestCase):
         self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
-        update_network(client, {})
-        client.basic_reject.assert_called_once()
+        update_db(client, None)
+        self.assertEqual(1, client.basic_reject.call_count)
+
+    def test_not_json(self, client):
+        update_db(client, {'body': ''})
+        self.assertEqual(1, client.basic_nack.call_count)
+
+    def test_malformed_json(self, client):
+        update_db(client, {'body': '{}'})
+        self.assertEqual(1, client.basic_nack.call_count)
 
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
@@ -681,8 +705,16 @@ class UpdateBuildProgressTest(TestCase):
         self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
-        update_build_progress(client, {})
-        client.basic_reject.assert_called_once()
+        update_db(client, None)
+        self.assertEqual(1, client.basic_reject.call_count)
+
+    def test_not_json(self, client):
+        update_db(client, {'body': ''})
+        self.assertEqual(1, client.basic_nack.call_count)
+
+    def test_malformed_json(self, client):
+        update_db(client, {'body': '{}'})
+        self.assertEqual(1, client.basic_nack.call_count)
 
     def test_missing_instance(self, client):
         msg = self.create_msg(instance='foo')

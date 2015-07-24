@@ -110,13 +110,14 @@ def get_resource(name):
 cached_resources = {}
 
 
-def is_resource_useful(resource, limit):
+def is_resource_useful(resource, limit, usage = 0):
     """Simple function to check if the resource is useful to show.
 
-    Values that have infinite or zero limits are discarded.
+    Values that have infinite limits or zero limits and zero usage
+    are discarded.
     """
     displayed_limit = units.show(limit, resource.unit)
-    if limit == 0 or displayed_limit == 'inf':
+    if (limit == 0 and usage == 0) or displayed_limit == 'inf':
         return False
     return True
 

@@ -436,7 +436,7 @@ class CycladesTests(BurninTests):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except (paramiko.SSHException, socket.error) as err:
+        except (paramiko.SSHException, socket.error, EOFError) as err:
             self.warning("%s", err.message)
             raise Retry()
         _, stdout, _ = ssh.exec_command(command)
@@ -445,7 +445,8 @@ class CycladesTests(BurninTests):
         ssh.close()
         return output, status
 
-    def _insist_get_hostname_over_ssh(self, hostip, username, password):
+    def _insist_get_hostname_over_ssh(self, hostip, username, password,
+                                      should_fail=False):
         """Connect to server using ssh and get it's hostname"""
         def check_fun():
             """Get hostname"""
@@ -460,7 +461,10 @@ class CycladesTests(BurninTests):
                 raise Retry()
         opmsg = "Connecting to server using ssh and get it's hostname"
         self.info(opmsg)
-        hostname = self._try_until_timeout_expires(opmsg, check_fun)
+        if should_fail:
+            hostname = self._try_once(opmsg, check_fun, should_fail=True)
+        else:
+            hostname = self._try_until_timeout_expires(opmsg, check_fun)
         self.info("Server's hostname is %s", hostname)
         return hostname
 
@@ -481,7 +485,7 @@ class CycladesTests(BurninTests):
                     self.info("Comparing file contents")
                     remote_content = base64.b64encode(ftmp.read())
                     self.assertEqual(content, remote_content)
-            except paramiko.SSHException as err:
+            except (paramiko.SSHException, socket.error, EOFError) as err:
                 self.warning("%s", err.message)
                 raise Retry()
         opmsg = "Fetching file %s from remote server" % remotepath
@@ -491,7 +495,7 @@ class CycladesTests(BurninTests):
     # ----------------------------------
     # Networks
     def _create_network(self, cidr="10.0.1.0/28", dhcp=True,
-                        project_id=None):
+                        project_id=None, gateway_ip=None):
         """Create a new private network"""
         name = self.run_id
         network = self.clients.network.create_network(
@@ -499,7 +503,7 @@ class CycladesTests(BurninTests):
             project_id=project_id)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
-            network['id'], cidr=cidr, enable_dhcp=dhcp)
+            network['id'], cidr=cidr, enable_dhcp=dhcp, gateway_ip=gateway_ip)
         self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas

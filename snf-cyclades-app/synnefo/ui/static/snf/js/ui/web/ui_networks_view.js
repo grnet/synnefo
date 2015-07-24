@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -130,7 +130,7 @@
             if (this.subnet_select.val() == "auto") {
                 this.gateway_select.find("option")[1].disabled = true;
                 if (this.gateway_select.val() == "custom") {
-                    this.gateway_select.val("auto");
+                    this.gateway_select.val("none");
                     this.gateway_custom.val("");
                     this.gateway_custom.hide();
                 }
@@ -323,7 +323,7 @@
             this.text.focus();
             this.subnet_custom.val("");
             this.subnet_select.val("auto");
-            this.gateway_select.val("auto");
+            this.gateway_select.val("none");
             this.gateway_custom.val("");
             this.dhcp_select.attr("checked", true);
             this.type_select.val(_.keys(synnefo.config.network_available_types)[0]);

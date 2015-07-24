@@ -357,7 +357,7 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 202)
-        mrapi().CreateInstance.assert_called_once()
+        self.assertEqual(1, mrapi().CreateInstance.call_count)
 
         api_server = json.loads(response.content)['server']
         self.assertEqual(api_server['status'], "BUILD")
@@ -400,7 +400,7 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
-        mrapi().CreateInstance.assert_called_once()
+        self.assertEqual(1, mrapi().CreateInstance.call_count)
         vm = VirtualMachine.objects.get()
         # The VM has not been deleted
         self.assertFalse(vm.deleted)
@@ -673,7 +673,7 @@ class ServerDestroyAPITest(ComputeAPITest):
         mrapi().DeleteInstance.return_value = 12
         response = self.mydelete('servers/%d' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 204)
-        mrapi().DeleteInstance.assert_called_once()
+        self.assertEqual(1, mrapi().DeleteInstance.call_count)
 
     def test_non_existing_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
@@ -801,7 +801,7 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mydelete('servers/%d' % vm.id,
                                  vm.userid)
         self.assertSuccess(response)
-        mrapi().RemoveInstance.assert_called_once()
+        self.assertEqual(1, mrapi().DeleteInstance.call_count)
 
     def test_firewall(self, mrapi, mimage):
         vm = mfactory.VirtualMachineFactory()
@@ -824,7 +824,7 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertSuccess(response)
-        mrapi().ModifyInstance.assert_called_once()
+        self.assertEqual(1, mrapi().ModifyInstance.call_count)
 
     def test_unsupported_firewall(self, mrapi, mimage):
         vm = mfactory.VirtualMachineFactory()

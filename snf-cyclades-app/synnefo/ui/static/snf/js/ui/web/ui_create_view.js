@@ -267,7 +267,7 @@
 
         initialize: function() {
             views.CreateImageSelectView.__super__.initialize.apply(this, arguments);
-
+            
             // elements
             this.images_list_cont = this.$(".images-list-cont");
             this.images_list = this.$(".images-list-cont ul");
@@ -322,7 +322,14 @@
         init_handlers: function() {
             var self = this;
             this.types.live("click", function() {
-                self.select_type($(this).attr("id").replace("type-select-",""));
+                if ($(this).hasClass('section')) {
+                  var element = $(this);
+                  var type = $(this).data('section');
+                  self.select_type(type, true, element);
+                } else {
+                  var type = $(this).attr("id").replace("type-select-","");
+                  self.select_type(type, false, null);
+                }
             });
             
             this.image_details.find(".hide").click(_.bind(function(){
@@ -383,32 +390,23 @@
             if (!this.selected_type) {
                 this.selected_type = _.keys(this.type_selections)[0];
             }
-            this.select_type(this.selected_type);
+            this.select_type(this.selected_type, false, null);
         },
         
-        get_categories: function(images) {
-            return [];
-            return ["Desktop", "Server", "Linux", "Windows"];
-        },
+        reset_sections: function() {
+            var self = this;
+            var list = this.$(".image-types-cont ul.type-filter");
+            var sections = this.images_storage.get_listing_sections();
 
-        reset_categories: function() {
-            var categories = this.get_categories(this.images);
-            this.categories_list.find("li").remove();
-
-            _.each(categories, _.bind(function(cat) {
-                var el = $("<li />");
-                el.text(cat);
-                this.categories_list.append(el);
-            }, this));
-
-            var empty = this.categories_list.parent().find(".empty");
-            if (!categories.length) { 
-                this.categories_list.parent().find(".clear").hide();
-                empty.show();
-            } else {
-                this.categories_list.parent().find(".clear").show();
-                empty.hide();
-            }
+            list.find('.section').remove();
+            list.append('<li class="section div"></li>');
+            _.each(sections, function(section) {
+                var el = $('<li class="section">{0}</li>'.format(section));
+                el.data('section', section);
+                if (self.selected_type === section) { el.addClass("selected"); }
+                list.append(el);
+            });
+            this.types = this.$(".type-filter li");
         },
         
         show_loading_view: function() {
@@ -416,18 +414,18 @@
             this.images_list.hide();
             this.$(".images-list-cont .loading").show();
             this.$(".images-list-cont .images-list").hide();
-            this.reset_categories();
             this.update_images([]);
             this.reset_images();
+            this.reset_sections();
             this.hide_list_loading();
         },
 
         hide_loading_view: function(images) {
             this.$(".images-list-cont .loading").hide();
             this.$(".images-list-cont .images-list").show();
-            this.reset_categories();
             this.update_images(images);
             this.reset_images();
+            this.reset_sections();
             var to_select = this.selected_image;
             if (!_.contains(this.images_ids, this.selected_image && this.selected_image.get("id"))) {
                 to_select = this.images.length && this.images[0];
@@ -441,14 +439,16 @@
 
         },
 
-        select_type: function(type) {
+        select_type: function(type, isSection, element) {
             this.selected_type = type;
+            if (!element) { element = this.types.filter("#type-select-" + this.selected_type); }
             this.types.removeClass("selected");
-            var selection = "#type-select-" + this.selected_type;
-            this.types.filter("#type-select-" + this.selected_type).addClass("selected");
-            if (!type) { return }
+            element.addClass("selected");
+            if (!type && !isSection) { return }
+
             this.images_storage.update_images_for_type(
                 this.selected_type, 
+                isSection,
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
@@ -681,7 +681,7 @@
 
         reset: function() {
             this.selected_image = false;
-            this.select_type(this.default_type);
+            this.select_type(this.default_type, false, null);
         },
 
         get: function() {

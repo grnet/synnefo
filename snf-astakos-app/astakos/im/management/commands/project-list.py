@@ -96,6 +96,7 @@ class Command(ListCommand):
                         "An application pending for the project"),
         "description": ("description", "Project Description"),
         "end_date": ("end_date", "Project Termination Date"),
+        "creation_date": ("creation_date", "Project Creation Date"),
     }
 
     fields = ["id", "name", "owner", "status", "pending_app"]

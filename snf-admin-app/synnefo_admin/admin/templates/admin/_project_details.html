@@ -47,6 +47,9 @@
                     <dt>Project Status</dt><dd>{{ project|get_status_from_instance }}</dd>
                     {% if project.last_application %}
                         <dt>Application Status</dt><dd>{{ project.last_application|get_status_from_instance }}</dd>
+                        {% if project.last_application.comments %}
+                            <dt>Comments for Review</dt><dd>{{ project.last_application.comments }}</dd>
+                        {% endif %}
                     {% endif %}
                 </dl>
             </div>

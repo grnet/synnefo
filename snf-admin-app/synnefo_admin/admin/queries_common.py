@@ -20,6 +20,7 @@ from operator import or_, and_
 from django.db.models import Q
 from django.core.exceptions import FieldError
 from django.conf import settings
+from django.utils.encoding import smart_unicode
 
 from synnefo_admin.admin.utils import model_dict
 from synnefo_admin import admin_settings
@@ -38,7 +39,7 @@ def prefix_strip(query):
 
     the lookup type should be "startswith".
     """
-    query = str(query)
+    query = smart_unicode(query)
     lookup_type = 'contains'
     prefix = settings.BACKEND_PREFIX_ID
 

@@ -313,7 +313,7 @@ class ObjectGetView(PithosAPITest):
         self.assertEqual(r.status_code, 404)
 
     def test_get_partial(self):
-        limit = pithos_settings.BACKEND_BLOCK_SIZE + 1
+        limit = pithos_settings.BACKEND_BLOCK_SIZE
         r = self.view(self.view_url, HTTP_RANGE='bytes=0-%d' % limit)
         self.assertEqual(r.status_code, 206)
         self.assertEqual(r.content, self.odata[:limit + 1])

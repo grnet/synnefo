@@ -68,13 +68,20 @@ def get_contact_id(inst):
         return owner.uuid
 
 
-def get_policies(inst):
+def get_policies(inst, quota_dict = None):
     policies = inst.projectresourcequota_set.all().prefetch_related('resource')
     policy_list = []
 
     for p in policies:
         r = p.resource
-        if not is_resource_useful(r, p.project_capacity):
+
+        if not quota_dict:
+            quota_dict = get_project_quota(inst)
+        if not quota_dict:
+            usage = 0
+        else:
+            usage = quota_dict[r.name]['project_usage']
+        if not is_resource_useful(r, p.project_capacity, usage):
             continue
         policy_list.append(p)
 
@@ -93,7 +100,7 @@ def get_project_usage(inst):
     if not quota_dict:
         return []
 
-    policies = get_policies(inst)
+    policies = get_policies(inst, quota_dict)
     for p in policies:
         r = p.resource
         value = units.show(quota_dict[r.name]['project_usage'], r.unit)

@@ -16,6 +16,7 @@
 import logging
 
 from functools import wraps, partial
+from datetime import datetime
 
 from django.views.decorators.csrf import csrf_exempt
 from django import http
@@ -186,7 +187,7 @@ def users_create(request):
     if not last_name:
         raise faults.BadRequest("Invalid last_name")
 
-    has_signed_terms = not(get_latest_terms())
+    has_signed_terms = True
 
     try:
         user = make_local_user(email, first_name=first_name,
@@ -204,9 +205,13 @@ def users_create(request):
         ver_res = activation_backend.handle_verification(user, code)
         if ver_res.is_error():
             raise Exception(ver_res.message)
-        mod_res = activation_backend.handle_moderation(user, accept=True)
-        if mod_res.is_error():
-            raise Exception(ver_res.message)
+
+        # in case of auto moderation user moderation is handled within the
+        # verification process, no need to reapply moderation process
+        if not user.moderated:
+            mod_res = activation_backend.handle_moderation(user, accept=True)
+            if mod_res.is_error():
+                raise Exception(ver_res.message)
 
     except Exception, e:
         raise faults.BadRequest(e.message)
@@ -270,6 +275,22 @@ def user_action(request, user_id):
         user_data = {
             'id': user.uuid,
             'auth_token': user.auth_token,
+        }
+        data = json.dumps({'user': user_data})
+        return http.HttpResponse(data, status=200,
+                                 content_type='application/json')
+
+    if 'signTerms' in req:
+        try:
+            user = AstakosUser.objects.get(uuid=user_id)
+        except AstakosUser.DoesNotExist:
+            raise faults.ItemNotFound("User not found")
+        user.has_signed_terms = True
+        user.date_signed_terms = datetime.now()
+        user.save()
+        user_data = {
+            'id': user.uuid,
+            'has_signed_terms': user.has_signed_terms
         }
         data = json.dumps({'user': user_data})
         return http.HttpResponse(data, status=200,

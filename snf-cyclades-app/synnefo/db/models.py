@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -327,6 +327,8 @@ class VirtualMachine(models.Model):
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     project = models.CharField(max_length=255, null=True, db_index=True)
+    shared_to_project = models.BooleanField('Shared to project',
+                                            default=False)
     backend = models.ForeignKey(Backend, null=True,
                                 related_name="virtual_machines",
                                 on_delete=models.PROTECT)
@@ -542,6 +544,8 @@ class Network(models.Model):
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
     project = models.CharField(max_length=255, null=True, db_index=True)
+    shared_to_project = models.BooleanField('Shared to project',
+                                            default=False)
     flavor = models.CharField('Flavor', max_length=32, null=False)
     mode = models.CharField('Network Mode', max_length=16, null=True)
     link = models.CharField('Network Link', max_length=32, null=True)
@@ -797,6 +801,8 @@ class IPAddress(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128, null=False,
                               db_index=True)
     project = models.CharField(max_length=255, null=True, db_index=True)
+    shared_to_project = models.BooleanField('Shared to project',
+                                            default=False)
     address = models.CharField("IP Address", max_length=64, null=False)
     floating_ip = models.BooleanField("Floating IP", null=False, default=False)
     ipversion = models.IntegerField("IP Version", null=False)
@@ -1100,6 +1106,8 @@ class Volume(models.Model):
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
     project = models.CharField(max_length=255, null=True, db_index=True)
+    shared_to_project = models.BooleanField('Shared to project',
+                                            default=False)
     size = models.IntegerField("Volume size in GB",  null=False)
     volume_type = models.ForeignKey(VolumeType, related_name="volumes",
                                     on_delete=models.PROTECT, null=False)

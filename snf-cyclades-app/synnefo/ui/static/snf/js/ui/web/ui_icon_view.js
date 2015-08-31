@@ -47,6 +47,7 @@
             this.project_view = this.vm_view.find(".project-name");
 
             this.init_handlers();
+            this.handle_ghost_tooltip();
             this.update_layout();
         },
         
@@ -88,6 +89,22 @@
             this.vm.bind("action:fail:reset", _.bind(function(){
                 this.error.hide();
             }, this));
+
+            this.vm.bind("change:is_ghost", _.bind(function() {
+              this.handle_ghost_tooltip();
+            }, this));
+        },
+
+        handle_ghost_tooltip: function() {
+          var main_content = this.vm_view.find(".machine-data");
+          if (this.vm.get('is_ghost')) {
+            snf.util.set_tooltip(main_content,
+              'You do not have access to this resource.<br/>You are only seeing' +
+              ' it because it is related to another resource already' +
+              ' shared to you.', {tipClass: 'info tooltip'});
+          } else {
+            snf.util.unset_tooltip(main_content);
+          }
         },
 
         show_reassign_view: function(vm) {

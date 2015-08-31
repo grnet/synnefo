@@ -636,8 +636,24 @@
             actions.reset_pending();
           });
         }
+
+        this.model.bind("change:is_ghost", this.handle_ghost_tooltip);
+        this.handle_ghost_tooltip()
       },
       
+      handle_ghost_tooltip: function(x) {
+        main_content = this.el.find(".main-content");
+        if (this.model.get('is_ghost')) {
+            snf.util.set_tooltip(main_content,
+              'You do not have access to this resource.<br/>You are only seeing' +
+              ' it because it is related to another resource already' +
+              ' shared to you.', {tipClass: 'info tooltip'});
+        } else {
+          snf.util.unset_tooltip(main_content);
+        }
+
+      },
+
       action_cls_map: {
         'remove': 'destroy'
       },

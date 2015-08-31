@@ -263,7 +263,17 @@
       parse: function(resp) {
         var data = resp.volumes;
 
-        data = _.map(data, function (v) { v.is_ghost = false; return v; });
+        data = _.map(data, function (v) {
+          _.map(v.attachments, function (a) {
+            if (a.server_id && !synnefo.storage.vms.get(a.server_id)) {
+              synnefo.storage.vms.add({'id': a.server_id,
+                                        'deleted': false,
+                                        'is_ghost': true});
+            }
+          });
+          v.is_ghost = false;
+          return v;
+        });
 
         this.append_ghost_volumes(data);
 

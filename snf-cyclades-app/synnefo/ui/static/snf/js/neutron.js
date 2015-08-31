@@ -684,7 +684,17 @@
       parse: function(resp) {
         var data = resp.ports;
 
-        data = _.map(data, function(p) { p.is_ghost = false; return p; });
+        data = _.map(data, function(p) {
+          // Apend ghost server to servers collection.
+          if (p.device_id && !synnefo.storage.vms.get(p.device_id)) {
+            synnefo.storage.vms.add({'id': p.device_id,
+                                     'deleted': false,
+                                     'is_ghost': true})
+          }
+
+          p.is_ghost = false;
+          return p;
+        });
 
         this.append_ghost_ports(data);
 

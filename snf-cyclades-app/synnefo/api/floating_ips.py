@@ -163,6 +163,7 @@ def allocate_floating_ip(request):
                                                required=True, attr_type=dict)
     userid = request.user_uniq
     project = floating_ip_dict.get("project", None)
+    shared_to_project = floating_ip_dict.get("shared_to_project", False)
 
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,
@@ -171,7 +172,9 @@ def allocate_floating_ip(request):
                                          attr_type=(basestring, int))
 
     if network_id is None:
-        floating_ip = ips.create_floating_ip(userid, project=project)
+        floating_ip = \
+            ips.create_floating_ip(userid, project=project,
+                                   shared_to_project=shared_to_project)
     else:
         try:
             network_id = int(network_id)
@@ -184,8 +187,10 @@ def allocate_floating_ip(request):
                                           "floating_ip_address",
                                           required=False,
                                           attr_type=basestring)
-        floating_ip = ips.create_floating_ip(userid, network, address,
-                                             project=project)
+        floating_ip = \
+            ips.create_floating_ip(userid, network, address,
+                                   project=project,
+                                   shared_to_project=shared_to_project)
 
     log.info("User %s created floating IP %s, network %s, address %s",
              userid, floating_ip.id, floating_ip.network_id,

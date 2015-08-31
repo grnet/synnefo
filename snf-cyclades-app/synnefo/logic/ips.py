@@ -183,7 +183,8 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
 
 
 @transaction.commit_on_success
-def create_floating_ip(userid, network=None, address=None, project=None):
+def create_floating_ip(userid, network=None, address=None, project=None,
+                       shared_to_project=False):
     if network is None:
         floating_ip = allocate_public_ip(userid, floating_ip=True)
     else:
@@ -202,6 +203,7 @@ def create_floating_ip(userid, network=None, address=None, project=None):
     if project is None:
         project = userid
     floating_ip.project = project
+    floating_ip.shared_to_project=shared_to_project
     floating_ip.save()
     # Issue commission (quotas)
     quotas.issue_and_accept_commission(floating_ip)

@@ -46,7 +46,7 @@ def get_vm(vm_id):
 def create(user_id, size, server, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
-           project_id=None):
+           project_id=None, shared_to_project=False):
     """Create a new volume and optionally attach it to a server.
 
     This function serves as the main entry-point for volume creation. It gets
@@ -85,7 +85,8 @@ def create(user_id, size, server, name=None, description=None,
                            source_snapshot_id=source_snapshot_id,
                            source_volume_id=source_volume_id,
                            volume_type=volume_type, metadata={},
-                           project_id=project_id)
+                           project_id=project_id,
+                           shared_to_project=shared_to_project)
 
     if server is not None:
         server_attachments.attach_volume(server, volume)
@@ -101,7 +102,7 @@ def create(user_id, size, server, name=None, description=None,
 def create_common(user_id, size, name=None, description=None,
                   source_volume_id=None, source_snapshot_id=None,
                   source_image_id=None, volume_type=None, metadata=None,
-                  project_id=None):
+                  project_id=None, shared_to_project=False):
     """Common tasks and checks for the creation of a new volume.
 
     This function processes the necessary arguments in order to call the
@@ -140,7 +141,8 @@ def create_common(user_id, size, name=None, description=None,
 
     volume = _create_volume(user_id, project_id, size, source_type,
                             source_uuid, volume_type=volume_type,
-                            name=name, description=description, index=None)
+                            name=name, description=description, index=None,
+                            shared_to_project=shared_to_project)
 
     if metadata is not None:
         for meta_key, meta_val in metadata.items():
@@ -155,7 +157,7 @@ def create_common(user_id, size, name=None, description=None,
 
 def _create_volume(user_id, project, size, source_type, source_uuid,
                    volume_type, name=None, description=None, index=None,
-                   delete_on_termination=True):
+                   delete_on_termination=True, shared_to_project=False):
     """Create the volume in the DB.
 
     This function can be called from two different places:
@@ -255,6 +257,7 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
     volume = Volume.objects.create(userid=user_id,
                                    project=project,
                                    index=index,
+                                   shared_to_project=shared_to_project,
                                    size=size,
                                    volume_type=volume_type,
                                    name=name,

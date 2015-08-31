@@ -129,10 +129,14 @@ def create_network(request):
         name = ""
 
     project = network_dict.get('project', None)
-    network = networks.create(userid=userid, name=name, flavor=flavor,
-                              public=False, project=project)
+    shared_to_project = network_dict.get("shared_to_project", False)
 
-    log.info("User %s created network %s", userid, network.id)
+    network = networks.create(userid=userid, name=name, flavor=flavor,
+                              public=False, project=project,
+                              shared_to_project=shared_to_project)
+
+    log.info("User %s created network %s, shared: %s", userid, network.id,
+              shared_to_project)
 
     networkdict = network_to_dict(network, detail=True)
     response = render_network(request, networkdict, status=201)

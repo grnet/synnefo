@@ -116,6 +116,7 @@ def create_volume(request):
     project = vol_dict.get("project")
     if project is None:
         project = user_id
+    shared_to_project= vol_dict.get("shared_to_project", False)
 
     # Optional parameters
     volume_type_id = utils.get_attribute(vol_dict, "volume_type",
@@ -160,10 +161,11 @@ def create_volume(request):
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server=server, project_id=project)
+                            server=server, project=project,
+                            shared_to_project=shared_to_project)
 
-    log.info("User %s created volume %s attached to server %s",
-             user_id, volume.id, server.id)
+    log.info("User %s created volume %s attached to server %s, shared: %s",
+             user_id, volume.id, server.id, shared_to_project)
 
     # Render response
     data = json.dumps(dict(volume=volume_to_dict(volume, detail=False)))

@@ -403,6 +403,7 @@ def create_server(request):
         if networks is not None:
             assert isinstance(networks, list)
         project = server.get("project")
+        shared_to_project=server.get("shared_to_project", False)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -425,9 +426,11 @@ def create_server(request):
     vm = servers.create(user_id, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
+                        shared_to_project=shared_to_project,
                         user_projects=request.user_projects)
 
-    log.info("User %s created VM %s", user_id, vm.id)
+    log.info("User %s created VM %s, shared: %s", user_id, vm.id,
+             shared_to_project)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'

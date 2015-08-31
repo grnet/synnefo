@@ -46,7 +46,8 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
-           volumes=None, helper=False, user_projects=None):
+           volumes=None, helper=False, user_projects=None,
+           shared_to_project=False):
 
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
@@ -122,6 +123,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        backend=use_backend,
                                        userid=userid,
                                        project=project,
+                                       shared_to_project=shared_to_project,
                                        imageid=image["id"],
                                        image_version=image["version"],
                                        flavor=flavor,
@@ -153,7 +155,9 @@ def create(userid, name, password, flavor, image_id, metadata={},
             v.delete_on_termination = vol_info["delete_on_termination"]
         else:
             v = _create_volume(user_id=userid, volume_type=server_vtype,
-                               project=project, index=index, **vol_info)
+                               project=project, index=index,
+                               shared_to_project=shared_to_project,
+                               **vol_info)
         assign_volume_to_server(vm, v, index=index)
         server_volumes.append(v)
 

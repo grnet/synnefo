@@ -49,7 +49,7 @@ def network_command(action):
 @transaction.commit_on_success
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
            floating_ip_pool=False, tags=None, public=False, drained=False,
-           project=None):
+           project=None, shared_to_project=False):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -91,6 +91,7 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         name=name,
         userid=userid,
         project=project,
+        shared_to_project=shared_to_project,
         flavor=flavor,
         mode=mode,
         link=link,

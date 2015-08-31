@@ -92,6 +92,10 @@ _.extend(rivets.formatters, {
           value = msg;
       }
       return value;
+  },
+
+  negate: function(value) {
+      return !value;
   }
 
 });

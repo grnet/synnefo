@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -668,7 +668,7 @@
 
       check_can_reassign: function() {
           var action = this.$(".project-name");
-          if (this.model.get("is_root")) {
+          if (this.model.get("is_root") && !this.model.get("is_ghost")) {
               snf.util.set_tooltip(action, "You cannot change the project of boot disks.<br>Boot disks are assigned to the same project as the parent VM.", {tipClass:"tooltip warning"});
               return "project-name-cont disabled";
           } else {
@@ -677,10 +677,8 @@
           }
       },
 
-      status_cls: function() {
-          var status = this.model.get('status');
-          var vm = this.model.get("vm");
-          if (status == "in_use" && vm) {
+      status_cls: function() { var status = this.model.get('status'); var vm =
+          this.model.get("vm"); if (status == "in_use" && vm) {
             return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");
           } else {
             return this.status_cls_map[this.model.get('status')];

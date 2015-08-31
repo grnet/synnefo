@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,7 +60,12 @@
               var flavor = vm.get_flavor();
               var tpl = flavor.get('disk_template');
               return tpl.indexOf('ext_') === 0;
-          }]
+          }],
+        'rename_disabled': [
+          ['is_ghost', 'is_root'], function() {
+            return this.get('is_ghost') || this.get('is_root');
+          }
+        ]
       },
 
       initialize: function() {
@@ -79,7 +84,8 @@
       },
 
       model_actions: {
-        'snapshot': [['status', 'vm', 'ext'], function() {
+        'snapshot': [['is_ghost', 'status', 'vm', 'ext'], function() {
+            if (this.get('is_ghost')) { return false }
             if (!synnefo.config.snapshots_enabled) { return false }
             if (!this.get('ext')) { return false }
             var removing = this.get('status') == 'deleting';
@@ -88,7 +94,8 @@
             return vm && vm.can_connect() && !removing && !creating;
         }],
 
-        'remove': [['is_root', 'vm', 'ext'], function() {
+        'remove': [['is_ghost', 'is_root', 'vm', 'ext'], function() {
+            if (this.get('is_ghost')) { return false }
             var removing = this.get('status') == 'deleting';
             var creating = this.get('status') == 'creating';
             if (this.get('is_root')) { return false }
@@ -168,7 +175,7 @@
           error: err || function() {},
           silent: true
         });
-      }
+      },
 
     });
     
@@ -181,38 +188,75 @@
       updateEntries: true,
       add_on_create: true,
 
+      append_ghost_volumes: function(volumes) {
+        // Get ghost volumes from existing VMs
+        synnefo.storage.vms.map(function(vm) {
+          var index = 0;
+          _.map(vm.attributes.volumes, function (volume_id) {
+            _vol = _.find(volumes, function(v) {
+              return v.id == volume_id;
+            });
+
+            // Enable when using changes since
+            // if (synnefo.storage.volumes.get(volume_id)) { return; }
+            //
+            if (!_vol) {
+              volumes.push({
+                'id': volume_id,
+                'size': 0,
+                'volume_type': vm.get_flavor().get_volume_type(),
+                'status': 'un_use',
+                'attachments': [{'server_id': vm.id,
+                                 'device_index': index,
+                                 'volume_id': volume_id}],
+                                 'display_name': 'Unknown',
+                                 'is_ghost': true,
+              });
+            }
+            index = index + 1;
+          });
+        });
+      },
+
       parse: function(resp) {
-        var data = resp;
-        if (!resp) { return [] };
-        data = _.filter(_.map(resp.volumes, 
-          _.bind(this.parse_volume_api_data, this)), 
+        var data = resp.volumes;
+
+        data = _.map(data, function (v) { v.is_ghost = false; return v; });
+
+        this.append_ghost_volumes(data);
+
+        data = _.map(data, this.parse_volume_api_data);
+        data = _.filter(_.map(data,
+                              _.bind(this.parse_volume_api_data, this)),
           function(v){ return v });
+
         return data;
       },
-      
+
       parse_volume_api_data: function(volume) {
         var attachments = volume.attachments || [];
-        volume._vm_id = attachments.length > 0 ? 
+        volume._vm_id = attachments.length > 0 ?
                             attachments[0].server_id : undefined;
-        if (!volume.display_name) { 
+
+        if (!volume.display_name) {
             volume.display_name = "Disk {0}".format(volume.id);
         }
-        
+
         volume.is_root = false;
         if (attachments.length)  {
-            if (attachments[0].device_index === 0) {
-                    volume.display_name = "Boot disk";
-                    volume.is_root = true;
-                    volume.rename_disabled = true;
-            }
             volume._index = attachments[0].device_index;
             volume._index_set = true;
+            if (volume._index == 0)  {
+                    volume.display_name = "Boot disk";
+                    volume.is_root = true;
+            }
         } else {
             volume._index_set = false;
         }
+
         return volume;
       },
-        
+
       comparator: function(m) {
           return m.get('_vm_id') + m.get('_index');
       },
@@ -244,6 +288,6 @@
                       undefined, cb, {critical: true});
       }
     });
-  
+
     snf.storage.volumes = new models.Volumes();
 })(this);

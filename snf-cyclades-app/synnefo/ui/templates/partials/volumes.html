@@ -51,9 +51,10 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <img class="logo" data-rv-src="model.status|model_icon" />
+        <img class="logo" data-rv-class-logo-ghost="model.is_ghost" data-rv-src="model.status|model_icon" />
         <div class="volume-size">
-            <span data-rv-text="model.size|size_display"></span>
+            <span data-rv-text="model.size|size_display"
+                data-rv-hide="model.is_ghost"></span>
         </div>
         <div class="entry inline" data-rv-class-connected="model.device_id">
             <div data-rv-show="model" 
@@ -62,15 +63,19 @@
             <div class="project-name-cont" 
                 data-rv-on-click="view.show_reassign_view"
                 data-rv-class="model.is_root|check_can_reassign",
-            data-rv-show="model.tenant_id">
+                data-rv-show="model.tenant_id">
                 <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            </div>
+            <div class="project-name-cont disabled"
+                data-rv-show="model.is_ghost">
+                <span class="project-name">[Unknown project]</span>
             </div>
             <div data-rv-if="model.vm" class="vms nested-model-list proxy inline">
                 <div class="vm-view-cont">
                     <div data-rv-show="model.vm" data-rv-model-view="model|VolumeVmView"></div>
                 </div>
             </div>
-            <div class="toggler-wrap clearfix">
+            <div class="toggler-wrap clearfix" data-rv-hide="model.is_ghost">
                 <div class="cont-toggler desc">
                     <span class="label">info</span>
                 </div>

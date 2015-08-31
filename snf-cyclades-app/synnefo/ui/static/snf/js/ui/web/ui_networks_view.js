@@ -1193,7 +1193,7 @@
         this.private_networks = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.networks,
           collectionFilter: function(m) {
-            return !m.get('is_public')
+            return !m.get('is_public') && !m.get('is_ghost');
         }});
 
         this.public_networks = new Backbone.Collection();

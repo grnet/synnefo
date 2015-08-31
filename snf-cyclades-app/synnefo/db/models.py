@@ -975,6 +975,7 @@ class NetworkInterfaceManager(models.Manager):
         vms = VirtualMachine.objects.for_user(userid, projects)
         networks = Network.objects.for_user(userid, projects, public=False)\
                                   .filter(public=False)
+        ips = IPAddress.objects.for_user(userid, projects).filter(floating_ip=True)
 
         _filter = models.Q()
         if userid:
@@ -982,6 +983,7 @@ class NetworkInterfaceManager(models.Manager):
 
         _filter |= models.Q(machine__in=vms)
         _filter |= models.Q(network__in=networks)
+        _filter |= models.Q(ips__in=ips)
 
         return self.get_query_set().filter(_filter)
 

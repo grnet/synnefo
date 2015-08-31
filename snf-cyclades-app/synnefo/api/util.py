@@ -252,11 +252,12 @@ def get_port(port_id, user_id, projects, for_update=False):
     """
     try:
         objects = NetworkInterface.objects.for_user(user_id, projects)
-        if for_update:
-            objects = objects.select_for_update()
         # if (port.device_owner != "vm") and for_update:
         #     raise faults.BadRequest('Cannot update non vm port')
-        return objects.get(id=port_id)
+        port = objects.get(id=port_id)
+        if for_update:
+            port = NetworkInterface.objects.select_for_update().get(id=port_id)
+        return port
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid port ID '%s'" % port_id)
     except NetworkInterface.DoesNotExist:

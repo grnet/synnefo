@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,6 +81,8 @@ CHECK_TOOL_ACK_TIMEOUT = 10
 # Time out after S seconds while waiting for the status report from
 # snf-dispatcher to arrive.
 CHECK_TOOL_REPORT_TIMEOUT = 30
+# Seconds that the request queue will exist while there are no consumers.
+REQUEST_QUEUE_TTL = 600
 
 
 def get_hostname():
@@ -180,7 +182,8 @@ class Dispatcher:
         # status check request
         hostname, pid = get_hostname(), os.getpid()
         queue = queues.get_dispatcher_request_queue(hostname, pid)
-        self.client.queue_declare(queue=queue, mirrored=True, ttl=60)
+        self.client.queue_declare(queue=queue, mirrored=True,
+                                  ttl=REQUEST_QUEUE_TTL)
         self.client.basic_consume(queue=queue, callback=handle_request)
         log.debug("Binding %s(%s) to queue %s with handler 'hadle_request'",
                   exchange, routing_key, queue)

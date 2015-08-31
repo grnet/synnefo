@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,6 +108,7 @@ def ip_to_dict(floating_ip):
             "floating_network_id": str(floating_ip.network_id),
             "user_id": floating_ip.userid,
             "tenant_id": floating_ip.project,
+            "shared_to_project": floating_ip.shared_to_project,
             "deleted": floating_ip.deleted}
 
 

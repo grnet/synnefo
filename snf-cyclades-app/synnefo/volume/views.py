@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ def volume_to_dict(volume, detail=True):
             "delete_on_termination": volume.delete_on_termination,
             "user_id": volume.userid,
             "tenant_id": volume.project,
+            "shared_to_project": volume.shared_to_project,
             # "availabilit_zone": None,
             # "bootable": None,
             # "os-vol-tenant-attr:tenant_id": None,

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,6 +62,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "deleted": False,
                           "user_id": "user1",
                           "tenant_id": "user1",
+                          "shared_to_project": False,
                           "floating_network_id": str(ip.network_id)})
 
     def test_get_ip(self):
@@ -80,6 +81,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "deleted": False,
                           "user_id": "user1",
                           "tenant_id": "user1",
+                          "shared_to_project": False,
                           "floating_network_id": str(ip.network_id)})
 
     def test_wrong_user(self):
@@ -114,6 +116,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "deleted": False,
                           "user_id": "test_user",
                           "tenant_id": "test_user",
+                          "shared_to_project": False,
                           "floating_network_id": str(self.pool.id)})
 
     def test_reserve_empty_body(self):
@@ -190,6 +193,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "deleted": False,
                           "user_id": "test_user",
                           "tenant_id": "test_user",
+                          "shared_to_project": False,
                           "floating_network_id": str(self.pool.id)})
 
         # Already reserved

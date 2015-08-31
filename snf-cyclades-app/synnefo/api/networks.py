@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -179,6 +179,7 @@ def network_to_dict(network, detail=True):
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
         d['tenant_id'] = network.project
+        d['shared_to_project'] = network.shared_to_project
         d['type'] = network.flavor
         d['updated'] = api.utils.isoformat(network.updated)
         d['created'] = api.utils.isoformat(network.created)

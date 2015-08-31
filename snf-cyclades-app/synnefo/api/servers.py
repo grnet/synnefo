@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -189,6 +189,7 @@ def vm_to_dict(vm, detail=False):
     if detail:
         d['user_id'] = vm.userid
         d['tenant_id'] = vm.project
+        d['shared_to_project'] = vm.shared_to_project
         d['status'] = logic_utils.get_rsapi_state(vm)
         d['SNF:task_state'] = logic_utils.get_task_state(vm)
         d['progress'] = 100 if d['status'] == 'ACTIVE' else vm.buildpercentage

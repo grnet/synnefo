@@ -26,6 +26,36 @@ Astakos
   them (e.g. the user's email).
 * Minor changes so that 'local' authentication provider is treated
   in the same way as all other providers.
+* Add the UUIDs of the projects that the user is member in the response
+  of 'identity/v2.0/tokens' API call.
+
+Cyclades
+--------
+
+* Implement shared resources among members of a project.
+
+  * Extend Cyclades API with the 'shared_to_project' field, indicating whether
+  a resource is shared to the members of the project that the resource belongs
+  to.
+  * Extend `reassign` API call with the 'shared_to_project' field that can be
+  used to share or unshare a resource to project members.
+  * Update Cyclades API to return all resources that are accessible to a user,
+  and not only those that are owned by the user.
+  * Update snf-manage commands to show whether a resource is shared or not.
+
+
+Cyclades UI
+-----------
+
+* Extend Cyclades UI to work with shared resources
+
+ * Add option to share/unshare a resource in the project reassign view.
+ * Add icons to distinquish resources that are either shared by the user
+ or a shared to the user.
+ * Properly handle ghost resources, which are resources that are visible to
+ the user only because they are related with some shared resource, but the
+ user has no access to them. Add tooltip to explain this to the user.
+
 
 .. _Changelog-0.16.2:
 

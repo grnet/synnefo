@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -135,13 +135,16 @@ def get_random_helper_vm(for_update=False, prefetch_related=None):
         raise faults.ItemNotFound('Helper server not found.')
 
 
-def get_vm(server_id, user_id, for_update=False, non_deleted=False,
-           non_suspended=False, prefetch_related=None):
+def get_vm(server_id, user_id, projects, for_update=False,
+           non_deleted=False, non_suspended=False, prefetch_related=None):
     """Find a VirtualMachine instance based on ID and owner."""
 
     try:
         server_id = int(server_id)
-        servers = VirtualMachine.objects
+
+        servers = VirtualMachine.objects.for_user(userid=user_id,
+                                                  projects=projects)
+
         if for_update:
             servers = servers.select_for_update()
         if prefetch_related is not None:
@@ -149,7 +152,9 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
                 servers = servers.prefetch_related(*prefetch_related)
             else:
                 servers = servers.prefetch_related(prefetch_related)
-        vm = servers.get(id=server_id, userid=user_id)
+
+        vm = servers.get(id=server_id)
+
         if non_deleted and vm.deleted:
             raise faults.BadRequest("Server has been deleted.")
         if non_suspended and vm.suspended:
@@ -219,16 +224,19 @@ def get_flavor(flavor_id, include_deleted=False):
         raise faults.ItemNotFound('Flavor not found.')
 
 
-def get_network(network_id, user_id, for_update=False, non_deleted=False):
+def get_network(network_id, user_id, projects, for_update=False,
+                non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
         network_id = int(network_id)
-        objects = Network.objects
+
+        objects = Network.objects.for_user(user_id, projects)
         if for_update:
             objects = objects.select_for_update()
-        network = objects.get(Q(userid=user_id) | Q(public=True),
-                              id=network_id)
+
+        network = objects.get(id=network_id)
+
         if non_deleted and network.deleted:
             raise faults.BadRequest("Network has been deleted.")
         return network
@@ -238,12 +246,12 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
         raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
-def get_port(port_id, user_id, for_update=False):
+def get_port(port_id, user_id, projects, for_update=False):
     """
     Return a NetworkInteface instance or raise ItemNotFound.
     """
     try:
-        objects = NetworkInterface.objects.filter(userid=user_id)
+        objects = NetworkInterface.objects.for_user(user_id, projects)
         if for_update:
             objects = objects.select_for_update()
         # if (port.device_owner != "vm") and for_update:
@@ -263,25 +271,28 @@ def get_security_group(sg_id):
         raise faults.ItemNotFound("Not valid security group")
 
 
-def get_floating_ip_by_address(userid, address, for_update=False):
+def get_floating_ip_by_address(userid, projects, address, for_update=False):
     try:
-        objects = IPAddress.objects
+        objects = IPAddress.objects.for_user(userid, projects)\
+                                   .filter(floating_ip=True, deleted=False)
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(userid=userid, floating_ip=True,
-                           address=address, deleted=False)
+
+        return objects.get(address=address)
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
+def get_floating_ip_by_id(userid, projects, floating_ip_id, for_update=False):
     try:
         floating_ip_id = int(floating_ip_id)
-        objects = IPAddress.objects
+
+        objects = IPAddress.objects.for_user(userid, projects)\
+                                   .filter(floating_ip=True, deleted=False)
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(id=floating_ip_id, floating_ip=True,
-                           userid=userid, deleted=False)
+
+        return objects.get(id=floating_ip_id)
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP with ID %s does not exist." %
                                   floating_ip_id)

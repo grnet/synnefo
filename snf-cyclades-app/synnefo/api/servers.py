@@ -332,20 +332,16 @@ def render_server(request, server, status=200):
 
 
 def render_diagnostics(request, diagnostics_dict, status=200):
-    """
-    Render diagnostics dictionary to json response.
-    """
+    """Render diagnostics dictionary to json response."""
     return HttpResponse(json.dumps(diagnostics_dict), status=status)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_server_diagnostics(request, server_id):
-    """
-    Virtual machine diagnostics api view.
-    """
-    log.debug('server_diagnostics %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    """Virtual machine diagnostics api view."""
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
     diagnostics = diagnostics_to_dict(vm.diagnostics.all())
+
     return render_diagnostics(request, diagnostics)
 
 
@@ -358,8 +354,8 @@ def list_servers(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    log.debug('list_servers detail=%s', detail)
-    user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
+    user_vms = VirtualMachine.objects.for_user(userid=request.user_uniq,
+                                               projects=request.user_projects)
     if detail:
         user_vms = user_vms.prefetch_related("nics__ips", "metadata")
 
@@ -391,7 +387,8 @@ def create_server(request):
     #                       overLimit (413)
     req = utils.get_json_body(request)
     user_id = request.user_uniq
-    log.info('create_server user: %s request: %s', user_id, req)
+
+    log.info("User: %s, Action: create_server, Request: %s", user_id, req)
 
     try:
         server = req['server']
@@ -427,7 +424,10 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
-                        project=project, networks=networks, volumes=volumes)
+                        project=project, networks=networks, volumes=volumes,
+                        user_projects=request.user_projects)
+
+    log.info("User %s created VM %s", user_id, vm.id)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -506,9 +506,7 @@ def get_server_details(request, server_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-
-    log.debug('get_server_details %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq,
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
                      prefetch_related=["nics__ips", "metadata"])
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
@@ -528,16 +526,19 @@ def update_server_name(request, server_id):
     #                       overLimit (413)
 
     req = utils.get_json_body(request)
-    log.info('update_server_name %s %s', server_id, req)
+    log.debug("User: %s, VM: %s, Action: rename, Request: %s",
+               request.user_uniq, server_id, req)
 
     req = utils.get_attribute(req, "server", attr_type=dict, required=True)
     name = utils.get_attribute(req, "name", attr_type=basestring,
                                required=True)
 
-    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True, non_deleted=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     for_update=True, non_suspended=True, non_deleted=True)
 
     servers.rename(vm, new_name=name)
+
+    log.info("User %s renamed server %s", request.user_uniq, vm.id)
 
     return HttpResponse(status=204)
 
@@ -553,10 +554,15 @@ def delete_server(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.info('delete_server %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True, non_deleted=True)
+    log.debug("User: %s, VM: %s, Action: deleted", request.user_uniq,
+              server_id)
+
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     for_update=True, non_suspended=True, non_deleted=True)
     vm = servers.destroy(vm)
+
+    log.info("User %s deleted VM %s", request.user_uniq, vm.id)
+
     return HttpResponse(status=204)
 
 
@@ -582,19 +588,21 @@ def key_to_action(key):
 @transaction.commit_on_success
 def demux_server_action(request, server_id):
     req = utils.get_json_body(request)
-    log.debug('server_action %s %s', server_id, req)
 
     if not isinstance(req, dict) and len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
     # Do not allow any action on deleted or suspended VMs
-    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_deleted=True, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     for_update=True,  non_deleted=True, non_suspended=True)
 
     try:
         action = req.keys()[0]
     except IndexError:
         raise faults.BadRequest("Malformed Request.")
+
+    log.debug("User: %s, VM: %s, Action: %s Request: %s",
+              request.user_uniq, server_id, action, req)
 
     if not isinstance(action, basestring):
         raise faults.BadRequest("Malformed Request. Invalid action.")
@@ -617,8 +625,7 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq,
+    vm = util.get_vm(server_id, request.user_uniq, request.user_proejcts,
                      prefetch_related="nics__ips")
     attachments = [nic_to_attachments(nic)
                    for nic in vm.nics.filter(state="ACTIVE")]
@@ -642,9 +649,10 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    log.debug('list_addresses_by_network %s %s', server_id, network_id)
-    machine = util.get_vm(server_id, request.user_uniq)
-    network = util.get_network(network_id, request.user_uniq)
+    machine = util.get_vm(server_id, request.user_uniq,
+                          request.user_projects)
+    network = util.get_network(network_id, request.user_uniq,
+                               request.user_projects)
     nics = machine.nics.filter(network=network, state="ACTIVE")
     addresses = attachments_to_addresses(map(nic_to_attachments, nics))
 
@@ -665,8 +673,7 @@ def list_metadata(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    log.debug('list_server_metadata %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, metadata, use_values=False,
                                 status=200)
@@ -685,8 +692,11 @@ def update_metadata(request, server_id):
     #                       overLimit (413)
 
     req = utils.get_json_body(request)
-    log.info('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+
+    log.debug("User: %s, VM: %s, Action: update_metadata, Request: %s",
+              request.user_uniq, server_id, req)
+
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
                      non_deleted=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
@@ -714,6 +724,9 @@ def update_metadata(request, server_id):
         meta.save()
 
     vm.save()
+
+    log.info("User %s updated metadata of VM %s", request.user_uniq, vm.id)
+
     vm_meta = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, vm_meta, status=201)
 
@@ -727,9 +740,7 @@ def get_metadata_item(request, server_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-
-    log.debug('get_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
     meta = util.get_vm_meta(vm, key)
     d = {meta.meta_key: meta.meta_value}
     return util.render_meta(request, d, status=200)
@@ -749,9 +760,11 @@ def create_metadata_item(request, server_id, key):
     #                       overLimit (413)
 
     req = utils.get_json_body(request)
-    log.info('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
-                     non_deleted=True)
+    log.debug("User: %s, VM: %s, Action: create_metadata, Request: %s",
+              request.user_uniq, server_id, req)
+
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     non_suspended=True, non_deleted=True)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -800,8 +813,9 @@ def delete_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413),
 
-    log.info('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+    log.debug("User: %s, VM: %s, Action: delete_metadata, Key: %s",
+              request.user_uniq, server_id, key)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
                      non_deleted=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
@@ -819,8 +833,7 @@ def server_stats(request, server_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    log.debug('server_stats %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
     secret = util.stats_encrypt(vm.backend_vm_id)
 
     stats = {
@@ -874,6 +887,9 @@ def start(request, vm, args):
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
     vm = servers.start(vm)
+
+    log.info("User %s started VM %s", request.user_uniq, vm.id)
+
     return HttpResponse(status=202)
 
 
@@ -883,6 +899,7 @@ def shutdown(request, vm, args):
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
     vm = servers.stop(vm)
+    log.info("User %s stopped VM %s", request.user_uniq, vm.id)
     return HttpResponse(status=202)
 
 
@@ -902,6 +919,7 @@ def reboot(request, vm, args):
     if reboot_type not in ["SOFT", "HARD"]:
         raise faults.BadRequest("Invalid 'type' attribute.")
     vm = servers.reboot(vm, reboot_type=reboot_type)
+    log.info("User %s rebooted VM %s", request.user_uniq, vm.id)
     return HttpResponse(status=202)
 
 
@@ -919,11 +937,17 @@ def set_firewall_profile(request, vm, args):
     profile = args.get("profile")
     if profile is None:
         raise faults.BadRequest("Missing 'profile' attribute")
+
     nic_id = args.get("nic")
     if nic_id is None:
         raise faults.BadRequest("Missing 'nic' attribute")
     nic = util.get_vm_nic(vm, nic_id)
+
     servers.set_firewall_profile(vm, profile=profile, nic=nic)
+
+    log.info("User %s set firewall profile of VM %s, port %s",
+             request.user_uniq, vm.id, nic.id)
+
     return HttpResponse(status=202)
 
 
@@ -945,6 +969,10 @@ def resize(request, vm, args):
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
     flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
     servers.resize(vm, flavor=flavor)
+
+    log.info("User %s resized VM %s to flavor %s",
+             request.user_uniq, vm.id, flavor.id)
+
     return HttpResponse(status=202)
 
 
@@ -960,7 +988,7 @@ def os_get_spice_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.info('Get Spice console for VM %s: %s', vm, args)
+    log.debug('Get Spice console for VM %s: %s', vm, args)
 
     raise faults.NotImplemented('Spice console not implemented')
 
@@ -977,7 +1005,7 @@ def os_get_rdp_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.info('Get RDP console for VM %s: %s', vm, args)
+    log.debug('Get RDP console for VM %s: %s', vm, args)
 
     raise faults.NotImplemented('RDP console not implemented')
 
@@ -997,7 +1025,8 @@ def os_get_vnc_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.info('Get osVNC console for VM %s: %s', vm, args)
+    log.debug("User: %s, VM: %s, Action: get_osVNC console, Request: %s",
+              request.user_uniq, vm.id, args)
 
     console_type = args.get('type')
     if console_type is None:
@@ -1034,6 +1063,8 @@ def os_get_vnc_console(request, vm, args):
         mimetype = 'application/json'
         data = json.dumps({'console': resp})
 
+    log.info("User %s got VNC console for VM %s", request.user_uniq, vm.id)
+
     return HttpResponse(data, mimetype=mimetype, status=200)
 
 
@@ -1049,7 +1080,8 @@ def get_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.info("Get console  VM %s: %s", vm, args)
+    log.debug("User: %s, VM: %s, Action: get_console, Request: %s",
+              request.user_uniq, vm.id, args)
 
     console_type = args.get("type")
     if console_type is None:
@@ -1068,6 +1100,8 @@ def get_console(request, vm, args):
     else:
         mimetype = 'application/json'
         data = json.dumps({'console': console_info})
+
+    log.info("User %s got console for VM %s", request.user_uniq, vm.id)
 
     return HttpResponse(data, mimetype=mimetype, status=200)
 
@@ -1106,6 +1140,9 @@ def reassign(request, vm, args):
 
     servers.reassign(vm, project, shared_to_project)
 
+    log.info("User %s reassigned VM %s to project %s, shared %s",
+             request.user_uniq, vm.id, project, shared_to_project)
+
     return HttpResponse(status=200)
 
 
@@ -1125,9 +1162,13 @@ def add(request, net, args):
     if not server_id:
         raise faults.BadRequest('Malformed Request.')
 
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
-                     for_update=True, non_deleted=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     non_suspended=True, for_update=True, non_deleted=True)
     servers.connect(vm, network=net)
+
+    log.info("User %s connected VM %s to network %s",
+             request.user_uniq, vm.id, network.id)
+
     return HttpResponse(status=202)
 
 
@@ -1153,10 +1194,13 @@ def remove(request, net, args):
 
     nic = util.get_nic(nic_id=nic_id)
     server_id = nic.machine_id
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
                      for_update=True, non_deleted=True)
 
     servers.disconnect(vm, nic)
+
+    log.info("User %s disconnected VM %s to network %s, port: %s",
+             request.user_uniq, vm.id, network.id, nic.id)
 
     return HttpResponse(status=202)
 
@@ -1168,10 +1212,16 @@ def add_floating_ip(request, vm, args):
         raise faults.BadRequest("Missing 'address' attribute")
 
     userid = vm.userid
-    floating_ip = util.get_floating_ip_by_address(userid, address,
-                                                  for_update=True)
+    floating_ip = util.get_floating_ip_by_address(userid,
+            request.user_projects, address, for_update=True)
+
     servers.create_port(userid, floating_ip.network, machine=vm,
                         user_ipaddress=floating_ip)
+
+    log.info("User %s attached floating IP %s to VM %s, address: %s,"
+             " network %s", request.user_uniq, floating_ip.id, vm.id,
+             floating_ip.address, floating_ip.network_id)
+
     return HttpResponse(status=202)
 
 
@@ -1180,12 +1230,18 @@ def remove_floating_ip(request, vm, args):
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
-    floating_ip = util.get_floating_ip_by_address(vm.userid, address,
-                                                  for_update=True)
+
+    floating_ip = util.get_floating_ip_by_address(vm.userid,
+            request.user_projects, address, for_update=True)
     if floating_ip.nic is None:
         raise faults.BadRequest("Floating IP %s not attached to instance"
                                 % address)
+
     servers.delete_port(floating_ip.nic)
+
+    log.info("User %s detached floating IP %s from VM %s",
+             request.user_uniq, floating_ip.id, vm.id)
+
     return HttpResponse(status=202)
 
 
@@ -1198,8 +1254,8 @@ def volume_to_attachment(volume):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_volumes(request, server_id):
-    log.debug("get_volumes server_id %s", server_id)
-    vm = util.get_vm(server_id, request.user_uniq, for_update=False)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     for_update=False)
 
     # TODO: Filter attachments!!
     volumes = vm.volumes.filter(deleted=False).order_by("id")
@@ -1207,49 +1263,63 @@ def get_volumes(request, server_id):
 
     data = json.dumps({'volumeAttachments': attachments})
     return HttpResponse(data, status=200)
-    pass
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_volume_info(request, server_id, volume_id):
-    log.debug("get_volume_info server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, for_update=False)
-    volume = get_volume(user_id, volume_id, for_update=False, non_deleted=True,
+    vm = util.get_vm(server_id, user_id, request.user_projects,
+                     for_update=False)
+    volume = get_volume(user_id, request.user_projects, volume_id,
+                        for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
     server_attachments._check_attachment(vm, volume)
     attachment = volume_to_attachment(volume)
     data = json.dumps({'volumeAttachment': attachment})
+
     return HttpResponse(data, status=200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
-    log.debug("attach_volume server_id %s request", server_id, req)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
+
+    log.debug("User %s, VM: %s, Action: attach_volume, Request: %s",
+              request.user_uniq, server_id, req)
+
+    vm = util.get_vm(server_id, user_id, request.user_projects,
+                     for_update=True, non_deleted=True)
 
     attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
                                               required=True)
     # Get volume
     volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
-    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
+    volume = get_volume(user_id, request.user_projects, volume_id,
+                        for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.attach_volume(vm, volume)
     attachment = volume_to_attachment(volume)
     data = json.dumps({'volumeAttachment': attachment})
+
+    log.info("User %s attached volume %s to VM %s", user_id, volume.id, vm.id)
 
     return HttpResponse(data, status=202)
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
 def detach_volume(request, server_id, volume_id):
-    log.debug("detach_volume server_id %s volume_id", server_id, volume_id)
+    log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
+              request.user_uniq, server_id, volume_id)
+
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
-    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
+    vm = util.get_vm(server_id, user_id, request.user_projects,
+                     for_update=True, non_deleted=True)
+    volume = get_volume(user_id, request.user_projects, volume_id,
+                        for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.detach_volume(vm, volume)
+
+    log.info("User %s detached volume %s to VM %s", user_id, volume.id, vm.id)
     # TODO: Check volume state, send job to detach volume
     return HttpResponse(status=202)

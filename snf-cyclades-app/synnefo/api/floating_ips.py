@@ -76,10 +76,15 @@ def floating_ip_demux(request, floating_ip_id):
 def floating_ip_action_demux(request, floating_ip_id):
     userid = request.user_uniq
     req = utils.get_json_body(request)
-    log.debug('floating_ip_action %s %s', floating_ip_id, req)
+
+    log.debug("User %s, Floating IP %s, Request: %s",
+              userid, floating_ip_id, req)
+
     if len(req) != 1:
         raise faults.BadRequest('Malformed request.')
+
     floating_ip = util.get_floating_ip_by_id(userid,
+                                             request.user_projects,
                                              floating_ip_id,
                                              for_update=True)
     action = req.keys()[0]
@@ -116,12 +121,12 @@ def ip_to_dict(floating_ip):
                 serializations=["json"])
 def list_floating_ips(request):
     """Return user reserved floating IPs"""
-    log.debug("list_floating_ips")
-
-    userid = request.user_uniq
-    floating_ips = IPAddress.objects.filter(userid=userid, deleted=False,
-                                            floating_ip=True).order_by("id")\
+    floating_ips = IPAddress.objects.for_user(userid=request.user_uniq,
+                                              projects=request.user_projects)\
+                                    .filter(floating_ip=True)\
+                                    .order_by("id")\
                                     .select_related("nic")
+
     floating_ips = utils.filter_modified_since(request, objects=floating_ips)
 
     floating_ips = map(ip_to_dict, floating_ips)
@@ -136,8 +141,9 @@ def list_floating_ips(request):
                 serializations=["json"])
 def get_floating_ip(request, floating_ip_id):
     """Return information for a floating IP."""
-    userid = request.user_uniq
-    floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id)
+    floating_ip = util.get_floating_ip_by_id(request.user_uniq,
+                                             request.user_projects,
+                                             floating_ip_id)
     request.serialization = "json"
     data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
@@ -149,17 +155,21 @@ def get_floating_ip(request, floating_ip_id):
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_json_body(request)
+
+    log.debug("User: %s, Action: create_floating_ip, Request: %s",
+              request.user_uniq, req)
+
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
                                                required=True, attr_type=dict)
     userid = request.user_uniq
     project = floating_ip_dict.get("project", None)
-    log.info('allocate_floating_ip user: %s request: %s', userid, req)
 
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,
                                          "floating_network_id",
                                          required=False,
                                          attr_type=(basestring, int))
+
     if network_id is None:
         floating_ip = ips.create_floating_ip(userid, project=project)
     else:
@@ -168,8 +178,8 @@ def allocate_floating_ip(request):
         except ValueError:
             raise faults.BadRequest("Invalid networkd ID.")
 
-        network = util.get_network(network_id, userid, for_update=True,
-                                   non_deleted=True)
+        network = util.get_network(network_id, userid, request.user_projects,
+                                   for_update=True, non_deleted=True)
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",
                                           required=False,
@@ -177,7 +187,10 @@ def allocate_floating_ip(request):
         floating_ip = ips.create_floating_ip(userid, network, address,
                                              project=project)
 
-    log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
+    log.info("User %s created floating IP %s, network %s, address %s",
+             userid, floating_ip.id, floating_ip.network_id,
+             floating_ip.address)
+
     request.serialization = "json"
     data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
@@ -189,12 +202,17 @@ def allocate_floating_ip(request):
 def release_floating_ip(request, floating_ip_id):
     """Release a floating IP."""
     userid = request.user_uniq
-    log.info("release_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
 
-    floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
-                                             for_update=True)
+    log.debug("User: %s, Floating IP: %s, Action: delete",
+              request.user_uniq, floating_ip_id)
+
+    floating_ip = util.get_floating_ip_by_id(userid, request.user_projects,
+                                             floating_ip_id, for_update=True)
+
     ips.delete_floating_ip(floating_ip)
-    log.info("User '%s' released IP '%s", userid, floating_ip)
+
+    log.info("User %s deleted floating IP %s", request.user_uniq,
+             floating_ip.id)
 
     return HttpResponse(status=204)
 
@@ -250,6 +268,7 @@ def reassign(request, floating_ip, args):
     if request.user_uniq != floating_ip.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
                                " of the floating IP.")
+
     shared_to_project = args.get("shared_to_project", False)
 
     project = args.get("project")
@@ -257,6 +276,9 @@ def reassign(request, floating_ip, args):
         raise faults.BadRequest("Missing 'project' attribute.")
 
     ips.reassign_floating_ip(floating_ip, project, shared_to_project)
+
+    log.info("User %s reaasigned floating IP %s to project %s, shared: %s",
+             request.user_uniq, floating_ip.id, project, shared_to_project)
 
     return HttpResponse(status=200)
 

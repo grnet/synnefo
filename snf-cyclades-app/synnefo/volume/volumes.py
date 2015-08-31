@@ -18,7 +18,7 @@ import logging
 from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
-from synnefo.db.models import Volume, VolumeMetadata
+from synnefo.db.models import Volume, VolumeMetadata, VirtualMachine
 from synnefo.volume import util
 from synnefo.logic import server_attachments, utils, commands
 from synnefo.plankton.backend import OBJECT_AVAILABLE
@@ -33,8 +33,17 @@ def get_volume(volume_id):
     return Volume.objects.select_for_update().get(id=volume_id, deleted=False)
 
 
+def get_vm(vm_id):
+    """Simple function to get and lock a Virtual Machine."""
+    vms = VirtualMachine.objects.select_for_update()
+    try:
+        return vms.get(id=vm_id, deleted=False)
+    except VirtualMachine.DoesNotExist:
+        raise faults.BadRequest("Virtual machine '%s' does not exist" % vm_id)
+
+
 @transaction.commit_on_success
-def create(user_id, size, server_id, name=None, description=None,
+def create(user_id, size, server, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
            project_id=None):
@@ -50,11 +59,7 @@ def create(user_id, size, server_id, name=None, description=None,
 
     # If given a server id, assert that it exists and that it belongs to the
     # user.
-    if server_id:
-        server = util.get_server(user_id, server_id, for_update=True,
-                                 non_deleted=True,
-                                 exception=faults.BadRequest)
-
+    if server:
         volume_type = server.flavor.volume_type
         # If the server's volume type conflicts with the provided volume type,
         # raise an exception.
@@ -267,11 +272,9 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
     return volume
 
 
-def attach(server_id, volume_id):
+def attach(server, volume_id):
     """Attach a volume to a server."""
     volume = get_volume(volume_id)
-    server = util.get_server(volume.userid, server_id, for_update=True,
-                             non_deleted=True, exception=faults.BadRequest)
     server_attachments.attach_volume(server, volume)
 
     return volume
@@ -337,9 +340,7 @@ def delete(volume):
     """
     server_id = volume.machine_id
     if server_id is not None:
-        server = util.get_server(volume.userid, server_id, for_update=True,
-                                 non_deleted=True,
-                                 exception=faults.BadRequest)
+        server = get_vm(server_id)
         server_attachments.delete_volume(server, volume)
         log.info("Deleting volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
@@ -368,15 +369,12 @@ def detach(volume_id):
     volume = get_volume(volume_id)
     server_id = volume.machine_id
     if server_id is not None:
-        server = util.get_server(volume.userid, server_id, for_update=True,
-                                 non_deleted=True,
-                                 exception=faults.BadRequest)
+        server = get_vm(server_id)
         server_attachments.detach_volume(server, volume)
         log.info("Detaching volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
     else:
         raise faults.BadRequest("Volume is already detached")
-
     return volume
 
 
@@ -403,10 +401,9 @@ def reassign_volume(volume, project, shared_to_project):
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %
                               volume.id)
-    if volume.machine_id is not None:
-        server = util.get_server(volume.userid, volume.machine_id,
-                                 for_update=True, non_deleted=True,
-                                 exception=faults.BadRequest)
+
+    server = volume.machine
+    if server is not None:
         commands.validate_server_action(server, "REASSIGN")
 
     if volume.project == project:

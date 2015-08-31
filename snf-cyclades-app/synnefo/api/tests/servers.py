@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -721,9 +721,11 @@ class ServerMetadataAPITest(ComputeAPITest):
         request = {'meta': {'foo2': 'bar2'}}
         response = self.myput('servers/%d/metadata/foo2' % vm.id,
                               vm.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 201)
 
         # Get the new meta
         response = self.myget('servers/%d/metadata/foo2' % vm.id, vm.userid)
+        self.assertEqual(response.status_code, 200)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo2'], 'bar2')
 

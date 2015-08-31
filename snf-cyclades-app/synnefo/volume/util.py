@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -83,10 +83,9 @@ def assign_volume_to_server(server, volume, index=None):
     return volume
 
 
-def get_volume(user_id, volume_id, for_update=False,
-               non_deleted=False,
-               exception=faults.ItemNotFound):
-    volumes = models.Volume.objects
+def get_volume(user_id, projects, volume_id, for_update=False,
+               non_deleted=False, exception=faults.ItemNotFound):
+    volumes = models.Volume.objects.for_user(user_id, projects)
     if for_update:
         volumes = volumes.select_for_update()
     try:
@@ -94,7 +93,7 @@ def get_volume(user_id, volume_id, for_update=False,
     except (TypeError, ValueError):
         raise faults.BadRequest("Invalid volume id: %s" % volume_id)
     try:
-        volume = volumes.get(id=volume_id, userid=user_id)
+        volume = volumes.get(id=volume_id)
         if non_deleted and volume.deleted:
             raise faults.BadRequest("Volume '%s' has been deleted."
                                     % volume_id)
@@ -137,19 +136,6 @@ def get_image(user_id, image_id, exception=faults.ItemNotFound):
         return get_image_dict(image_id, user_id)
     except faults.ItemNotFound:
         raise exception("Image %s not found" % image_id)
-
-
-def get_server(user_id, server_id, for_update=False, non_deleted=False,
-               exception=faults.ItemNotFound):
-    try:
-        server_id = int(server_id)
-    except (TypeError, ValueError):
-        raise faults.BadRequest("Invalid server id: %s" % server_id)
-    try:
-        return get_vm(server_id, user_id, for_update=for_update,
-                      non_deleted=non_deleted, non_suspended=True)
-    except faults.ItemNotFound:
-        raise exception("Server %s not found" % server_id)
 
 
 VOLUME_URL = \

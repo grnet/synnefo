@@ -230,6 +230,12 @@
             var el = this.vm(vm);
 
             var project = vm.get('project');
+
+            if (vm.get('shared_to_me')) {
+              el.find(".project-name-cont").addClass("disabled");
+              el.find(".project-name").addClass("disabled");
+            }
+
             if (!vm.get('is_ghost')) {
               if (project) {
                 project.bind('change', function() {
@@ -355,6 +361,10 @@
                 this.action_views[vm.id].update_layout();
             }
 
+            if (this.info_views) {
+               this.info_views[vm.id].update_layout();
+            }
+
             var el = this.vm(vm);
             if (!vm.in_error_state()) {
                 el.addClass("can-resize");
@@ -419,7 +429,7 @@
         },
         
         show_reassign_view: function(vm) {
-          if (vm.get('is_ghost')) { return }
+          if (vm.get('is_ghost') || vm.get('shared_to_me')) { return }
           synnefo.ui.main.vm_reassign_view.show(vm);
         },
 

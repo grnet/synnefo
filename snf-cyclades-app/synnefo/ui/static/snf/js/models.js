@@ -802,6 +802,12 @@
             ['status', 'state'], function() {
               return this.in_transition();
             }
+          ],
+          'shared_to_me': [
+            ['user_id', 'is_ghost'], function() {
+              return !this.get('is_ghost') &&
+                (this.get('user_id') != snf.user.current_username);
+            }
           ]
         },
 

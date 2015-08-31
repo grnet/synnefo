@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -725,10 +725,20 @@
         return this.el;
       },
 
-      update_layout: function() {}
+      update_layout: function() {},
+
+      shared_icon: function() {
+        if (this.model.get("shared_to_me")) {
+          return snf.config.media_url + 'images/shared-to-me.png';
+        } else if (this.model.get("shared_to_project")) {
+          return snf.config.media_url + 'images/shared-by-me.png';
+        } else {
+          return undefined;
+        }
+      }
 
     });
-    
+
     views.ModelRenameView = views.ext.ModelView.extend({
       tpl: '#rename-view-tpl',
       title_attr: 'name',

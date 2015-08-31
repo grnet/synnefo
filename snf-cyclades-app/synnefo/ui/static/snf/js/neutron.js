@@ -127,6 +127,12 @@
             return this.get('is_ghost') || this.get('is_public');
           }
         ],
+        'shared_to_me': [
+          ['user_id', 'is_ghost', 'is_public'], function() {
+            return !this.get('is_ghost') && !this.get('is_public') &&
+              (this.get('user_id') != snf.user.current_username);
+          }
+        ],
         'is_floating': [
           ['SNF:floating_ip_pool'], function() {
             return this.get('SNF:floating_ip_pool')
@@ -163,6 +169,19 @@
                                this.get('ext_status'))
           }  
         ],
+        'sharing': [
+          ['is_ghost', 'shared_to_project', 'shared_to_me'], function () {
+            if (this.get('is_ghost')) {
+              return false;
+            } else if (this.get('shared_to_me')) {
+              return 'shared_to_me';
+            } else if (this.get('shared_to_project')) {
+              return 'shared_to_project';
+            } else {
+              return false;
+            }
+          }
+        ]
       },
 
       storage_attrs: {
@@ -567,6 +586,19 @@
               return status != pending;
           }
         ],
+        'sharing': [
+          ['is_ghost', 'shared_to_project', 'shared_to_me'], function () {
+            if (this.get('is_ghost')) {
+              return false;
+            } else if (this.get('shared_to_me')) {
+              return 'shared_to_me';
+            } else if (this.get('shared_to_project')) {
+              return 'shared_to_project';
+            } else {
+              return false;
+            }
+          }
+        ]
       },
 
       disconnect: function(cb) {
@@ -774,6 +806,25 @@
                 return 'CONNECTED'
               }
               return 'CONNECTING'  
+            }
+          }
+        ],
+        'shared_to_me': [
+          ['user_id', 'is_ghost', 'is_public'], function() {
+            return !this.get('is_ghost') && !this.get('is_public') &&
+              (this.get('user_id') != snf.user.current_username);
+          }
+        ],
+        'sharing': [
+          ['is_ghost', 'shared_to_project', 'shared_to_me'], function () {
+            if (this.get('is_ghost')) {
+              return false;
+            } else if (this.get('shared_to_me')) {
+              return 'shared_to_me';
+            } else if (this.get('shared_to_project')) {
+              return 'shared_to_project';
+            } else {
+              return false;
             }
           }
         ]

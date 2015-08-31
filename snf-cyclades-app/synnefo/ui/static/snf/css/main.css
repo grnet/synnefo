@@ -1113,6 +1113,7 @@ div.connect-border:hover {
     height: 54px;
     margin: 1px 14px 0;
 }
+
 .machine .logo {
     background-image: url("../images/icons/machines/medium/unknown-sprite.png");
     background-repeat: no-repeat;
@@ -7138,6 +7139,14 @@ input.has-errors {
 .model-item img.logo {
     width: 60px;
     height: 60px;
+}
+
+.logo-shared {
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 22px;
+  height: 22px;
 }
 
 .model-item .status-title {

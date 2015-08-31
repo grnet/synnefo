@@ -65,6 +65,24 @@
         'rename_disabled': [
           ['is_ghost', 'is_root'], function() {
             return this.get('is_ghost') || this.get('is_root');
+          }],
+        'shared_to_me': [
+          ['user_id', 'is_ghost'], function() {
+            return !this.get('is_ghost') &&
+              (this.get('user_id') != snf.user.current_username);
+          }
+        ],
+        'sharing': [
+          ['is_ghost', 'shared_to_project', 'shared_to_me'], function () {
+            if (this.get('is_ghost')) {
+              return false;
+            } else if (this.get('shared_to_me')) {
+              return 'shared_to_me';
+            } else if (this.get('shared_to_project')) {
+              return 'shared_to_project';
+            } else {
+              return false;
+            }
           }
         ]
       },

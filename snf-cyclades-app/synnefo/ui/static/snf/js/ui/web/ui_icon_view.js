@@ -51,7 +51,7 @@
         },
         
         init_handlers: function() {
-            if (!this.vm.get('is_ghost')){
+            if (!this.vm.get('is_ghost') && !this.vm.get('shared_to_me')){
                 this.project_view.bind('click', _.bind(function() {
                   synnefo.ui.main.vm_reassign_view.show(this.vm);
                 }, this));
@@ -131,8 +131,25 @@
 
             this.label = $(".label", this.vm_view);
 
+            this.logo_shared = $(".logo-shared", this.vm_view);
+            this.logo_shared.hide();
+
             this.set_handlers();
+            this.update_layout();
         },
+
+        update_layout: function() {
+            if (this.vm.get('shared_to_me')) {
+              this.logo_shared.attr('src', snf.config.media_url + '/images/shared-to-me.png');
+              this.logo_shared.show();
+            } else if (this.vm.get('shared_to_project')) {
+              this.logo_shared.attr('src', snf.config.media_url + '/images/shared-by-me.png');
+              this.logo_shared.show();
+            } else {
+              this.logo_shared.hide();
+            }
+          },
+
 
         set_handlers: function() {
             this.info_toggle.click(_.bind(function(){

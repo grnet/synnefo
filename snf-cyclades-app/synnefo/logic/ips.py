@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -261,12 +261,23 @@ def delete_floating_ip(floating_ip):
 
 
 @ip_command("REASSIGN")
-def reassign_floating_ip(floating_ip, project):
-    action_fields = {"to_project": project,
-                     "from_project": floating_ip.project}
-    log.info("Reassigning floating IP %s from project %s to %s",
-             floating_ip, floating_ip.project, project)
-    floating_ip.project = project
-    floating_ip.save()
-    quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
-                                       action_fields=action_fields)
+def reassign_floating_ip(floating_ip, project, shared_to_project):
+    if floating_ip.project == project:
+        if floating_ip.shared_to_project != shared_to_project:
+            log.info("%s floating_ip %s to project %s",
+                "Sharing" if shared_to_project else "Unsharing",
+                floating_ip, project)
+            floating_ip.shared_to_project = shared_to_project
+            floating_ip.save()
+    else:
+        action_fields = {"to_project": project,
+                         "from_project": floating_ip.project}
+        log.info("Reassigning floating_ip %s from project %s to %s, shared: %s",
+                floating_ip, floating_ip.project, project, shared_to_project)
+        floating_ip.project = project
+        floating_ip.shared_to_project = shared_to_project
+        floating_ip.save()
+
+        quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
+                                           action_fields=action_fields)
+    return floating_ip

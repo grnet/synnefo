@@ -1094,10 +1094,18 @@ def revert_resize(request, vm, args):
 
 @server_action('reassign')
 def reassign(request, vm, args):
+    if request.user_uniq != vm.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the VM.")
+
+    shared_to_project = args.get("shared_to_project", False)
+
     project = args.get("project")
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
-    servers.reassign(vm, project)
+
+    servers.reassign(vm, project, shared_to_project)
+
     return HttpResponse(status=200)
 
 

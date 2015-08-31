@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -399,7 +399,7 @@ def update(volume, name=None, description=None, delete_on_termination=None):
 
 
 @transaction.commit_on_success
-def reassign_volume(volume, project):
+def reassign_volume(volume, project, shared_to_project):
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %
                               volume.id)
@@ -408,13 +408,24 @@ def reassign_volume(volume, project):
                                  for_update=True, non_deleted=True,
                                  exception=faults.BadRequest)
         commands.validate_server_action(server, "REASSIGN")
-    action_fields = {"from_project": volume.project, "to_project": project}
-    log.info("Reassigning volume %s from project %s to %s",
-             volume.id, volume.project, project)
-    volume.project = project
-    volume.save()
-    quotas.issue_and_accept_commission(volume, action="REASSIGN",
-                                       action_fields=action_fields)
+
+    if volume.project == project:
+        if volume.shared_to_project != shared_to_project:
+            log.info("%s volume %s to project %s",
+                "Sharing" if shared_to_project else "Unsharing",
+                volume, project)
+            volume.shared_to_project = shared_to_project
+            volume.save()
+    else:
+        action_fields = {"to_project": project, "from_project": volume.project}
+        log.info("Reassigning volume %s from project %s to %s, shared: %s",
+                volume, volume.project, project, shared_to_project)
+        volume.project = project
+        volume.shared_to_project = shared_to_project
+        volume.save()
+        quotas.issue_and_accept_commission(volume, action="REASSIGN",
+                                           action_fields=action_fields)
+    return volume
 
 
 def validate_volume_termination(volume_type, delete_on_termination):

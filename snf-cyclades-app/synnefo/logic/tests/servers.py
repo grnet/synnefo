@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -316,8 +316,9 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project)
+            servers.reassign(vm, another_project, False)
             self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertNotEqual(vol.project, another_project)
 
@@ -327,7 +328,9 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project)
+            servers.reassign(vm, another_project, True)
             self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, True)
             vol = vm.volumes.get(id=volume.id)
             self.assertEqual(vol.project, another_project)
+            self.assertEqual(vol.shared_to_project, True)

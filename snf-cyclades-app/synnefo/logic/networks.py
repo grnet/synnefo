@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -161,12 +161,21 @@ def delete(network):
 
 
 @network_command("REASSIGN")
-def reassign(network, project):
-    action_fields = {"to_project": project, "from_project": network.project}
-    log.info("Reassigning network %s from project %s to %s",
-             network, network.project, project)
-    network.project = project
-    network.save()
-    quotas.issue_and_accept_commission(network, action="REASSIGN",
-                                       action_fields=action_fields)
+def reassign(network, project, shared_to_project):
+    if network.project == project:
+        if network.shared_to_project != shared_to_project:
+            log.info("%s network %s to project %s",
+                "Sharing" if shared_to_project else "Unsharing",
+                network, project)
+            network.shared_to_project = shared_to_project
+            network.save()
+    else:
+        action_fields = {"to_project": project, "from_project": network.project}
+        log.info("Reassigning network %s from project %s to %s, shared: %s",
+                network, network.project, project, shared_to_project)
+        network.project = project
+        network.shared_to_project = shared_to_project
+        network.save()
+        quotas.issue_and_accept_commission(network, action="REASSIGN",
+                                           action_fields=action_fields)
     return network

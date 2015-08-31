@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -299,16 +299,30 @@ def _resize(vm, flavor):
 
 
 @transaction.commit_on_success
-def reassign(vm, project):
+def reassign(vm, project, shared_to_project):
     commands.validate_server_action(vm, "REASSIGN")
-    action_fields = {"to_project": project, "from_project": vm.project}
-    log.info("Reassigning VM %s from project %s to %s",
-             vm, vm.project, project)
-    vm.project = project
-    vm.save()
-    vm.volumes.filter(index=0, deleted=False).update(project=project)
-    quotas.issue_and_accept_commission(vm, action="REASSIGN",
-                                       action_fields=action_fields)
+
+    if vm.project == project:
+        if vm.shared_to_project != shared_to_project:
+            log.info("%s VM %s to project %s",
+                "Sharing" if shared_to_project else "Unsharing",
+                vm, project)
+            vm.shared_to_project = shared_to_project
+            vm.volumes.filter(index=0, deleted=False)\
+                      .update(shared_to_project=shared_to_project)
+            vm.save()
+    else:
+        action_fields = {"to_project": project, "from_project": vm.project}
+        log.info("Reassigning VM %s from project %s to %s, shared: %s",
+                vm, vm.project, project, shared_to_project)
+        vm.project = project
+        vm.shared_to_project = shared_to_project
+        vm.save()
+        vm.volumes.filter(index=0, deleted=False).update(project=project,
+            shared_to_project=shared_to_project)
+        quotas.issue_and_accept_commission(vm, action="REASSIGN",
+                action_fields=action_fields)
+    return vm
 
 
 @commands.server_command("SET_FIREWALL_PROFILE")

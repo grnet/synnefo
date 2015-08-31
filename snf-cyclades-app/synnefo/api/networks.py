@@ -196,10 +196,21 @@ def network_to_dict(network, detail=True):
 
 @transaction.commit_on_success
 def reassign_network(request, network, args):
+    if network.public:
+        raise faults.Forbidden("Cannot reassign public network")
+
+    if request.user_uniq != network.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the network.")
+
+    shared_to_project = args.get("shared_to_project", False)
+
     project = args.get("project")
     if project is None:
         raise api.faults.BadRequest("Missing 'project' attribute.")
-    networks.reassign(network, project)
+
+    networks.reassign(network, project, shared_to_project)
+
     return HttpResponse(status=200)
 
 

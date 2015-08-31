@@ -247,10 +247,17 @@ def list_floating_ip_pools(request):
 
 @transaction.commit_on_success
 def reassign(request, floating_ip, args):
+    if request.user_uniq != floating_ip.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the floating IP.")
+    shared_to_project = args.get("shared_to_project", False)
+
     project = args.get("project")
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
-    ips.reassign_floating_ip(floating_ip, project)
+
+    ips.reassign_floating_ip(floating_ip, project, shared_to_project)
+
     return HttpResponse(status=200)
 
 

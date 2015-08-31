@@ -296,12 +296,22 @@ def delete_volume_metadata_item(request, volume_id, key):
 def reassign_volume(request, volume_id, args):
     req = utils.get_json_body(request)
     log.debug('reassign_volume volume_id: %s, request: %s', volume_id, req)
+
+    shared_to_project = args.get("shared_to_project", False)
+
     project = args.get("project")
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
+
     volume = util.get_volume(request.user_uniq, volume_id, for_update=True,
                              non_deleted=True)
-    volumes.reassign_volume(volume, project)
+
+    if request.user_uniq != volume.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the volume.")
+
+    volumes.reassign_volume(volume, project, shared_to_project)
+
     return HttpResponse(status=200)
 
 

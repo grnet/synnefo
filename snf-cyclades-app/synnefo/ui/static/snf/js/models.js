@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -644,6 +644,10 @@
                 info = { name: this.get("disk_template"), description:'' };
             }
             return info
+        },
+
+        get_volume_type: function() {
+            return parseInt(this.get("SNF:volume_type"))
         },
 
         disk_to_bytes: function() {

@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -538,8 +538,11 @@
         this.ports_toggler.click(this.toggle_ports);
         this.ports_visible = false;
       },
-      
+
       show_reassign_view: function() {
+          if (this.model.get('is_ghost') || this.model.get('is_public')) {
+              return
+          }
           synnefo.ui.main.network_reassign_view.show(this.model);
       },
 

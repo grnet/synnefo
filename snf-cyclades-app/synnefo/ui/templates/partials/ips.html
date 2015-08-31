@@ -46,15 +46,18 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <img class="logo" data-rv-src="model.status|model_icon" />
+        <img class="logo" data-rv-class-logo-ghost="model.is_ghost" data-rv-src="model.status|model_icon" />
         <div class="entry inline" data-rv-class-connected="model.device_id">
           <h3 class="title floating-ip">
             <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
           </h3>
-            <div class="project-name-cont" 
+            <div class="project-name-cont"
             data-rv-on-click="view.show_reassign_view"
             data-rv-show="model.tenant_id">
                 <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            </div>
+            <div class="project-name-cont" data-rv-show="model.is_ghost">
+                <span class="project-name">[Unknown project]</span>
             </div>
           <div data-rv-if="model.port" class="ports nested-model-list proxy inline">
             <div data-rv-if="model.port" class="ip-port-view-cont">

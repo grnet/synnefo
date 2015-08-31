@@ -195,15 +195,18 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <img class="logo" data-rv-src="model.is_public|get_network_icon" />
+        <img class="logo" data-rv-class-logo-ghost="model.is_ghost" data-rv-src="model.is_public|get_network_icon" />
         <div class="entry">
           <div data-rv-show="model" 
             data-rv-model-view="model|ModelRenameView">
           </div>
-            <div class="project-name-cont" 
-            data-rv-on-click="view.show_reassign_view"
-            data-rv-show="model.tenant_id">
-                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            <div class="project-name-cont"
+                data-rv-show="model.tenant_id"
+                data-rv-on-click="view.show_reassign_view">
+                <span class="project-name" data-rv-show="model.tenant_id" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            </div>
+            <div class="project-name-cont disabled" data-rv-show="model.is_ghost">
+                <span class="project-name">[Unknown project]</span>
             </div>
           <div class="toggler-wrap clearfix network-ports-toggler">
             <div class="cont-toggler">
@@ -244,7 +247,7 @@
       </div>
     </div>
     <div class="actions-content">
-      <div class="action-container connect" 
+      <div class="action-container connect"
            data-rv-class-isactive="model.can_connect"
            data-rv-on-click="view.show_connect_vms_overlay">
            <a>{% trans "Connect machine" %}</a>

@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@
         return res;
       }
     });
-    
+
     // Neutron base collection, common neutron collection params are shared
     models.NetworkCollection = snfmodels.Collection.extend({
       api_type: 'network',
@@ -89,17 +89,16 @@
       },
 
       // Available network actions.
-      // connect: 
       model_actions: {
         'connect': [['status', 'is_public'], function() {
           //TODO: Also check network status
-          return !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
+          return !this.get('is_ghost') && !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
         }],
         'remove': [['status', 'is_public', 'ports'], function() {
           if (this.ports && this.ports.length) {
             return false
           }
-          return !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
+          return !this.get('is_ghost') && !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
         }]
       },
       
@@ -121,7 +120,12 @@
         'is_public': [
           ['router:external', 'public'], function() {
             return this.get('router:external') || this.get('public')
-          } 
+          }
+        ],
+        'rename_disabled': [
+          ['is_ghost', 'is_public'], function() {
+            return this.get('is_ghost') || this.get('is_public');
+          }
         ],
         'is_floating': [
           ['SNF:floating_ip_pool'], function() {
@@ -158,9 +162,9 @@
                                'REMOVING'], 
                                this.get('ext_status'))
           }  
-        ]
+        ],
       },
-      
+
       storage_attrs: {
         'subnets': ['subnets', 'subnet', function(model, attr) {
           var subnets = model.get(attr);
@@ -233,7 +237,7 @@
         models.Network.__super__.initialize.apply(this, arguments);
         this.update_actions();
       },
-      
+
       update_actions: function() {
         if (this.ports.length) {
           this.set({can_remove: false})
@@ -302,7 +306,8 @@
         'router:external': true,
         'shared': false,
         'rename_disabled': true,
-        'subnets': []
+        'subnets': [],
+        'is_ghost': false,
       },
         
       group_by: 'name',
@@ -339,20 +344,58 @@
       path: 'networks',
       details: true,
 
-      parse: function(resp) {
-        var data = _.map(resp.networks, function(net) {
-          if (!net.name) {
-            net.name = '(no name set)';
+      append_ghost_networks: function (networks) {
+
+        // Get ghost networks from existing ports
+        synnefo.storage.ports.map(function(port) {
+          _network = _.find(networks, function(n) {
+            return n.id == port.get('network_id');
+          });
+
+          // Enable when using changes-since
+          // if (synnefo.storage.networks.get(port.get('network_id'))) {
+          //   return;
+          // }
+          if (!_network) {
+            _network = {
+              'id': port.get('network_id'),
+              'admin_state_ip': true,
+              'status': 'ACTIVE',
+              'router:external': false,
+              'public': false,
+              'shared': false,
+              'SNF:floating_ip_pool': false,
+              'shared_to_project': false,
+              'name': 'Unknown',
+              'is_ghost': true,
+            }
+            networks.push(_network);
           }
-          return net
-        })
-        return resp.networks
+        });
       },
+
+      parse: function(resp) {
+        var data = resp.networks;
+
+        data = _.map(data, function (n) {
+          n.is_ghost = false;
+          if (!n.name) {
+            n.name = '(no name set)';
+          }
+          return n;
+        });
+
+        this.append_ghost_networks(data);
+
+        return data;
+      },
+
+
 
       get_floating_ips_network: function() {
         return this.filter(function(n) { return n.get('is_public') })[1]
       },
-      
+
       create_subnet: function(subnet_params, complete, error) {
         synnefo.storage.subnets.create(subnet_params, {
           complete: function () { complete && complete() },
@@ -457,9 +500,13 @@
       },
 
       model_actions: {
-        'disconnect': [['status', 'network', 'vm'], function() {
+        'disconnect': [['is_ghost', 'status', 'network', 'vm'], function() {
           var network = this.get('network');
-          if ((!network || network.get('is_public')) && (network && !network.get('is_floating'))) {
+
+          if (this.get('is_ghost')) {return false;}
+
+          if ((!network || network.get('is_ghost') || network.get('is_public'))
+              && (network && !network.get('is_floating'))) {
             return false
           }
           var vm_active = this.get('vm') && this.get('vm').is_active();
@@ -545,8 +592,62 @@
       noUpdate: true,
       updateEntries: true,
 
-      parse: function(data) {
-        return data.ports;
+      append_ghost_ports: function(ports) {
+          // Get ports from existing VMs
+        synnefo.storage.vms.map(function(vm) {
+          _.map(vm.get('attachments'), function (attachment) {
+
+            _port = _.find(ports, function(p) {
+              return p.id == attachment.id;
+            });
+
+
+            /* Enable when using changes-since  */
+            /* if (synnefo.storage.ports.get(attachment.id)) { return; } */
+
+            if (!_port) {
+              _port = {
+                'status': 'ACTIVE',
+                'network_id': attachment.network_id,
+                'device_owner': 'vm',
+                'mac_address': attachment.mac_address,
+                'fixed_ips': [{'ip_address': (attachment.ipv4 ||
+                                              attachment.ipv6)}],
+                'id': attachment.id,
+                'device_id': vm.get('id'),
+                'is_ghost': true,
+                '_has_floating_ip': (attachment['OS-EXT-IPS:type'] == 'floating'),
+              }
+
+              // If the port has a floating IP get it's address
+              if (_port['_has_floating_ip'] == true) {
+                floating_addr = _.find(vm.get('addresses'), function(addr) {
+                  val = _.values(addr)[0]
+                  if (val['OS-EXT-IPS:type'] != 'floating') {
+                    return false;
+                  }
+                  return val['addr'] == attachment.ipv4;
+                });
+                if (floating_addr) {
+                  _port['_floating_ip_id'] = _.keys(floating_addr)[0];
+                  _port['_floating_ip_addr'] = attachment.ipv4;
+                }
+              }
+              ports.push(_port);
+            };
+
+          });
+        });
+      },
+
+      parse: function(resp) {
+        var data = resp.ports;
+
+        data = _.map(data, function(p) { p.is_ghost = false; return p; });
+
+        this.append_ghost_ports(data);
+
+        return data;
       },
 
       comparator: function(m) {
@@ -577,14 +678,17 @@
 
       model_actions: {
         'remove': [['status'], function() {
+          if (this.get('is_ghost')) { return false; }
           var status_ok = _.contains(['DISCONNECTED'], this.get('status'));
           return status_ok
         }],
         'connect': [['status'], function() {
+          if (this.get('is_ghost')) { return false; }
           var status_ok = _.contains(['DISCONNECTED'], this.get('status'))
           return status_ok
         }],
         'disconnect': [['status', 'port_id', 'port'], function() {
+          if (this.get('is_ghost')) { return false; }
           var port = this.get('port');
           if (!port) { return false }
 
@@ -680,9 +784,44 @@
       model: models.FloatingIP,
       details: false,
       path: 'floatingips',
-      parse: function(resp) {
-        return resp.floatingips;
+
+      append_ghost_floating_ips: function(floating_ips) {
+        // Get ghost Floating IPs from existing Ports
+        synnefo.storage.ports.map(function(port) {
+          if (!port.get('_has_floating_ip')) { return; }
+
+          var ip_id = port.get('_floating_ip_id');
+
+          // Enable when using changes-since
+          /* if (synnefo.storage.floating_ips.get(ip_id)) { return; } */
+
+          _fip = _.find(floating_ips, function(f) {
+            return f.port_id == port.get('id');
+          });
+
+          if (!_fip) {
+            _fip = {
+              'id': port.get('_floating_ip_id'),
+              'deleted': false,
+              'floating_network_id': port.get('network_id'),
+              'floating_ip_address': port.get('_floating_ip_addr'),
+              'port_id': port.get('id'),
+              'is_ghost': true
+            }
+            floating_ips.push(_fip);
+          }
+        })
       },
+
+      parse: function(resp) {
+        var data = resp.floatingips;
+
+        data = _.map(data, function(ip) { ip.is_ghost = false; return ip; });
+
+        this.append_ghost_floating_ips(data);
+        return data;
+      },
+
       comparator: function(m) {
         return parseInt(m.id);
       }
@@ -694,9 +833,11 @@
     models.Routers = models.NetworkCollection.extend({
       model: models.Router,
       path: 'routers',
+
       parse: function(resp) {
         return resp.routers
       }
+
     });
 
     snf.storage.floating_ips = new models.FloatingIPs();

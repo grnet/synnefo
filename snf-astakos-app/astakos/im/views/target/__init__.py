@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -261,6 +261,10 @@ def handle_third_party_login(request, provider_module, identifier,
         user_groups = user_info.get('groups', None)
         if isinstance(user_groups, list):
             user.groups = user_groups
+
+        # Save user to get groups
+        user.fix_username()
+        user.save()
 
         # authenticate user
         response = prepare_response(request, user, next_redirect,

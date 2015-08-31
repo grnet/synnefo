@@ -6,6 +6,27 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.16.2next:
+
+v0.16.2next
+===========
+
+Released: UNRELEASED
+
+Astakos
+-------
+
+* Support LDAP authentication by creating the 'LDAP' authentication
+  provider.
+* Add 'autoverify' provider policy to automatically verify the user's
+  email. Obsolete the 'SKIP_EMAIL_VERIFICATION' setting.
+* Extend authentication provider mechanism to support mapping arbitraty
+  provider's attributes to user attributes. Also, support making these
+  attributes to be 'forced' by the provider so that user cannot change
+  them (e.g. the user's email).
+* Minor changes so that 'local' authentication provider is treated
+  in the same way as all other providers.
+
 .. _Changelog-0.16.2:
 
 v0.16.2
@@ -34,17 +55,6 @@ Admin
 Astakos
 -------
 
-* Support LDAP authentication by creating the 'LDAP' authentication
-  provider.
-* Add 'autoverify' provider policy to automatically verify the user's
-  email. Obsolete the 'SKIP_EMAIL_VERIFICATION' setting.
-* Extend authentication provider mechanism to support mapping arbitraty
-  provider's attributes to user attributes. Also, support making these
-  attributes to be 'forced' by the provider so that user cannot change
-  them (e.g. the user's email).
-* Minor changes so that 'local' authentication provider is treated
-  in the same way as all other providers.
-=======
 * Always accept terms for users created via admin API.
 * Allow admin to update the 'signed terms' date for a user via the 'signTerms'
   admin API action.
@@ -104,6 +114,7 @@ Documentation
 -------------
 
 * Update install guide to use Debian Wheezy.
+
 
 Pithos
 ------

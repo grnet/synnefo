@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -494,7 +494,7 @@
     views.SingleView.VM_OS_ICONS = window.os_icons || [];
 
     views.SingleView.STATE_CLASSES = {
-        'UNKNOWN':          ['state', 'error-state'],
+        'UNKNOWN':          ['state', 'unknown-state'],
         'BUILD':            ['state', 'build-state'],
         'REBOOT':           ['state', 'rebooting-state'],
         'STOPPED':          ['state', 'terminated-state'],

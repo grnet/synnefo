@@ -40,7 +40,7 @@
     };
     
     views.ext.VM_STATUS_CLS_MAP = {
-        'UNKNOWN':          ['status-error'],
+        'UNKNOWN':          ['status-unknown'],
         'BUILD':            ['build-state status-progress'],
         'REBOOT':           ['status-progress reboot-state'],
         'STOPPED':          ['status-terminated'],

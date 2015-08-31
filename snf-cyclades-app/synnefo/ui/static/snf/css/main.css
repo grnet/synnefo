@@ -1177,6 +1177,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background: transparent;
 }
 
+.unknown-state .indicator1, .unknown-state .indicator2, .unknown-state .indicator3, .unknown-state .indicator4 {
+    background-color: lightgray;
+}
+
 .connecting-state .indicator1, .connecting-state .indicator2, .connecting-state .indicator3, .connecting-state .indicator4 {
     background-color: #d4aa00;
 }
@@ -7266,6 +7270,10 @@ input.has-errors {
 
 .model-item .status-terminated .status-indicator .indicator {
   background-color: #5e1616;
+}
+
+.model-item .status-unknown .status-indicator .indicator {
+  background-color: lightgray;
 }
 
 .model-item .status-error .status-indicator .indicator {

@@ -830,7 +830,7 @@
             models.VM.__super__.initialize.apply(this, arguments);
 
 
-            this.set({state: params.status || "ERROR"});
+            this.set({state: params.status || "UNKNOWN"});
             this.log = new snf.logging.logger("VM " + this.id);
             this.pending_action = undefined;
             
@@ -1814,11 +1814,11 @@
       'UNKNOWN': 'UNKNOWN',
       'ATTACHING_VOLUME': 'ATTACH_VOLUME',
       'DETACHING_VOLUME': 'DETACH_VOLUME',
-      'DESTROYING': 'DESTROY'
+      'DESTROYING': 'DESTROY',
     }
 
     models.VM.AVAILABLE_ACTIONS = {
-        'UNKNOWN'       : ['destroy'],
+        'UNKNOWN'       : [],
         'BUILD'         : ['destroy'],
         'REBOOT'        : ['destroy'],
         'STOPPED'       : ['start', 'destroy', 'reassign', 'resize', 'snapshot'],

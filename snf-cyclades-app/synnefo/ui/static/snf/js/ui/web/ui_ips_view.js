@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -117,10 +117,6 @@
       tpl: '#ip-view-tpl',
       auto_bind: ['connect_vm'],
         
-      show_reassign_view: function() {
-          synnefo.ui.main.ip_reassign_view.show(this.model);
-      },
-
       status_cls: function() {
           var status = this.model.get('status');
           var vm = this.model.get("port") && this.model.get("port").get("vm");
@@ -143,7 +139,22 @@
       },
       
       show_reassign_view: function() {
+          if (this.model.get('is_ghost') || this.model.get('shared_to_me')) {
+            return;
+          }
           synnefo.ui.main.ip_reassign_view.show(this.model);
+      },
+
+      check_can_reassign: function() {
+          var action = this.$(".project-name");
+          if (this.model.get("shared_to_me")) {
+              snf.util.set_tooltip(action,
+                "Not the owner of this resource, cannot reassign.", {tipClass: "tooltip"});
+              return "project-name-cont disabled";
+          } else {
+              snf.util.unset_tooltip(action);
+              return "project-name-cont";
+          }
       },
 
       model_icon: function() {

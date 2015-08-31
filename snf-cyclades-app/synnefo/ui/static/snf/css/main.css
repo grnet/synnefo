@@ -7950,6 +7950,10 @@ input.has-errors {
   float: none;
 }
 
+#reassign-share-description {
+	margin-top: 3px;
+}
+
 .select-item .name {
   float: left;
   width: 90%;
@@ -8349,4 +8353,8 @@ input.reset {
 
 .logo-ghost {
 	opacity: 0.4;
+}
+
+.reassign-separator {
+	height: 20px;
 }

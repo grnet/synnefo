@@ -540,10 +540,9 @@
       },
 
       show_reassign_view: function() {
-          if (this.model.get('is_ghost') || this.model.get('is_public')) {
-              return
+          if (!this.model.get('is_public')) {
+            synnefo.ui.main.network_reassign_view.show(this.model);
           }
-          synnefo.ui.main.network_reassign_view.show(this.model);
       },
 
       set_ports_empty: function() {
@@ -593,7 +592,19 @@
           this.toggle_ports({}, true);
         }
       },
-      
+
+      check_can_reassign: function() {
+          var action = this.$(".project-name");
+          if (this.model.get("shared_to_me")) {
+              snf.util.set_tooltip(action,
+                'Not the owner of this resource, cannot reassign.', {tipClass: "tooltip"});
+              return "project-name-cont disabled";
+          } else {
+              snf.util.unset_tooltip(action);
+              return "project-name-cont";
+          }
+      },
+
       status_map: {
         'ACTIVE': 'Active',
         'SNF:DRAINED': 'Drained',

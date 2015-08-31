@@ -128,12 +128,13 @@
           return a && a[0] && a[0].device_index;
       },
 
-      reassign_to_project: function(project, success, cb) {
+      reassign_to_project: function(project, shared_to_project, success, cb) {
         var project_id = project.id ? project.id : project;
         var self = this;
         var _success = function() {
           success();
-          self.set({'tenant_id': project_id});
+          self.set({'tenant_id': project_id,
+                    'shared_to_project': shared_to_project});
         }
 
         synnefo.api.sync('create', this, {
@@ -142,7 +143,8 @@
           complete: cb,
           data: { 
             reassign: { 
-              project: project_id 
+              project: project_id ,
+              shared_to_project: shared_to_project
             }
           }
         });

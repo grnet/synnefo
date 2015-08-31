@@ -46,17 +46,17 @@
             this.show_btn = this.vm_view.find(".show-action-error");
             this.project_view = this.vm_view.find(".project-name");
 
+
             this.init_handlers();
-            this.handle_ghost_tooltip();
+            this.handle_tooltips();
             this.update_layout();
         },
         
         init_handlers: function() {
-            if (!this.vm.get('is_ghost') && !this.vm.get('shared_to_me')){
-                this.project_view.bind('click', _.bind(function() {
-                  synnefo.ui.main.vm_reassign_view.show(this.vm);
-                }, this));
-            }
+              this.project_view.bind('click', _.bind(function() {
+                synnefo.ui.main.vm_reassign_view.show(this.vm);
+              }, this));
+
             // action call failed notify the user
             this.vm.bind("action:fail", _.bind(function(args){
                 if (this.vm.action_error) {
@@ -91,11 +91,11 @@
             }, this));
 
             this.vm.bind("change:is_ghost", _.bind(function() {
-              this.handle_ghost_tooltip();
+              this.handle_tooltips();
             }, this));
         },
 
-        handle_ghost_tooltip: function() {
+        handle_tooltips: function() {
           var main_content = this.vm_view.find(".machine-data");
           if (this.vm.get('is_ghost')) {
             snf.util.set_tooltip(main_content,
@@ -104,6 +104,13 @@
               ' shared to you.', {tipClass: 'info tooltip'});
           } else {
             snf.util.unset_tooltip(main_content);
+          }
+          if (this.vm.get('shared_to_me')) {
+            snf.util.set_tooltip(this.project_view,
+              'Not the owner of this resource, cannot reassign.',
+              {tipClass: "tooltip"});
+          } else {
+            snf.util.unset_tooltip(this.project_view);
           }
         },
 
@@ -165,6 +172,7 @@
             } else {
               this.logo_shared.hide();
             }
+
           },
 
 

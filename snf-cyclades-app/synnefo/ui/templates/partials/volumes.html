@@ -63,13 +63,10 @@
             </div>
             <div class="project-name-cont" 
                 data-rv-on-click="view.show_reassign_view"
-                data-rv-class="model.is_root|check_can_reassign",
-                data-rv-show="model.tenant_id">
-                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
-            </div>
-            <div class="project-name-cont disabled"
-                data-rv-show="model.is_ghost">
-                <span class="project-name">[Unknown project]</span>
+                data-rv-class="model.sharing|check_can_reassign"
+                data-rv-class-disabled="model.shared_to_me">
+                <span class="project-name" data-rv-show="model.tenant_id" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+                <span class="project-name" data-rv-hide="model.tenant_id">[Unknown project]</span>
             </div>
             <div data-rv-if="model.vm" class="vms nested-model-list proxy inline">
                 <div class="vm-view-cont">

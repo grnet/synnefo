@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -220,13 +220,14 @@
             this.list = this.$(".projects-list ul");
             this.empty_message = this.$(".empty-message");
             this.submit_button = this.$(".form-action.submit");
+            this.share_checkbox =this.$("#reassign-resource-shared");
             this.in_progress = false;
             this.init_handlers();
-          
-            this.$(".description").text(this.description || "");
+
+            this.$("#reassign-project-description").text(this.description || "");
             if (this.collection) { this.init_collection_view(this.collection) }
         },
-        
+
         init_collection_view: function(collection) {
             if (this.collection_view) { this.collection_view.destroy() }
             this.collection_view = new views.ProjectSelectView({
@@ -240,6 +241,21 @@
             this.collection_view.bind("change:select", function(item) {
                 this.handle_project_change(item.model);
             }, this);
+
+            this.share_checkbox.attr('checked',
+              this.model.get('shared_to_project'));
+
+            this.share_checkbox.click(_.bind(function(e) {
+              if (this.collection_view.get_selected().id ==
+                  this.model.get('project').id) {
+                if (this.share_checkbox.is(":checked") !=
+                    this.model.get('shared_to_project')) {
+                  this.submit_button.removeClass("disabled");
+                } else {
+                  this.submit_button.addClass("disabled");
+                }
+              }
+            }, this));
 
             this.collection_view.model_usage = this.model_usage;
             this.collection_view.resource_model = this.model;
@@ -255,10 +271,14 @@
 
         handle_project_change: function(project) {
             var project = project || this.collection_view.get_selected();
+
             if (project.id == this.model.get('project').id) {
+                this.share_checkbox.attr('checked',
+                  this.model.get('shared_to_project'));
                 this.submit_button.addClass("disabled");
             } else {
                 this.submit_button.removeClass("disabled");
+                this.share_checkbox.attr("checked", false);
             }
         },
 
@@ -267,19 +287,25 @@
         },
 
         submit: function() {
+          /* FIXME: Handle share/unshare checkbox..*/
           if (this.submit_button.hasClass("disabled")) { return }
           if (this.in_progress) { return }
           var project = this.collection_view.get_selected();
-          if (project.id == this.model.get('project').id) {
+          var shared_to_project = this.share_checkbox.is(":checked");
+
+          if (project.id == this.model.get('project').id &&
+              shared_to_project == this.model.get('shared_to_project')) {
             this.hide();
           }
+
           var complete = _.bind(function() {
             this.submit_button.removeClass("in-progress");
             this.in_progress = false;
             synnefo.storage.projects.delay_fetch(2000);
             this.hide();
           }, this);
-          this.assign_to_project(this.model, project, complete, complete);
+          this.assign_to_project(this.model, project, shared_to_project,
+            complete, complete);
           this.submit_button.addClass("in-progress");
           this.in_progress = true;
         },
@@ -290,6 +316,9 @@
 
         show: function(model) {
           this.model = model;
+          if (this.model.get('is_ghost') || this.model.get('shared_to_me')) {
+            return;
+          }
           this.init_collection_view(synnefo.storage.projects);
           views.ModelReassignView.__super__.show.call(this);
           this.update_model_details();
@@ -345,8 +374,9 @@
           });
       },
 
-      assign_to_project: function(model, project, complete, fail) {
-        model.call("reassign", complete, fail, {project_id: project.id});
+      assign_to_project: function(model, project, shared_to_project, complete, fail) {
+        model.call("reassign", complete, fail,
+          {project_id: project.id, shared_to_project: shared_to_project});
       }
     });
 
@@ -355,8 +385,8 @@
       description: 'Select project to assign IP address to',
       resources: ['cyclades.floating_ip'],
       model_usage: function() { return {'cyclades.floating_ip': 1}},
-      assign_to_project: function(model, project, complete, fail) {
-        this.model.reassign_to_project(project, complete, complete);
+      assign_to_project: function(model, project, shared_to_project, complete, fail) {
+        this.model.reassign_to_project(project, shared_to_project, complete, complete);
       }
     });
 
@@ -365,8 +395,8 @@
       resources: ['cyclades.network.private'],
       description: 'Select project to assign private network to',
       model_usage: function() { return {'cyclades.network.private': 1}},
-      assign_to_project: function(model, project, complete, fail) {
-        this.model.reassign_to_project(project, complete, complete);
+      assign_to_project: function(model, project, shared_to_project, complete, fail) {
+        this.model.reassign_to_project(project, shared_to_project, complete, complete);
       }
     });
 
@@ -377,8 +407,8 @@
       model_usage: function(model) { 
           return {'cyclades.disk': model.get('size') * Math.pow(1024, 3)}
       },
-      assign_to_project: function(model, project, complete, fail) {
-        this.model.reassign_to_project(project, complete, complete);
+      assign_to_project: function(model, project, shared_to_project, complete, fail) {
+        this.model.reassign_to_project(project, shared_to_project, complete, complete);
       }
     });
 })(this);

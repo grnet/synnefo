@@ -429,7 +429,6 @@
         },
         
         show_reassign_view: function(vm) {
-          if (vm.get('is_ghost') || vm.get('shared_to_me')) { return }
           synnefo.ui.main.vm_reassign_view.show(vm);
         },
 

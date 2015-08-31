@@ -662,14 +662,19 @@
       },
 
       show_reassign_view: function() {
-          if (this.model.get('is_root')) { return }
-          synnefo.ui.main.volume_reassign_view.show(this.model);
+          if (!this.model.get('is_root')) {
+            synnefo.ui.main.volume_reassign_view.show(this.model);
+          }
       },
 
       check_can_reassign: function() {
           var action = this.$(".project-name");
           if (this.model.get("is_root") && !this.model.get("is_ghost")) {
               snf.util.set_tooltip(action, "You cannot change the project of boot disks.<br>Boot disks are assigned to the same project as the parent VM.", {tipClass:"tooltip warning"});
+              return "project-name-cont disabled";
+          } else if (this.model.get("shared_to_me")) {
+              snf.util.set_tooltip(action,
+                "Not the owner of this resource, cannot reassign.", {tipClass:"tooltip"});
               return "project-name-cont disabled";
           } else {
               snf.util.unset_tooltip(action);

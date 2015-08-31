@@ -1666,10 +1666,12 @@
                 case 'reassign':
                     this.__make_api_call(this.get_action_url(), // vm actions url
                                          "create", // create so that sync later uses POST to make the call
-                                         {reassign: {project:params.project_id}}, // payload
+                                         {reassign: {project:params.project_id,
+                                                     shared_to_project:params.shared_to_project}}, // payload
                                          function() {
                                              self.state('reassign');
-                                             self.set({'tenant_id': params.project_id});
+                                             self.set({'tenant_id': params.project_id,
+                                                       'shared_to_project': params.shared_to_project});
                                              success.apply(this, arguments);
                                              snf.api.trigger("call");
                                          },  

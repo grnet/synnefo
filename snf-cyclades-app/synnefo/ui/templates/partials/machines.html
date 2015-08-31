@@ -111,7 +111,7 @@
 
 <!-- project select -->
 <div id="project-select-content" class="overlay-content hidden">
-    <div class="description">
+    <div class="description" id="reassign-project-description">
         <p>{% trans "Select project to reassing this object to" %}</p>
     </div>
     <div class="model-usage clearfix">
@@ -120,8 +120,20 @@
         <ul class="options-list three">
         </ul>
     </div>
+    <div class='reassign-separator'></div>
+    <div class="description" id="reassign-project-description2">
+        <p>Sharing</p>
+    </div>
+            <label>Share this resource with all members of the project</label>
+            <input type="checkbox" name="resource-shared"
+                id="reassign-resource-shared"/>
+            <p class="description noborder " id="reassign-share-description">
+                Sharing this resource with all members of the project will make
+                the resource visible to them and grant them full control over
+                it. Be careful when checking this box.
+            </p>
     <div class="form-actions clearfix">
-        <span class="form-action submit">{% trans "assign to project" %}</span>
+        <span class="form-action submit">{% trans "Apply" %}</span>
     </div>
 </div>
 

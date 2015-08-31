@@ -58,6 +58,7 @@
               var vm = this.get('vm');
               if (!vm) { return false }
               var flavor = vm.get_flavor();
+              if (!flavor) { return false }
               var tpl = flavor.get('disk_template');
               return tpl.indexOf('ext_') === 0;
           }],

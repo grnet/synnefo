@@ -345,8 +345,17 @@
             img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
-            var name = _.escape(util.truncate(vm.get('name'), 25));
-            var flavor = vm.get_flavor().details_string();
+            var name;
+            var flavor;
+
+            if (vm.get('is_ghost')) {
+              name = "Unknown"
+              flavor = "Unknown";
+            } else {
+              name = _.escape(util.truncate(vm.get('name'), 25));
+              flavor = vm.get_flavor().details_string();
+            }
+
             var status = STATE_TEXTS[vm.state()];
             
             return [checkbox, img, name, flavor, status, vm.id];

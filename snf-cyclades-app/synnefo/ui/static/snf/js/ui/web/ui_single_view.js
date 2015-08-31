@@ -212,6 +212,7 @@
         },  
 
         update_current_vm: function() {
+            if (this.vm(this.current_vm).get('id_ghost')) { return }
             try {
                 this.current_vm_instance = storage.vms.at(this.current_vm);
                 this.current_vm_instance.start_stats_update(true);
@@ -297,17 +298,17 @@
 
             var volumes_container = this.vm(vm).find(".volumes-content");
             var volumes_toggler = this.vm(vm).find(".toggler-header.volumes");
-            
+
             var ports_view = new views.VMSinglePortListView({
               vm_view: this.vm(vm),
-              collection: vm.ports, 
+              collection: vm.ports,
               container: ports_container,
               parent: this,
               truncate: 50
             });
             this.ports_views[vm.id] = ports_view
             ports_view.show();
-            
+
             var volumes_view = new views.VMSingleVolumesListView({
               vm_view: this.vm(vm),
               collection: vm.volumes, 
@@ -437,14 +438,21 @@
             }
             // truncate name
             el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 45));
-            el.find(".fqdn").val(vm.get("fqdn") || synnefo.config.no_fqdn_message);
+            el.find(".fqdn").val(vm.get("fqdn") || vm.get_hostname());
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);
             // set state class
             el.find(".state").removeClass().addClass(views.SingleView.STATE_CLASSES[vm.state()].join(" "));
             // os icon
             el.find(".single-image").css({'background-image': "url(" + this.get_vm_icon_path(vm, "medium") + ")"});
-            
+
+            var logo = el.find('.single-image');
+            if (vm.get('is_ghost')) {
+              logo.addClass('logo-ghost');
+            } else {
+              logo.removeClass('logo-ghost');
+            }
+
             el.removeClass("connectable");
             if (vm.is_connectable()) {
                 el.addClass("connectable");

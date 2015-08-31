@@ -51,9 +51,11 @@
         },
         
         init_handlers: function() {
-            this.project_view.bind('click', _.bind(function() {
-              synnefo.ui.main.vm_reassign_view.show(this.vm);
-            }, this));
+            if (!this.vm.get('is_ghost')){
+                this.project_view.bind('click', _.bind(function() {
+                  synnefo.ui.main.vm_reassign_view.show(this.vm);
+                }, this));
+            }
             // action call failed notify the user
             this.vm.bind("action:fail", _.bind(function(args){
                 if (this.vm.action_error) {
@@ -134,6 +136,9 @@
 
         set_handlers: function() {
             this.info_toggle.click(_.bind(function(){
+                if (this.info_toggle.parent().hasClass("disabled")) {
+                    return;
+                }
                 this.ips_el.slideUp();
                 this.ips_toggle.removeClass("open");
                 this.volumes_el.slideUp();
@@ -249,6 +254,12 @@
         
         // update elements visibility/state
         update_layout: function() {
+            if (this.vm.get('is_ghost')) {
+                this.name.text("Unknown");
+                this.rename.hide();
+                return;
+            }
+
             // if in renaming state
             if (this.renaming) {
                 // if name is hidden we are already in renaming state
@@ -389,7 +400,7 @@
             
             // clear icon states
             logo.removeClass('single-image-state1 single-image-state2 single-image-state3 single-image-state4');
-            
+
             // append the appropriate state class
             switch (event.type) {
                 case "mouseover":       
@@ -475,6 +486,7 @@
             var self = this;
             if (this.toggle) {
                 $(this.el).find(".tags-header").click(_.bind(function(){
+                    if (this.vm.get('is_ghost')) { return }
                     $(self.el).find(".tags-content").slideToggle(600);
                     var details_toggler = $(this.el).find(".tags-header " +
                                                           ".cont-toggler");
@@ -626,6 +638,7 @@
         update_layout: function() {
             if (!this.vm.stats_available) {
                 this.loading.show();
+                this.loading.hide();
                 this.img.hide();
                 this.error.hide();
             } else {
@@ -688,6 +701,7 @@
         init_handlers: function() {
           this.resize_actions.bind('click', _.bind(function(e){
               if (this.vm.in_error_state()) { return }
+              if (this.vm.get('is_ghost'))  {return }
               ui.main.vm_resize_view.show(this.vm);
           }, this));
         },
@@ -697,18 +711,26 @@
 
             var image = this.vm.get_image(_.bind(function(image){
                 this.sel('image_name').text(
-                  util.truncate(image.get('name'), 17)).attr("title", 
-                  image.escape('name'));
-                this.sel('image_size').text(
-                  image.get_readable_size()).attr('title',
-                                                  image.get_readable_size());
+                    util.truncate(image.get('name'), 17)).attr("title",
+                    image.escape('name'));
+                    this.sel('image_size').text(
+                      image.get_readable_size()).attr('title',
+                      image.get_readable_size());
             }, this));
+
+            if (this.vm.get('is_ghost')) {
+              this.sel('cpu').text('Unknown');
+              this.sel('ram').text('Unknown');
+              this.sel('disk').text('Unknown');
+              this.sel('image_name').text('Unknown');
+              this.sel('image_size').text('Unknown');
+              this.resize_actions.removeClass('trigger-resize')
+            }
 
             var flavor = this.vm.get_flavor();
             if (!flavor || !image) {
                 return;
             }
-
 
             this.sel('cpu').text(flavor.get('cpu'));
             this.sel('ram').text(flavor.get('ram'));
@@ -834,6 +856,7 @@
             } else {
                 this.$(".running").addClass("disabled");
             }
+
             
             this.check_terminated_is_empty();
     
@@ -876,8 +899,8 @@
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 37));
 
-            el.find('.fqdn').val(
-                vm.get('fqdn') || synnefo.config.no_fqdn_message);
+            el.find('.fqdn').val(vm.get_hostname());
+
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
             var cls = views.IconView.STATE_CLASSES[vm.state()] || ['state'];
@@ -887,6 +910,13 @@
                 'background-image': "url(" + 
                     this.get_vm_icon_path(vm, "medium") + ")"
             });
+
+            var logo = el.find('div.logo');
+            if (vm.get('is_ghost')) {
+              logo.addClass('logo-ghost');
+            } else {
+              logo.removeClass('logo-ghost');
+            }
             
             el.removeClass("connectable");
             if (vm.is_connectable()) {

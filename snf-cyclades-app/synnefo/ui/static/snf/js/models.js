@@ -821,14 +821,12 @@
             this.volumes = new Backbone.FilteredCollection(undefined, {
               collection: synnefo.storage.volumes,
               collectionFilter: function(m) {
-                var volumes = _.map(self.get('volumes'), function(id) { return ''+id });
-                return _.contains(volumes, m.id+'');
+                return self.id == m.get('_vm_id');
             }});
 
             this.pending_firewalls = {};
             
             models.VM.__super__.initialize.apply(this, arguments);
-
 
             this.set({state: params.status || "UNKNOWN"});
             this.log = new snf.logging.logger("VM " + this.id);
@@ -914,6 +912,7 @@
         },
         
         is_ext: function() {
+            if (this.get('is_ghost')) { return undefined }
             var tpl = this.get_flavor().get('disk_template');
             return tpl.indexOf('ext_') == 0;
         },
@@ -953,7 +952,7 @@
                                  "read", // create so that sync later uses POST to make the call
                                  null, // payload
                                  function(data) {
-                                     success(data);
+                                   success(data);
                                  },  
                                  null, 'diagnostics');
         },
@@ -1095,6 +1094,8 @@
         },
 
         start_stats_update: function(force_if_empty) {
+            if (this.get('is_ghost')) { return }
+
             var prev_state = this.do_update_stats;
 
             this.do_update_stats = true;
@@ -1125,6 +1126,8 @@
 
         // clear and reinitialize update interval
         init_stats_intervals: function (interval) {
+            if (this.get('is_ghost')) { return }
+
             this.stats_fetcher = this.get_stats_fetcher(this.stats_update_interval);
             this.stats_fetcher.start();
         },
@@ -1140,7 +1143,8 @@
         // do the api call
         update_stats: function(force) {
             // do not update stats if flag not set
-            if ((!this.do_update_stats && !force) || this.updating_stats) {
+            if ((!this.do_update_stats && !force) || this.updating_stats ||
+               this.get('is_ghost')) {
                 return;
             }
 
@@ -1174,12 +1178,12 @@
         _set_stats: function(stats) {
             var silent = silent === undefined ? false : silent;
             // unavailable stats while building
-            if (this.get("status") == "BUILD") { 
+            if (this.get("status") == "BUILD" ||
+                this.get('status') == "DESTROY" ||
+                this.get('is_ghost')) {
                 this.stats_available = false;
             } else { this.stats_available = true; }
 
-            if (this.get("status") == "DESTROY") { this.stats_available = false; }
-            
             this.set({stats: stats}, {silent:true});
             this.trigger("stats:update", stats);
         },
@@ -1306,7 +1310,9 @@
         },
         
         handle_destroy: function() {
+          if (this.status_fetcher) {
             this.stats_fetcher.stop();
+          }
         },
 
         require_reboot: function() {
@@ -1422,6 +1428,7 @@
         
         // get image object
         get_image: function(callback) {
+            if (this.get('is_ghost')) { return undefined }
             if (callback == undefined) { callback = function(){} }
             var image = storage.images.get(this.get('image'));
             if (!image) {
@@ -1434,6 +1441,7 @@
         
         // get flavor object
         get_flavor: function() {
+            if (this.get('is_ghost')) { return undefined }
             var flv = storage.flavors.get(this.get('flavor'));
             if (!flv) {
                 storage.flavors.update_unknown_id(this.get('flavor'));
@@ -1453,6 +1461,7 @@
         },
 
         get_flavor_quotas: function() {
+          if (this.get('is_ghost')) { return {} }
           var flavor = this.get_flavor();
           return {
             cpu: flavor.get('cpu'), 
@@ -1490,6 +1499,7 @@
         },
         
         get_hostname: function() {
+          if (this.get('is_ghost')) { return 'Unknown FQDN' }
           return this.get_meta('hostname') || this.get('fqdn') || synnefo.config.no_fqdn_message;
         },
 
@@ -1586,6 +1596,8 @@
             error = error || function() {};
 
             var self = this;
+
+            if (this.get('is_ghost')) { return }
 
             switch(action_name) {
                 case 'start':
@@ -1921,6 +1933,10 @@
         // making a direct call to the image
         // api url
         update_unknown_id: function(id, callback) {
+            if (!id) {
+              callback(this.get(id));
+              return
+            };
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, this.read_method, {
               _options:{
@@ -2223,11 +2239,56 @@
         details: true,
         copy_image_meta: true,
 
+        append_ghost_servers: function(servers) {
+          // Get ghost VMs from existing volumes
+          synnefo.storage.volumes.map(function(volume) {
+            var vol_vm_id = volume.get('_vm_id');
+
+            if (!vol_vm_id || synnefo.storage.vms.get(vol_vm_id)) { return; }
+
+            _vm = _.find(servers, function(e) {
+              return (e.id == vol_vm_id);
+            });
+
+            if (!_vm) {
+              servers.push({
+                'id': vol_vm_id,
+                'deleted': false,
+                'is_ghost': true});
+              }
+          })
+
+          // Get ghost VMs from existing ports
+          synnefo.storage.ports.map(function(port) {
+            var port_vm_id = port.get('device_id');
+
+            if (!port_vm_id || synnefo.storage.vms.get(port_vm_id)) { return; }
+
+            _vm = _.find(servers, function(e) {
+              return e.id == port_vm_id;
+            });
+
+            if (!_vm) {
+              servers.push({
+              'id': port_vm_id,
+              'deleted': false,
+              'is_ghost': true});
+            }
+          });
+        },
+
         parse: function (resp, xhr) {
-            var data = resp;
-            if (!resp) { return [] };
-            data = _.filter(_.map(resp.servers, 
-                                  _.bind(this.parse_vm_api_data, this)), 
+            var data = resp.servers;
+
+            data = _.map(data, function(vm) {
+              vm.is_ghost = false;
+              return vm;
+            });
+
+            this.append_ghost_servers(data);
+
+            data = _.filter(_.map(data,
+                                  _.bind(this.parse_vm_api_data, this)),
                                   function(v){return v});
             return data;
         },
@@ -2276,10 +2337,15 @@
             }
             
             // v2.0 API returns objects
-            data.image_obj = data.image;
-            data.image = data.image_obj.id;
-            data.flavor_obj = data.flavor;
-            data.flavor = data.flavor_obj.id;
+            if (!data.is_ghost) {
+              data.image_obj = data.image;
+              data.image = data.image_obj.id;
+              data.flavor_obj = data.flavor;
+              data.flavor = data.flavor_obj.id;
+            } else {
+              data.image = undefined;
+              data.flavor = undefined;
+            }
 
             return data;
         },

@@ -343,7 +343,8 @@
       },
 
       vm_logo_url: function(vm) {
-        if (!this.model.get('vm')) { return '' }
+        if (!this.model.get('vm'))
+          { return synnefo.config.media_url + 'images/ip-icon-medium.png'}
         return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
       },
 

@@ -526,10 +526,17 @@
 
           if (this.get('is_ghost')) {return false;}
 
-          if ((!network || network.get('is_ghost') || network.get('is_public'))
+          if ((!network || network.get('is_public'))
               && (network && !network.get('is_floating'))) {
             return false
           }
+          var vm = this.get('vm');
+          if (!vm) {
+            return true;
+          } else if (vm.get('is_ghost')) {
+            return true;
+          }
+
           var vm_active = this.get('vm') && this.get('vm').is_active();
           if (!synnefo.config.hotplug_enabled && this.get('vm') && vm_active) {
             return false;

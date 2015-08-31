@@ -827,6 +827,9 @@
                 }
                 return 'CONNECTED'
               }
+              if (port_id) {
+                return 'CONNECTED';
+              }
               return 'CONNECTING'  
             }
           }

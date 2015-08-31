@@ -343,8 +343,11 @@
       },
 
       vm_logo_url: function(vm) {
-        if (!this.model.get('vm'))
-          { return synnefo.config.media_url + 'images/ip-icon-medium.png'}
+        if (!this.model.get('device_id')) {
+          return synnefo.config.media_url + 'images/ip-icon-medium.png';
+        } else if (!this.model.get('vm')) {
+          return synnefo.config.media_url + 'images/icons/machines/medium/unknown-off.png';
+        }
         return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
       },
 

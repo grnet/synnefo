@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -253,6 +253,9 @@ class ListCommand(SynnefoCommand):
     a user's UUID or display name. The "--displayname" option will append
     the displayname of ther user with "user_uuid_field" to the output.
 
+    If the ``project_uuid_field`` is declared, then "--project" option will
+    become available. It allows filtering via a project's UUID.
+
     * Pretty printing output to a nice table.
 
     """
@@ -263,6 +266,8 @@ class ListCommand(SynnefoCommand):
     object_class = None
     # The name of the field containg the user ID of the user, if any.
     user_uuid_field = None
+    # The name of the field containg the project ID of the project, if any.
+    project_uuid_field = None
     # The name of the field containg the deleted flag, if any.
     deleted_field = None
     # Dictionary with all available fields
@@ -339,6 +344,16 @@ class ListCommand(SynnefoCommand):
                     help="Include the user's email"),
             )
 
+        if self.project_uuid_field:
+            self.option_list += (
+                make_option(
+                    "-p", "--project",
+                    dest="project",
+                    metavar="PROJECT",
+                    help="List items only for this project."
+                         " 'PROJECT' can be a project UUID"),
+            )
+
         if self.deleted_field:
             self.option_list += (
                 make_option(
@@ -400,6 +415,11 @@ class ListCommand(SynnefoCommand):
                 ucache = UserCache(self.astakos_auth_url, self.astakos_token)
                 user = ucache.get_uuid(user)
             self.filters[self.user_uuid_field] = user
+
+        # --project option
+        project = options.get("project")
+        if project:
+            self.filters[self.project_uuid_field] = project
 
         # --deleted option
         if self.deleted_field:

@@ -226,6 +226,10 @@
 
             this.$("#reassign-project-description").text(this.description || "");
             if (this.collection) { this.init_collection_view(this.collection) }
+
+            if (synnefo.config.shared_resources_enabled) {
+              this.$(".share-to-project-content").removeClass("hidden");
+            }
         },
 
         init_collection_view: function(collection) {

@@ -709,6 +709,7 @@
             synnefo.config.limit_reached_msg = 'Usage limit reached';
             synnefo.config.volume_max_size = {{ volume_max_size|safe }};
             synnefo.config.snapshots_enabled = {{ snapshots_enabled|safe }};
+            synnefo.config.shared_resources_enabled = {{ shared_resources_enabled|safe }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

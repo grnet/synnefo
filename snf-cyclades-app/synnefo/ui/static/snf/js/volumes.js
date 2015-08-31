@@ -56,7 +56,16 @@
           }],
           'ext': [['vm', 'volume_type'], function() {
               var vm = this.get('vm');
-              if (!vm) { return false }
+              var type_id = this.get('volume_type');
+              if (!vm || vm.get('is_ghost')) {
+                _flavor = snf.storage.flavors.find(
+                 function(f) { return f.get('SNF:volume_type') ==  type_id });
+                if (_flavor && _flavor.is_ext()) {
+                  return true;
+                } else {
+                  return false
+                }
+              }
               var flavor = vm.get_flavor();
               if (!flavor) { return false }
               var tpl = flavor.get('disk_template');
@@ -107,10 +116,15 @@
             if (this.get('is_ghost')) { return false }
             if (!synnefo.config.snapshots_enabled) { return false }
             if (!this.get('ext')) { return false }
-            var removing = this.get('status') == 'deleting';
-            var creating = this.get('status') == 'creating';
             var vm = this.get('vm');
-            return vm && vm.can_connect() && !removing && !creating;
+            if (vm) {
+              var removing = this.get('status') == 'deleting';
+              var creating = this.get('status') == 'creating';
+              return vm.get('is_ghost') || (vm.can_connect() &&
+                                            !removing && !creating);
+            } else {
+              return false;
+            }
         }],
 
         'remove': [['is_ghost', 'is_root', 'vm', 'ext'], function() {
@@ -119,7 +133,14 @@
             var creating = this.get('status') == 'creating';
             if (this.get('is_root')) { return false }
             var vm = this.get('vm');
-            return vm && vm.can_connect() && !removing && !creating;
+            if (vm) {
+              var removing = this.get('status') == 'deleting';
+              var creating = this.get('status') == 'creating';
+              return vm.get('is_ghost') || (vm.can_connect() &&
+                                            !removing && !creating);
+            } else {
+              return false;
+            }
         }]
       },
       

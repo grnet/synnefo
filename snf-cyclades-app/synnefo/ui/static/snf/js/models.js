@@ -646,6 +646,11 @@
             return info
         },
 
+        is_ext: function() {
+          var tpl = this.get("disk_template")
+          return tpl.indexOf('ext_') == 0;
+        },
+
         get_volume_type: function() {
             return parseInt(this.get("SNF:volume_type"))
         },

@@ -1452,6 +1452,33 @@ The command outputs the list of applied actions and reports whether each
 action succeeded or not. Failure is reported if for any reason cyclades
 failed to process the job and submit it to the backend.
 
+Shared Resources
+~~~~~~~~~~~~~~~~
+
+Since version 0.17, it is possible to share resources among the members of
+the project that the resource belongs to.
+
+The owner of the resource can choose to grant full access to all users that are
+members of the project that the resource is charged to. Users will be able to
+see the resource and use it exactly as if they were the owners of the resource.
+For example, users will be able to restart or destroy a shared virtual server.
+
+The sharing mechanism suppports fine-grained granularity at the resource level,
+which means that you can share a resource (e.g. virtual server) without
+sharing related resources (e.g. volumes, floating IPs, etc.). This results
+to what we call "ghost resources", which are resources that are visible to a
+user only because they are somehow related with a shared resource, and the user
+has no access to them. For example, after sharing a volume that is attached to
+some server, project members will be able to see the server that the volume is
+attached to, but they will not have any access to the server.
+
+This is an optional feature which is by default disabled.  To enable the
+sharing functionality, the administrator must set the
+`CYCLADES_SHARED_RESOURCES_ENABLE` setting in
+`/etc/synnefo/20-snf-cyclades-app-api.conf` to `True`. After this, users
+will be able to grant/remove access from resources from the project reassign
+view in the web UI.
+
 Cyclades advanced operations
 ----------------------------
 

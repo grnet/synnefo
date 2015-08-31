@@ -8329,3 +8329,7 @@ input.reset {
     color: inherit !important;
     background-color: transparent;
 }
+
+.logo-ghost {
+	opacity: 0.4;
+}

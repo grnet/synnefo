@@ -275,6 +275,9 @@ def reassign(request, floating_ip, args):
                                " of the floating IP.")
 
     shared_to_project = args.get("shared_to_project", False)
+    if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
+        raise faults.Forbidden("Sharing resource to the members of the project"
+                                " is not permitted")
 
     project = args.get("project")
     if project is None:

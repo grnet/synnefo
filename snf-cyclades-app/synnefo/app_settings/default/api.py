@@ -21,6 +21,10 @@ ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
 # of the 'volume' app.
 CYCLADES_SNAPSHOTS_ENABLED = True
 
+# Enable/Disable the feature of a sharing a resource to the members of the
+# project to which it belongs, at the API level.
+CYCLADES_SHARED_RESOURCES_ENABLED = False
+
 #
 # Network Configuration
 #

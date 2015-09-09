@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ class Command(ListCommand):
     select_related = ["nic"]
     deleted_field = "deleted"
     user_uuid_field = "userid"
+    project_uuid_field = "project"
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = CYCLADES_SERVICE_TOKEN
     filters = {'floating_ip': True}

@@ -44,6 +44,8 @@ class Command(SynnefoCommand):
                     help="An arbitrary string for naming the server"),
         make_option("--user", dest="user_id",
                     help="Unique identifier of the owner of the server"),
+        make_option("--project", dest="project",
+                    help="Unique identifier of the project of the server"),
         make_option("--image", dest="image_id", default=None,
                     help="Unique identifier of the image."
                          " Use snf-manage image-list to find out"
@@ -86,6 +88,7 @@ class Command(SynnefoCommand):
 
         name = options['name']
         user_id = options['user_id']
+        project = options['project']
         backend_id = options['backend_id']
         image_id = options['image_id']
         flavor_id = options['flavor_id']
@@ -97,6 +100,8 @@ class Command(SynnefoCommand):
             raise CommandError("name is mandatory")
         if not user_id:
             raise CommandError("user is mandatory")
+        if not project:
+            project = user_id
         if not password:
             raise CommandError("password is mandatory")
         if not flavor_id:
@@ -118,7 +123,8 @@ class Command(SynnefoCommand):
         server = servers.create(user_id, name, password, flavor, image_id,
                                 networks=connection_list,
                                 volumes=volumes_list,
-                                use_backend=backend, helper=helper_vm)
+                                use_backend=backend, helper=helper_vm,
+                                project=project)
         pprint.pprint_server(server, stdout=self.stdout)
 
         wait = parse_bool(options["wait"])

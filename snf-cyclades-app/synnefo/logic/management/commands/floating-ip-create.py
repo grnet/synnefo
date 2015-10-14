@@ -39,6 +39,8 @@ class Command(SynnefoCommand):
             dest='user',
             default=None,
             help='The owner of the floating IP'),
+        make_option("--project", dest="project",
+            help="Unique identifier of the project of the floating IP"),
     )
 
     @common.convert_api_faults
@@ -49,9 +51,12 @@ class Command(SynnefoCommand):
         network_id = options['network_id']
         address = options['address']
         user = options['user']
+        project = options['project']
 
         if not user:
             raise CommandError("'user' is required for floating IP creation")
+        if not project:
+            project = user
 
         if network_id is not None:
             network = common.get_resource("network", network_id,
@@ -65,6 +70,7 @@ class Command(SynnefoCommand):
             network = None
 
         floating_ip = ips.create_floating_ip(userid=user,
+                                             project=project,
                                              network=network,
                                              address=address)
 

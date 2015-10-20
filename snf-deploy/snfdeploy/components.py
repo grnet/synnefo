@@ -1374,7 +1374,7 @@ EOF
 class Pithos(base.Component):
     REQUIRED_PACKAGES = [
         "snf-pithos-app",
-        "snf-pithos-webclient",
+        "snf-ui-app",
         ]
 
     alias = constants.PITHOS
@@ -1404,14 +1404,6 @@ class Pithos(base.Component):
             "snf-manage service-export-pithos > %s" % f
             ]
 
-    @base.run_cmds
-    def prepare(self):
-        return [
-            # FIXME: Workaround until snf-pithos-webclient creates conf
-            # files properly with root:synnefo
-            "chown root:synnefo /etc/synnefo/*snf-pithos-webclient*conf",
-            ]
-
     def _configure(self):
         r1 = {
             "ACCOUNTS": self.ctx.astakos.cname,
@@ -1425,11 +1417,12 @@ class Pithos(base.Component):
         r2 = {
             "ACCOUNTS": self.ctx.astakos.cname,
             "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": context.service_id,
+            "UI_BASE_URL": "/pithos/ui/"
             }
 
         return [
             ("/etc/synnefo/pithos.conf", r1, {}),
-            ("/etc/synnefo/webclient.conf", r2, {}),
+            ("/etc/synnefo/ui.conf", r2, {}),
             ]
 
     @base.run_cmds

@@ -64,20 +64,21 @@ In `/etc/synnefo/pithos.conf` add:
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
 
-Install pithos web UI with:
+Install Synnefo web UI with:
 
 .. code-block:: console
 
-   # apt-get install snf-pithos-webclient
+   # apt-get install snf-ui-app
 
 
-In `/etc/synnefo/webclient.conf` add:
+In `/etc/synnefo/ui.conf` add:
 
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
     CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
     CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
+    UI_BASE_URL = '/pithos/ui/'
 
 XXXXXXXXXXXXXX  should be the Pithos token and id found on astakos node by running:
 

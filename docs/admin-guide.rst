@@ -1939,7 +1939,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-astakos-app <http://www.synnefo.org/docs/astakos/latest/index.html>`_
  * `snf-pithos-backend <http://www.synnefo.org/docs/pithos/latest/backends.html>`_
  * `snf-pithos-app <http://www.synnefo.org/docs/pithos/latest/index.html>`_
- * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
+ * `snf-ui-app <http://www.synnefo.org/docs/ui/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `snf-admin-app <http://www.synnefo.org/docs/snf-admin-app/latest/index.html>`_
@@ -2740,7 +2740,7 @@ Role **ASTAKOS_DB**
     * Synnefo components: `None`
     * 3rd party components: PostgreSQL
 Role **PITHOS**
-    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-pithos-webclient`
+    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-ui-app`
     * 3rd party components: Django, Gunicorn
 Role **PITHOS_DB**
     * Synnefo components: `None`
@@ -2796,7 +2796,7 @@ Node2:
         * :ref:`apache <i-apache>`
         * :ref:`snf-webproject <i-webproject>`
         * :ref:`snf-pithos-app <i-pithos>`
-        * :ref:`snf-pithos-webclient <i-pithos>`
+        * :ref:`snf-ui-app <i-pithos>`
 Node3:
     **WEBSERVER**, **CYCLADES**
       Guide sections:

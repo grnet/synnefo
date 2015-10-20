@@ -1164,15 +1164,19 @@ previously), by running:
 
    # apt-get install snf-pithos-app snf-pithos-backend
 
-Now, install the pithos web interface:
+Now, install the Synnefo web interface:
 
 .. code-block:: console
 
-   # apt-get install snf-pithos-webclient
+   # apt-get install snf-ui-app
 
-This package provides the standalone Pithos web client. The web client is the
+This package includes the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
+
+For pithos ui to be accessible via the `/pithos/ui/` endpoint change the 
+`UI_BASE_URL` setting in `/etc/synnefo/20-snf-ui-settings.conf` file 
+to `/pithos/ui/`.
 
 .. _conf-pithos:
 
@@ -1250,7 +1254,7 @@ object checksums. This results to improved performance during object uploading.
 However, if compatibility with the OpenStack Object Storage API is important
 then it should be changed to ``True``.
 
-Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
+Then edit ``/etc/synnefo/20-snf-ui-cloudbar.conf``, to connect the
 Pithos web UI with the Astakos web UI (through the top cloudbar):
 
 .. code-block:: console
@@ -2191,7 +2195,7 @@ cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
 used by the Cyclades Web UI to get from Astakos all the information needed to
 fill its own cloudbar. So, we put our Astakos deployment urls there. All the
 above should have the same values we put in the corresponding variables in
-``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
+``/etc/synnefo/20-snf-ui-cloudbar.conf`` on the previous
 :ref:`Pithos configuration <conf-pithos>` section.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:

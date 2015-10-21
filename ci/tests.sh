@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -x
 
 runAstakosTests () {
     if [ -z "$astakos_tests" ]; then return; fi

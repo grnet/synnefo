@@ -262,7 +262,7 @@ class ShibbolethTests(TestCase):
         client.reset_tokens()
         self.assertRedirects(r, ui_url("signup?third_party_token=%s" % token))
 
-        form = r.context['login_form']
+        form = r.context['signup_form']
         signupdata = copy.copy(form.initial)
         signupdata['email'] = 'kpap@synnefo.org'
         signupdata['third_party_token'] = token

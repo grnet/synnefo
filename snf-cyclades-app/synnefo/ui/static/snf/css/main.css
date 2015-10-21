@@ -7141,14 +7141,6 @@ input.has-errors {
     height: 60px;
 }
 
-.logo-shared {
-  position: absolute;
-  top: 2px;
-  left: 5px;
-  width: 22px;
-  height: 22px;
-}
-
 .model-item .status-title {
   text-align: right;
   margin-right: 4px;
@@ -8358,3 +8350,18 @@ input.reset {
 .reassign-separator {
 	height: 20px;
 }
+
+.sharing label {
+    cursor: pointer;
+}
+
+.logo-shared {
+  position: absolute;
+  top: 22px;
+  left: 57px;
+}
+
+#ips-list-view .logo-shared { top: 19px; left: 68px; }
+#volumes-list-view .logo-shared { top: 19px; left: 66px; }
+#networks-list-view .logo-shared { top: 62px; left: 66px; }
+

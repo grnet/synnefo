@@ -326,7 +326,9 @@
           this.init_collection_view(synnefo.storage.projects);
           views.ModelReassignView.__super__.show.call(this);
           this.update_model_details();
-        },
+          this.$(".sharing label").attr('for', 'reassign-resource-' + this.model.id);
+          this.$(".sharing input").attr('id', 'reassign-resource-' + this.model.id);
+      },
 
         onClose: function() {
           if (this.collection_view) {

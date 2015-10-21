@@ -89,6 +89,34 @@ class FloatingIPAPITest(BaseAPITest):
         response = self.delete(URL + "/%s" % ip.id, "user2")
         self.assertItemNotFound(response)
 
+    def test_sharing(self):
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        action = {"reassign": {
+            "shared_to_project": True, "project": "project1"
+        }}
+        response = self.post(URL + "/%s/action" % ip.id, "user1",
+                             json.dumps(action))
+        self.assertSuccess(response)
+
+        response = self.delete(URL + "/%s" % ip.id, "user2",
+                               _projects=["user2", "project1"])
+        # 409 instead of 404
+        self.assertEqual(response.status_code, 409)
+
+        action['reassign']['shared_to_project'] = False
+        response = self.post(URL + "/%s/action" % ip.id, "user2",
+                             json.dumps(action))
+        self.assertItemNotFound(response)
+
+        action['reassign']['shared_to_project'] = False
+        response = self.post(URL + "/%s/action" % ip.id, "user1",
+                             json.dumps(action))
+        self.assertSuccess(response)
+
+        response = self.delete(URL + "/%s" % ip.id, "user2",
+                               _projects=["user2", "project1"])
+        self.assertItemNotFound(response)
+
     def test_deleted_ip(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True,
                                    deleted=True)

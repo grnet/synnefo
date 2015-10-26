@@ -2267,6 +2267,7 @@
               servers.push({
                 'id': vol_vm_id,
                 'deleted': false,
+                'name': 'Concealed machine #' + vol_vm_id,
                 'is_ghost': true});
               }
           })
@@ -2285,6 +2286,7 @@
               servers.push({
               'id': port_vm_id,
               'deleted': false,
+              'name': 'Concealed machine #' + port_vm_id,
               'is_ghost': true});
             }
           });
@@ -2482,6 +2484,10 @@
             return storage.vms.filter(function(vm){
                 return !vm.in_error_state() && !vm.is_building();
             });
+        },
+
+        no_ghost_vms: function() {
+          return this.filterAttr('is_ghost', false);
         }
     })
     

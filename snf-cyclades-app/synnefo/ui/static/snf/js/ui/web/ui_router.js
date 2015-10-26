@@ -58,7 +58,7 @@
         },
 
         show_welcome: function() {
-            if (snf.storage.vms.length == 0) {
+            if (snf.storage.vms.no_ghost_vms().length == 0) {
                 ui.main.show_empty();
             } else {
                 this.index();

@@ -311,7 +311,10 @@
     });
 
     views.IpCollectionView = views.ext.CollectionView.extend({
-      collection: storage.floating_ips,
+      collection: new Backbone.FilteredCollection(undefined, {
+        collection: synnefo.storage.floating_ips,
+        collectionFilter: function(f) { return !f.get('is_ghost'); }
+      }),
       collection_name: 'floating_ips',
       model_view_cls: views.IpView,
       create_view_cls: views.FloatingIPCreateView,

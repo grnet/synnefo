@@ -725,7 +725,10 @@
     });
 
     views.VolumesCollectionView = views.ext.CollectionView.extend({
-      collection: storage.volumes,
+      collection: new Backbone.FilteredCollection(undefined, {
+        collection: synnefo.storage.volumes,
+        collectionFilter: function(f) { return !f.get('is_ghost'); }
+      }),
       collection_name: 'volumes',
       model_view_cls: views.VolumeView,
       create_view_cls: views.VolumeCreateView,

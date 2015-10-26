@@ -170,7 +170,10 @@
                 this.remove_vm(model)
                 return;
             }
-            
+
+            updated = _.filter(updated, function(m) { 
+              return !m.get('is_ghost') 
+            });
             this.update_vms(updated);
         },
 
@@ -293,7 +296,7 @@
 
         show: function() {
             views.VMListView.__super__.show.apply(this, arguments);
-            if (storage.vms.length == 0) { this.hide() };
+            if (storage.vms.no_ghost_vms().length == 0) { this.hide() };
             if (!snf.config.update_hidden_views) {
                 this.update_vms(storage.vms.models);
             }
@@ -306,6 +309,7 @@
             _.each(vms, _.bind(function(vm){
                 // vm will be removed
                 // no need to update
+                if (vm.get("is_ghost")) { return; }
                 if (vm.get("status") == "DELETED") { return; }
                 this.add(vm);
                 this.update_vm(vm);

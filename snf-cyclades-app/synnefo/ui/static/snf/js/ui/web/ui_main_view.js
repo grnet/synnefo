@@ -545,7 +545,7 @@
             
             if (this.parent.current_view && this.parent.current_view.vms_view) {
 
-                if (storage.vms.length > 0) {
+                if (storage.vms.no_ghost_vms().length > 0) {
                     this.machine_view_selector.show();
                     var machine_index = this.parent.views_ids[this.parent.current_view_id];
                     $(this.machine_view_selector.find("a").get(machine_index)).addClass("activelink");
@@ -1017,7 +1017,11 @@
 
         check_empty: function() {
             if (!this.loaded) { return }
-            if (storage.vms.length == 0) {
+            if (storage.vms.no_ghost_vms().length == 0) {
+                if (!(this.current_view instanceof synnefo.views.VMListView)) { 
+                  this.show_empty();
+                  return;
+                }
                 this.show_view("machines");
                 this.router.show_welcome();
                 this.empty_hidden = false;

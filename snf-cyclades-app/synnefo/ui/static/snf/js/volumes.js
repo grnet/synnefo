@@ -45,7 +45,9 @@
 
       proxy_attrs: { 
           '_status': [['vm', 'vm.state', 'vm.status', 'status'], function() {
-              return this.get('status');
+              var vm = this.get('vm');
+              var vm_status = vm && vm.get('state');
+              return this.get('status') + "_" + vm_status;
           }],
           'in_progress': [['status', 'vm', 'vm.status'], function() {
               var vm = this.get('vm');
@@ -251,7 +253,7 @@
                 'attachments': [{'server_id': vm.id,
                                  'device_index': index,
                                  'volume_id': volume_id}],
-                                 'display_name': 'Unknown',
+                                 'display_name': 'Concealed volume #' + volume_id,
                                  'is_ghost': true,
               });
             }
@@ -268,6 +270,7 @@
             if (a.server_id && !synnefo.storage.vms.get(a.server_id)) {
               synnefo.storage.vms.add({'id': a.server_id,
                                         'deleted': false,
+                                        'name': 'Concealed machine #' + a.server_id,
                                         'is_ghost': true});
             }
           });

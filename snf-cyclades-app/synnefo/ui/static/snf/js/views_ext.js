@@ -228,7 +228,7 @@
             this.disabled_filter = this.options.disabled_filter;
         }
         var handlers = {};
-        handlers[this.collection_name] = {
+        handlers[this.collection || this.collection_name] = {
           'collection_change': ['update', 'sort'],
           'collection_reset': ['reset'],
           'model_change': ['change'],

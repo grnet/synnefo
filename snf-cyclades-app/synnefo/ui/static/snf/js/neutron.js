@@ -387,7 +387,7 @@
               'shared': false,
               'SNF:floating_ip_pool': false,
               'shared_to_project': false,
-              'name': 'Unknown',
+              'name': 'Concealed network #' + port.get('network_id'),
               'is_ghost': true,
             }
             networks.push(_network);
@@ -652,8 +652,8 @@
                 'network_id': attachment.network_id,
                 'device_owner': 'vm',
                 'mac_address': attachment.mac_address,
-                'fixed_ips': [{'ip_address': (attachment.ipv4 ||
-                                              attachment.ipv6)}],
+                'fixed_ips': [{'ip_address': ("Concealed ipv4 " + attachment.ipv4 ||
+                                              "Concealed ipv6 " + attachment.ipv6)}],
                 'id': attachment.id,
                 'device_id': vm.get('id'),
                 'is_ghost': true,
@@ -689,6 +689,7 @@
           if (p.device_id && !synnefo.storage.vms.get(p.device_id)) {
             synnefo.storage.vms.add({'id': p.device_id,
                                      'deleted': false,
+                                     'name': 'Concealed machine #' + p.device_id,
                                      'is_ghost': true})
           }
 
@@ -791,7 +792,7 @@
 
       proxy_attrs: {
         '_status': [
-            ['status', 'port', 'port.vm'], function() {
+            ['status', 'port', 'port.vm', 'port.vm.status', 'port.vm.state'], function() {
                 var status = this.get("status");
                 var port = this.get("port");
                 var vm = port && port.get("vm");
@@ -880,7 +881,7 @@
               'id': port.get('_floating_ip_id'),
               'deleted': false,
               'floating_network_id': port.get('network_id'),
-              'floating_ip_address': port.get('_floating_ip_addr'),
+              'floating_ip_address': 'Concealed floating ip ' + port.get('_floating_ip_addr'),
               'port_id': port.get('id'),
               'is_ghost': true
             }

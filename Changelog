@@ -30,12 +30,10 @@ Admin
 * Display effective limit in user's quotas.
 * Fix IP updated time since timestamp.
 * Fetch image info using UUID and version.
->>>>>>> master
 
 Astakos
 -------
 
-<<<<<<< HEAD
 * Support LDAP authentication by creating the 'LDAP' authentication
   provider.
 * Add 'autoverify' provider policy to automatically verify the user's
@@ -107,16 +105,11 @@ Documentation
 
 * Update install guide to use Debian Wheezy.
 
->>>>>>> master
-
 Pithos
 ------
 
-<<<<<<< HEAD
 * Remove obsolete billing code
-=======
 * Fix off-by-one error in Pithos API tests.
->>>>>>> master
 
 
 .. _Changelog-0.16.1:

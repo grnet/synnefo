@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -288,6 +288,7 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
         ("flavor_name", server.flavor.name),
         ("imageid", server.imageid),
         ("image_name", image),
+        ("created", server.created),
         ("state", server.operstate),
         ("backend", server.backend),
         ("deleted", server.deleted),
@@ -361,7 +362,7 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     GANETI_INSTANCE_FIELDS = ('name', 'oper_state', 'admin_state', 'status',
                               'pnode', 'snode', 'network_port',
                               'disk_template', 'disk_usage',
-                              'oper_ram', 'oper_vcpus', 'mtime')
+                              'oper_ram', 'oper_vcpus', 'mtime', 'ctime')
     server_dict = OrderedDict([(k, server_info.get(k))
                               for k in GANETI_INSTANCE_FIELDS])
 

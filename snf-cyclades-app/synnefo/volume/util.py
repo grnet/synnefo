@@ -103,6 +103,13 @@ def get_volume(user_id, volume_id, for_update=False,
         raise exception("Volume %s not found" % volume_id)
 
 
+def normalize_volume_type_id(volume_type_id):
+    try:
+        return int(volume_type_id)
+    except (TypeError, ValueError):
+        raise faults.BadRequest("Invalid volume id: %s" % volume_type_id)
+
+
 def get_volume_type(volume_type_id, for_update=False, include_deleted=False,
                     exception=faults.ItemNotFound):
     vtypes = models.VolumeType.objects
@@ -110,10 +117,7 @@ def get_volume_type(volume_type_id, for_update=False, include_deleted=False,
         vtypes = vtypes.filter(deleted=False)
     if for_update:
         vtypes = vtypes.select_for_update()
-    try:
-        vtype_id = int(volume_type_id)
-    except (TypeError, ValueError):
-        raise faults.BadRequest("Invalid volume id: %s" % volume_type_id)
+    vtype_id = normalize_volume_type_id(volume_type_id)
     try:
         return vtypes.get(id=vtype_id)
     except models.VolumeType.DoesNotExist:

@@ -58,7 +58,8 @@ def create(user_id, size, server_id, name=None, description=None,
         volume_type = server.flavor.volume_type
         # If the server's volume type conflicts with the provided volume type,
         # raise an exception.
-        if volume_type_id and volume_type.id != volume_type_id:
+        if volume_type_id and \
+           volume_type.id != util.normalize_volume_type_id(volume_type_id):
             raise faults.BadRequest("Cannot create a volume with type '%s' to"
                                     " a server with volume type '%s'."
                                     % (volume_type_id, volume_type.id))

@@ -29,7 +29,6 @@ from synnefo.logic import rapi
 from synnefo import volume as volume_actions
 from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
-from synnefo.volume.util import is_volume_type_detachable
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -243,7 +242,7 @@ def find_new_flavor(vm, cpu=None, ram=None, disk=None):
     disk = disk if disk is not None else old_flavor.disk
 
     if (cpu == old_flavor.cpu and ram == old_flavor.ram and
-        disk == old_flavor.disk):
+       disk == old_flavor.disk):
         return None
 
     try:
@@ -645,7 +644,8 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
     if state != OBJECT_UNAVAILABLE:
         log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
                   state)
-        volume_actions.util.update_snapshot_state(snapshot_id, user_id, state=state)
+        volume_actions.util.update_snapshot_state(snapshot_id, user_id,
+                                                  state=state)
 
 
 @transaction.commit_on_success

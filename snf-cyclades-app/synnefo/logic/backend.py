@@ -1300,7 +1300,6 @@ def attach_volume(vm, volume, depends=[]):
 
     if volume.origin is not None:
         disk["origin"] = volume.origin
-        disk["origin_size"] = volume.origin_size
 
     extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                 .get(disk_provider)

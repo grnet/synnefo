@@ -258,8 +258,12 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
                                    source=source,
                                    source_version=source_version,
                                    origin=origin,
-                                   origin_size=origin_size,
+                                   index=index,
                                    status="CREATING")
+
+    # Store the size of the origin in the volume object but not in the DB.
+    # We will have to change this in order to support detachable volumes.
+    volume.origin_size = origin_size
 
     return volume
 

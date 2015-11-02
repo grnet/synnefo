@@ -107,7 +107,7 @@ def normalize_volume_type_id(volume_type_id):
     try:
         return int(volume_type_id)
     except (TypeError, ValueError):
-        raise faults.BadRequest("Invalid volume id: %s" % volume_type_id)
+        raise faults.BadRequest("Invalid volume type id: %s" % volume_type_id)
 
 
 def get_volume_type(volume_type_id, for_update=False, include_deleted=False,

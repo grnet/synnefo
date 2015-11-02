@@ -336,7 +336,7 @@ display_description A description                    ✔        ✔
 snapshot_id         Existing snapshot to create from ✔        ✔
 display_name        The name                         required ✔
 imageRef            Image to create from             ✔        ✔
-volume_type         The associated volume type       ✔        ✔
+volume_type         The associated volume type       ✔*       ✔
 bootable            Whether the volume is bootable   **✘**    ✔
 metadata            Key-Value metadata pairs         ✔        ✔
 project             Assigned project for quotas      ✔        **✘**
@@ -345,6 +345,7 @@ project             Assigned project for quotas      ✔        **✘**
 .. note::
 
   * ``server_id`` is required for non-detachable volumes
+  * if ``server_id`` is not provided, then ``volume_type`` is required
 
 *Example Create Volume Request: JSON*
 

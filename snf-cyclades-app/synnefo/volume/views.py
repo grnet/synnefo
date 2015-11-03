@@ -161,11 +161,12 @@ def create_volume(request):
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server=server, project=project,
+                            server=server, project_id=project,
                             shared_to_project=shared_to_project)
 
+    server_id = server.id if server else None
     log.info("User %s created volume %s attached to server %s, shared: %s",
-             user_id, volume.id, server.id, shared_to_project)
+             user_id, volume.id, server_id, shared_to_project)
 
     # Render response
     data = json.dumps(dict(volume=volume_to_dict(volume, detail=False)))

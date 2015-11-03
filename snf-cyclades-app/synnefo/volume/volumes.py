@@ -43,7 +43,7 @@ def get_vm(vm_id):
 
 
 @transaction.commit_on_success
-def create(user_id, size, server, name=None, description=None,
+def create(user_id, size, server=None, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
            project_id=None, shared_to_project=False):
@@ -54,7 +54,6 @@ def create(user_id, size, server, name=None, description=None,
     then feeds that data to the lower-level functions that handle the actual
     creation of the volume and the server attachments.
     """
-    server = None
     volume_type = None
 
     # If given a server id, assert that it exists and that it belongs to the

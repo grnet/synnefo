@@ -798,6 +798,12 @@
         path: 'servers',
         has_status: true,
         proxy_attrs: {
+          'disk_template': [
+            ['flavor'], function() {
+              var flv = synnefo.storage.flavors.get(this.get('flavor'));
+              return flv && flv.get('disk_template');
+            }
+          ],
           'busy': [
             ['status', 'state'], function() {
               return !_.contains(['ACTIVE', 'STOPPED'], this.get('status'));
@@ -1226,7 +1232,14 @@
           return true
         },
 
-        can_attach_volume: function() {
+        can_attach_volume: function(v) {
+          var volume_tpl = v.get('volumetype') && v.get('volumetype').get('disk_template');
+          if (v && this.get('disk_template') != volume_tpl) { return false; }
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
+                 !this.get('suspended')
+        },
+
+        can_detach_volume: function() {
           return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
                  !this.get('suspended')
         },
@@ -1563,6 +1576,29 @@
           this.call('firewallProfile', success, error, data);
         },
 
+        attach_volume: function(volume, cb, error) {
+          var data = {};
+          data['volumeAttachment'] = {'volumeId': volume.id};
+          snf.api.sync('create', undefined, {
+              url: this.url() + '/os-volume_attachments',
+              data: JSON.stringify(data),
+              success: cb || function() {}, 
+              error: error || function() {},
+              skip_api_error: false,
+              contentType: 'application/json'
+          });
+        },
+    
+        detach_volume: function(volume, cb, error) {
+          snf.api.sync('delete', undefined, {
+              url: this.url() + '/os-volume_attachments/' + volume.id,
+              success: cb || function() {}, 
+              error: error || function() {},
+              skip_api_error: false,
+              contentType: 'application/json'
+          });
+        },
+
         connect_floating_ip: function(ip, cb, error) {
           var self = this;
           var from_status = this.get('status');
@@ -1594,7 +1630,7 @@
               success: callback, 
               error: error_cb,
               skip_api_error: false,
-	      contentType: 'application/json'
+              contentType: 'application/json'
           });
         },
 

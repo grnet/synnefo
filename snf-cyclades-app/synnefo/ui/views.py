@@ -153,6 +153,8 @@ VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200)
 SNAPSHOTS_ENABLED = getattr(settings, "CYCLADES_SNAPSHOTS_ENABLED", True)
 SHARED_RESOURCES_ENABLED = getattr(settings,
                                    "CYCLADES_SHARED_RESOURCES_ENABLED", False)
+DETACHABLE_VOLUME_TYPES = getattr(settings,
+                                  "CYCLADES_DETACHABLE_DISK_TEMPLATES", [])
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -234,7 +236,8 @@ def home(request):
         'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE),
         'volume_max_size': json.dumps(VOLUME_MAX_SIZE),
         'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED),
-        'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED)
+        'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED),
+        'detachable_volume_types': json.dumps(DETACHABLE_VOLUME_TYPES)
     }
     return template('home', request, context)
 

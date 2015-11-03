@@ -23,24 +23,6 @@
         <div class="steps-history-cont step2h step-header" id="vm-create-step-history-2" >
             <div class="steps-history-step clearfix">
                 <span class="header-step step-2 clearfix">
-                    <span class="num">2<span class="subnum">/5</span></span>
-                    <span class="title">
-                        {% trans "Size" %}
-                    </span>
-                    <div class="info">
-                        <span class="subtitle">
-                            {% trans "Select disk size" %}
-                        </span>
-                        <span class="description">
-                            {% trans "Set disk size and project" %}
-                        </span>
-                    </div>
-                </span>
-            </div>
-        </div>
-        <div class="steps-history-cont step3h step-header" id="vm-create-step-history-3" >
-            <div class="steps-history-step clearfix">
-                <span class="header-step step-3 clearfix">
                     <span class="num">3<span class="subnum">/5</span></span>
                     <span class="title">
                         {% trans "Machine" %}
@@ -51,6 +33,24 @@
                         </span>
                         <span class="description">
                             {% trans "Select machine to assign disk to" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step3h step-header" id="vm-create-step-history-3" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-3 clearfix">
+                    <span class="num">2<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Size" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Select disk size" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Set disk size and project" %}
                         </span>
                     </div>
                 </span>
@@ -102,7 +102,24 @@
             </div>
         </div>
 
-        <div class="step-2 select-volume-details create-step-cont clearfix">
+        <div class="step-2 select-volume-machine create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+                <div class="rename">
+                    <div class="personalize-conts clearfix top">
+                        <h4>{% trans "Machine" %}</h4>
+                        <p class="desc">
+                        Select machine to connect disk to
+                        </p>
+                        <div class="vms-list">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-3 select-volume-details create-step-cont clearfix">
             <div class="clearfix step-header">
             </div>
             <div class="step-cont clearfix">
@@ -119,25 +136,14 @@
                         <span class="metric">GB</span>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="step-3 select-volume-machine create-step-cont clearfix">
-            <div class="clearfix step-header">
-            </div>
-            <div class="step-cont clearfix">
-                <div class="rename">
-                    <div class="personalize-conts clearfix top">
-                        <h4>{% trans "Machine" %}</h4>
-                        <p class="desc">
-                        Select machine to connect disk to
-                        </p>
-                        <div class="vms-list">
-                        </div>
+                <div class="list-cont">
+                    <h4>{% trans "Disk type" %} </h4>
+                    <div class="volume-types-list">
                     </div>
                 </div>
             </div>
         </div>
+
 
         <div class="step-4 select-volume-details create-step-cont clearfix">
             <div class="clearfix step-header">

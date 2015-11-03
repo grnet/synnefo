@@ -40,12 +40,14 @@
       api_type: 'volume',
       storage_attrs: {
         '_vm_id': ['vms', 'vm'],
-        'tenant_id': ['projects', 'project']
+        'tenant_id': ['projects', 'project'],
+        'volume_type': ['volume_types', 'volumetype']
       },
 
       proxy_attrs: { 
           '_status': [['vm', 'vm.state', 'vm.status', 'status'], function() {
               var vm = this.get('vm');
+              if (!vm) { return this.get('status'); }
               var vm_status = vm && vm.get('state');
               return this.get('status') + "_" + vm_status;
           }],
@@ -129,6 +131,20 @@
             }
         }],
 
+        'attach': [['is_ghost', 'vm', 'is_root'], function() {
+          if (this.get('vm')) { return false }
+          return !this.get('is_ghost') && !this.get('in_progress');
+        }],
+
+        'detach': [['is_ghost', 'vm', 'is_root'], function() {
+          if (this.get('vm')) { 
+            var detachable = _.contains(synnefo.config.detachable_volume_types, this.get('volumetype').get('disk_template'));
+            return !this.get('is_ghost') && !this.get('in_progress') &&
+                   !this.get('vm').get('in_progres') && detachable; 
+          }
+          return false;
+        }],
+
         'remove': [['is_ghost', 'is_root', 'vm', 'ext'], function() {
             if (this.get('is_ghost')) { return false }
             var removing = this.get('status') == 'deleting';
@@ -141,7 +157,7 @@
               return vm.get('is_ghost') || (vm.can_connect() &&
                                             !removing && !creating);
             } else {
-              return false;
+              return true;
             }
         }]
       },
@@ -207,6 +223,14 @@
       },
 
       do_remove: function(succ, err) { return this.do_destroy(succ, err) },
+
+      do_detach: function(succ, err) {
+        this.actions.reset_pending();
+        this.get('vm').detach_volume(this, function() {
+          this.set({status: 'detaching'});
+          succ && succ();
+        }.bind(this), err || function() {});
+      },
 
       do_destroy: function(succ, err) {
         this.actions.reset_pending();
@@ -316,15 +340,18 @@
           return m.get('_vm_id') + m.get('_index');
       },
 
-      create: function(name, size, vm, project, source, description, 
+      create: function(name, size, type, vm, project, source, description, 
                        extra, callback) {
         var volume = {
           'display_name': name,
           'display_description': description || null,
           'size': parseInt(size),
-          'server_id': vm.id,
+          'volume_type': type,
           'project': project.id,
           'metadata': {}
+        }
+        if (vm) {
+          volume['server_id'] = vm.id;
         }
 
         if (source && source.is_snapshot()) {
@@ -344,5 +371,30 @@
       }
     });
 
+    models.VolumeType = snfmodels.Model.extend({
+      path: 'types',
+      api_type: 'volume'
+    });
+
+    models.VolumeTypes = snfmodels.Collection.extend({
+      model: models.VolumeType,
+      path: 'types',
+      api_type: 'volume',
+      details: false,
+      noUpdate: true,
+      updateEntries: true,
+      add_on_create: true,
+      parse: function(resp) {
+        return _.map(resp.volume_types, function(type) {
+          type.disk_template = type['SNF:disk_template'];
+          type.info = synnefo.config.flavors_disk_templates_info[type.disk_template] || {};
+          type.name = type.info.name || type.disk_template;
+          type.description = type.info.description || type.disk_template;
+          return type;
+        });
+      }
+    });
+
     snf.storage.volumes = new models.Volumes();
+    snf.storage.volume_types = new models.VolumeTypes();
 })(this);

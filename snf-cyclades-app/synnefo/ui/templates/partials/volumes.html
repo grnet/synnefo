@@ -74,6 +74,7 @@
                     <div data-rv-show="model.vm" data-rv-model-view="model|VolumeVmView"></div>
                 </div>
             </div>
+            <div class="vm-placeholder" data-rv-hide="model.vm"></div>
             <div class="toggler-wrap clearfix" data-rv-hide="model.is_ghost">
                 <div class="cont-toggler desc">
                     <span class="label">info</span>
@@ -118,6 +119,32 @@
            data-rv-on-click="view.show_snapshot_create_overlay">
           <a>Snapshot</a>
         </div>
+        <div class="action-container attach warn" 
+           data-rv-class-isactive="model.can_attach"
+           data-rv-class-selected="model.actions.attach|intEq 1"
+           data-rv-on-click="view.show_attach_overlay">
+          <a>Attach</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.show_attach_overlay">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_attach_confirm">X</span>
+          </div>
+        </div>
+
+        <div class="action-container detach warn" 
+           data-rv-class-isactive="model.can_detach"
+           data-rv-class-selected="model.actions.detach|intEq 1"
+           data-rv-on-click="view.set_detach_confirm">
+          <a>Detach</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.detach">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_detach_confirm">X</span>
+          </div>
+        </div>
+
         <div class="action-container remove warn" 
            data-rv-class-isactive="model.can_remove"
            data-rv-class-selected="model.actions.remove|intEq 1"
@@ -133,3 +160,23 @@
       </div>
   </div>
 </div>
+
+<div id="volume-type-select-collection-tpl" class="hidden">
+  <div class="collection fixed-ips-list">
+    <div class="empty-list hidden">No volume types available.</div>
+    <div class="items-list clearfix"></div>
+  </div>
+</div>
+
+<div id="volume-type-select-model-tpl" class="hidden">
+  <div class="select-item clearfix vm">
+    <div class="checkbox">
+      <input type="radio" data-rv-data-id="model.id" />
+    </div>
+    <div class="name">
+      <span class="" data-rv-text="model.name"></span>
+      <p class="info" data-rv-text="model.description"></p>
+    </div>
+  </div>
+</div>
+

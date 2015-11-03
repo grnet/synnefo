@@ -929,11 +929,12 @@
                     self.update_status("quotas", 1);
                     self.check_status();
                     self.update_status("volumes", 0);
-                    storage.volumes.fetch({refresh:true, update:false, success: function(){
-                          self.update_status("volumes", 1);
-                          self.check_status();
-                    }});  
-
+                    storage.volume_types.fetch({refresh: true, update: false, success: function() {
+                      storage.volumes.fetch({refresh:true, update:false, success: function(){
+                            self.update_status("volumes", 1);
+                            self.check_status();
+                      }});  
+                    }});
                     // sync load initial data
                     self.update_status("images", 0);
                     storage.images.fetch({refresh:true, update:false, success: function(){

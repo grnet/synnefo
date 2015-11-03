@@ -258,7 +258,6 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
                                    source=source,
                                    source_version=source_version,
                                    origin=origin,
-                                   index=index,
                                    status="CREATING")
 
     # Store the size of the origin in the volume object but not in the DB.

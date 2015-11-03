@@ -2609,9 +2609,6 @@ class ModularBackend(object):
     def _can_read_object(self, user, account, container, name):
         if user == account:
             return
-        path = '/'.join((account, container, name))
-        if self.permissions.public_get(path) is not None:
-            return
         path = self._get_permissions_path(account, container, name)
         if not path:
             raise NotAllowedError("User does not have access to the object")

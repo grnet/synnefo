@@ -140,7 +140,7 @@
           if (this.get('vm')) { 
             var detachable = _.contains(synnefo.config.detachable_volume_types, this.get('volumetype').get('disk_template'));
             return !this.get('is_ghost') && !this.get('in_progress') &&
-                   !this.get('vm').get('in_progres') && detachable; 
+                   !this.get('vm').get('in_progres') && detachable && !this.get('is_root'); 
           }
           return false;
         }],

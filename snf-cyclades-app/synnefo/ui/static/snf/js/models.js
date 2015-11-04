@@ -1233,8 +1233,10 @@
         },
 
         can_attach_volume: function(v) {
-          var volume_tpl = v.get('volumetype') && v.get('volumetype').get('disk_template');
-          if (v && this.get('disk_template') != volume_tpl) { return false; }
+          if (v) {
+            var volume_tpl = v.get('volumetype') && v.get('volumetype').get('disk_template');
+            if (this.get('disk_template') != volume_tpl) { return false; }
+          }
           return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
                  !this.get('suspended')
         },

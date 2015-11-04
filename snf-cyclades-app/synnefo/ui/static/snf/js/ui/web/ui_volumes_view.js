@@ -377,7 +377,9 @@
                 view.el.find(".ico").hide();
                 view.el.find(".indicators").hide();
                 view.el.addClass("empty-selection");
-                view.select();
+                if (!this.get_selected().length) {
+                  view.select();
+                }
               }
             });
             this.vm_select_view.max_title_length = 38;

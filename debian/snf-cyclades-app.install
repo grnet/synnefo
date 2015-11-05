@@ -1,6 +1,3 @@
 snf-cyclades-app/synnefo/ui/static usr/share/synnefo/static/ui
-snf-cyclades-app/synnefo/helpdesk/static/css usr/share/synnefo/static/helpdesk
-snf-cyclades-app/synnefo/helpdesk/static/img usr/share/synnefo/static/helpdesk
-snf-cyclades-app/synnefo/helpdesk/static/js usr/share/synnefo/static/helpdesk
 snf-cyclades-app/conf/* etc/synnefo
 snf-cyclades-app/synnefo/tools/ usr/lib/synnefo/

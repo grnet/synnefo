@@ -8371,108 +8371,112 @@ body .shortcuts .key {
 /* line 320, ../sass/_extra.scss */
 .notes dd {
   margin-left: 60px; }
+  /* line 322, ../sass/_extra.scss */
+  .notes dd p {
+    line-height: 2rem;
+    margin-bottom: 6px; }
 
-/* line 325, ../sass/_extra.scss */
+/* line 329, ../sass/_extra.scss */
 .popover {
   z-index: 1999;
   max-width: none;
   color: #303030;
   margin-bottom: 20px; }
-  /* line 330, ../sass/_extra.scss */
+  /* line 334, ../sass/_extra.scss */
   .popover h2 {
     text-align: center;
     font-size: 1.3em;
     font-weight: bold;
     margin-top: 0; }
-  /* line 336, ../sass/_extra.scss */
+  /* line 340, ../sass/_extra.scss */
   .popover h3 {
     font-size: 1.2em;
     font-weight: bold; }
-  /* line 340, ../sass/_extra.scss */
+  /* line 344, ../sass/_extra.scss */
   .popover h4 {
     font-size: 1.1em;
     font-weight: bold; }
-  /* line 344, ../sass/_extra.scss */
+  /* line 348, ../sass/_extra.scss */
   .popover dt {
     margin-bottom: 8px;
     overflow: visible; }
-  /* line 348, ../sass/_extra.scss */
+  /* line 352, ../sass/_extra.scss */
   .popover .panel-default {
     border-color: transparent;
     box-shadow: none; }
 
-/* line 354, ../sass/_extra.scss */
+/* line 358, ../sass/_extra.scss */
 .sign-out {
   text-align: right; }
-  /* line 356, ../sass/_extra.scss */
+  /* line 360, ../sass/_extra.scss */
   .sign-out span {
     margin-right: 10px;
     vertical-align: middle;
     font-size: 18px; }
 
-/* line 364, ../sass/_extra.scss */
+/* line 368, ../sass/_extra.scss */
 .stats section {
   margin-bottom: 3em; }
-  /* line 366, ../sass/_extra.scss */
+  /* line 370, ../sass/_extra.scss */
   .stats section h3 {
     margin-bottom: 1em; }
-    /* line 368, ../sass/_extra.scss */
+    /* line 372, ../sass/_extra.scss */
     .stats section h3 span {
       margin-right: 0.5em; }
-  /* line 372, ../sass/_extra.scss */
+  /* line 376, ../sass/_extra.scss */
   .stats section .custom-btn {
     float: left;
     margin-right: 32px; }
-    /* line 374, ../sass/_extra.scss */
+    /* line 378, ../sass/_extra.scss */
     .stats section .custom-btn span {
       padding-left: 0; }
-    /* line 377, ../sass/_extra.scss */
+    /* line 381, ../sass/_extra.scss */
     .stats section .custom-btn .snf-download-full {
       padding-right: 0;
       padding-left: 8px; }
-  /* line 383, ../sass/_extra.scss */
+  /* line 387, ../sass/_extra.scss */
   .stats section .spinner {
     display: none;
     float: left;
     padding: 8px; }
 
-/* line 392, ../sass/_extra.scss */
+/* line 396, ../sass/_extra.scss */
 .navbar-right .dropdown-menu, .login-info .dropdown-menu {
   min-width: 0; }
 
 @media (min-width: 1200px) {
-  /* line 397, ../sass/_extra.scss */
+  /* line 401, ../sass/_extra.scss */
   .stick {
     position: fixed;
     top: 100px;
     width: inherit; } }
 
-/* line 406, ../sass/_extra.scss */
+/* line 410, ../sass/_extra.scss */
 .themes {
   position: fixed;
   left: 10px;
   bottom: 10px; }
 
-/* line 413, ../sass/_extra.scss */
+/* line 417, ../sass/_extra.scss */
 .charts .info {
   overflow: hidden; }
-/* line 416, ../sass/_extra.scss */
+/* line 420, ../sass/_extra.scss */
 .charts h3 {
   text-align: center;
   margin-bottom: 1em; }
-/* line 420, ../sass/_extra.scss */
+/* line 424, ../sass/_extra.scss */
 .charts .c3-axis {
   fill: white; }
-/* line 423, ../sass/_extra.scss */
+/* line 427, ../sass/_extra.scss */
 .charts .c3 path, .charts .c3 line {
   stroke: white; }
-/* line 426, ../sass/_extra.scss */
+/* line 430, ../sass/_extra.scss */
 .charts .c3-legend-item text {
   fill: white; }
-/* line 429, ../sass/_extra.scss */
+/* line 433, ../sass/_extra.scss */
 .charts .c3-tooltip {
   color: #222; }
 
-/* line 433, ../sass/_extra.scss */
+/* line 437, ../sass/_extra.scss */
 .popover-content {
   max-width: 800px; }

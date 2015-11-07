@@ -586,7 +586,7 @@ def logout(request, template='registration/logged_out.html',
         auth_logout(request)
     else:
         response['Location'] = reverse('index')
-        response.status_code = 301
+        response.status_code = 302
         return response
 
     next = restrict_next(
@@ -599,7 +599,7 @@ def logout(request, template='registration/logged_out.html',
         response.status_code = 302
     elif settings.LOGOUT_NEXT:
         response['Location'] = settings.LOGOUT_NEXT
-        response.status_code = 301
+        response.status_code = 302
     else:
         last_provider = request.COOKIES.get(
             'astakos_last_login_method', 'local')
@@ -615,7 +615,7 @@ def logout(request, template='registration/logged_out.html',
             message += "<br />" + extra
         messages.success(request, message)
         response['Location'] = reverse('index')
-        response.status_code = 301
+        response.status_code = 302
     return response
 
 

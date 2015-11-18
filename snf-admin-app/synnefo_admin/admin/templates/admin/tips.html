@@ -29,8 +29,7 @@
 			<dd><span class="highlight">user:John</span></dd>
 			<dd class="divider"></dd>
 			<dt>Search for the keywords "John" and "Jane" in the most common text fields of the <b>User model</b> and return the disjunction <b>(logical OR)</b> of their results.</dt>
-			<dd><span class="highlight">user: John, Jane</span></dd>
-			<dd><span class="highlight">user:John,Jane</span></dd>
+			<dd><span class="highlight">user: John {{ ADMIN_OR_SIGN }} Jane</span></dd>
 			<dd class="divider"></dd>
 			<dt>Search for the keywords "John" and "Doe" in the most common text fields of the <b>User model</b> and return the conjuction <b>(logical AND)</b> of their results.</dt>
 			<dd><span class="highlight">user:John Doe</span></dd>
@@ -53,7 +52,7 @@
 			<dt>Note 2:</dt>
 			<dd>For the time being, you can find more model field names by reading the <b>models.py files of Cyclades/Astakos</b>.</dd>
 			<dt>Note 3:</dt>
-			<dd>When you search for keywords in text fields you can perform <b>logical AND</b> by using <b>spaces</b> and <b>logical OR</b> by using <b>commas</b>. The evaluation order of these two operators is from left to right.</dd>
+			<dd>When you search for keywords in text fields you can perform <b>logical AND</b> by using <b>spaces</b> and <b>logical OR</b> by using <b>{{ ADMIN_OR_SIGN }}</b>. The evaluation order of these two operators is from left to right.
 		</dl>
 	</div>
 	{% endif %}

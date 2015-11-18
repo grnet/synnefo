@@ -161,6 +161,7 @@ default_dict = {
         }
     },
     'views': admin_settings.ADMIN_VIEWS,
+    'ADMIN_OR_SIGN': admin_settings.ADMIN_OR_SIGN,
 }
 
 

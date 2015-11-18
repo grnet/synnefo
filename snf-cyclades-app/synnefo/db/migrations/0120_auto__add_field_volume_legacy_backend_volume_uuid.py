@@ -266,7 +266,6 @@ class Migration(SchemaMigration):
             'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'null': 'True', 'to': "orm['db.VirtualMachine']"}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'origin': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
-            'origin_size': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'db_index': 'True'}),
             'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volume'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
             'size': ('django.db.models.fields.IntegerField', [], {}),

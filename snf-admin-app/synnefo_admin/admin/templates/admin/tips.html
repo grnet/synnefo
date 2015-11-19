@@ -52,7 +52,19 @@
 			<dt>Note 2:</dt>
 			<dd>For the time being, you can find more model field names by reading the <b>models.py files of Cyclades/Astakos</b>.</dd>
 			<dt>Note 3:</dt>
-			<dd>When you search for keywords in text fields you can perform <b>logical AND</b> by using <b>spaces</b> and <b>logical OR</b> by using <b>{{ ADMIN_OR_SIGN }}</b>. The evaluation order of these two operators is from left to right.
+            <dd>
+                <p>When you search for keywords in text fields you can perform <b>logical AND</b> by using <b>spaces</b> and <b>logical OR</b> by using <b>{{ ADMIN_OR_SIGN }}</b>. The evaluation order of these two operators is from left to right.</p>
+            <p>Also, it is recommended to use the logical operators in uppercase and the keywords in lowercase or camelcase.</p>
+            <p><b>Example</b></br> We have the users Jane Roe and John Doe.</p>
+            <p>
+                <b>Search:</b> <span class="highlight">user: Jane {{ ADMIN_OR_SIGN}} John Doe</span> => (Jane OR John) AND Doe =><br>
+                <b>Result:</b> John Doe
+            </p>
+            <p>
+                <b>Search:</b><span class="highlight">user: Jane Roe {{ ADMIN_OR_SIGN}} John</span> => (Jane and Roe) OR John =><br>
+                <b>Result:</b> Jane Roe, John Doe
+            </p>
+            </dd>
 		</dl>
 	</div>
 	{% endif %}

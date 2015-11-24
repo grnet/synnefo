@@ -140,10 +140,7 @@ class FabricRunner(object):
     @_setup_fabric_env
     def run(self, cmd):
         self._debug("RunCmd %s .." % cmd)
-        if config.autoconf:
-            return local(cmd, capture=True, shell="/bin/bash")
-        else:
-            return run(cmd)
+        return run(cmd)
 
 
 class ComponentRunner(FabricRunner):

@@ -1957,7 +1957,7 @@ class Archip(base.Component):
             # FIXME: See https://github.com/grnet/archipelago/pull/44
             "mkdir -p /dev/shm/posixfd",
             "chown -R synnefo:synnefo /dev/shm/posixfd",
-            "archipelago restart",
+            "service archipelago restart",
             ]
 
 

@@ -350,6 +350,11 @@
       },
 
       check_empty: function() {
+        if (this.options.empty_model) {
+          this.list_el.show();
+          this.hide_empty();
+          return;
+        }
         if (this.collection.length == 0) {
           this.show_empty();
           this.list_el.hide();
@@ -839,7 +844,6 @@
       can_deselect: true,
       
       disable: function() {
-          debugger;
           this.set_disabled();
       },
 

@@ -370,7 +370,7 @@
               empty_model: new (models.VM.extend())({
                 id: '_empty',
                 name: 'No machine',
-                status: 'ACTIVE'
+                status: 'ACTIVE',
               }),
               process_empty_view: function(view) {
                 view.set_enabled();
@@ -399,6 +399,7 @@
         },
 
         disabled_filter_ext: function(m) {
+            if (m.id == "_empty") { return false; }
             var check = !m.can_attach_volume() || !m.is_ext();
             if (check) {
                 return "You can only attach an empty disk to this machine."

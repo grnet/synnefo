@@ -54,3 +54,27 @@ The upgrade to v0.17 consists of the following steps:
 
 4. Once the syncing of the helper servers has finished, you can remove the
    firewall from the Cyclades API.
+
+5. On the node where pithos UI (`snf-pithos-webclient`) package is installed, 
+   remove existing pithos UI package and install the `snf-ui-app` package. 
+   The `snf-pithos-webclient` package is deprecated and should no longer be 
+   installed in any of your service nodes.
+   
+   .. code-block:: console
+   
+     (pithos-ui-node)$ apt-get remove snf-pithos-webclient --purge
+     (pithos-ui-node)$ apt-get install snf-ui-app
+
+  Edit `/etc/synnefo/20-snf-ui-cloudbar.conf` and
+  `/etc/synnefo/20-snf-ui-settings.conf` to match your deployment
+  configuration.
+
+  Notice that the new UI application no longer redirects service root paths 
+  to the pithos UI endpoint. If you want to preserve this behaviour consider 
+  adding a rewrite rule such as the following in your apache vhost 
+  configuration.
+  
+  .. code-block:: console
+    
+    RewriteRule ^/$ /ui [R=302]
+   

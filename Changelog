@@ -13,6 +13,13 @@ v0.16.2next
 
 Released: UNRELEASED
 
+Synnefo-wide
+------------
+
+* Fixed postgresql connection pooling. The pool manager now closes the 
+  real connection objects when pool verify fails.
+
+
 Astakos
 -------
 
@@ -28,9 +35,20 @@ Astakos
   in the same way as all other providers.
 * Add the UUIDs of the projects that the user is member in the response
   of 'identity/v2.0/tokens' API call.
+* Display uuid in expired projects list.
+* Fix checkbox behaviour in project members list.
+* Add project_creation_date column in `snf-manage` projects list.
+* Fixed `how-to` broken link in projects view.
+* Extend tokens API response with user's projects.
+
 
 Cyclades
 --------
+
+* Implement detachable volumes support.
+
+  * Support for detached volume creation.
+  * Support for VM attach/detach volume actions.
 
 * Implement shared resources among members of a project.
 
@@ -42,6 +60,12 @@ Cyclades
   * Update Cyclades API to return all resources that are accessible to a user,
   and not only those that are owned by the user.
   * Update snf-manage commands to show whether a resource is shared or not.
+
+* Fix RAM rounding error in `snf-manage flavor-create`.
+* `snf-manage` `server-create`, `floating-ip-create` and `network-create`
+  commands now accept a project argument.
+* Show creation time in `snf-manage server-inspect`.
+* Allow port creation without a floating IP.
 
 
 Cyclades UI
@@ -56,6 +80,31 @@ Cyclades UI
  the user only because they are related with some shared resource, but the
  user has no access to them. Add tooltip to explain this to the user.
 
+ * Custom image sections. Allow images uploaded by designated users to be 
+   displayed in separate sections in image listing overlay.
+
+ * Include machine icon images for bitnami
+ * Show public networks without a floating IP in IPs wizard
+
+
+Pithos UI
+---------
+
+* Pithos UI has been rewritten from scratch. Some of the features of the new 
+  UI are the following:
+  
+  * Based on modern web technologies (EmberJS, Foundation CSS)
+  * Revised styles and responsive layout
+  * Improved perfomance
+  * Enhanced user experience
+  * Styles themes
+  * Container management support
+  * Astakos quota API integration
+  * Chunked upload support
+
+  The introduced web application is now packaged as `snf-ui-app`. The new
+  package replaces the previous one, `snf-pithos-webclient` which from now on
+  is deprecated and should no longer be used.
 
 .. _Changelog-0.16.2:
 

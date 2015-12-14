@@ -106,6 +106,11 @@ Pithos UI
   package replaces the previous one, `snf-pithos-webclient` which from now on
   is deprecated and should no longer be used.
 
+Admin
+-----
+
+* Enable OR operation between same type query terms
+
 .. _Changelog-0.16.2:
 
 v0.16.2

@@ -24,21 +24,9 @@ def allocate(backends, vm):
     if len(backends) == 1:
         return backends[0]
 
-    # Filter those that cannot host the vm
-    capable_backends = [backend for backend in backends
-                        if vm_fits_in_backend(backend, vm)]
-
-    log.debug("Capable backends for VM %s: %s", vm, capable_backends)
-
-    # Since we are conservatively updating backend resources on each
-    # allocation, a backend may actually be able to host a vm (despite
-    # the state of the backend in db)
-    if not capable_backends:
-        capable_backends = backends
-
     # Compute the scores for each backend
     backend_scores = [(backend, backend_score(backend, vm))
-                      for backend in capable_backends]
+                      for backend in backends]
 
     log.debug("Backend scores %s", backend_scores)
 
@@ -47,16 +35,6 @@ def allocate(backends, vm):
     backend = result[0]
 
     return backend
-
-
-def vm_fits_in_backend(backend, vm):
-    has_disk = backend.dfree > vm['disk']
-    has_mem = backend.mfree > vm['ram']
-    # Consider each VM having 4 Virtual CPUs
-    vcpu_ratio = ((backend.pinst_cnt + 1) * 4) / backend.ctotal
-    # Consider max vcpu/cpu ratio 3
-    has_cpu = vcpu_ratio < 3
-    return has_cpu and has_disk and has_mem
 
 
 def backend_score(backend, flavor):

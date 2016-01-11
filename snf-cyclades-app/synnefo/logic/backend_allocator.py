@@ -55,14 +55,27 @@ class BackendAllocator():
         log.debug("Allocating VM: %r", vm)
 
         # Get available backends
-        available_backends = get_available_backends(flavor)
+        available_backends = get_available_backends()
 
-        if not available_backends:
+        # Remove unnecessary backends based on the filtering strategy
+        filtered_backends = self.strategy_mod.filter_backends(available_backends, vm)
+
+        # Lock the backends that may host the VM
+        backend_ids = [b.pk for b in filtered_backends]
+        backends = list(Backend.objects.select_for_update().filter(pk__in=backend_ids))
+
+        # Update the disk_templates if there are empty.
+        backends = update_backends_disk_templates(backends, flavor)
+
+        # Update the backend stats if it is needed
+        refresh_backends_stats(backends)
+
+        if not backends:
             return None
 
         # Find the best backend to host the vm, based on the allocation
         # strategy
-        backend = self.strategy_mod.allocate(available_backends, vm)
+        backend = self.strategy_mod.allocate(backends, vm)
 
         log.info("Allocated VM %r, in backend %s", vm, backend)
 
@@ -73,8 +86,8 @@ class BackendAllocator():
         return backend
 
 
-def get_available_backends(flavor):
-    """Get the list of available backends that can host a new VM of a flavor.
+def get_available_backends():
+    """Get the list of available backends.
 
     The list contains the backends that are online and that have enabled
     the disk_template of the new VM.
@@ -84,22 +97,26 @@ def get_available_backends(flavor):
     excluded.
 
     """
+    backends = Backend.objects.filter(offline=False, drained=False)
+
+    return list(backends)
+
+def update_backends_disk_templates(backends, flavor):
+    """Update the backends' disk templates and filter those
+    that don't have the required disk_template.
+
+    """
     disk_template = flavor.volume_type.disk_template
     # Ganeti knows only the 'ext' disk template, but the flavors disk template
     # includes the provider.
     if disk_template.startswith("ext_"):
         disk_template = "ext"
 
-    backends = Backend.objects.select_for_update().filter(offline=False,
-                                                          drained=False)
-    # Update the disk_templates if there are empty.
     [backend_mod.update_backend_disk_templates(b)
      for b in backends if not b.disk_templates]
+
     backends = filter(lambda b: disk_template in b.disk_templates,
                       list(backends))
-
-    # Update the backend stats if it is needed
-    refresh_backends_stats(backends)
 
     return backends
 

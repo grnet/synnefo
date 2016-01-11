@@ -101,7 +101,16 @@ class ServerCreationTest(TransactionTestCase):
         }
         with mocked_quotaholder():
             with override_settings(settings, **osettings):
-                vm = servers.create(**req)
+                with patch(
+                    'synnefo.logic.backend_allocator.update_backends_disk_templates'
+                ) as update_disk_templates_mock:
+                    # Check that between the `get_available_backends` call
+                    # and the `update_backend_disk_templates` call
+                    # the backend doesn't change.
+                    update_disk_templates_mock.return_value = [backend]
+                    vm = servers.create(**req)
+
+        update_disk_templates_mock.assert_called_once_with([backend], ext_flavor)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",

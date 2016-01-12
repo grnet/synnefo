@@ -29,8 +29,9 @@ class BackendAllocator():
 
     """
     def __init__(self):
-        self.strategy_mod =\
-            importlib.import_module(settings.BACKEND_ALLOCATOR_MODULE)
+        path, strategy_class = settings.BACKEND_ALLOCATOR_MODULE.rsplit('.', 1)
+        module = importlib.import_module(path)
+        self.strategy_mod = getattr(module, strategy_class)()
 
     def allocate(self, userid, flavor):
         """Allocate a vm of the specified flavor to a backend.

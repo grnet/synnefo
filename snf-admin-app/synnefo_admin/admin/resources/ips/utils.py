@@ -64,7 +64,7 @@ def get_contact_name(inst):
 def get_user_details_href(ip):
     if ip.userid:
         user = AstakosUser.objects.get(uuid=ip.userid)
-        return create_details_href('user', user.realname, user.email)
+        return create_details_href('user', user.realname, user.email, user.uuid)
     else:
         return "-"
 

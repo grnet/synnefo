@@ -40,7 +40,8 @@ from .actions import cached_actions
 from .utils import (get_contact_id, get_contact_name, get_contact_email,
                     get_project_or_404, display_project_usage_horizontally,
                     display_member_quota_horizontally,
-                    display_project_limit_horizontally)
+                    display_project_limit_horizontally,
+                    get_user_details_href,)
 
 
 templates = {
@@ -136,6 +137,11 @@ class ProjectJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "User",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
         extra_dict['uuid'] = {
             'display_name': "UUID",
             'value': inst.uuid,

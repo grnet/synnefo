@@ -35,7 +35,7 @@ def get_volume_or_404(query, for_update=False):
 
 def get_user_details_href(volume):
     user = AstakosUser.objects.get(uuid=volume.userid)
-    return create_details_href('user', user.realname, user.email)
+    return create_details_href('user', user.realname, user.email, user.uuid)
 
 
 def get_project_details_href(volume):

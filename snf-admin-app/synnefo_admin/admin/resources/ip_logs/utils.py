@@ -46,4 +46,4 @@ def get_network_details_href(ip_log):
 def get_user_details_href(ip_log):
     vm = VirtualMachine.objects.get(pk=ip_log.server_id)
     user = AstakosUser.objects.get(uuid=vm.userid)
-    return create_details_href('user', user.realname, user.email)
+    return create_details_href('user', user.realname, user.email, user.uuid)

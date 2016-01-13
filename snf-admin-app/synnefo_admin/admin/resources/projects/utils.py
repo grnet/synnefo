@@ -22,7 +22,7 @@ from astakos.im.quotas import get_project_quota
 
 from synnefo.util import units
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import is_resource_useful, create_details_href
 
 
 def get_actual_owner(inst):
@@ -143,3 +143,10 @@ def display_project_limit_horizontally(inst):
     """Display project resources (member or total) in one line."""
     resource_list = get_project_quota_category(inst, "limit")
     return display_quota_horizontally(resource_list)
+
+def get_user_details_href(inst):
+    owner = get_actual_owner(inst)
+    if owner:
+        return create_details_href('user', owner.realname, owner.email, owner.uuid)
+    else:
+        return 'None'

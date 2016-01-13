@@ -57,6 +57,11 @@ class IPLogJSONView(AdminJSONView):
 
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "User",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
         extra_dict['id'] = {
             'display_name': "ID",
             'value': inst.pk,
@@ -75,11 +80,6 @@ class IPLogJSONView(AdminJSONView):
         extra_dict['network_info'] = {
             'display_name': "Network",
             'value': get_network_details_href(inst),
-            'visible': True,
-        }
-        extra_dict['user_info'] = {
-            'display_name': "User",
-            'value': get_user_details_href(inst),
             'visible': True,
         }
 

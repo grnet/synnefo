@@ -47,16 +47,17 @@ templates = {
 
 class VolumeJSONView(AdminJSONView):
     model = Volume
-    fields = ('id', 'name', 'status', 'size', 'volume_type__disk_template',
-              'machine__pk', 'created', 'updated')
+    fields = ('id', 'userid', 'name', 'status', 'size',
+              'volume_type__disk_template', 'machine__pk', 'created',
+              'updated')
     filters = VolumeFilterSet
 
     def format_data_row(self, row):
         row = list(row)
         if not row[1]:
             row[1] = "(not set)"
-        row[6] = row[6].strftime("%Y-%m-%d %H:%M")
         row[7] = row[7].strftime("%Y-%m-%d %H:%M")
+        row[8] = row[8].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -188,8 +189,9 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VolumeFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Status", "Size (GB)", "Disk template",
-                          "VM ID", "Created at", "Updated at", ""]
+    context['columns'] = ["ID", "Owner", "Name", "Status", "Size (GB)",
+                          "Disk template", "VM ID", "Created at",
+                          "Updated at", ""]
     context['item_type'] = 'volume'
 
     return context

@@ -52,15 +52,15 @@ templates = {
 
 class ProjectJSONView(AdminJSONView):
     model = Project
-    fields = ('id', 'realname', '{owner__first_name} {owner__last_name}',
+    fields = ('id', 'owner__uuid', 'realname',
               'state', 'last_application__state', 'creation_date', 'end_date')
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
         if self.dt_data['iDisplayLength'] > 0:
             row = list(row)
-            if row[2] == "None None":
-                row[2] = "(not set)"
+            if row[1] == "None None":
+                row[1] = "(not set)"
 
             project = Project.objects.get(id=row[0])
             row[3] = (str(row[3]) + ' (' + project.state_display() + ')')
@@ -219,7 +219,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = ProjectFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Owner Name", "Project Status",
+    context['columns'] = ["ID", "Owner", "Name", "Project Status",
                           "Application Status", "Creation date", "End date",
                           ""]
     context['item_type'] = 'project'

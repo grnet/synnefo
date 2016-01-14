@@ -51,12 +51,12 @@ templates = {
 
 class IPJSONView(AdminJSONView):
     model = IPAddress
-    fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
+    fields = ('pk', 'userid', 'address', 'floating_ip', 'created', 'userid',)
     filters = IPFilterSet
 
     def format_data_row(self, row):
         row = list(row)
-        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
+        row[4] = row[4].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -175,7 +175,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = IPFilterSet().filters.values()
-    context['columns'] = ["ID", "Address", "Floating",
+    context['columns'] = ["ID", "Owner", "Address", "Floating",
                           "Creation date", "User ID", ""]
     context['item_type'] = 'ip'
 

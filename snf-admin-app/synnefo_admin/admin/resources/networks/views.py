@@ -49,7 +49,7 @@ templates = {
 
 class NetworkJSONView(AdminJSONView):
     model = Network
-    fields = ('pk', 'name', 'state', 'public', 'drained',)
+    fields = ('pk', 'userid', 'name', 'state', 'public', 'drained',)
     filters = NetworkFilterSet
 
     def format_data_row(self, row):
@@ -166,7 +166,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = NetworkFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Status", "Public",
+    context['columns'] = ["ID", "Owner", "Name", "Status", "Public",
                           "Drained", ""]
     context['item_type'] = 'network'
 

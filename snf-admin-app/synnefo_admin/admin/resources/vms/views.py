@@ -47,7 +47,7 @@ templates = {
 
 class VMJSONView(AdminJSONView):
     model = VirtualMachine
-    fields = ('pk', 'name', 'operstate', 'suspended',)
+    fields = ('pk', 'userid', 'name', 'operstate', 'suspended',)
     filters = VMFilterSet
 
     def get_extra_data(self, qs):
@@ -192,7 +192,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VMFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "State", "Suspended", ""]
+    context['columns'] = ["ID", "Owner", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
 
     return context

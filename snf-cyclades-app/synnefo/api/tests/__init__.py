@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,3 +24,4 @@ from .extensions import *
 from .subnets import *
 from .floating_ips import *
 from .util import *
+from .admin_stats import *

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from hashlib import sha256
 from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
+from time import time
 
 from Crypto.Cipher import AES
 
@@ -27,6 +28,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.db.models import Q
+from django.core.cache import cache
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
@@ -34,6 +36,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
 from synnefo.plankton.backend import PlanktonBackend
+from synnefo.webproject.memory_cache import MemoryCache
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib.services import get_service_path
@@ -492,3 +495,17 @@ def start_action(vm, action, jobId):
     vm.backendjobstatus = None
     vm.backendlogmsg = None
     vm.save()
+
+class PublicStatsCache(MemoryCache):
+    def populate(self):
+        spawned_servers = VirtualMachine.objects.exclude(operstate="ERROR")
+        active_servers = VirtualMachine.objects.exclude(
+            operstate__in=["DELETED", "ERROR"]
+        )
+        spawned_networks = Network.objects.exclude(state__in=["ERROR", "PENDING"])
+
+        self.set(
+            spawned_servers=len(spawned_servers),
+            active_servers=len(active_servers),
+            spawned_networks=len(spawned_networks)
+        )

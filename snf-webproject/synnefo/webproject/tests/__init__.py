@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,14 +13,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Import TestCases
-from .servers import *
-from .networks import *
-from .ports import *
-from .flavors import *
-from .images import *
-from .versions import *
-from .extensions import *
-from .subnets import *
-from .floating_ips import *
-from .util import *
+from .memory_cache import *

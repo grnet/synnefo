@@ -18,6 +18,7 @@ from django.core.cache import cache
 
 from synnefo.api.util import PublicStatsCache
 from synnefo.db import models_factory
+from synnefo.webproject.memory_cache import MemoryCache
 
 
 class PublicStatsCacheTest(TestCase):

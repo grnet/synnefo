@@ -190,3 +190,6 @@ CYCLADES_DETACHABLE_DISK_TEMPLATES = ("ext_archipelago", "ext_vlmc")
 
 # The maximmum allowed metadata items for a Cyclades Virtual Machine
 CYCLADES_VM_MAX_METADATA = 10
+
+# The time it takes for the public stats to be updated in the cache
+PUBLIC_STATS_CACHE_POPULATE_INTERVAL = 60

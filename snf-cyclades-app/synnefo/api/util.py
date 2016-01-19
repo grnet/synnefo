@@ -497,6 +497,12 @@ def start_action(vm, action, jobId):
     vm.save()
 
 class PublicStatsCache(MemoryCache):
+    POPULATE_INTERVAL = getattr(
+        settings,
+        'PUBLIC_STATS_CACHE_POPULATE_INTERVAL',
+        60
+    )
+
     def populate(self):
         spawned_servers = VirtualMachine.objects.exclude(operstate="ERROR")
         active_servers = VirtualMachine.objects.exclude(

@@ -25,3 +25,4 @@ from .subnets import *
 from .floating_ips import *
 from .util import *
 from .admin_stats import *
+from .admin_views import *

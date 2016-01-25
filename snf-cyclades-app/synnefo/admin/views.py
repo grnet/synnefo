@@ -35,6 +35,15 @@ def get_public_stats(request):
     return http.HttpResponse(data, status=200, content_type='application/json')
 
 
+@api.api_method(http_method='GET', user_required=False, token_required=False,
+                logger=logger, serializations=['json'])
+@api.allow_jsonp()
+def get_public_stats_from_cache(request):
+    _stats = stats.get_public_stats_from_cache()
+    data = json.dumps(_stats)
+    return http.HttpResponse(data, status=200, content_type='application/json')
+
+
 @api.api_method(http_method='GET', user_required=True, token_required=True,
                 logger=logger, serializations=['json'])
 @api.user_in_groups(permitted_groups=settings.ADMIN_STATS_PERMITTED_GROUPS,

@@ -19,6 +19,7 @@ from collections import OrderedDict
 from django import template
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import mark_safe
 import logging
 
 import django_filters
@@ -481,3 +482,16 @@ def min_prefix():
         return 'min-'
     else:
         return ''
+
+@register.filter
+def flatten_dict_to_dl(d):
+    l = []
+    stack = d.items()
+    while stack:
+        k, v = stack.pop()
+        if isinstance(v, dict):
+            stack.extend(v.iteritems())
+        else:
+            a = '<dt>{0}:</dt><dd> {1}</dd>'.format(k, v)
+            l.append(a)
+    return mark_safe(''.join(l))

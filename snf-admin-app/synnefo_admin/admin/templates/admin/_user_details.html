@@ -18,6 +18,9 @@
             <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
             <li><a href="#log{{ user.uuid }}" data-toggle="tab">Log</a></li>
             <li><a href="#auth{{ user.uuid }}" data-toggle="tab">Auth Providers</a></li>
+            {% for auth in user.auth_providers.all %}
+                <li><a href="#auth{{ auth.module }}{{ user.uuid  }}" data-toggle="tab">{{ auth.module|capfirst }}</a></li>
+            {% endfor %}
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="details{{ user.uuid }}">
@@ -67,6 +70,28 @@
                     <dt>Disabled</dt><dd>{{ user|show_auth_providers:"disabled" }}</dd>
                 </dl>
             </div>
+            {% for auth in user.auth_providers.all %}
+                <div class="tab-pane" id="auth{{ auth.module }}{{ user.uuid  }}">
+                    <dl class="dl-horizontal well">
+                        <dt>Identifier</dt><dd>{{ auth.identifier|default:"-" }}</dd>
+                        <dt>EPPN</dt><dd>{{ auth.info_eppn|default:"-" }}</dd>
+                        <dt>Last login</dt><dd>{{ auth.last_login_at }}</dd>
+                        <dt>Created</dt><dd>{{ auth.created|default:"-" }}</dd>
+                        <dt>Info</dt>
+                        <dd class="info-details">
+                            {% with info=auth.info %}
+                                <dl>
+                                    {{ info|flatten_dict_to_dl }}
+                                </dl>
+                                {% if info %}
+                                    <a href="" class="toggle-info">Toggle full info data</a>
+                                    <pre class="info-data" style="display: none">{{ info }}</pre>
+                                {% endif %}
+                            {% endwith %}
+                        </dd>
+                    </dl>
+                </div>
+            {% endfor %}
         </div> <!-- <div class="tab-content"> -->
     </div> <!-- <div class="object-details-content"> -->
     {% include "admin/action_list_horizontal.html" %}

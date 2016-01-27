@@ -75,3 +75,5 @@ CLOUDBAR_MENU_URL = '/ui/get_menu'
 TEST_RUNNER = 'pithos.api.test.PithosTestSuiteRunner'
 
 CYCLADES_VOLUME_MAX_SIZE = 100000
+
+INSTALLED_APPS.append('django_nose')

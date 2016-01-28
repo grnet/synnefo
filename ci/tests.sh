@@ -124,7 +124,12 @@ extract_tests () {
     for c in $ALL_COMPONENTS; do
         if contains $1 $c; then
             if [ "$1" = "$c" ]; then
-                append "${c}_tests" "$(eval "echo \$"${c}"_all_tests")"
+                all_tests_var=${c}_all_tests
+                eval all_tests=`echo '$'$all_tests_var`
+                for word in $all_tests
+                do
+                    append "${c}_tests" "synnefo.$word "
+                done
                 return
             elif contains $1 "$c."; then
                 append "${c}_tests" $(echo $1 | sed -e 's/^[a-z]*\.//g')

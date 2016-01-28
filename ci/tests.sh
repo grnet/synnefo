@@ -72,13 +72,11 @@ runTest () {
 runCoverage () {
     # Stop here, if we are on dry run
     if [ $DRY_RUN ]; then
-        echo "coverage run $1"
+        echo "$1 --with-coverage --nologcapture"
         return
     fi
 
-    coverage erase
-    coverage run $1
-    coverage report --include="*${CURRENT_COMPONENT}*"
+    $1 --with-coverage --nologcapture
 }
 
 usage(){

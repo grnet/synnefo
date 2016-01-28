@@ -11,3 +11,11 @@ PROJECTS="\
  snf-pithos-app\
  snf-admin-app\
  snf-tools"
+
+DEV_PACKAGES="\
+ funcsigs==0.4\
+ mock==1.1.1\
+ factory_boy==2.4.1\
+ nose==1.3.7\
+ django-nose==1.1\
+ coverage==4.1"

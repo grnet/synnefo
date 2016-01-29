@@ -169,6 +169,14 @@ Deploy
 * Remove the x2go repo.
 
 
+Development
+-----------
+
+* Install/uninstall the required packages for development on the
+  install/uninstall scripts.
+* Switch to the django-nose test runner.
+
+
 .. _Changelog-0.16.2:
 
 v0.16.2

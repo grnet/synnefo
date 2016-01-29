@@ -84,6 +84,10 @@ Cyclades
   the resource belongs to.
 * Create an allocator interface in order to allow the creation of different
   backend allocation algorithms.
+* Implement an interface for memory caching.
+* Add the option to retrieve the front page statistics
+  from the memory cache.
+* Add the `PUBLIC_STATS_CACHE_POPULATE_INTERVAL` setting.
 
 
 Cyclades UI

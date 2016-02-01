@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -118,6 +118,7 @@ BACKEND_BLOCK_MODULE = getattr(
 BACKEND_BLOCK_PATH = getattr(
     settings, 'PITHOS_BACKEND_BLOCK_PATH', '/tmp/pithos-data/')
 BACKEND_BLOCK_UMASK = getattr(settings, 'PITHOS_BACKEND_BLOCK_UMASK', 0o022)
+BACKEND_BLOCK_KWARGS = getattr(settings, 'PITHOS_BACKEND_BLOCK_KWARGS', {})
 
 
 # Default setting for new accounts.
@@ -137,10 +138,6 @@ BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
 
 # Update object checksums.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
-
-RADOS_STORAGE = getattr(settings, 'PITHOS_RADOS_STORAGE', False)
-RADOS_POOL_BLOCKS = getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
-RADOS_POOL_MAPS = getattr(settings, 'PITHOS_RADOS_POOL_MAPS', 'maps')
 
 # This enables a ui compatibility layer for the introduction of UUIDs in
 # identity management.  WARNING: Setting to True will break your installation.

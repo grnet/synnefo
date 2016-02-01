@@ -515,3 +515,11 @@ class PublicStatsCache(MemoryCache):
             active_servers=len(active_servers),
             spawned_networks=len(spawned_networks)
         )
+
+class VMPasswordCache(MemoryCache):
+    def populate(self):
+        """No need to initialize the cache. If the password doesn't exist in
+        the cache, `None` will be returned.
+
+        """
+        pass

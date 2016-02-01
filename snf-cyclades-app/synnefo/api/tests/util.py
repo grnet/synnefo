@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.core.cache import cache
 
-from synnefo.api.util import PublicStatsCache
+from synnefo.api.util import PublicStatsCache, VMPasswordCache
 from synnefo.db import models_factory
 from synnefo.webproject.memory_cache import MemoryCache
 
@@ -100,3 +100,13 @@ class PublicStatsCacheTest(TestCase):
         cached_stats = self.get_stats_from_cache()
 
         self.assertEqual(expected_stats, cached_stats)
+
+class VMPasswordCacheTest(TestCase):
+    def test_inherits_MemoryCache(self):
+        self.assertTrue(issubclass(VMPasswordCache, MemoryCache))
+
+    def test_populate_exists(self):
+        try:
+            VMPasswordCache().populate()
+        except NotImplementedError:
+            self.fail('`populate` is not implemented')

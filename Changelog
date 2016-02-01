@@ -40,6 +40,7 @@ Astakos
 * Add project_creation_date column in `snf-manage` projects list.
 * Fixed `how-to` broken link in projects view.
 * Extend tokens API response with user's projects.
+* Fixed 'Unlimited' value handling in project submission form.
 
 
 Cyclades

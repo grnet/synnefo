@@ -15,7 +15,7 @@
 // 
 
 ;(function(root){
-    
+  
     // root
     var root = root;
     
@@ -1223,9 +1223,11 @@
         if (synnefo.config.forced_server_networks.length) {
           _.each(synnefo.config.forced_server_networks, function(network) {
             var forced = synnefo.storage.networks.get(network);
+            var created = !forced;
             if (!forced) {
               var name = this.forced_values_title_map[network];
               if (!name) { name = "Forced network ({0})".format(network)}
+              forced = this.public_networks.get(network);
               forced = new models.networks.Network({
                 id: network,
                 name: name, 
@@ -1236,7 +1238,9 @@
             } else {
               forced.set({'forced': true});
             }
-            this.public_networks.add(forced);
+            if (!forced.get('is_public') || created) {
+              this.public_networks.add(forced);
+            }
           }, this);
         }
 

@@ -188,3 +188,12 @@ class MemoryCacheTest(TestCase):
         a = self.get_user_key('a')
         self.assertEqual(a, value - 1)
 
+    def test_delete(self):
+        value = 10
+        self.set_user_key('a', value)
+
+        self.memory_cache.delete('a')
+
+        a = self.get_user_key('a')
+
+        self.assertIsNone(a)

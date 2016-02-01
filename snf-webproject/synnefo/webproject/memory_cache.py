@@ -110,6 +110,10 @@ class MemoryCache(object):
 
         cache.decr(self.to_user_key(key), dec)
 
+    def delete(self, key):
+        """Delete the user key provided"""
+        cache.delete(self.to_user_key(key))
+
     def populate(self):
         """The implementation of this method is required from all
         subclasses. `populate` should do two things:

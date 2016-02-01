@@ -26,6 +26,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
+from synnefo.api.util import VMPasswordCache
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume
@@ -54,6 +55,8 @@ VOLUME_SOURCE_TYPES = [
     "volume",
     "blank"
 ]
+
+VM_PASSWORD_CACHE = VMPasswordCache()
 
 if settings.CYCLADES_SNAPSHOTS_ENABLED:
     # If snapshots are enabled, add 'snapshot' to the list of allowed sources
@@ -436,9 +439,17 @@ def create_server(request):
     server['status'] = 'BUILD'
     server['adminPass'] = password
 
+    set_password_in_cache(server['id'], password)
+
     response = render_server(request, server, status=202)
 
     return response
+
+
+def set_password_in_cache(server_id, password):
+    server_id = str(server_id)
+
+    VM_PASSWORD_CACHE.set(**{server_id: password})
 
 
 def parse_block_device_mapping(dev_map):

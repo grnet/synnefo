@@ -28,6 +28,7 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from django.conf import settings
 from synnefo.logic.rapi import GanetiApiError
+from synnefo.api.util import VMPasswordCache
 
 from mock import patch, Mock
 
@@ -351,6 +352,8 @@ class ServerCreateAPITest(ComputeAPITest):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
 
+        vm_password_cache = VMPasswordCache()
+
         mrapi().CreateInstance.return_value = 12
         with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
@@ -365,6 +368,9 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(api_server['metadata'][u"Meta \u2601"],
                          u"Meta in the \u2601")
         self.assertTrue('adminPass' in api_server)
+
+        password = vm_password_cache.get(str(api_server['id']))
+        self.assertEqual(password, api_server['adminPass'])
 
         db_vm = VirtualMachine.objects.get(userid='test_user')
         self.assertEqual(api_server['name'], u"Server in the \u2601")

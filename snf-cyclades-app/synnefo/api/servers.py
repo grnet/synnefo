@@ -39,6 +39,7 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_servers', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
+    (r'^/(\d+)(?:.json|.xml)?/password$', 'demux_server_password'),
     (r'^/(\d+)/action(?:.json|.xml)?$', 'demux_server_action'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
@@ -72,6 +73,18 @@ def demux(request):
     else:
         return api.api_method_not_allowed(request,
                                           allowed_methods=['GET', 'POST'])
+
+
+def demux_server_password(request, server_id):
+    if request.method == 'GET':
+        return get_server_password(request, server_id)
+    elif request.method == 'DELETE':
+        return delete_server_password(request, server_id)
+    else:
+        return api.api_method_not_allowed(
+            request,
+            allowed_methods=['GET', 'DELETE']
+        )
 
 
 def server_demux(request, server_id):

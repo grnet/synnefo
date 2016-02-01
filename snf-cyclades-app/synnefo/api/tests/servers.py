@@ -27,8 +27,11 @@ from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from django.conf import settings
+from django.core.urlresolvers import resolve
+from django.http import HttpRequest
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.api.util import VMPasswordCache
+from synnefo.api import servers
 
 from mock import patch, Mock
 
@@ -375,6 +378,34 @@ class ServerCreateAPITest(ComputeAPITest):
         db_vm = VirtualMachine.objects.get(userid='test_user')
         self.assertEqual(api_server['name'], u"Server in the \u2601")
         self.assertEqual(api_server['status'], db_vm.operstate)
+
+    def test_demux_server_password(self, mrapi):
+        # Check that the url resolves to `demux_server_passwords`
+        url = join_urls(self.compute_path, 'servers/1/password')
+        resolved = resolve(url)
+        self.assertEqual(
+            'synnefo.api.servers.demux_server_password',
+            resolved.view_name
+        )
+
+        vm = mfactory.VirtualMachineFactory()
+        request = HttpRequest()
+
+        request.method = 'GET'
+        with patch('synnefo.api.servers.get_server_password') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, vm.userid)
+
+        request.method = 'DELETE'
+        with patch('synnefo.api.servers.delete_server_password') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, vm.userid)
+
+        request.method = 'INVALID'
+        with patch('snf_django.lib.api.api_method_not_allowed') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, allowed_methods=['GET', 'DELETE'])
+
 
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist

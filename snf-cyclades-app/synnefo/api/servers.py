@@ -465,6 +465,25 @@ def set_password_in_cache(server_id, password):
     VM_PASSWORD_CACHE.set(**{server_id: password})
 
 
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def get_server_password(request, server_id):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+
+    password = VM_PASSWORD_CACHE.get(str(vm.pk))
+
+    if not password:
+        raise faults.ItemNotFound()
+
+    data = json.dumps({'password': password})
+
+    return HttpResponse(data, status=200)
+
+
 def parse_block_device_mapping(dev_map):
     """Parse 'block_device_mapping_v2' attribute"""
     if not isinstance(dev_map, list):

@@ -407,6 +407,28 @@ class ServerCreateAPITest(ComputeAPITest):
             mocked.assert_called_once_with(request, allowed_methods=['GET', 'DELETE'])
 
 
+    def test_get_server_password(self, mrapi):
+        vm = mfactory.VirtualMachineFactory()
+        # If a password is not set in the cache, the view should
+        # produce a 404(Not Found) status code.
+        response = self.myget('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 404)
+
+        # If a password is set the view should produce a
+        # 200(OK) status code and return a JSON dict containing
+        # the password
+        password = 'mysecretcombination'
+        VMPasswordCache().set(**{str(vm.pk): password})
+
+        response = self.myget('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 200)
+        returned_password = json.loads(response.content)['password']
+
+        self.assertEqual(returned_password, password)
+
+
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist
         request = deepcopy(self.request)

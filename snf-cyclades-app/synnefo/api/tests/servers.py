@@ -429,6 +429,21 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(returned_password, password)
 
 
+    def test_delete_server_password(self, mrapi):
+        # If a password is set the view should produce a
+        # 204(No Content) status code and return a JSON dict containing
+        vm = mfactory.VirtualMachineFactory()
+        password = 'mysecretcombination'
+        memory_cache = VMPasswordCache()
+        memory_cache.set(**{str(vm.pk): password})
+
+        response = self.mydelete('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIsNone(memory_cache.get(str(vm.pk)))
+
+
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist
         request = deepcopy(self.request)

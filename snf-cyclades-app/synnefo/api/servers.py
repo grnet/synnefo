@@ -484,6 +484,20 @@ def get_server_password(request, server_id):
     return HttpResponse(data, status=200)
 
 
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
+def delete_server_password(request, server_id):
+    # Normal Response Code: 204
+    # Error Response Codes: computeFault (400, 500),
+    #                       unauthorized (401),
+    #                       itemNotFound (404),
+    #                       badRequest (400),
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+
+    VM_PASSWORD_CACHE.delete(str(vm.pk))
+
+    return HttpResponse(status=204)
+
+
 def parse_block_device_mapping(dev_map):
     """Parse 'block_device_mapping_v2' attribute"""
     if not isinstance(dev_map, list):

@@ -6,10 +6,10 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.16.2next:
+.. _Changelog-0.17rc1:
 
-v0.16.2next
-===========
+v0.17rc1
+========
 
 Released: UNRELEASED
 
@@ -66,6 +66,7 @@ Cyclades
   commands now accept a project argument.
 * Show creation time in `snf-manage server-inspect`.
 * Allow port creation without a floating IP.
+* Detect and handle disk resizes from Ganeti.
 
 
 Cyclades UI
@@ -86,6 +87,11 @@ Cyclades UI
  * Include machine icon images for bitnami
  * Show public networks without a floating IP in IPs wizard
 
+
+Pithos
+------
+
+* Add new setting for block module arguments
 
 Pithos UI
 ---------

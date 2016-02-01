@@ -871,6 +871,11 @@ class ProjectApplicationForm(forms.ModelForm):
         cleaned_data = super(ProjectApplicationForm, self).clean()
         return cleaned_data
 
+    def value_or_inf(self, value):
+        if value == 'inf' or value == 'Unlimited':
+            return units.PRACTICALLY_INFINITE
+        return value
+
     @property
     def resource_policies(self):
         policies = []
@@ -921,8 +926,7 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 is_project_limit = name.endswith('_p_uplimit')
                 suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
-                if value == 'inf' or value == 'Unlimited':
-                    value = units.PRACTICALLY_INFINITE
+                value = self.value_or_inf(value)
                 uplimit = value
                 prefix, _suffix = name.split(suffix)
 
@@ -933,14 +937,16 @@ class ProjectApplicationForm(forms.ModelForm):
                                                 resource.name)
 
                 if is_project_limit:
-                    member_limit = data.get(prefix + '_m_uplimit')
+                    _key = prefix + '_m_uplimit'
+                    member_limit = self.value_or_inf(data.get(_key))
                     try:
                         pvalue = int(value)
                         mvalue = int(member_limit)
                     except:
                         raise forms.ValidationError("Invalid format")
                 else:
-                    project_limit = data.get(prefix + '_p_uplimit')
+                    _key = prefix + '_p_uplimit'
+                    project_limit = self.value_or_inf(data.get(_key))
                     try:
                         mvalue = int(value)
                         pvalue = int(project_limit)

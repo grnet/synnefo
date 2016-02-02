@@ -628,7 +628,7 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_proejcts,
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
                      prefetch_related="nics__ips")
     attachments = [nic_to_attachments(nic)
                    for nic in vm.nics.filter(state="ACTIVE")]

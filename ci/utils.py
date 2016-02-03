@@ -752,6 +752,11 @@ class SynnefoCI(object):
         # Read specified option
         return self.temp_config.get(str(self.build_id), option)
 
+    def get_config(self, section, option, default, access='get'):
+        if not self.config.has_option(section, option):
+            return default
+        return getattr(self.config, "get%s" % access)(section, option)
+
     def setup_fabric(self):
         """Setup fabric environment"""
         self.logger.info("Setup fabric parameters..")
@@ -763,6 +768,10 @@ class SynnefoCI(object):
         fabric.env.shell = "/bin/bash -c"
         fabric.env.disable_known_hosts = True
         fabric.env.output_prefix = None
+
+        forward_agent = self.get_config(
+            'Global', 'forward_agent', False, 'boolean')
+        fabric.env.forward_agent = forward_agent
 
     def _check_hash_sum(self, localfile, remotefile):
         """Check hash sums of two files"""

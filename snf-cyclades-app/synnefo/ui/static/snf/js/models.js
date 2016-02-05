@@ -2488,6 +2488,16 @@
                           undefined, cb, {critical: true});
         },
 
+        get_admin_password: function(server_id, success, error) {
+            var url = this.get(server_id).api_path() + '/password';
+            this.get(server_id).api_call(url, "read", {_options:{skip_api_error:true}}, null, error, success);
+        },
+
+        delete_admin_password: function(server_id) {
+            var url = this.get(server_id).api_path() + '/password';
+            this.get(server_id).api_call(url, "delete", {_options:{skip_api_error:true}}, null, function() {}, function() {});
+        },
+
         load_missing_images: function(callback) {
           var missing_ids = [];
           var resolved = 0;

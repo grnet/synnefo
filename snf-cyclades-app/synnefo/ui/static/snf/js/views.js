@@ -153,6 +153,8 @@
             this.append_css = this.options ? this.options.css_class ? this.options.css_class : "" : "";
 
             this.is_visible = false;
+            this.prevent_close = false;
+
             return this;
         },
 
@@ -217,11 +219,15 @@
 
         _onOpen: function() {
             // clear previously bound click events
-            $(this.el).find(".closeme").unbind("click");
+            if (!this.prevent_close) {
+                $(this.el).find(".closeme").unbind("click");
+            }
 
             if ($(this.el).find(".closeme").length) {
-                $(this.el).find(".closeme").click(_.bind(function(){
-                    this.hide();
+                $(this.el).find(".closeme").bind("click", _.bind(function(){
+                    if (!this.prevent_close) {
+                        this.hide();
+                    }
                 }, this))
             }
             this.onOpen.apply(this, arguments);

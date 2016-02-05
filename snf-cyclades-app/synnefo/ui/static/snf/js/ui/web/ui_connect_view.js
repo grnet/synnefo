@@ -44,15 +44,28 @@
 
         initialize: function(options) {
             views.VMConnectView.__super__.initialize.apply(this);
-            _.bindAll(this, "handle_success", "handle_error");
+            _.bindAll(
+                this,
+                "handle_connection_success",
+                "handle_connection_error",
+                "handle_password_success",
+                "handle_password_error"
+            );
 
             this.error = this.$("div.error");
             this.info = this.$("div.connection-info");
             this.no_public = this.$("div.no-public-ip");
+            this.closeme = this.$(".closeme");
+            this.password_info = this.$(".password-info");
+            this.confirm = this.info.find(".confirm");
             this.description = this.info.find(".description p");
             this.connect = this.info.find(".connect p");
             this.subinfo = this.info.find(".subinfo");
             this.v6_warn = this.info.find(".v6-warn");
+            this.password_entry = this.password_info.find("#new-machine-password");
+            this.password_disabled = this.password_info.find(".disabled");
+            this.show_machine = this.password_info.find(".show-machine");
+            this.password_confirmation = this.password_info.find(".confirm");
 
             var self = this;
             this.no_public.find("a").click(function(e) {
@@ -62,6 +75,20 @@
                 synnefo.router.ips_view();
               }, 200)
             });
+
+            this.password_confirmation.find("button").click(_.bind(function() {
+                this.password_info.hide();
+                this.get_connection_info();
+            }, this));
+
+            this.password_confirmation.find("button#yes").click(_.bind(function() {
+                storage.vms.delete_admin_password(this.vm.id);
+            }, this));
+
+        },
+
+        get_connection_info: function() {
+            this.vm.get_connection_info($.client.os, this.handle_connection_success, this.handle_connection_error)
         },
 
         beforeOpen: function() {
@@ -79,9 +106,14 @@
             this.no_public.removeClass("hidden").show();
         },
 
-        handle_success: function(data) {
+        handle_connection_success: function(data) {
+            // clear previous click event handlers
+            this.closeme.unbind("click");
+            this.closeme.click(_.bind(function() {
+                this.hide();
+            }, this));
+
             this.error.hide();
-            this.info.show();
             this.v6_warn.hide();
             this.no_public.hide();
             this.description.html(data.info);
@@ -91,25 +123,63 @@
                 this.connect.html('<a href="{0}">{1}</a>'.format(data.link.url, data.link.title))
             }
 
-            this.subinfo.html(data.subinfo).show();
-            if (!data.subinfo) { this.subinfo.hide() };
-            
             if (data.ssh) {
                 var ssh_msg = data.link.title;
                 this.clip = new snf.util.ClipHelper(this.$(".clipboard"), ssh_msg);
-            } else {
+            }
+
+            this.show_connection_info(data);
+        },
+
+        handle_connection_error: function() {
+            this.error.show();
+            this.info.hide();
+        },
+
+        show_connection_info: function(data) {
+            this.info.show();
+
+            if (data.subinfo) {
+                this.subinfo.show();
             }
 
             if (!this.vm.has_public_ipv4()) {
-              this.v6_warn.removeClass("hidden").show();
+                this.v6_warn.removeClass("hidden").show();
             } else {
-              this.v6_warn.hide();
+                this.v6_warn.hide();
             }
         },
 
-        handle_error: function() {
-            this.error.show();
+        handle_password_success: function(data) {
+            // hide the confirmation message
+            this.password_confirmation.hide();
+            // show the OK button
+            this.show_machine.show();
+
+            this.password_entry.val(data.password);
+
+            // hide the info because the password modal
+            // shall appear first
             this.info.hide();
+            this.password_disabled.hide();
+
+            this.password_info.show();
+
+            this.prevent_close = true;
+            this.closeme.unbind("click");
+            this.closeme.click(_.bind(function() {
+                this.password_info.hide();
+                this.get_connection_info();
+            }, this));
+            // OK button clicked
+            this.show_machine.click(_.bind(function() {
+                this.show_machine.hide();
+                this.password_confirmation.show();
+            }, this));
+        },
+
+        handle_password_error: function() {
+            this.get_connection_info();
         },
 
         handle_vm_change: function(vm) {
@@ -130,9 +200,9 @@
             this.info.hide();
               
             if (!this.vm.has_public_ip()) {
-              this.show_no_public_ip();
+                this.show_no_public_ip();
             } else {
-              this.vm.get_connection_info($.client.os, this.handle_success, this.handle_error)
+                storage.vms.get_admin_password(this.vm.id, this.handle_password_success, this.handle_password_error);
             }
         }
 

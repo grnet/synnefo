@@ -160,14 +160,25 @@
 
             this.password = this.$("#new-machine-password");
             this.copy = this.$(".clipboard");
+            this.confirm = this.$(".confirm");
+            this.show_machine = this.$(".show-machine");
 
-            this.$(".show-machine").click(_.bind(function(){
+            this.show_machine.click(_.bind(function(){
                 if (this.$(".show-machine").hasClass("in-progress")) {
                     return;
                 }
-                this.hide();
+                this.show_machine.hide();
+                this.confirm.show();
             }, this));
             
+            this.confirm.find("button").click(_.bind(function() {
+                this.hide();
+            }, this));
+
+            this.confirm.find("button#yes").click(_.bind(function() {
+                storage.vms.delete_admin_password(this.vm_id);
+            }, this));
+
             var self = this;
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);

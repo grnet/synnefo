@@ -122,8 +122,24 @@ class PortTest(BaseAPITest):
                                  user=net.userid)
         self.assertEqual(response.status_code, 201)
 
-    def test_create_port_public_net_no_ip(self):
-        net = dbmf.NetworkFactory(public=True)
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_create_port_no_floating_public_net_no_ip(self, mrapi):
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=False)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
+        mrapi().ModifyInstance.return_value = 42
+        request = {
+            "port": {
+                "name": u"Port in the \u2601",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 201)
+
+    def test_create_port_floating_public_net_no_ip(self):
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
@@ -136,8 +152,27 @@ class PortTest(BaseAPITest):
                              user=net.userid)
         self.assertEqual(response.status_code, 400)
 
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_create_port_no_float_public_net_wrong_ip(self, mrapi):
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=False)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
+        mrapi().ModifyInstance.return_value = 42
+        request = {
+            "port": {
+                "name": u"Port in the \u2601",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips": [{"ip_address": "8.8.8.8"}]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 400)
+        exp = "Address 8.8.8.8 does not belong to network %d" % net.id
+        assert exp in response.content
+
     def test_create_port_public_net_wrong_ip(self):
-        net = dbmf.NetworkFactory(public=True)
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
@@ -152,7 +187,7 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 404)
 
     def test_create_port_public_net_conflict(self):
-        net = dbmf.NetworkFactory(public=True)
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
         fip = dbmf.FloatingIPFactory(nic=None, userid=net.userid)
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
@@ -168,7 +203,7 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 409)
 
     def test_create_port_public_net_taken_ip(self):
-        net = dbmf.NetworkFactory(public=True)
+        net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
         fip = dbmf.FloatingIPFactory(network=net, userid=net.userid)
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
@@ -289,7 +324,7 @@ class PortTest(BaseAPITest):
     def test_add_nic_to_public_network(self):
         user = 'userr'
         vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-        net = dbmf.NetworkFactory(state='ACTIVE', userid=user, public=True)
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user, public=True, floating_ip_pool=True)
         request = {
             "port": {
                 "device_id": str(vm.id),
@@ -301,6 +336,23 @@ class PortTest(BaseAPITest):
                              user=net.userid)
         self.assertBadRequest(response)
         #self.assertFault(response, 403, 'forbidden')
+
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_add_nic_to_public_network_no_floating(self, mrapi):
+        mrapi().ModifyInstance.return_value = 42
+        user = 'userr'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user, public=True)
+        request = {
+            "port": {
+                "device_id": str(vm.id),
+                "name": "port1",
+                "network_id": str(net.id)
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 201)
 
     def test_add_nic_malformed_2(self):
         user = 'userr'

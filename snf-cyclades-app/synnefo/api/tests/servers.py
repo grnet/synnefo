@@ -437,11 +437,18 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # User requested public networks
         # but no floating IP..
-        s1 = mfactory.IPv4SubnetFactory(network__public=True)
+        s1 = mfactory.IPv4SubnetFactory(network__public=True, network__floating_ip_pool=True)
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"uuid": s1.network_id}]
         response = self.mypost('servers', "test", json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
+
+        # we allow empty port creation for non floating ip public networks
+        s2 = mfactory.IPv4SubnetFactory(network__public=True)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s2.network_id}]
+        response = self.mypost('servers', "test", json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
 
         # Add one floating IP
         fp1 = mfactory.IPv4AddressFactory(userid="test", subnet=s1,

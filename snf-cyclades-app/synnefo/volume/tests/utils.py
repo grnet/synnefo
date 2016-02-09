@@ -122,33 +122,6 @@ class VolumeUtilsTest(django.test.TestCase):
                                       self.wrong_msg.format(vol5, 2, vm)):
             util.assign_volume_to_server(vm, vol5, index=2)
 
-    def test_get_server(self):
-        """Test if `get_server` works properly."""
-        # The user id for this test.
-        user_id = "test_user"
-
-        # Fail to get server that belongs to another user
-        vm = mf.VirtualMachineFactory(userid="other_user")
-        not_found_msg = "Server %s not found" % vm.id
-        with self.assertRaisesMessage(faults.ItemNotFound, not_found_msg):
-            util.get_server(user_id, vm.pk)
-
-        # Fail to get server with non-existent id
-        server_id = 1134
-        not_found_msg = "Server %s not found" % server_id
-        with self.assertRaisesMessage(faults.ItemNotFound, not_found_msg):
-            util.get_server(user_id, server_id)
-
-        # Fail to get server with invalid id
-        server_id = "could this BE any less int?"
-        invalid_msg = "Invalid server id: %s" % server_id
-        with self.assertRaisesMessage(faults.BadRequest, invalid_msg):
-            util.get_server(user_id, server_id)
-
-        # Successfully get own server
-        vm = mf.VirtualMachineFactory(userid=user_id)
-        self.assertEqual(vm, util.get_server(user_id, vm.pk))
-
     def test_get_volume_type(self):
         """Test if `get_volume_type` works properly."""
         # Fail to get volume type with non-existent id

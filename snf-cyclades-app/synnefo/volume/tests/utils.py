@@ -132,7 +132,7 @@ class VolumeUtilsTest(django.test.TestCase):
 
         # Fail to get volume type with invalid id
         vt_id = "could this BE any less int?"
-        invalid_msg = "Invalid volume id: %s" % vt_id
+        invalid_msg = "Invalid volume type id: %s" % vt_id
         with self.assertRaisesMessage(faults.BadRequest, invalid_msg):
             util.get_volume_type(vt_id)
 

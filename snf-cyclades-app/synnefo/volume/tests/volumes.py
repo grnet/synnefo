@@ -449,7 +449,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         message = "Volume type '{}' is not detachable".format(
             self.file_vt.disk_template)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm.id, vol.id)
+            volumes.attach(self.archip_vm, vol.id)
 
         # Fail to attach a volume to a server of another user
         vol.volume_type = self.archip_vt
@@ -466,7 +466,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         message = "Cannot attach volume while volume is in '{}' status".format(
             vol.status)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm.id, vol.id)
+            volumes.attach(self.archip_vm, vol.id)
 
         # Fail to attach a volume to a server with a different volume type
         message = "Volume and server must have the same volume type"

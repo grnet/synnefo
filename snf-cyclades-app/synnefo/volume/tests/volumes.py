@@ -532,13 +532,6 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         with self.assertRaisesMessage(faults.BadRequest, message):
             volumes.detach(vol.id)
 
-        # Fail to detach a volume from a server of another user
-        vol.userid = "other_user"
-        vol.save()
-        message = "Server %s not found" % self.archip_vm.id
-        with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.detach(vol.id)
-
         # Detach a volume from a server
         vol.userid = self.userid
         vol.index = 1

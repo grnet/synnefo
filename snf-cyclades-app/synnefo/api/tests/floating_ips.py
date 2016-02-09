@@ -14,7 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.utils import simplejson as json
-from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
+from django.conf import settings
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder, \
+    with_settings
 from synnefo.db.models import IPAddress, Network, Subnet, IPPoolTable
 from synnefo.db import models_factory as mf
 
@@ -89,6 +91,7 @@ class FloatingIPAPITest(BaseAPITest):
         response = self.delete(URL + "/%s" % ip.id, "user2")
         self.assertItemNotFound(response)
 
+    @with_settings(settings, CYCLADES_SHARED_RESOURCES_ENABLED=True)
     def test_sharing(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
         action = {"reassign": {

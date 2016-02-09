@@ -273,7 +273,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
     def test_create_bad_volume_types(self, mrapi):
         """Various tests for the create action regarding volume types."""
         # No volume type
-        kwargs = self.create_kwargs(server_id=None)
+        kwargs = self.create_kwargs(server=None)
         with self.assertRaises(faults.BadRequest):
             volumes.create(**kwargs)
 
@@ -282,21 +282,21 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
                        " with volume type '{}'.".format(
                            self.archip_vt.id, self.file_vt.id)
         kwargs = self.create_kwargs(volume_type_id=self.archip_vt.id,
-                                    server_id=self.file_vm.id)
+                                    server=self.file_vm)
         with self.assertRaisesMessage(faults.BadRequest, conflict_msg):
             volumes.create(**kwargs)
 
         # Non-detachable volume type
         non_detachable_msg = "Volume type 'file' is not detachable"
         kwargs = self.create_kwargs(volume_type_id=self.file_vt.id,
-                                    server_id=None)
+                                    server=None)
         with self.assertRaisesMessage(faults.BadRequest, non_detachable_msg):
             volumes.create(**kwargs)
 
     def test_create_standalone(self, mrapi):
         """Test if standalone volumes are created properly."""
         kwargs = self.create_kwargs(volume_type_id=self.archip_vt.id,
-                                    server_id=None)
+                                    server=None)
         with mocked_quotaholder() as m:
             vol = volumes.create(**kwargs)
         expected_commission = {(self.userid, "cyclades.disk"): self.size << 30}
@@ -311,7 +311,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
 
     def create_and_attach(self, mrapi, vm):
         """Common tests for create and attach operation."""
-        kwargs = self.create_kwargs(server_id=vm.id)
+        kwargs = self.create_kwargs(server=vm)
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
             vol = volumes.create(**kwargs)
@@ -349,7 +349,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         svol = mf.VolumeFactory(userid=self.userid, status="IN_USE",
                                 volume_type=self.file_vm.flavor.volume_type)
         kwargs = deepcopy(self.kwargs)
-        kwargs = self.create_kwargs(size=svol.size, server_id=self.file_vm.id)
+        kwargs = self.create_kwargs(size=svol.size, server=self.file_vm)
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
@@ -402,7 +402,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
     def test_create_from_snapshot(self, mimage, mrapi):
         # Wrong source
         mimage().__enter__().get_snapshot.side_effect = faults.ItemNotFound
-        kwargs = self.create_kwargs(server_id=self.archip_vm.id,
+        kwargs = self.create_kwargs(server=self.archip_vm,
                                     source_snapshot_id=421)
         self.assertRaises(faults.BadRequest, volumes.create, **kwargs)
 
@@ -420,7 +420,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
 
         mrapi().ModifyInstance.return_value = 42
         kwargs = self.create_kwargs(source_snapshot_id=12,
-                                    server_id=self.archip_vm.id)
+                                    server=self.archip_vm)
         with mocked_quotaholder():
             vol = volumes.create(**kwargs)
 
@@ -457,7 +457,7 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         vol.save()
         message = "Server %s not found" % self.archip_vm.id
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm.id, vol.id)
+            volumes.attach(self.archip_vm, vol.id)
 
         # Fail to attach a volume that is in use
         vol.userid = "test_user"
@@ -649,7 +649,7 @@ class VolumesTransactionsTest(QuotaAssertions,
             "user_id": self.userid,
             "size": self.size,
             "volume_type_id": self.archip_vt.id,
-            "server_id": None,
+            "server": None,
             "name": self.volume_name,
         }
 
@@ -706,14 +706,14 @@ class VolumesTransactionsTest(QuotaAssertions,
 
     def test_create_and_attach_ex(self, mrapi):
         """Create a volume and crash when attaching it to a VM."""
-        self.kwargs["server_id"] = self.archip_vt.id
+        self.kwargs["server"] = self.archip_vm
         mrapi().ModifyInstance.return_value = 42
         with patch("synnefo.logic.backend.attach_volume") as m:
             m.side_effect = MurphysLaw
             with self.assertRaises(MurphysLaw):
                 with mocked_quotaholder() as mqh:
                     volumes.create(**self.kwargs)
-        del self.kwargs["server_id"]
+        del self.kwargs["server"]
 
         # Assert that the transaction was rollbacked but that the commission
         # was sent.

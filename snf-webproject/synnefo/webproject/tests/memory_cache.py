@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from mock import patch
-from time import time
+from time import time, sleep
 
 from django.test import TestCase
 from django.core.cache import cache
@@ -51,10 +51,15 @@ class MemoryCacheTest(TestCase):
             'MEMORY_CACHE_POPULATE_INTERVAL',
             300
         )
+        TIMEOUT = getattr(
+            settings,
+            'MEMORY_CACHE_TIMEOUT',
+            300
+        )
         attrs = {
             'POPULATE_INTERVAL': POPULATE_INTERVAL,
             'prefix': 'MemoryCache',
-            'TIMEOUT': 5 * 60
+            'TIMEOUT': TIMEOUT
         }
         for key in attrs.iterkeys():
             self.assertIsNotNone(getattr(self.memory_cache, key))
@@ -74,6 +79,13 @@ class MemoryCacheTest(TestCase):
         self.assertIsNotNone(b)
         self.assertEqual(value, a)
         self.assertEqual(2 * value, b)
+
+        # change TIMEOUT
+        self.memory_cache.TIMEOUT = 1
+        self.memory_cache.set(a=value)
+        sleep(1)
+
+        self.assertIsNone(self.get_user_key('a'))
 
     @patch('synnefo.api.util.MemoryCache.populate')
     def test_get_last_populate_not_in_cache(self, populate_mock):

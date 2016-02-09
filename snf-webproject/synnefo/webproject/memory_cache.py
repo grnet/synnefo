@@ -21,6 +21,9 @@ from django.conf import settings
 
 class MemoryCache(object):
     POPULATE_INTERVAL = getattr(settings, 'MEMORY_CACHE_POPULATE_INTERVAL', 300)
+    # The cache timeout. Set to None so that the cache keys will never expire
+    TIMEOUT = getattr(settings, 'MEMORY_CACHE_TIMEOUT', 300)
+
     user_prefix = 'user'
     internal_prefix = 'internal'
 
@@ -75,7 +78,7 @@ class MemoryCache(object):
 
         """
         for key in kwargs.iterkeys():
-            cache.set(self.to_user_key(key), kwargs[key])
+            cache.set(self.to_user_key(key), kwargs[key], self.TIMEOUT)
 
     def set_internal(self, **kwargs):
         """Set all the key-value pairs provided in

@@ -451,15 +451,8 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         with self.assertRaisesMessage(faults.BadRequest, message):
             volumes.attach(self.archip_vm, vol.id)
 
-        # Fail to attach a volume to a server of another user
-        vol.volume_type = self.archip_vt
-        vol.userid = "other_user"
-        vol.save()
-        message = "Server %s not found" % self.archip_vm.id
-        with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm, vol.id)
-
         # Fail to attach a volume that is in use
+        vol.volume_type = self.archip_vt
         vol.userid = "test_user"
         vol.status = "IN_USE"
         vol.save()
@@ -473,18 +466,20 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         vol.status = "AVAILABLE"
         vol.save()
         with self.assertRaises(faults.BadRequest) as e:
-            volumes.attach(self.file_vm.id, vol.id)
+            volumes.attach(self.file_vm, vol.id)
         self.assertIn(message, e.exception.message)
 
         # Attach a volume to a server
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
-            vol = volumes.attach(self.archip_vm.id, vol.id)
+            vol = volumes.attach(self.archip_vm, vol.id)
         # Assert that the volume is assigned to the VM, it has an appropriate
         # status and that no commission was sent.
+        self.archip_vm = VirtualMachine.objects.get(pk=self.archip_vm.id)
         self.assertEqual(vol.machine, self.archip_vm)
         self.assertEqual(vol.volume_type, self.archip_vm.flavor.volume_type)
-        self.assertEqual(vol.index, 1)
+        self.assertEqual(self.archip_vm.volumes.filter().count(), 1)
+        self.assertEqual(vol.index, 0)
         self.assertEqual(vol.status, "ATTACHING")
         self.assertNoCommission(m)
 

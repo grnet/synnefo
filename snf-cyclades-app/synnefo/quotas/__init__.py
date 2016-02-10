@@ -109,7 +109,7 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
     provisions = get_commission_info(resource=resource, action=action,
                                      action_fields=action_fields)
 
-    if provisions is None:
+    if not provisions:
         return None
 
     user = for_user if for_user is not None else resource.userid

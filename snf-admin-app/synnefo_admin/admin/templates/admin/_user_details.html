@@ -75,8 +75,8 @@
                     <dl class="dl-horizontal well">
                         <dt>Identifier</dt><dd>{{ auth.identifier|default:"-" }}</dd>
                         <dt>EPPN</dt><dd>{{ auth.info_eppn|default:"-" }}</dd>
-                        <dt>Last login</dt><dd>{{ auth.last_login_at }}</dd>
                         <dt>Created</dt><dd>{{ auth.created|default:"-" }}</dd>
+                        <dt>Last login</dt><dd>{{ auth.last_login_at }}</dd>
                         <dt>Info</dt>
                         <dd class="info-details">
                             {% with info=auth.info %}

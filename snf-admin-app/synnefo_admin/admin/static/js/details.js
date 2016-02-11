@@ -38,7 +38,7 @@ $(document).ready(function(){
 				return false;
 			}
 		});
-		var $toggleAllBtn = $expandBtn.closest('.info-block.object-details').find('.show-hide-all');
+		var $toggleAllBtn = $expandBtn.closest('.info-block.object-details').find('.js-show-hide-all');
 		if(allSameClass){
 			if($expandBtn.closest('h4').hasClass('expanded')){
 				$toggleAllBtn.addClass('open');
@@ -61,10 +61,10 @@ $(document).ready(function(){
   var txt_all = ['Expand all','Collapse all'];
   
 
-  $('.show-hide-all span.txt').text(txt_all[0]);
+  $('.js-show-hide-all span.txt').text(txt_all[0]);
   
   
-  $('.show-hide-all').click(function(e){
+  $('.js-show-hide-all').click(function(e){
     e.preventDefault();
     $(this).toggleClass('open');
     var tabs = $(this).parent('.info-block').find('.object-details-content');

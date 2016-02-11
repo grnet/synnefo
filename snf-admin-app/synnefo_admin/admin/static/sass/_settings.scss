@@ -54,6 +54,8 @@ $theme-gray-dark:       #444;
 
 $theme-border-light:          lighten($theme-gray-medium,8%);
 
+$component-offset-horizontal: 210px;
+
 @import "bootstrap/variables";
 //@import "theme1";
 

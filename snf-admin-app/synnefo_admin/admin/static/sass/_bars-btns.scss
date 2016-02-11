@@ -270,7 +270,7 @@ body .custom-buttons .extra-btn {
 	}
 }
 
-.show-hide-all {
+.btn-toggle-info {
 	float:right;
     em {
         font-style: normal;
@@ -415,10 +415,10 @@ table.dataTable tbody tr.selected .snf-checkbox-unchecked{
 table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
     display: none;
 }
-.show-hide-all.open .snf-font-arrow-down {
+.btn-toggle-info.open .snf-font-arrow-down {
     display: none;
 }
-.show-hide-all:not(.open) .snf-font-arrow-up {
+.btn-toggle-info:not(.open) .snf-font-arrow-up {
     display: none;
 }
 
@@ -428,4 +428,9 @@ table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
 
 .instructions .line-btn:not(.open) .snf-angle-up {
     display: none;
+}
+
+.wrap-btn-between-dls {
+    width: $component-offset-horizontal - 20;
+    margin: 15px 0 10px;
 }

@@ -71,25 +71,29 @@
                 </dl>
             </div>
             {% for auth in user.auth_providers.all %}
-                <div class="tab-pane" id="auth{{ auth.module }}{{ user.uuid  }}">
+                <div class="tab-pane" id="auth{{ auth.module }}{{ user.uuid }}">
                     <dl class="dl-horizontal well">
                         <dt>Identifier</dt><dd>{{ auth.identifier|default:"-" }}</dd>
                         <dt>EPPN</dt><dd>{{ auth.info_eppn|default:"-" }}</dd>
                         <dt>Created</dt><dd>{{ auth.created|default:"-" }}</dd>
                         <dt>Last login</dt><dd>{{ auth.last_login_at }}</dd>
-                        <dt>Info</dt>
-                        <dd class="info-details">
-                            {% with info=auth.info %}
-                                <dl>
-                                    {{ info|flatten_dict_to_dl }}
-                                </dl>
-                                {% if info %}
-                                    <a href="" class="toggle-info">Toggle full info data</a>
-                                    <pre class="info-data" style="display: none">{{ info }}</pre>
-                                {% endif %}
-                            {% endwith %}
-                        </dd>
                     </dl>
+                    {% with info=auth.info %}
+                        {% if info %}
+                        <div class="wrap-btn-between-dls clearfix">
+                            <a href="#" class="btn-toggle-info line-btn">
+                                <span class="txt">More</span>
+                                <span class="snf-font-arrow-up"></span>
+                                <span class="snf-font-arrow-down"></span>
+                            </a>
+                        </div>
+                            <dl class="dl-horizontal well">
+                                {{ info|flatten_dict_to_dl }}
+                            </dl>
+                            <a href="" class="toggle-info">Toggle full info data</a>
+                            <pre class="info-data" style="display: none">{{ info }}</pre>
+                            {% endif %}
+                        {% endwith %}
                 </div>
             {% endfor %}
         </div> <!-- <div class="tab-content"> -->

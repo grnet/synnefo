@@ -236,3 +236,23 @@
         padding: 0;
     }
 }
+
+.fade-area {
+    overflow: hidden;
+    &:not(.vis) {
+        display: none;
+    }
+
+    &.info-data {
+        padding: 0 20px;
+    }
+}
+
+.toggle-fade {
+    margin-left: 20px;
+    width: 116px;
+}
+
+.area-to-slide {
+    display: none;
+}

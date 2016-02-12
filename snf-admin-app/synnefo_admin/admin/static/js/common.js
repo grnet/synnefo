@@ -322,9 +322,4 @@ $(document).ready(function(){
             e.preventDefault();
         }
     });
-
-    $('.info-details .toggle-info').click(function(e) {
-      e.preventDefault();
-      $(this).siblings('.info-data').slideToggle();
-    });
 });

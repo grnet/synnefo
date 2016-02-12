@@ -422,11 +422,11 @@ table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
     display: none;
 }
 
-.instructions .line-btn.open .snf-angle-down {
+.line-btn.open .snf-angle-down,  {
     display: none;
 }
 
-.instructions .line-btn:not(.open) .snf-angle-up {
+.line-btn:not(.open) .snf-angle-up {
     display: none;
 }
 

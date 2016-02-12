@@ -87,11 +87,15 @@
                                 <span class="snf-font-arrow-down"></span>
                             </a>
                         </div>
-                            <dl class="dl-horizontal well">
+                        <div class="js-slide-area area-to-slide">
+                            <!-- <div class="clearfix"> -->
+                                <a href="" class="toggle-fade pull-right txt btn-toggle-info line-btn">Show raw data</a>
+                            <!-- </div> -->
+                            <dl class="dl-horizontal well fade-area vis area-0 clearfix">
                                 {{ info|flatten_dict_to_dl }}
                             </dl>
-                            <a href="" class="toggle-info">Toggle full info data</a>
-                            <pre class="info-data" style="display: none">{{ info }}</pre>
+                            <pre class="info-data fade-area area-1 clearfix">{{ info }}</pre>
+                        </div>
                             {% endif %}
                         {% endwith %}
                 </div>

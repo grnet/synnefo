@@ -41,6 +41,8 @@ Astakos
 * Fixed `how-to` broken link in projects view.
 * Extend tokens API response with user's projects.
 * Fixed 'Unlimited' value handling in project submission form.
+* Return 302 instead of 301 on logout to avoid the user-agents caching the
+  logout redirect.
 
 
 Cyclades
@@ -68,6 +70,17 @@ Cyclades
 * Show creation time in `snf-manage server-inspect`.
 * Allow port creation without a floating IP.
 * Detect and handle disk resizes from Ganeti.
+* Include the disks of the instance on snf-ganeti-eventd when
+  processing an OP_INSTANCE_GROW_DISK Ganeti job.
+* Extend the log records of all actions to include the user that
+  performed them.
+* Extend the ports that are accessible to the user with the ports that are
+  having a floating IP that is accessible to the user.
+* Add an snf-manage command (helper-servers-sync) that syncs helper servers
+  across Ganeti backends.
+* Add the 'CYCLADES_SHARED_RESOURCES_ENABLE' option to enable/disable the
+  feature of sharing a resource to the members of the project that
+  the resource belongs to.
 
 
 Cyclades UI
@@ -81,18 +94,24 @@ Cyclades UI
  * Properly handle ghost resources, which are resources that are visible to
  the user only because they are related with some shared resource, but the
  user has no access to them. Add tooltip to explain this to the user.
-
  * Custom image sections. Allow images uploaded by designated users to be 
-   displayed in separate sections in image listing overlay.
-
+ displayed in separate sections in image listing overlay.
  * Include machine icon images for bitnami
  * Show public networks without a floating IP in IPs wizard
+
+* Display "No machine" option when creating volume from image source.
+* Display "No machine" option when the user has no machines created.
 
 
 Pithos
 ------
 
 * Add new setting for block module arguments
+* Fix access check for public files.
+
+  * The fact that a public URL for a file exists doesn't
+    grant an arbitrary user with read access to the file.
+
 
 Pithos UI
 ---------
@@ -117,6 +136,31 @@ Admin
 -----
 
 * Enable OR operation between same type query terms
+
+Admin UI
+--------
+
+* Update tips and tricks content.
+
+CI
+--
+
+* Add an option (--local-package-dir) to upload local Debian packages to
+  the snf-deploy local packages directory.
+* New config option to enable ssh forwarding.
+
+Management
+----------
+
+* Allow specification of project when creating a new network, floating IP
+  or server using (cli) snf-manage.
+* Add the `floating-ip-show` command.
+
+Deploy
+------
+
+* Create helper VMs when running deploy.
+* Remove the x2go repo.
 
 .. _Changelog-0.16.2:
 

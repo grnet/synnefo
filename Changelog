@@ -82,6 +82,8 @@ Cyclades
 * Add the 'CYCLADES_SHARED_RESOURCES_ENABLE' option to enable/disable the
   feature of sharing a resource to the members of the project that
   the resource belongs to.
+* Create an allocator interface in order to allow the creation of different
+  backend allocation algorithms.
 
 
 Cyclades UI

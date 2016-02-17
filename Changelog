@@ -13,6 +13,7 @@ v0.17rc1
 
 Released: UNRELEASED
 
+
 Synnefo-wide
 ------------
 
@@ -56,12 +57,12 @@ Cyclades
 * Implement shared resources among members of a project.
 
   * Extend Cyclades API with the 'shared_to_project' field, indicating whether
-  a resource is shared to the members of the project that the resource belongs
-  to.
+    a resource is shared to the members of the project that the resource belongs
+    to.
   * Extend `reassign` API call with the 'shared_to_project' field that can be
-  used to share or unshare a resource to project members.
+    used to share or unshare a resource to project members.
   * Update Cyclades API to return all resources that are accessible to a user,
-  and not only those that are owned by the user.
+    and not only those that are owned by the user.
   * Update snf-manage commands to show whether a resource is shared or not.
 
 * Fix RAM rounding error in `snf-manage flavor-create`.
@@ -90,12 +91,12 @@ Cyclades UI
 
  * Add option to share/unshare a resource in the project reassign view.
  * Add icons to distinquish resources that are either shared by the user
- or a shared to the user.
+   or a shared to the user.
  * Properly handle ghost resources, which are resources that are visible to
- the user only because they are related with some shared resource, but the
- user has no access to them. Add tooltip to explain this to the user.
+   the user only because they are related with some shared resource, but the
+   user has no access to them. Add tooltip to explain this to the user.
  * Custom image sections. Allow images uploaded by designated users to be 
- displayed in separate sections in image listing overlay.
+   displayed in separate sections in image listing overlay.
  * Include machine icon images for bitnami
  * Show public networks without a floating IP in IPs wizard
 
@@ -132,15 +133,18 @@ Pithos UI
   package replaces the previous one, `snf-pithos-webclient` which from now on
   is deprecated and should no longer be used.
 
+
 Admin
 -----
 
 * Enable OR operation between same type query terms
 
+
 Admin UI
 --------
 
 * Update tips and tricks content.
+
 
 CI
 --
@@ -149,6 +153,7 @@ CI
   the snf-deploy local packages directory.
 * New config option to enable ssh forwarding.
 
+
 Management
 ----------
 
@@ -156,11 +161,13 @@ Management
   or server using (cli) snf-manage.
 * Add the `floating-ip-show` command.
 
+
 Deploy
 ------
 
 * Create helper VMs when running deploy.
 * Remove the x2go repo.
+
 
 .. _Changelog-0.16.2:
 

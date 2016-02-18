@@ -1095,6 +1095,53 @@ each backend.  Also, the administrator can route instances between different
 nodes of the same Ganeti backend, by modifying the same options at the
 nodegroup level (see `gnt-group` manpage for mor details).
 
+Allocation based on custom allocator
+************************************
+
+In order to determine which ganeti cluster is best for allocating a
+virtual machine, the allocator uses two methods:
+
+    - `filter_backends`
+    - `allocate`
+
+The `filter_backends` method is used to filter the backends that the allocator
+shouldn't even consider. It takes two arguements:
+
+    1. A list of the available backends. A backend is available
+    if it is not drained or offline. Each backend is a django object
+    and is an instance of the `Backend` model.
+
+    2. A map with 3 keys:
+        - `ram`: The size of the memory we want to allocate
+        on the backend.
+        - `disk`: The size of the disk we want to allocate
+        on the backend.
+        - `cpu`: The size of the CPU we want to allocate
+        on the backend.
+
+
+The `allocate` method returns the backend that will be used to allocate the virtual
+machine. It takes two arguements:
+
+    1. A list of the available backends. A backend is available
+    if it is not drained or offline. Each backend is a django object
+    and is an instance of the `Backend` model.
+
+    2. A map with 3 keys:
+        - `ram`: The size of the memory we want to allocate
+        on the backend.
+        - `disk`: The size of the disk we want to allocate
+        on the backend.
+        - `cpu`: The size of the CPU we want to allocate
+        on the backend.
+
+So the administrator can create his own allocation algorithm by creating a class
+that inherits the `AllocatorBase` located at `synnefo.logic.allocators.base`,
+and implements the above methods.
+
+If the administrator wants synnefo to use his allocation algorithm he just has to change
+the `BACKEND_ALLOCATOR_MODULE` setting to the path of his allocator class.
+
 Removing an existing Ganeti backend
 ```````````````````````````````````
 In order to remove an existing backend from Synnefo, you must first make

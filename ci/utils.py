@@ -29,6 +29,7 @@ import fabric.api as fabric
 import simplejson as json
 import subprocess
 import tempfile
+import urlparse
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
@@ -786,12 +787,23 @@ class SynnefoCI(object):
             self.logger.error("Hashes differ.. aborting")
             sys.exit(1)
 
+    def _prepare_known_hosts(self, repo):
+        parsed = urlparse.urlparse(repo)
+        if parsed.scheme != "ssh":
+            return
+
+        hostname = parsed.hostname
+        self.logger.info("Prepare ~/.ssh/known_hosts for %r" % hostname)
+        cmd = """ssh-keyscan %s >> ~/.ssh/known_hosts""" % hostname
+        _run(cmd, False)
+
     @_check_fabric
     def clone_repo(self, synnefo_repo=None, synnefo_branch=None,
                    local_repo=False, pull_request=None):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Install/Setup git")
+
         cmd = """
         apt-get install git --yes --force-yes
         git config --global user.name {0}
@@ -998,6 +1010,9 @@ class SynnefoCI(object):
         So retry!!
 
         """
+        if repo and "ssh" in repo:
+            self._prepare_known_hosts(repo)
+
         cloned = False
         for i in range(1, 11):
             try:

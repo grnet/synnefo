@@ -126,7 +126,7 @@ extract_tests () {
                 eval all_tests=`echo '$'$all_tests_var`
                 for word in $all_tests
                 do
-                    append "${c}_tests" "synnefo.$word "
+                    append "${c}_tests" "$word "
                 done
                 return
             elif contains $1 "$c."; then
@@ -141,10 +141,10 @@ extract_tests () {
 
 export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 
-astakos_all_tests="im quotaholder_app oa2"
-cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata volume"
-admin_all_tests="admin"
-pithos_all_tests="api"
+astakos_all_tests="astakos.im astakos.quotaholder_app astakos.oa2"
+cyclades_all_tests="synnefo.api synnefo.db synnefo.logic synnefo.plankton synnefo.quotas synnefo.vmapi synnefo.helpdesk synnefo.userdata synnefo.volume"
+admin_all_tests="synnefo_admin.admin"
+pithos_all_tests="pithos.api.test"
 astakosclient_all_tests="astakosclient"
 ALL_COMPONENTS="astakos cyclades admin pithos astakosclient"
 

@@ -46,7 +46,8 @@ class CycladesAdminViewsTest(TestCase):
         self.assertEqual(json_data, response.content)
 
     def test_get_public_stats_has_valid_url(self):
-        prefix = '/cyclades/admin/'
+        from synnefo.cyclades_settings import BASE_PATH, ADMIN_PREFIX
+        prefix = '/%s/%s/' % (BASE_PATH, ADMIN_PREFIX)
         resolved = resolve(prefix + 'stats/simple')
 
         self.assertEqual(resolved.view_name, 'synnefo.admin.views.get_public_stats_from_cache')

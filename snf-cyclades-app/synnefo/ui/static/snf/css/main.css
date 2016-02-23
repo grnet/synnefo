@@ -4310,13 +4310,37 @@ h3.overlay-inner-title {
 
 #creation-password-overlay .form-action {
     position: absolute;
-    bottom: 15px;
+    bottom: 9px;
     right: 13px;
     font-size: 0.8em;
 }
 
+
+#vm-connect-overlay-content #creation-password-overlay .form-action {
+    right: 0;
+    bottom: -3px;
+}
+
 #creation-password-overlay .password-label {
     float: left;
+}
+
+#creation-password-overlay .confirm {
+    margin-top: 10px;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache {
+    margin-top: 4px;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache button.yes {
+    background-color: #FF9955;
+    border-color: #FF7F2A;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache button.no {
+    background-color: #777;
+    border-color: #222;
 }
 
 #creation-password-overlay .password {

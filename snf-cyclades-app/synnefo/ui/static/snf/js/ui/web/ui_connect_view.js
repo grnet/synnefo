@@ -76,13 +76,17 @@
               }, 200)
             });
 
-            this.password_confirmation.find("button").click(_.bind(function() {
+            this.password_confirmation.find("button.no").click(_.bind(function() {
+                this.prevent_close = false;
                 this.password_info.hide();
                 this.get_connection_info();
             }, this));
 
-            this.password_confirmation.find("button#yes").click(_.bind(function() {
+            this.password_confirmation.find("button.yes").click(_.bind(function() {
+                this.prevent_close = false;
                 storage.vms.delete_admin_password(this.vm.id);
+                this.password_info.hide();
+                this.get_connection_info();
             }, this));
 
         },
@@ -104,6 +108,10 @@
             this.error.hide();
             this.info.hide();
             this.no_public.removeClass("hidden").show();
+        },
+
+        hide_no_public_ip: function() {
+            this.no_public.addClass("hidden").hide();
         },
 
         handle_connection_success: function(data) {
@@ -137,6 +145,11 @@
         },
 
         show_connection_info: function(data) {
+            if (!this.vm.has_public_ip()) {
+                this.show_no_public_ip();
+                return;
+            }
+
             this.info.show();
 
             if (data.subinfo) {
@@ -168,8 +181,6 @@
             this.prevent_close = true;
             this.closeme.unbind("click");
             this.closeme.click(_.bind(function() {
-                this.password_info.hide();
-                this.get_connection_info();
             }, this));
             // OK button clicked
             this.show_machine.click(_.bind(function() {
@@ -198,12 +209,9 @@
             
             this.error.hide();
             this.info.hide();
-              
-            if (!this.vm.has_public_ip()) {
-                this.show_no_public_ip();
-            } else {
-                storage.vms.get_admin_password(this.vm.id, this.handle_password_success, this.handle_password_error);
-            }
+            this.hide_no_public_ip();
+
+            storage.vms.get_admin_password(this.vm.id, this.handle_password_success, this.handle_password_error);
         }
 
     });

@@ -88,6 +88,8 @@ Cyclades
 * Add the option to retrieve the front page statistics
   from the memory cache.
 * Add the `PUBLIC_STATS_CACHE_POPULATE_INTERVAL` setting.
+* Store the password in the cache on VM creation until the user
+  confirms that they stored it.
 
 
 Cyclades UI
@@ -108,6 +110,9 @@ Cyclades UI
 
 * Display "No machine" option when creating volume from image source.
 * Display "No machine" option when the user has no machines created.
+* Add confirmation message on the password modal. If the user doesn't
+  confirm that they stored the password, the password modal will appear
+  each time they try to access their virtual machine.
 
 
 Pithos

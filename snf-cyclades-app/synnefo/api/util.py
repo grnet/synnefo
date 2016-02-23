@@ -517,6 +517,8 @@ class PublicStatsCache(MemoryCache):
         )
 
 class VMPasswordCache(MemoryCache):
+    TIMEOUT = None
+
     def populate(self):
         """No need to initialize the cache. If the password doesn't exist in
         the cache, `None` will be returned.

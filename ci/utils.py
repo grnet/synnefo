@@ -1156,6 +1156,21 @@ class SynnefoCI(object):
         """.format(fabric.env.password)
         _run(cmd, False)
 
+        wildcard_dns = self.get_config(
+                'Deployment', 'wildcard_dns', False, '').strip()
+        if wildcard_dns:
+            address = self.temp_config.get(str(self.build_id), 'server_ip')
+            domain = "%s.%s" % (address, wildcard_dns)
+            self.logger.debug("Setting domain to %s" % domain)
+            cmd = """
+            sed -i 's/^domain.*=.*/domain = {0}/' /etc/snf-deploy/nodes.conf
+            """.format(domain)
+            _run(cmd, False)
+            cmd = """
+            sed -i 's/^domain.*=.*/domain = {0}/' /etc/snf-deploy/ganeti.conf
+            """.format(domain)
+            _run(cmd, False)
+
         self.logger.debug("Run snf-deploy")
         cmd = """
         snf-deploy --disable-colors --autoconf synnefo

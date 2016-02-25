@@ -136,7 +136,8 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 400)
+        assert "must contain a floating IP" in response.content
 
     def test_create_port_floating_public_net_no_ip(self):
         net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
@@ -167,9 +168,8 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        self.assertEqual(response.status_code, 400)
-        exp = "Address 8.8.8.8 does not belong to network %d" % net.id
-        assert exp in response.content
+        self.assertEqual(response.status_code, 404)
+        assert "Floating IP does not exist" in response.content
 
     def test_create_port_public_net_wrong_ip(self):
         net = dbmf.NetworkFactory(public=True, floating_ip_pool=True)
@@ -352,7 +352,8 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 400)
+        assert "must contain a floating IP" in response.content
 
     def test_add_nic_malformed_2(self):
         user = 'userr'

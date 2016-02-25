@@ -517,12 +517,13 @@ class ServerCreateAPITest(ComputeAPITest):
         response = self.mypost('servers', "test", json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
 
-        # we allow empty port creation for non floating ip public networks
+        # deny empty port creation for non floating ip public networks
         s2 = mfactory.IPv4SubnetFactory(network__public=True)
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"uuid": s2.network_id}]
         response = self.mypost('servers', "test", json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.status_code, 409)
+        assert "Cannot find an unused floating IP" in response.content
 
         # Add one floating IP
         fp1 = mfactory.IPv4AddressFactory(userid="test", subnet=s1,

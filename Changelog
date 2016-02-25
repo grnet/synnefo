@@ -69,7 +69,6 @@ Cyclades
 * `snf-manage` `server-create`, `floating-ip-create` and `network-create`
   commands now accept a project argument.
 * Show creation time in `snf-manage server-inspect`.
-* Allow port creation without a floating IP.
 * Detect and handle disk resizes from Ganeti.
 * Include the disks of the instance on snf-ganeti-eventd when
   processing an OP_INSTANCE_GROW_DISK Ganeti job.

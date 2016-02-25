@@ -757,7 +757,7 @@ def _port_for_request(user_id, user_projects, network_dict):
         address = network_dict.get("fixed_ip")
         network = util.get_network(network_id, user_id, user_projects,
                                    non_deleted=True)
-        if network.public and network.floating_ip_pool:
+        if network.public:
             if network.subnet4 is not None:
                 if "fixed_ip" not in network_dict:
                     return create_public_ipv4_port(user_id, user_projects,

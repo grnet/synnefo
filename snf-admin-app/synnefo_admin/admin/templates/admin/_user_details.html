@@ -96,7 +96,7 @@
                                     <a href="" class="toggle-fade pull-right txt btn-toggle-info line-btn">Show raw data</a>
                                 <!-- </div> -->
                                 <dl class="dl-horizontal well fade-area vis area-0 clearfix">
-                                    {{ info|flatten_dict_to_dl }}
+                                    {% flatten_dict_to_dl info %}
                                 </dl>
                                 <pre class="info-data fade-area area-1 clearfix">{{ info }}</pre>
                             </div>

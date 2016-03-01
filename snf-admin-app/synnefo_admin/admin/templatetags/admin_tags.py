@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -483,15 +483,30 @@ def min_prefix():
     else:
         return ''
 
-@register.filter
-def flatten_dict_to_dl(d):
+@register.simple_tag
+def flatten_dict_to_dl(d, default_if_empty='-'):
+    """
+    Recursively takes a self-nested dict and returns an HTML definition list --
+    WITHOUT opening and closing <dl> tags.
+
+    The dict is assumed to be in the proper format. For example, if ``var``
+    contains: ``{
+        'foo1': 'bar1',
+        'foo2': {
+            'foo3': 'bar3',
+        }
+    }``,
+    then ``{{ var|flatten_dict_to_dl }}`` would return::
+        <dt>foo1</dt><dd>bar1</dd><dt>foo3</dt><dd>bar3</dd>
+    """
     l = []
-    stack = d.items()
-    while stack:
-        k, v = stack.pop()
-        if isinstance(v, dict):
-            stack.extend(v.iteritems())
-        else:
-            a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v)
-            l.append(a)
-    return mark_safe(''.join(l))
+    if isinstance(d, dict):
+        stack = d.items()
+        while stack:
+            k, v = stack.pop()
+            if isinstance(v, dict):
+                stack.extend(v.iteritems())
+            else:
+                a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v or default_if_empty)
+                l.append(a)
+    return mark_safe(''.join(reversed(l)))

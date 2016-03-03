@@ -647,17 +647,14 @@ $(document).ready(function() {
 				return allSelected;
 			});
 			if($togglePageItems.hasClass('select') && allSelected) {
-				$togglePageItems.addClass('deselect').removeClass('select');
-				$label.text('Deselect Page')
+				$togglePageItems.addClass('deselect state-b').removeClass('select');
 			}
 			else if($togglePageItems.hasClass('deselect') && !allSelected) {
-				$togglePageItems.addClass('select').removeClass('deselect');
-				$label.text('Select Page')
+				$togglePageItems.addClass('select').removeClass('deselect state-b');
 			}
 		}
 		else {
-			$togglePageItems.addClass('select').removeClass('deselect')
-			$label.text('Select Page')
+			$togglePageItems.addClass('select').removeClass('deselect state-b')
 		}
 	};
 
@@ -847,19 +844,12 @@ $(document).ready(function() {
 
 	$('.toggle-selected').click(function (e) {
 		e.preventDefault();
-		var $label = $(this).find('.text');
-		var label1 = 'Show selected';
-		var label2 = 'Hide selected';
 		$(this).toggleClass('open');
 		if($(this).hasClass('open')) {
-			$('#table-items-selected_wrapper').slideDown('slow', function() {
-				$label.text(label2);
-			});
+			$('#table-items-selected_wrapper').stop().slideDown('slow');
 		}
 		else {
-			$('#table-items-selected_wrapper').slideUp('slow', function() {
-				$label.text(label1);
-			});
+			$('#table-items-selected_wrapper').stop().slideUp('slow');
 		}
 	});
 });

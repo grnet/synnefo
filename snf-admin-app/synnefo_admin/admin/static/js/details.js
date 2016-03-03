@@ -8,6 +8,7 @@ $(document).ready(function() {
 			scrollTop: pos
 		}, 500)
 	})
+	// the arrow next to the name of the resource
 	$('.object-details h4 .arrow').click(function(){
 		var $expandBtn = $(this);
 		var hasNotClass = !$expandBtn.closest('h4').hasClass('expanded');
@@ -42,45 +43,58 @@ $(document).ready(function() {
 		if(allSameClass){
 			if($expandBtn.closest('h4').hasClass('expanded')) {
 				$toggleAllBtn.addClass('open');
-				$toggleAllBtn.find('.txt').text(txt_all[1]);
 			}
 			else {
 				$toggleAllBtn.removeClass('open');
-				$toggleAllBtn.find('.txt').text(txt_all[0]);
 			}
 		}
 		else {
 			$toggleAllBtn.removeClass('open');
-			$toggleAllBtn.find('.txt').text(txt_all[0]);
 		}
 	});
 
 
-	// hide/show expand/collapse
-	$('.btn-toggle-info').click(function() {
+	// expand/collapse
+	$('.btn-toggle-info').click(function(e) {
+		e.preventDefault();
 		$(this).toggleClass('open');
 		if($(this).hasClass('open')) {
-			$(this).parent().siblings('.js-slide-area').slideDown('slow');
+			$(this).parent().siblings('.js-slide-area').stop().slideDown('slow');
 		}
 		else {
-			$(this).parent().siblings('.js-slide-area').slideUp('slow');
+			$(this).parent().siblings('.js-slide-area').stop().slideUp('slow');
 		}
 	});
 
-  var txt_all = ['Expand all','Collapse all'];
-  var txt_format = ['Show raw data', 'Show formated data'];
-  
+	// hide/show
+	$('.toggle-fade').click(function(e) {
+		e.preventDefault();
+		var $areaToHide = $(this).siblings('.fade-area.vis');
+		var $areaToShow = $(this).siblings('.fade-area:not(.vis)');
+		var $btn = $(this);
+		$areaToHide.fadeOut('fast', function() {
+			$(this).removeClass('vis');
+			if($(this).hasClass('area-0')) {
+				$btn.addClass('open');
+			}
+			else {
+				$btn.removeClass('open');
+			}
+			$areaToShow.fadeIn('slow', function() {
+				$(this).addClass('vis');
+			});
+		});
+	});
 
-  $('.js-show-hide-all span.txt').text(txt_all[0]);
-  
-  
+	var txt_format = ['Show raw data', 'Show formated data'];
+
+
   $('.js-show-hide-all').click(function(e){
     e.preventDefault();
     $(this).toggleClass('open');
     var tabs = $(this).parent('.info-block').find('.object-details-content');
 
     if ($(this).hasClass('open')){
-      $(this).find('span.txt').text( txt_all[1]);
       tabs.each(function() {
         $(this).stop().slideDown('slow');
         $(this).siblings('h4').addClass('expanded');
@@ -89,7 +103,7 @@ $(document).ready(function() {
 
 
     } else {
-      $(this).find('span.txt').text( txt_all[0]);
+      // $(this).find('span.txt').text( txt_all[0]);
       tabs.each(function() {
         $(this).stop().slideUp('slow');
         $(this).siblings('h4').removeClass('expanded');
@@ -100,26 +114,7 @@ $(document).ready(function() {
 
 	$('.main .object-details h4 .arrow').trigger('click');
 
-	$('.toggle-fade.txt').text(txt_format[0]);
 
-	$('.toggle-fade').click(function(e) {
-		e.preventDefault();
-		var $areaToHide = $(this).siblings('.fade-area.vis');
-		var $areaToShow = $(this).siblings('.fade-area:not(.vis)');
-		$areaToHide.fadeOut('fast', function() {
-			$(this).removeClass('vis');
-			if($(this).hasClass('area-0')) {
-				$('.toggle-fade.txt').text(txt_format[1]);
-			}
-			else {
-				$('.toggle-fade.txt').text(txt_format[0]);
-			}
-			$areaToShow.fadeIn('slow', function() {
-				$(this).addClass('vis');
-			});
-		});
-
-	});
 
 		/* Modals */
 

@@ -192,8 +192,8 @@ snf = {
 	tables: {
 		html: {
 			selectAllBtn: '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>',
-			selectPageBtn: '<a href="" id="select-page" class="select line-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>',
-			toggleSelected: '<a href="" class="toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected </span><span class="badge num selected-num">0</span></a>',
+			selectPageBtn: '<a href="" id="select-page" class="select line-btn txt" data-karma="neutral" data-caution="none"><span class="txt-state-a">Select Page</span><span class="txt-state-b">Deselect Page</span></a>',
+			toggleSelected: '<a href="" class="toggle-selected extra-btn line-btn txt" data-karma="neutral txt"><span class="txt-close">Show selected</span><span class="txt-open">Hide selected</span><span class="badge num selected-num">0</span></a>',
 			reloadTable: '<a href="" class="line-btn reload-table" data-karma="neutral" data-caution="none" title="Reload table"><span class="snf-font-reload"></span></a>',
 			clearSelected: '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span class="snf-font-remove"></span><span>Clear All</span></a>',
 			toggleNotifications: '',

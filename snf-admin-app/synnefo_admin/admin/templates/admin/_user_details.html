@@ -85,16 +85,18 @@
                     {% with info=auth.info %}
                         {% if info %}
                             <div class="wrap-btn-between-dls clearfix">
-                                <a href="#" class="btn-toggle-info line-btn">
-                                    <span class="txt">More</span>
+                                <a href="#" class="btn-toggle-info line-btn btn-r txt">
+                                    <span class="txt-open">Less</span>
+                                    <span class="txt-close">More</span>
                                     <span class="snf-font-arrow-up"></span>
                                     <span class="snf-font-arrow-down"></span>
                                 </a>
                             </div>
                             <div class="js-slide-area area-to-slide">
-                                <!-- <div class="clearfix"> -->
-                                    <a href="" class="toggle-fade pull-right txt btn-toggle-info line-btn">Show raw data</a>
-                                <!-- </div> -->
+                                <a href="" class="toggle-fade pull-right txt line-btn btn-r">
+                                    <span class="txt-close">Show raw data!</span>
+                                    <span class="txt-open">Show formatted data!</span>
+                                </a>
                                 <dl class="dl-horizontal well fade-area vis area-0 clearfix">
                                     {% flatten_dict_to_dl info %}
                                 </dl>

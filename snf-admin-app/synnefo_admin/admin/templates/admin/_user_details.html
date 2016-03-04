@@ -73,31 +73,35 @@
             {% for auth in user.auth_providers.all %}
                 <div class="tab-pane" id="auth{{ auth.module }}{{ user.uuid }}">
                     <dl class="dl-horizontal well">
-                        <dt>Identifier</dt><dd>{{ auth.identifier|default:"-" }}</dd>
-                        <dt>EPPN</dt><dd>{{ auth.info_eppn|default:"-" }}</dd>
+                        {% if auth.identifier %}
+                            <dt>Identifier</dt><dd>{{ auth.identifier }}</dd>
+                        {% endif %}
+                        {% if auth.info_eppn %}
+                            <dt>EPPN</dt><dd>{{ auth.info_eppn }}</dd>
+                        {% endif %}
                         <dt>Created</dt><dd>{{ auth.created|default:"-" }}</dd>
                         <dt>Last login</dt><dd>{{ auth.last_login_at }}</dd>
                     </dl>
                     {% with info=auth.info %}
                         {% if info %}
-                        <div class="wrap-btn-between-dls clearfix">
-                            <a href="#" class="btn-toggle-info line-btn">
-                                <span class="txt">More</span>
-                                <span class="snf-font-arrow-up"></span>
-                                <span class="snf-font-arrow-down"></span>
-                            </a>
-                        </div>
-                        <div class="js-slide-area area-to-slide">
-                            <!-- <div class="clearfix"> -->
-                                <a href="" class="toggle-fade pull-right txt btn-toggle-info line-btn">Show raw data</a>
-                            <!-- </div> -->
-                            <dl class="dl-horizontal well fade-area vis area-0 clearfix">
-                                {{ info|flatten_dict_to_dl }}
-                            </dl>
-                            <pre class="info-data fade-area area-1 clearfix">{{ info }}</pre>
-                        </div>
-                            {% endif %}
-                        {% endwith %}
+                            <div class="wrap-btn-between-dls clearfix">
+                                <a href="#" class="btn-toggle-info line-btn">
+                                    <span class="txt">More</span>
+                                    <span class="snf-font-arrow-up"></span>
+                                    <span class="snf-font-arrow-down"></span>
+                                </a>
+                            </div>
+                            <div class="js-slide-area area-to-slide">
+                                <!-- <div class="clearfix"> -->
+                                    <a href="" class="toggle-fade pull-right txt btn-toggle-info line-btn">Show raw data</a>
+                                <!-- </div> -->
+                                <dl class="dl-horizontal well fade-area vis area-0 clearfix">
+                                    {{ info|flatten_dict_to_dl }}
+                                </dl>
+                                <pre class="info-data fade-area area-1 clearfix">{{ info }}</pre>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                 </div>
             {% endfor %}
         </div> <!-- <div class="tab-content"> -->

@@ -492,6 +492,6 @@ def flatten_dict_to_dl(d):
         if isinstance(v, dict):
             stack.extend(v.iteritems())
         else:
-            a = '<dt>{0}:</dt><dd> {1}</dd>'.format(k, v)
+            a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v)
             l.append(a)
     return mark_safe(''.join(l))

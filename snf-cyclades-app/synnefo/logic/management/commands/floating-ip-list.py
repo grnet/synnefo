@@ -46,6 +46,7 @@ class Command(ListCommand):
         "server": (get_server, "Server using this Floating IP"),
         "created": ("created", "Datetime this IP was reserved"),
         "deleted": ("deleted", "If the floating IP is deleted"),
+        "project": ("project", "The project UUID"),
     }
 
     fields = ["id", "address", "network", "server", "port", "user.uuid",

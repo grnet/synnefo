@@ -155,6 +155,8 @@ SHARED_RESOURCES_ENABLED = getattr(settings,
                                    "CYCLADES_SHARED_RESOURCES_ENABLED", False)
 DETACHABLE_VOLUME_TYPES = getattr(settings,
                                   "CYCLADES_DETACHABLE_DISK_TEMPLATES", [])
+ASTAKOS_AUTH_URL = getattr(uisettings, 'AUTH_URL')
+
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -237,6 +239,7 @@ def home(request):
         'volume_max_size': json.dumps(VOLUME_MAX_SIZE),
         'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED),
         'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED),
+        'astakos_auth_url': json.dumps(ASTAKOS_AUTH_URL),
         'detachable_volume_types': json.dumps(DETACHABLE_VOLUME_TYPES)
     }
     return template('home', request, context)

@@ -41,6 +41,7 @@ NETWORK_URL = endpoint(cyclades_services, 'network', 'v2.0').rstrip('/')
 USERDATA_URL = endpoint(cyclades_services, 'cyclades_userdata', '').rstrip('/')
 
 ACCOUNT_URL = join_urls('/', cyclades.ASTAKOS_ACCOUNT_PROXY_PATH)
+AUTH_URL = join_urls('/', cyclades.ASTAKOS_AUTH_PROXY_PATH)
 
 USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')
 FEEDBACK_URL = join_urls(ACCOUNT_URL, 'feedback')

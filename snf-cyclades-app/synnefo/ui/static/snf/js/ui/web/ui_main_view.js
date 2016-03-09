@@ -140,6 +140,35 @@
         el: '#multiple_actions_container',
         
         initialize: function() {
+
+            if (synnefo.config.snapshots_groups) {
+              var token_data = {
+                'auth': {
+                  'token': {
+                    'id': synnefo.user.get_token()
+                  }
+                }
+              };
+
+              bb.sync('create', undefined, {
+                url: synnefo.config.auth_url + '/tokens',
+                data: JSON.stringify(token_data),
+                contentType: 'application/json',
+                async: false,
+                success: function(data) {
+                  if (data.access) {
+                    var groups = _.each(data.access.user.roles, function(g) {
+                      var group = g.name;
+                      if (synnefo.config.snapshots_groups.indexOf(group) > -1) {
+                        synnefo.config.snapshots_enabled = true;
+                      }
+                    });
+                  }
+                },
+                error: function() { console.error(arguments) }
+              });
+            }
+
             this.actions = {};
             this.ns_config = {};
 

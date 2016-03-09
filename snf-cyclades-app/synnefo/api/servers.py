@@ -422,7 +422,7 @@ def create_server(request):
     dev_map = server.get("block_device_mapping_v2")
     if dev_map is not None:
         allowed_types = VOLUME_SOURCE_TYPES[:]
-        if util.snapshots_enabled_for_user(request.user):
+        if snapshots_enabled_for_user(request.user):
             allowed_types.append('snapshot')
         volumes = parse_block_device_mapping(dev_map, allowed_types)
 

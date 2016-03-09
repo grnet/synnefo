@@ -535,6 +535,7 @@ def can_create_flavor(flavor, user):
     if not policy or flavor.allow_create:
         return flavor.allow_create
 
+    groups = map(lambda g: g['name'], user['access']['user'].get('roles', []))
     policy_groups = policy.keys()
     common = set(policy_groups).intersection(groups)
     for group in common:

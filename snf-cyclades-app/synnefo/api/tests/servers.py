@@ -19,6 +19,7 @@ from copy import deepcopy
 
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
+from django.test.utils import override_settings as django_override_settings
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
@@ -462,6 +463,29 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 403)
+
+    @django_override_settings(CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE= \
+                              {'admins': ['.*']})
+    def test_override_flavor_allow_create(self, mrapi):
+        # Test with an flavor that is not allowed
+        flavor = mfactory.FlavorFactory(allow_create=False)
+        request = deepcopy(self.request)
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 403)
+
+        request = deepcopy(self.request)
+        request["server"]["flavorRef"] = flavor.id
+        mrapi().CreateInstance.return_value = 12
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json',
+                                       _roles=[{'id': '1', 'name': 'admins'}])
+        self.assertEqual(response.status_code, 202)
 
     def test_create_server_error(self, mrapi):
         """Test if the create server call returns the expected response

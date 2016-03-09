@@ -13,13 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import django.test
 from django.test.utils import override_settings
+from django.conf import settings
+from django.utils.importlib import import_module
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
-                                      MurphysLaw)
+                                      MurphysLaw, astakos_user)
 from synnefo.db import models_factory as mf
 from synnefo.db.models import Volume, VirtualMachine
 from synnefo.volume import volumes
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
 from snf_django.lib.api import faults
 from mock import patch
 from copy import deepcopy
@@ -212,6 +217,12 @@ class VolumesTestCommon(django.test.TestCase):
 @override_settings(CYCLADES_DETACHABLE_DISK_TEMPLATES=("ext_archipelago",))
 class VolumesTest(QuotaAssertions, BaseAPITest):
     def setUp(self):
+
+        self.volumes_path = get_service_path(cyclades_services, 'volume',
+                                             version='v2.0') + '/volumes'
+        self.snapshots_path = get_service_path(cyclades_services, 'volume',
+                                             version='v2.0') + '/snapshots'
+
         # Volume types
         self.archip_vt = mf.VolumeTypeFactory(name="archipelago",
                                               disk_template="ext_archipelago")
@@ -397,6 +408,34 @@ class VolumesTest(QuotaAssertions, BaseAPITest):
         # self.assertEqual(disk_info["size"], svol.size << 10)
         # self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
         # self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
+
+    def reload_urlconf(self):
+        if 'synnefo.volume.urls' in sys.modules:
+            reload(sys.modules['synnefo.volume.urls'])
+        if settings.ROOT_URLCONF in sys.modules:
+            reload(sys.modules[settings.ROOT_URLCONF])
+        return import_module(settings.ROOT_URLCONF)
+
+    @override_settings(CYCLADES_SNAPSHOTS_ENABLED=False)
+    def test_snapshots_disabled(self, mrapi):
+        self.reload_urlconf()
+        resp = self.get(self.snapshots_path)
+        self.assertEqual(resp.status_code, 400)
+
+    @override_settings(CYCLADES_SNAPSHOTS_ENABLED=True)
+    def test_snapshots_enabled(self, mrapi):
+        self.reload_urlconf()
+        resp = self.get(self.snapshots_path)
+        self.assertEqual(resp.status_code, 200)
+
+    @override_settings(CYCLADES_SNAPSHOTS_ENABLED=['snapgroup'])
+    def test_snapshots_groups(self, mrapi):
+        self.reload_urlconf()
+        resp = self.get(self.snapshots_path, 'user2')
+        self.assertEqual(resp.status_code, 501) # not implemented
+        resp = self.get(self.snapshots_path, 'user1',
+                        _roles=[{'id': '2', 'name': 'snapgroup'}])
+        self.assertEqual(resp.status_code, 200)
 
     @patch("synnefo.plankton.backend.PlanktonBackend")
     def test_create_from_snapshot(self, mimage, mrapi):

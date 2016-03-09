@@ -134,7 +134,7 @@ serial = 0
 
 
 @contextmanager
-def astakos_user(user, projects=None):
+def astakos_user(user, projects=None, roles=None):
     """
     Context manager to mock astakos response.
 
@@ -145,6 +145,8 @@ def astakos_user(user, projects=None):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
+        if roles is None:
+            roles = [{"id": 1, "name": "default"}]
         with patch('astakosclient.AstakosClient.authenticate') as m2:
             m2.return_value = {"access": {
                 "token": {
@@ -159,7 +161,7 @@ def astakos_user(user, projects=None):
                 "user": {
                     "roles_links": [],
                     "id": smart_unicode(user, encoding='utf-8'),
-                    "roles": [{"id": 1, "name": "default"}],
+                    "roles": roles,
                     "projects": projects,
                     "name": "Firstname Lastname"}}
                 }
@@ -237,19 +239,22 @@ def mocked_quotaholder(success=True):
 
 class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):
-        with astakos_user(user, kwargs.pop('_projects', None)):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder():
                 response = self.client.get(url, *args, **kwargs)
         return response
 
     def head(self, url, user='user', *args, **kwargs):
-        with astakos_user(user, kwargs.pop('_projects', None)):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder():
                 response = self.client.head(url, *args, **kwargs)
         return response
 
     def delete(self, url, user='user', **kwargs):
-        with astakos_user(user, kwargs.pop('_projects', None)):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.delete(url)
@@ -258,7 +263,8 @@ class BaseAPITest(TestCase):
     def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
-        with astakos_user(user, kwargs.pop('_projects', None)):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.post(url, params,
@@ -269,7 +275,8 @@ class BaseAPITest(TestCase):
     def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
-        with astakos_user(user, kwargs.pop('_projects', None)):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.put(url, params,

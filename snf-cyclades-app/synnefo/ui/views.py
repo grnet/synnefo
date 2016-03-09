@@ -156,6 +156,7 @@ SHARED_RESOURCES_ENABLED = getattr(settings,
 DETACHABLE_VOLUME_TYPES = getattr(settings,
                                   "CYCLADES_DETACHABLE_DISK_TEMPLATES", [])
 ASTAKOS_AUTH_URL = getattr(uisettings, 'AUTH_URL')
+FLAVOR_OVERRIDE_ALLOW_CREATE = getattr(settings, 'CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE', {})
 
 
 def template(name, request, context):
@@ -240,6 +241,7 @@ def home(request):
         'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED),
         'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED),
         'astakos_auth_url': json.dumps(ASTAKOS_AUTH_URL),
+        'flavor_override_allow_create': json.dumps(FLAVOR_OVERRIDE_ALLOW_CREATE),
         'detachable_volume_types': json.dumps(DETACHABLE_VOLUME_TYPES)
     }
     return template('home', request, context)

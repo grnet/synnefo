@@ -150,17 +150,25 @@
                 }
               };
 
+              var override_policy = synnefo.config.flavor_override_allow_create;
+              var allow_create_groups = _.keys(override_policy);
               bb.sync('create', undefined, {
                 url: synnefo.config.auth_url + '/tokens',
                 data: JSON.stringify(token_data),
                 contentType: 'application/json',
-                async: false,
                 success: function(data) {
                   if (data.access) {
-                    var groups = _.each(data.access.user.roles, function(g) {
+                    _.each(data.access.user.roles, function(g) {
                       var group = g.name;
                       if (synnefo.config.snapshots_groups.indexOf(group) > -1) {
                         synnefo.config.snapshots_enabled = true;
+                      }
+                      if (allow_create_groups.length && allow_create_groups.indexOf(group) > -1) {
+                        _.each(override_policy[group], function(flv) {
+                          try {
+                            synnefo.config.user_override_allow_create.push(new RegExp(flv));
+                          } catch(err) { console.error(err); }
+                        });
                       }
                     });
                   }

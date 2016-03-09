@@ -1189,9 +1189,16 @@
         },
         
         get_active_flavors: function() {
+            var user_overrides = synnefo.config.user_override_allow_create;
             return storage.flavors.active().filter(function(flv) {
-	        return flv.get("SNF:allow_create")
-	    });
+              var allow_create = flv.get("SNF:allow_create");
+              if (allow_create) { return true; }
+              if (_.filter(user_overrides, function(reg) {
+                var _flv = flv;
+                return reg.exec(flv.get('name'));
+              }).length) { return true };
+              return false;
+            });
         },
 
         get_valid_flavors: function() {

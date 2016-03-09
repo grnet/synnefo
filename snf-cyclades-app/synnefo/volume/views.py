@@ -135,7 +135,9 @@ def create_volume(request):
     # Id of the snapshot to create the volume from
     source_snapshot_id = utils.get_attribute(vol_dict, "snapshot_id",
                                              required=False)
-    if source_snapshot_id and not settings.CYCLADES_SNAPSHOTS_ENABLED:
+
+    snapshots_enabled = util.snapshots_enabled_for_user(request.user)
+    if source_snapshot_id and not snapshots_enabled:
         raise faults.NotImplemented("Making a clone from a snapshot is not"
                                     " implemented")
 
@@ -388,7 +390,7 @@ def snapshot_to_dict(snapshot, detail=True):
 @api.api_method(http_method="POST", user_required=True, logger=log)
 def create_snapshot(request):
     """Create a new Snapshot."""
-
+    util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
     user_id = request.user_uniq
 
@@ -427,6 +429,7 @@ def create_snapshot(request):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_snapshots(request, detail=False):
+    util.assert_snapshots_enabled(request)
     since = utils.isoparse(request.GET.get('changes-since'))
     with backend.PlanktonBackend(request.user_uniq) as b:
         snapshots = b.list_snapshots()
@@ -448,6 +451,7 @@ def list_snapshots(request, detail=False):
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
 def delete_snapshot(request, snapshot_id):
+    util.assert_snapshots_enabled(request)
     log.debug("User: %s, Snapshot: %s Action: delete",
               request.user_uniq, snapshot_id)
 
@@ -461,6 +465,7 @@ def delete_snapshot(request, snapshot_id):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def get_snapshot(request, snapshot_id):
+    util.assert_snapshots_enabled(request)
     snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
@@ -468,6 +473,7 @@ def get_snapshot(request, snapshot_id):
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
 def update_snapshot(request, snapshot_id):
+    util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
     log.debug("User: %s, Snapshot: %s Action: update",
               request.user_uniq, snapshot_id)
@@ -494,6 +500,7 @@ def update_snapshot(request, snapshot_id):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_snapshot_metadata(request, snapshot_id):
+    util.assert_snapshots_enabled(request)
     snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
     metadata = snapshot["properties"]
     data = json.dumps({"metadata": dict(metadata)})
@@ -503,6 +510,7 @@ def list_snapshot_metadata(request, snapshot_id):
 @api.api_method(user_required=True, logger=log)
 @transaction.commit_on_success
 def update_snapshot_metadata(request, snapshot_id, reset=False):
+    util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
     log.debug("User: %s, Snapshot: %s Action: update_metadata",
               request.user_uniq, snapshot_id)
@@ -520,6 +528,7 @@ def update_snapshot_metadata(request, snapshot_id, reset=False):
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_snapshot_metadata_item(request, snapshot_id, key):
+    util.assert_snapshots_enabled(request)
     log.debug("User: %s, Snapshot: %s Action: delete_metadata",
               request.user_uniq, snapshot_id)
     snapshot = util.get_snapshot(request.user_uniq, snapshot_id)

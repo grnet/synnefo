@@ -29,7 +29,7 @@ from synnefo.api import util
 from synnefo.api.util import VMPasswordCache
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
-from synnefo.volume.util import get_volume
+from synnefo.volume.util import get_volume, snapshots_enabled_for_user
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -58,11 +58,6 @@ VOLUME_SOURCE_TYPES = [
 ]
 
 VM_PASSWORD_CACHE = VMPasswordCache()
-
-if settings.CYCLADES_SNAPSHOTS_ENABLED:
-    # If snapshots are enabled, add 'snapshot' to the list of allowed sources
-    # for a new block device.
-    VOLUME_SOURCE_TYPES.append("snapshot")
 
 
 def demux(request):
@@ -426,7 +421,10 @@ def create_server(request):
     volumes = None
     dev_map = server.get("block_device_mapping_v2")
     if dev_map is not None:
-        volumes = parse_block_device_mapping(dev_map)
+        allowed_types = VOLUME_SOURCE_TYPES[:]
+        if util.snapshots_enabled_for_user(request.user):
+            allowed_types.append('snapshot')
+        volumes = parse_block_device_mapping(dev_map, allowed_types)
 
     # Verify that personalities are well-formed
     util.verify_personality(personality)
@@ -498,14 +496,14 @@ def delete_server_password(request, server_id):
     return HttpResponse(status=204)
 
 
-def parse_block_device_mapping(dev_map):
+def parse_block_device_mapping(dev_map, allowed_types):
     """Parse 'block_device_mapping_v2' attribute"""
     if not isinstance(dev_map, list):
         raise faults.BadRequest("Block Device Mapping is Invalid")
-    return [_parse_block_device(device) for device in dev_map]
+    return [_parse_block_device(device, allowed_types) for device in dev_map]
 
 
-def _parse_block_device(device):
+def _parse_block_device(device, allowed_types):
     """Parse and validate a block device mapping"""
     if not isinstance(device, dict):
         raise faults.BadRequest("Block Device Mapping is Invalid")
@@ -515,10 +513,10 @@ def _parse_block_device(device):
     if source_type is None:
         raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
                                 " source_type field")
-    elif source_type not in VOLUME_SOURCE_TYPES:
+    elif source_type not in allowed_types:
         raise faults.BadRequest("Block Device Mapping is Invalid: source_type"
                                 " must be on of %s"
-                                % ", ".join(VOLUME_SOURCE_TYPES))
+                                % ", ".join(allowed_types))
 
     # Validate source UUID
     uuid = device.get("uuid")

@@ -17,7 +17,7 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include
 from django.http import HttpResponseNotAllowed
 from snf_django.lib import api
-from synnefo.volume import views
+from synnefo.volume import views, util
 from snf_django.lib.api import faults, utils
 
 

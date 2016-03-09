@@ -23,6 +23,29 @@ from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
 
 
+
+def assert_snapshots_enabled(request):
+    if not snapshots_enabled_for_user(request.user):
+        raise faults.NotImplemented("Snapshots disabled")
+
+
+def snapshots_enabled_for_user(user):
+    snapshots_enabled= settings.CYCLADES_SNAPSHOTS_ENABLED
+    if type(snapshots_enabled) not in (list, tuple):
+        return snapshots_enabled
+
+    if not user:
+        return False
+
+    try:
+        user_groups = map(lambda x: x['name'],
+                          user['access']['user'].get('roles', []))
+    except KeyError:
+        return False
+
+    return len(set(user_groups).intersection(snapshots_enabled)) > 0
+
+
 def mark_volume_as_deleted(volume, immediate=False):
     if volume.delete_on_termination:
         volume.status = "DELETED" if immediate else "DELETING"

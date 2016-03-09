@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 from base64 import urlsafe_b64encode, b64decode
 from urllib import quote
 from hashlib import sha256
@@ -525,3 +527,19 @@ class VMPasswordCache(MemoryCache):
 
         """
         pass
+
+
+
+def can_create_flavor(flavor, user):
+    policy = getattr(settings, 'CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE', {})
+    if not policy or flavor.allow_create:
+        return flavor.allow_create
+
+    policy_groups = policy.keys()
+    common = set(policy_groups).intersection(groups)
+    for group in common:
+        allowed_flavors = policy[group]
+        for flv in allowed_flavors:
+            if re.compile(flv).match(flavor.name):
+                return True
+    return False

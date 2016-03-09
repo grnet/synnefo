@@ -193,3 +193,6 @@ CYCLADES_VM_MAX_METADATA = 10
 
 # The time it takes for the public stats to be updated in the cache
 PUBLIC_STATS_CACHE_POPULATE_INTERVAL = 60
+
+# Permit users of specific groups to override the flavor allow_create policy
+CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE = {}

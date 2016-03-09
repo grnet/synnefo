@@ -430,7 +430,7 @@ def create_server(request):
     util.verify_personality(personality)
     # Get flavor (ensure it is active)
     flavor = util.get_flavor(flavor_id, include_deleted=False)
-    if not flavor.allow_create:
+    if not util.can_create_flavor(flavor, request.user):
         msg = ("It is not allowed to create a server from flavor with id '%d',"
                " see 'allow_create' flavor attribute")
         raise faults.Forbidden(msg % flavor.id)

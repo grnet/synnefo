@@ -1160,8 +1160,8 @@ class SynnefoCI(object):
                 'Deployment', 'wildcard_dns', False, '').strip()
         if wildcard_dns:
             address = self.temp_config.get(str(self.build_id), 'server_ip')
-            domain = "%s.%s" % (address, wildcard_dns)
-            self.logger.debug("Setting domain to %s" % domain)
+            domain = "{0}.{1}".format(address, wildcard_dns)
+            self.logger.debug("Setting domain to {0}".format(domain))
             cmd = """
             sed -i 's/^domain.*=.*/domain = {0}/' /etc/snf-deploy/nodes.conf
             """.format(domain)

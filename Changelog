@@ -82,7 +82,8 @@ Cyclades
   feature of sharing a resource to the members of the project that
   the resource belongs to.
 * Create an allocator interface in order to allow the creation of different
-  backend allocation algorithms.
+  backend allocation algorithms. Default backend allocator setting is changed 
+  to `synnefo.logic.allocators.default_allocator.DefaultAllocator`.
 * Implement an interface for memory caching.
 * Add the option to retrieve the front page statistics
   from the memory cache.

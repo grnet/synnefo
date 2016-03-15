@@ -77,4 +77,8 @@ The upgrade to v0.17 consists of the following steps:
   .. code-block:: console
     
     RewriteRule ^/$ /ui [R=302]
-   
+ 
+6. As of 0.17 admins can set their own implementation of backend allocator 
+   mechanism. Due to this change the default BACKEND_ALLOCATOR_MODULE setting 
+   is now changed to "synnefo.logic.allocators.default_allocator.DefaultAllocator". 
+   Notice that previous default value for this setting is no longer supported.

@@ -141,42 +141,6 @@
         
         initialize: function() {
 
-            if (synnefo.config.snapshots_groups) {
-              var token_data = {
-                'auth': {
-                  'token': {
-                    'id': synnefo.user.get_token()
-                  }
-                }
-              };
-
-              var override_policy = synnefo.config.flavor_override_allow_create;
-              var allow_create_groups = _.keys(override_policy);
-              bb.sync('create', undefined, {
-                url: synnefo.config.auth_url + '/tokens',
-                data: JSON.stringify(token_data),
-                contentType: 'application/json',
-                success: function(data) {
-                  if (data.access) {
-                    _.each(data.access.user.roles, function(g) {
-                      var group = g.name;
-                      if (synnefo.config.snapshots_groups.indexOf(group) > -1) {
-                        synnefo.config.snapshots_enabled = true;
-                      }
-                      if (allow_create_groups.length && allow_create_groups.indexOf(group) > -1) {
-                        _.each(override_policy[group], function(flv) {
-                          try {
-                            synnefo.config.user_override_allow_create.push(new RegExp(flv));
-                          } catch(err) { console.error(err); }
-                        });
-                      }
-                    });
-                  }
-                },
-                error: function() { console.error(arguments) }
-              });
-            }
-
             this.actions = {};
             this.ns_config = {};
 
@@ -1292,7 +1256,46 @@
                 snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: true });
             };
         }
-        snf.ui.main.load();
+
+        if (synnefo.config.snapshots_groups.length || _.keys(synnefo.config.flavor_override_allow_create).length) {
+          var token_data = {
+            'auth': {
+              'token': {
+                'id': synnefo.user.get_token()
+              }
+            }
+          };
+
+          var override_policy = synnefo.config.flavor_override_allow_create;
+          var allow_create_groups = _.keys(override_policy);
+          bb.sync('create', undefined, {
+            url: synnefo.config.auth_url + '/tokens',
+            data: JSON.stringify(token_data),
+            contentType: 'application/json',
+            success: function(data) {
+              if (data.access) {
+                _.each(data.access.user.roles, function(g) {
+                  var group = g.name;
+                  if (synnefo.config.snapshots_groups.indexOf(group) > -1) {
+                    synnefo.config.snapshots_enabled = true;
+                  }
+                  if (allow_create_groups.length && allow_create_groups.indexOf(group) > -1) {
+                    _.each(override_policy[group], function(flv) {
+                      try {
+                        synnefo.config.user_override_allow_create.push(new RegExp(flv));
+                      } catch(err) { console.error(err); }
+                    });
+                  }
+                });
+              }
+            },
+            error: function() { console.error(arguments) },
+            complete: function() { snf.ui.main.load(); }
+          });
+        } else {
+          snf.ui.main.load();
+        }
+
     }
 
 })(this);

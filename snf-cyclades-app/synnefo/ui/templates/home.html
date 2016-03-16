@@ -716,6 +716,8 @@
             if (synnefo.config.snapshots_enabled instanceof Array) {
               synnefo.config.snapshots_groups = synnefo.config.snapshots_enabled;
               synnefo.config.snapshots_enabled = false;
+            } else {
+              synnefo.config.snapshots_groups = [];
             }
 
             synnefo.config.shared_resources_enabled = {{ shared_resources_enabled|safe }};

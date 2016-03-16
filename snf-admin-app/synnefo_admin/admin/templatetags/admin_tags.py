@@ -20,6 +20,7 @@ from django import template
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.safestring import mark_safe
+from datetime import date
 import logging
 
 import django_filters
@@ -28,6 +29,8 @@ from snf_django.lib.api import faults
 from synnefo.api.util import get_image
 from synnefo.lib.dict import SnfOrderedDict
 from synnefo.db.models import Image
+
+from astakos.im.templatetags import filters as astakos_filters
 
 import synnefo_admin.admin.resources.projects.utils as project_utils
 import synnefo_admin.admin.resources.users.utils as user_utils
@@ -510,3 +513,116 @@ def flatten_dict_to_dl(d, default_if_empty='-'):
                 a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v or default_if_empty)
                 l.append(a)
     return mark_safe(''.join(reversed(l)))
+
+
+@register.filter
+def get_project_modifications(project):
+    last_app = project.last_pending_application()
+    details = []
+    policies = []
+    resources = []
+
+    # details
+    if last_app.name is not None:
+        details.append({
+            'label': 'name',
+            'new': last_app.name,
+            'old': project.name,
+        })
+    if last_app.homepage is not None:
+        details.append({
+            'label': 'homepage',
+            'new': last_app.homepage,
+            'old': project.homepage,
+        })
+    if last_app.description is not None:
+        details.append({
+            'label': 'description',
+            'new': last_app.description,
+            'old': project.description,
+        })
+    if last_app.comments:
+        details.append({
+            'label': 'comments',
+            'new': mark_safe(last_app.comments),
+        })
+    if last_app.end_date is not None:
+        new_t = last_app.end_date
+        old_t = project.end_date
+        diff_t = new_t-old_t
+        details.append({
+            'label': 'end date',
+            'new': new_t,
+            'old': old_t,
+            'diff': diff_t,
+        })
+
+    # policies
+    if last_app.member_join_policy is not None:
+        policies.append({
+            'label': 'join policy',
+            'new': last_app.member_join_policy_display,
+            'old': project.member_join_policy_display,
+        })
+    if last_app.member_leave_policy is not None:
+        policies.append({
+            'label': 'join policy',
+            'new': last_app.member_leave_policy_display,
+            'old': project.member_leave_policy_display,
+        })
+    if last_app.limit_on_members_number is not None:
+        new_n = last_app.limit_on_members_number
+        old_n = project.limit_on_members_number
+        diff = new_n-old_n
+        if astakos_filters.inf_display(new_n) == 'Unlimited':
+            diff = 'Unlimited'
+        if astakos_filters.inf_display(old_n) == 'Unlimited':
+            diff = '- Unlimited'
+        policies.append({
+            'label': 'max members',
+            'new': astakos_filters.inf_display(new_n),
+            'old': astakos_filters.inf_display(old_n),
+            'diff': diff,
+        })
+
+    # resources
+    current_r = OrderedDict()
+    res = project_utils.get_policies(project)
+    for p in res:
+        r = p.resource
+        tmp = {}
+        tmp['limit'] = p.display_project_capacity()
+        tmp['member'] = p.display_member_capacity()
+        current_r[r.report_desc] = tmp
+    for r in last_app.resource_set:
+        old_member = 0
+        old_project = 0
+        if r.resource.display_name in current_r:
+            old_member = current_r[r.resource.display_name]['limit']
+            old_project = current_r[r.resource.display_name]['member']
+
+        resources.append({
+            'label': r.resource.display_name,
+            'new_member': r.display_member_capacity,
+            'old_member': old_member,
+            'diff_member': r.display_project_diff()[1],
+            'new_project': r.display_project_capacity,
+            'old_project': old_project,
+            'diff_project': r.display_project_diff()[0],
+        })
+
+    return {
+        'details': details,
+        'policies': policies,
+        'resources': resources,
+    }
+
+
+@register.filter
+def diff_cls(d):
+    if d:
+        d = str(d)
+        cls='red'
+        cls = 'red' if d.startswith("-") else 'green'
+        return cls
+    return ''

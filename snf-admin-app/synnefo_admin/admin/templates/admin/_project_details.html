@@ -24,13 +24,16 @@
     </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
-            <li class="active"><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
+            <li><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
             <li><a href="#prj-members{{ project.uuid }}" data-toggle="tab">Members</a></li>
             <li><a href="#prj-policies{{ project.uuid }}" data-toggle="tab">Member Policies</a></li>
             <li><a href="#resources{{ project.uuid }}" data-toggle="tab">Resources</a></li>
+            {% if last_app %}
+                <li class="active"><a href="#modifications{{ project.uuid }}" data-toggle="tab">Pending modifications</a></li>
+            {% endif %}
         </ul>
         <div class="tab-content">
-            <div class="tab-pane active" id="prj-details{{ project.uuid }}">
+            <div class="tab-pane" id="prj-details{{ project.uuid }}">
                 <dl class="dl-horizontal well">
                     <dt>ID</dt><dd>{{ project.id }}</dd>
                     <dt>UUID</dt><dd>{{ project.uuid }}</dd>
@@ -114,6 +117,65 @@
 		            </tbody>
 		        </table>
             </div>
+            {% if last_app %}
+                <div class="tab-pane active" id="modifications{{ project.uuid }}">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>label</th>
+                                <th>new</th>
+                                <th>old</th>
+                                <th>diff</th>
+                                <th>diff_cls</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% with mod=project|get_project_modifications %}
+                            {% with rows=mod.details %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td>{{ row.label }}</td>
+                                        <td>{{ row.new }}</td>
+                                        <td>{{ row.old }}</td>
+                                        <td>{{ row.diff }}</td>
+                                        <td>{{ row.diff|diff_cls }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                            {% with rows=mod.policies %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td>{{ row.label }}</td>
+                                        <td>{{ row.new }}</td>
+                                        <td>{{ row.old }}</td>
+                                        <td>{{ row.diff }}</td>
+                                        <td>{{ row.diff|diff_cls }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                            {% with rows=mod.resources %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td>{{ row.label }} per member</td>
+                                        <td>{{ row.new_member }}</td>
+                                        <td>{{ row.old_member }}</td>
+                                        <td>{{ row.diff_member }}</td>
+                                        <td>{{ row.diff_member|diff_cls }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ row.label }} per project</td>
+                                        <td>{{ row.new_project }}</td>
+                                        <td>{{ row.old_project }}</td>
+                                        <td>{{ row.diff_project }}</td>
+                                        <td>{{ row.diff_project|diff_cls }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                        {% endwith %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
         </div>
     </div>
     {% include "admin/action_list_horizontal.html" %}

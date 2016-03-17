@@ -608,7 +608,7 @@ def get_project_modifications(project):
             old_project = current_r[r.resource.display_name]['limit']
 
         resources.append({
-            'label': r.resource.display_name,
+            'label': r.resource.pluralized_display_name,
             'new_member': r.display_member_capacity,
             'old_member': old_member,
             'diff_member': r.display_project_diff()[1] or '-',

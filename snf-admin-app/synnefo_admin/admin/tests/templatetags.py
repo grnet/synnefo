@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,9 +16,11 @@
 
 from django.test import TestCase
 from synnefo_admin.admin.templatetags import admin_tags
+from astakos.im.functions import submit_application
+from .common import AdminTestCase
 
 
-class TemplateTagsTest(TestCase):
+class TemplateTagsTest(AdminTestCase):
 
     def test_flatten_dict_to_dl(self):
         input1 = {
@@ -48,3 +51,35 @@ class TemplateTagsTest(TestCase):
         input5 = input4
         output5 = '<dt>foo</dt><dd>boo</dd>'
         self.assertEqual(admin_tags.flatten_dict_to_dl(input5, 'boo'), output5)
+
+    def test_diff_cls(self):
+        self.assertEqual(admin_tags.diff_cls(213231), 'diff-positive')
+        self.assertEqual(admin_tags.diff_cls('foo'), 'diff-positive')
+        self.assertEqual(admin_tags.diff_cls(-20), 'diff-negative')
+        self.assertEqual(admin_tags.diff_cls(None), '')
+        self.assertEqual(admin_tags.diff_cls(0), '')
+        self.assertEqual(admin_tags.diff_cls('-'), 'diff-zero')
+
+    def test_get_project_modifications(self):
+        project = self.project
+        last_app_data = {
+            'owner': self.user,
+            'project_id': project.id,
+            'request_user': self.user,
+            "resources": {u"σέρβις1.ρίσορς11": {
+                "project_capacity": 1025,
+                "member_capacity": 511}}
+        }
+        app =submit_application(**last_app_data)
+        output = {
+            'resources': [{
+                'label': u"ρίσορς11",
+                'new_member': 511,
+                'old_member': 512,
+                'diff_member': -1,
+                'new_project': 1025,
+                'old_project': 1024,
+                'diff_project': 1,
+            }]
+        }
+        self.assertEqual(admin_tags.get_project_modifications(project), output)

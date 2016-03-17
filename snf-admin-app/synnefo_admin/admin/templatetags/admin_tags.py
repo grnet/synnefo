@@ -517,7 +517,14 @@ def flatten_dict_to_dl(d, default_if_empty='-'):
 
 @register.filter
 def get_project_modifications(project):
+
+    """
+    Return a dictionary with a summary of a project's modifications as
+    requested by the user, concerning project details, policies and resources.
+    """
     last_app = project.last_pending_application()
+    if not last_app:
+        return
     details = []
     policies = []
     resources = []
@@ -549,12 +556,11 @@ def get_project_modifications(project):
     if last_app.end_date is not None:
         new_t = last_app.end_date
         old_t = project.end_date
-        diff_t = new_t-old_t
         details.append({
             'label': 'end date',
             'new': new_t,
             'old': old_t,
-            'diff': diff_t,
+            'diff': new_t - old_t,
         })
 
     # policies
@@ -587,28 +593,28 @@ def get_project_modifications(project):
 
     # resources
     current_r = OrderedDict()
-    res = project_utils.get_policies(project)
-    for p in res:
+    policies_list = project_utils.get_policies(project)
+    for p in policies_list:
         r = p.resource
-        tmp = {}
-        tmp['limit'] = p.display_project_capacity()
-        tmp['member'] = p.display_member_capacity()
-        current_r[r.report_desc] = tmp
+        current_r[r.report_desc] = {
+            'limit': p.display_project_capacity(),
+            'member': p.display_member_capacity(),
+        }
     for r in last_app.resource_set:
         old_member = 0
         old_project = 0
         if r.resource.display_name in current_r:
-            old_member = current_r[r.resource.display_name]['limit']
-            old_project = current_r[r.resource.display_name]['member']
+            old_member = current_r[r.resource.display_name]['member']
+            old_project = current_r[r.resource.display_name]['limit']
 
         resources.append({
             'label': r.resource.display_name,
             'new_member': r.display_member_capacity,
             'old_member': old_member,
-            'diff_member': r.display_project_diff()[1],
+            'diff_member': r.display_project_diff()[1] or '-',
             'new_project': r.display_project_capacity,
             'old_project': old_project,
-            'diff_project': r.display_project_diff()[0],
+            'diff_project': r.display_project_diff()[0] or '-',
         })
 
     return {
@@ -622,7 +628,10 @@ def get_project_modifications(project):
 def diff_cls(d):
     if d:
         d = str(d)
-        cls='red'
-        cls = 'red' if d.startswith("-") else 'green'
+        cls = 'diff-positive'
+        if d.startswith("-"):
+            cls = 'diff-negative'
+        if d == '-':
+            cls = 'diff-zero'
         return cls
     return ''

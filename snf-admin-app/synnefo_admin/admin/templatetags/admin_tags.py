@@ -596,23 +596,23 @@ def get_project_modifications(project):
     policies_list = project_utils.get_policies(project)
     for p in policies_list:
         r = p.resource
-        current_r[r.report_desc] = {
+        current_r[r.pluralized_display_name] = {
             'limit': p.display_project_capacity(),
             'member': p.display_member_capacity(),
         }
     for r in last_app.resource_set:
         old_member = 0
         old_project = 0
-        if r.resource.display_name in current_r:
-            old_member = current_r[r.resource.display_name]['member']
-            old_project = current_r[r.resource.display_name]['limit']
+        if r.resource.pluralized_display_name in current_r:
+            old_member = current_r[r.resource.pluralized_display_name]['member']
+            old_project = current_r[r.resource.pluralized_display_name]['limit']
 
         resources.append({
             'label': r.resource.pluralized_display_name,
-            'new_member': r.display_member_capacity,
+            'new_member': r.display_member_capacity(),
             'old_member': old_member,
             'diff_member': r.display_project_diff()[1] or '-',
-            'new_project': r.display_project_capacity,
+            'new_project': r.display_project_capacity(),
             'old_project': old_project,
             'diff_project': r.display_project_diff()[0] or '-',
         })

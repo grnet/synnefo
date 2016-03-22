@@ -754,6 +754,17 @@
           }
       },
 
+      clear_junk: function(vm) {
+        // hacky fix for rivetsjs multiple element creation
+        if (this.model.get('_vm_id')) {
+          var vms = this.$(".vm-view-cont > div > div");
+          if (vms.length > 1) {
+            vms.get(0).remove();
+          }
+        }
+        return "vm-view-cont";
+      },
+
       status_cls: function() { var status = this.model.get('status'); var vm =
           this.model.get("vm"); if (status == "in_use" && vm) {
             return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");

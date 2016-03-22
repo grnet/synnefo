@@ -331,6 +331,7 @@
             }
         } else {
             volume._index_set = false;
+            volume._vm_id = null;
         }
 
         return volume;

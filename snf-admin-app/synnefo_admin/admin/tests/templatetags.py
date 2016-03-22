@@ -13,15 +13,16 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 from django.test import TestCase
 from synnefo_admin.admin.templatetags import admin_tags
 from astakos.im.functions import submit_application
+from astakos.im.models import Project
 from .common import AdminTestCase
+from datetime import datetime
+from datetime import timedelta
 
 
 class TemplateTagsTest(AdminTestCase):
-
     def test_flatten_dict_to_dl(self):
         input1 = {
             'foo': 'bar'
@@ -62,24 +63,87 @@ class TemplateTagsTest(AdminTestCase):
 
     def test_get_project_modifications(self):
         project = self.project
-        last_app_data = {
+        t2 = project.end_date + timedelta(days=12)
+        common_output = {
+            'resources': [],
+            'policies': [],
+            'details': []
+        }
+        common_app_data = {
             'owner': self.user,
             'project_id': project.id,
             'request_user': self.user,
-            "resources": {u"σέρβις1.ρίσορς11": {
-                "project_capacity": 1025,
-                "member_capacity": 511}}
+            'resources': {}
         }
-        app =submit_application(**last_app_data)
-        output = {
+
+        # test output for change in project details
+        last_app_data1 = common_app_data.copy()
+        last_app_data1.update({
+            'name': 'test-new.gr',
+            'description': u'δεσκρίπτιον2',
+            'end_date': t2,
+        })
+        last_app1 = submit_application(**last_app_data1)
+        project = Project.objects.get(id=project.id)
+        output_details = common_output.copy()
+        output_details.update({
+            'details': [{
+                'label': 'name',
+                'new': 'test-new.gr',
+                'old': 'test.pr',
+            }, {
+                'label': 'description',
+                'new': u'δεσκρίπτιον2',
+                'old': u'δεσκρίπτιον',
+            }, {
+                'label': 'end date',
+                'new': t2,
+                'old': project.end_date,
+                'diff': timedelta(days=12)
+            }],
+        })
+        input_details = admin_tags.get_project_modifications(project)
+        self.assertEqual(input_details, output_details)
+
+        # test output for change in project policies
+        last_app_data2 = common_app_data.copy()
+        last_app_data2.update({
+            'limit_on_members_number': 42
+        })
+        last_app2 = submit_application(**last_app_data2)
+        project = Project.objects.get(id=project.id)
+        output_policies = common_output.copy()
+        output_policies.update({
+            'policies': [{
+                'label': 'max members',
+                'new': 42,
+                'old': 5,
+                'diff': 37,
+            }],
+        })
+        input_policies = admin_tags.get_project_modifications(project)
+        self.assertEqual(input_policies, output_policies)
+
+        # test output for change in project resources
+        last_app_data3 = common_app_data.copy()
+        last_app_data3.update({
+            'resources': {u"σέρβις1.ρίσορς11": {
+                'project_capacity': 1025,
+                'member_capacity': 511}}
+        })
+        last_app3 = submit_application(**last_app_data3)
+        project = Project.objects.get(id=project.id)
+        output_resources = common_output.copy()
+        output_resources.update({
             'resources': [{
-                'label': u"ρίσορς11",
-                'new_member': 511,
-                'old_member': 512,
-                'diff_member': -1,
-                'new_project': 1025,
-                'old_project': 1024,
-                'diff_project': 1,
-            }]
-        }
-        self.assertEqual(admin_tags.get_project_modifications(project), output)
+                'label': u"σέρβις1.ρίσορς11s",
+                'new_member': '511',
+                'old_member': '512',
+                'diff_member': '-1',
+                'new_project': '1025',
+                'old_project': '1024',
+                'diff_project': '+1'
+            }],
+        })
+        input_resources = admin_tags.get_project_modifications(project)
+        self.assertEqual(input_resources, output_resources)

@@ -1979,7 +1979,8 @@ class ProjectLogManager(models.Manager):
     def last_deactivations(self, projects):
         logs = self.filter(
             project__in=projects,
-            to_state__in=Project.DEACTIVATED_STATES).order_by("-date")
+            to_state__in=Project.DEACTIVATED_STATES
+        ).order_by("project", "-date")
         return first_of_group(lambda l: l.project_id, logs)
 
 

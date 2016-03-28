@@ -118,7 +118,7 @@
 		        </table>
             </div>
             {% if last_app %}
-                <div class="tab-pane" id="modifications{{ project.uuid }}">
+                <div class="tab-pane modifications" id="modifications{{ project.uuid }}">
                     <table class="table">
                         <thead>
                             <tr>
@@ -133,10 +133,10 @@
                             {% with rows=mod.details %}
                                 {% for row in rows %}
                                     <tr>
-                                        <td nowrap class="capitilize">{{ row.label }}</td>
+                                        <td class="capitalize nowrap">{{ row.label }}</td>
                                         <td>{{ row.old }}</td>
                                         <td>{{ row.new }}</td>
-                                        <td nowrap class="diff">
+                                        <td class="diff nowrap">
                                             {% if row.diff %}
                                                 <span class="label label-almost-white {{ row.diff|diff_cls }}">
                                                     {{ row.diff }}
@@ -149,10 +149,10 @@
                             {% with rows=mod.policies %}
                                 {% for row in rows %}
                                     <tr>
-                                        <td nowrap class="capitilize">{{ row.label }}</td>
+                                        <td class="capitalize nowrap">{{ row.label }}</td>
                                         <td>{{ row.old }}</td>
                                         <td>{{ row.new }}</td>
-                                        <td nowrap class="diff">
+                                        <td class="diff nowrap">
                                             {% if row.diff %}
                                                 <span class="label label-almost-white  {{ row.diff|diff_cls }}">
                                                     {{ row.diff }}
@@ -165,10 +165,10 @@
                             {% with rows=mod.resources %}
                                 {% for row in rows %}
                                     <tr>
-                                        <td nowrap>{{ row.label }} *</td>
+                                        <td class="nowrap">{{ row.label }} *</td>
                                         <td>{{ row.old_member }} / {{ row.old_project }}</td>
                                         <td>{{ row.new_member }} / {{ row.new_project }}</td>
-                                        <td nowrap class="diff">
+                                        <td class="diff nowrap">
                                             <span class="label label-almost-white">
                                                 <span class="{{ row.diff_member|diff_cls }}">{{ row.diff_member }}</span>
                                                 &nbsp/&nbsp
@@ -181,7 +181,7 @@
                         {% endwith %}
                         </tbody>
                     </table>
-                    <span>* The displayed values represent max resources per member / max resources per project.</span>
+                    <span>* The displayed values represent <em>max resources per member / max resources per project</em>.</span>
                 </div>
             {% endif %}
         </div>

@@ -258,7 +258,16 @@
 }
 
 /* Table with the pending modifications of projects */
-.object-details-content table{
+.modifications table {
+    table-layout: fixed;
+
+    td:not(.nowrap) {
+        word-wrap:break-word;
+    }
+
+    th:nth-child(2), th:nth-child(3)  {
+        width: 30%;
+    }
     td.diff {
         vertical-align: middle;
         .label {

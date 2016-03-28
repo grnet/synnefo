@@ -263,7 +263,7 @@ def details(request, query):
         'main_type': 'project',
         'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': associations,
-        'last_app': project.last_pending_application(),
+        'last_app': project.last_pending_modification(),
     }
 
     return context

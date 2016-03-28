@@ -522,7 +522,7 @@ def get_project_modifications(project):
     Return a dictionary with a summary of a project's modifications as
     requested by the user, concerning project details, policies and resources.
     """
-    last_app = project.last_pending_application()
+    last_app = project.last_pending_modification()
     if not last_app:
         return
     details = []

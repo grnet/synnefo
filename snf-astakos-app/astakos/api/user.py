@@ -231,7 +231,7 @@ def user_action(request, user_id):
     logger.info('user_action: %s user: %s request: %s', admin_id, user_id, req)
     if 'activate' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
 
@@ -247,7 +247,7 @@ def user_action(request, user_id):
                                  content_type='application/json')
     if 'deactivate' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
 
@@ -265,7 +265,7 @@ def user_action(request, user_id):
 
     if 'renewToken' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
         user.renew_token()
@@ -280,7 +280,7 @@ def user_action(request, user_id):
 
     if 'signTerms' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
         user.has_signed_terms = True
@@ -307,7 +307,7 @@ def user_update(request, user_id):
     user_data = req.get('user', {})
 
     try:
-        user = AstakosUser.objects.get(uuid=user_id)
+        user = AstakosUser.objects.select_for_update().get(uuid=user_id)
     except AstakosUser.DoesNotExist:
         raise faults.ItemNotFound("User not found")
 

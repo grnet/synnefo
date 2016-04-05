@@ -1200,6 +1200,101 @@ def reinstate(project_id, request_user=None, reason=None):
     logger.info("%s has been reinstated" % (project))
 
 
+def _get_base_projects(user_ids):
+    base_projects = Project.objects.filter(base_user__in=user_ids)
+    return {p.id: p for p in base_projects}
+
+
+def _get_memberships(user_ids):
+    ms = ProjectMembership.objects.actually_accepted().\
+        filter(person__in=user_ids)
+    return _partition_by(lambda m: m.person_id, ms)
+
+
+def _get_owned_projects(user_ids):
+    ps = Project.objects.filter(state=Project.NORMAL, owner__in=user_ids)
+    return _partition_by(lambda p: p.owner_id, ps)
+
+
+def suspend_users_projects(users, request_user=None, reason=None):
+    affected_users = []
+    user_ids = [user.id for user in users]
+    if not user_ids:
+        return affected_users
+
+    base_projects_d = _get_base_projects(user_ids)
+    memberships_d = _get_memberships(user_ids)
+    owned_projects_d = _get_owned_projects(user_ids)
+
+    for user in users:
+        is_affected = False
+        base_project = base_projects_d[user.base_project_id]
+        if base_project.state == Project.NORMAL:
+            try:
+                suspend(user.base_project_id,
+                        request_user=request_user, reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+        memberships = memberships_d.get(user.id, [])
+        for membership in memberships:
+            try:
+                suspend_membership(membership.id, request_user=request_user,
+                                   reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+
+        owned_projects = owned_projects_d.get(user.id, [])
+        for project in owned_projects:
+            try:
+                suspend(project.id, request_user=request_user, reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+        if is_affected:
+            affected_users.append(user)
+    return affected_users
+
+
+def suspend_user_projects(user, request_user=None, reason=None):
+    return suspend_users_projects(
+        [user], request_user=request_user, reason=reason)
+
+
+def unsuspend_project_on_condition(project, request_user=None, reason=None,
+                                   condition=None):
+    last_deactivation = project.last_deactivation()
+    if last_deactivation is not None and last_deactivation.reason == condition:
+        unsuspend(project.id, request_user=request_user, reason=reason)
+
+
+def unsuspend_membership_on_condition(membership, request_user=None,
+                                      reason=None, condition=None):
+    last_suspension = membership.latest_log().get(
+        ProjectMembership.USER_SUSPENDED)
+    if last_suspension is not None and last_suspension.reason == condition:
+        unsuspend_membership(membership.id, request_user=request_user,
+                             reason=reason)
+
+
+def unsuspend_user_projects(user, request_user=None, reason=None,
+                            condition=None):
+    base_project = user.base_project
+    if base_project.is_suspended:
+        unsuspend_project_on_condition(
+            base_project, request_user, reason, condition)
+    memberships = user.projectmembership_set.filter(
+        state=ProjectMembership.USER_SUSPENDED)
+    for membership in memberships:
+        unsuspend_membership_on_condition(
+            membership, request_user, reason, condition)
+    owned_projects = user.projs_owned.filter(state=Project.SUSPENDED)
+    for project in owned_projects:
+        unsuspend_project_on_condition(
+            project, request_user, reason, condition)
+
+
 def _partition_by(f, l):
     d = {}
     for x in l:

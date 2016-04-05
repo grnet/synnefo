@@ -2156,6 +2156,8 @@ class ProjectMembership(models.Model):
         "remove": lambda m: m.state in m.ACCEPTED_STATES,
         "reject": lambda m: m.state == m.REQUESTED,
         "cancel": lambda m: m.state == m.REQUESTED,
+        "suspend": lambda m: m.state in m.ACTUALLY_ACCEPTED,
+        "unsuspend": lambda m: m.state == m.USER_SUSPENDED,
     }
 
     ACTION_STATES = {
@@ -2168,6 +2170,8 @@ class ProjectMembership(models.Model):
         "remove":        REMOVED,
         "reject":        REJECTED,
         "cancel":        CANCELLED,
+        "suspend":       USER_SUSPENDED,
+        "unsuspend":     ACCEPTED,
     }
 
     def check_action(self, action):

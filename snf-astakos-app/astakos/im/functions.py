@@ -329,6 +329,30 @@ def remove_membership(memb_id, request_user=None, reason=None):
     return membership
 
 
+def suspend_membership_checks(membership, request_user=None):
+    if not membership.check_action("suspend"):
+        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
+        raise ProjectConflict(m)
+
+    project = membership.project
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
+    checkAlive(project)
+
+
+def suspend_membership(memb_id, request_user=None, reason=None):
+    project = get_project_of_membership_for_update(memb_id)
+    membership = get_membership_by_id(memb_id)
+    suspend_membership_checks(membership, request_user)
+    user = membership.person
+    membership.perform_action("suspend", actor=request_user, reason=reason)
+    quotas.qh_sync_membership(membership)
+    logger.info("User %s has been suspended from %s." %
+                (user.log_display, project))
+
+    project_notif.membership_change_notify(project, user, 'suspended')
+    return membership
+
+
 def enroll_member_by_email(project_id, email, request_user=None, reason=None):
     try:
         user = AstakosUser.objects.accepted().get(email=email)

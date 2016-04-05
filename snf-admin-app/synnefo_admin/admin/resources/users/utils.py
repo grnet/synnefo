@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,26 +36,30 @@ def get_groups():
     return [(group['name'], '') for group in groups]
 
 
-def get_user_or_404(query):
+def get_user_or_404(query, for_update=False):
     """Get AstakosUser from query.
 
     The query can either be a user email, UUID or ID.
     """
+    objects = AstakosUser.objects
+    if for_update:
+        objects = objects.select_for_update()
+
     # Get by UUID
     try:
-        return AstakosUser.objects.get(uuid=query)
+        return objects.get(uuid=query)
     except ObjectDoesNotExist:
         pass
 
     # Get by Email
     try:
-        return AstakosUser.objects.get(email=query)
+        return objects.get(email=query)
     except ObjectDoesNotExist:
         pass
 
     # Get by ID
     try:
-        return AstakosUser.objects.get(id=int(query))
+        return objects.get(id=int(query))
     except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No User was found that matches this query: %s\n" % query)

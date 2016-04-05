@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1098,46 +1098,58 @@ def validate_project_action(project, action, request_user=None, silent=True):
     return True, None
 
 
-def terminate(project_id, request_user=None, reason=None):
+def _perform_action_project(project_id, action, request_user, reason):
+    """
+    This method performs an action regarding to a specific project, e.g. project
+    termination, etc.
+
+    Args:
+        project_id: ID of project.
+        action: Action to be performed on project.
+        request_user: User who's performing action.
+        reason: Reason of action.
+
+    Returns:
+        Project in which a user performed an action.
+    """
     project = get_project_for_update(project_id)
-    validate_project_action(project, "TERMINATE", request_user, silent=False)
+    action_methods = {
+        'TERMINATE': project.terminate,
+        'SUSPEND': project.suspend,
+        'UNSUSPEND': project.resume,
+        'REINSTATE': project.resume,
+    }
 
-    project.terminate(actor=request_user, reason=reason)
+    validate_project_action(project, action, request_user, silent=False)
+    action_methods[action](actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
-    logger.info("%s has been terminated." % (project))
 
-    project_notif.project_notify(project, "terminate")
+    project_notif.project_notify(project, action.lower())
+    return project
+
+
+def terminate(project_id, request_user=None, reason=None):
+    project = _perform_action_project(
+        project_id, 'TERMINATE', request_user, reason)
+    logger.info("%s has been terminated." % (project))
 
 
 def suspend(project_id, request_user=None, reason=None):
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "SUSPEND", request_user, silent=False)
-
-    project.suspend(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'SUSPEND', request_user, reason)
     logger.info("%s has been suspended." % (project))
-
-    project_notif.project_notify(project, "suspend")
 
 
 def unsuspend(project_id, request_user=None, reason=None):
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "UNSUSPEND", request_user, silent=False)
-
-    project.resume(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'UNSUSPEND', request_user, reason)
     logger.info("%s has been unsuspended." % (project))
-    project_notif.project_notify(project, "unsuspend")
 
 
 def reinstate(project_id, request_user=None, reason=None):
-    get_project_lock()
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "REINSTATE", request_user, silent=False)
-    project.resume(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'REINSTATE', request_user, reason)
     logger.info("%s has been reinstated" % (project))
-    project_notif.project_notify(project, "reinstate")
 
 
 def _partition_by(f, l):

@@ -483,7 +483,7 @@ class SynnefoCI(object):
         echo 'deb https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
         echo 'deb-src https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
         apt-get update
-        apt-get install -q=2 --force-yes nodejs
+        apt-get install -q=2 --force-yes nodejs ruby ruby-dev
         """
         _run(cmd, False)
 

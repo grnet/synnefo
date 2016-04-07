@@ -137,6 +137,46 @@ def find_package_data(
                 out.setdefault(package, []).append(prefix+name)
     return out
 
+trigger_build = ["sdist", "build", "develop", "install"]
+cmd = ''.join(sys.argv)
+
+def compile_sass():
+    import subprocess
+    from distutils.spawn import find_executable
+
+    css_dir = os.path.join(".", "synnefo_admin", "admin", "static")
+
+    if not find_executable("gem"):
+        raise Exception("gem not found, please install ruby and gem")
+
+    if not find_executable("compass"):
+        print "Install compass"
+        ret = subprocess.call(["gem", "install", "compass"])
+        if ret == 1:
+            raise Exception("gem install failed")
+
+    compass_cmd = ["compass", "compile", css_dir, "-e"]
+
+    ret = subprocess.call(compass_cmd + ["production"])
+
+    if ret == 1:
+        raise Exception("compass compile failed")
+
+    if "develop" in cmd:
+        ret = subprocess.call(compass_cmd + ["development"])
+
+        if ret == 1:
+            raise Exception("compass development compile failed")
+
+
+if any(x in cmd for x in trigger_build):
+    if os.path.exists("./synnefo_admin/admin/static/min-css"):
+        print "The css files are already compiled in synnefo_admin/admin/static/min-css"
+    else:
+        if os.environ.get('SNFADMIN_AUTO_COMPILE', True) not in \
+                ['False', 'false', '0']:
+            compile_sass()
+
 setup(
     name='snf-admin-app',
     version=VERSION,

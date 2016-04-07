@@ -233,10 +233,11 @@ def check_already_processed(vm):
     not null, then the VM has already been processed by a previous run of the
     script.
     """
-    processed = vm.volumes.exclude(legacy_backend_volume_uuid__isnull=True)\
+    null_exists = vm.volumes.filter(legacy_backend_volume_uuid__isnull=True)\
         .filter(deleted=False)\
         .exists()
 
+    processed = not null_exists
     return processed
 
 

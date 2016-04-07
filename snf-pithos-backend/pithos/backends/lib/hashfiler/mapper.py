@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,8 +18,7 @@ from archipelagomapper import ArchipelagoMapper
 
 class Mapper(object):
     """Mapper.
-       Required constructor parameters: mappath, namelen.
-       Optional mappool.
+       Required constructor parameters: namelen.
     """
 
     def __init__(self, **params):

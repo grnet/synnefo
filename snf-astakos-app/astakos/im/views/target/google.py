@@ -137,13 +137,14 @@ def authenticated(
     userid = access_token_data['user_id']
     provider_info = access_token_data
     affiliation = 'Google.com'
+    user_info = {'affiliation': affiliation}
 
     try:
         return handle_third_party_login(request, 'google', userid,
-                                        provider_info, affiliation)
+                                        provider_info, affiliation,
+                                        user_info=user_info)
     except AstakosUser.DoesNotExist:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation}
         return handle_third_party_signup(request, userid, 'google',
                                          third_party_key,
                                          provider_info,

@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 // 
 
 ;(function(root){
-    
+  
     // root
     var root = root;
     
@@ -343,7 +343,11 @@
       },
 
       vm_logo_url: function(vm) {
-        if (!this.model.get('vm')) { return '' }
+        if (!this.model.get('device_id')) {
+          return synnefo.config.media_url + 'images/ip-icon-medium.png';
+        } else if (!this.model.get('vm')) {
+          return synnefo.config.media_url + 'images/icons/machines/medium/unknown-off.png';
+        }
         return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
       },
 
@@ -538,9 +542,11 @@
         this.ports_toggler.click(this.toggle_ports);
         this.ports_visible = false;
       },
-      
+
       show_reassign_view: function() {
-          synnefo.ui.main.network_reassign_view.show(this.model);
+          if (!this.model.get('is_public')) {
+            synnefo.ui.main.network_reassign_view.show(this.model);
+          }
       },
 
       set_ports_empty: function() {
@@ -590,7 +596,19 @@
           this.toggle_ports({}, true);
         }
       },
-      
+
+      check_can_reassign: function() {
+          var action = this.$(".project-name");
+          if (this.model.get("shared_to_me")) {
+              snf.util.set_tooltip(action,
+                'Not the owner of this resource, cannot reassign.', {tipClass: "tooltip"});
+              return "project-name-cont disabled";
+          } else {
+              snf.util.unset_tooltip(action);
+              return "project-name-cont";
+          }
+      },
+
       status_map: {
         'ACTIVE': 'Active',
         'SNF:DRAINED': 'Drained',
@@ -916,6 +934,11 @@
     views.NetworkSelectPublicNetworks = views.NetworkSelectTypeView.extend({
       tpl: '#networks-select-public-tpl',
       model_view_cls: views.NetworkSelectPublicNetwork,
+      get_networks: function() {
+        return _.filter(_.map(this._subviews, function(view) {
+          if (view.selected) { return view.model.id }
+        }), function(id) { return id });
+      },
       get_floating_ips: function() {
         var ips = [];
         _.each(this._subviews, function(view) {
@@ -1178,10 +1201,18 @@
         this.private_networks = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.networks,
           collectionFilter: function(m) {
-            return !m.get('is_public')
+            return !m.get('is_public') && !m.get('is_ghost');
         }});
 
         this.public_networks = new Backbone.Collection();
+        // Get the public networks that are do not have floating IPs
+        this.non_floating_public = new Backbone.FilteredCollection(undefined, {
+          collection: synnefo.storage.networks,
+          collectionFilter: function(m) {
+            return m.get('is_public') && !m.get('is_floating')
+        }});
+        this.public_networks.add(this.non_floating_public.models);
+
         this.public_networks.comparator = function(m) {
           if (m.get('forced')) {
             return -1
@@ -1192,9 +1223,11 @@
         if (synnefo.config.forced_server_networks.length) {
           _.each(synnefo.config.forced_server_networks, function(network) {
             var forced = synnefo.storage.networks.get(network);
+            var created = !forced;
             if (!forced) {
               var name = this.forced_values_title_map[network];
               if (!name) { name = "Forced network ({0})".format(network)}
+              forced = this.public_networks.get(network);
               forced = new models.networks.Network({
                 id: network,
                 name: name, 
@@ -1205,7 +1238,9 @@
             } else {
               forced.set({'forced': true});
             }
-            this.public_networks.add(forced);
+            if (!forced.get('is_public') || created) {
+              this.public_networks.add(forced);
+            }
           }, this);
         }
 

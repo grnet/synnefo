@@ -7,26 +7,33 @@
 {% block body.left %}
 	<img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
 {% endblock body.left %}
-    
-{% block body.right %} 
-    
+
+{% block body.right %}
+
     <div class="login-section">
 
-      <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
-        <a href="{% url signup %}">{% trans "Sign up" %}</a></span>
+      <h2 class="clearfix">
+        <span class="title">LOGIN</span>
+        {% if show_signup %}
+        <span class="header-actions">
+            <a href="{% url signup %}">{% trans "Sign up" %}</a>
+        </span>
+        {% endif %}
       </h2>
       <div class="main-login-method">
-        {% with 1 as is_master %}
-          {% include master_auth_provider.get_login_template %}
+        {% with provider=primary_provider%}
+          {% include provider.get_primary_login_template %}
         {% endwith %}
       </div>
+      {% with auth_providers|length as l %}
+      {% if l > 1 %}
+      LOGIN using &nbsp;&nbsp;
       <div class="extralogin">
       {% for provider in auth_providers %}
-        {% if not provider == master_auth_provider %}
-          {% include provider.get_login_prompt_template %}
-        {% endif %}
+        {% include provider.get_login_prompt_template %}
       {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
     </div>
-    </div>
- 
 {% endblock body.right%}

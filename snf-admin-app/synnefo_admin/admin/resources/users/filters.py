@@ -22,7 +22,7 @@ from astakos.im.models import AstakosUser, Project
 from astakos.im import auth_providers
 
 from synnefo_admin.admin.queries_common import (query, model_filter,
-                                                get_model_field)
+                                                get_model_field, process_queries)
 
 from .utils import get_groups
 
@@ -39,41 +39,41 @@ auth_providers = [(key, '_') for key in auth_providers.PROVIDERS.iterkeys()]
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     return queryset.filter(q)
 
 
 @model_filter
 def filter_vm(queryset, queries):
-    q = query("vm", queries)
+    q = process_queries("vm", queries)
     ids = get_model_field("vm", q, 'userid')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_volume(queryset, queries):
-    q = query("volume", queries)
+    q = process_queries("volume", queries)
     ids = get_model_field("volume", q, 'userid')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_network(queryset, queries):
-    q = query("network", queries)
+    q = process_queries("network", queries)
     ids = get_model_field("network", q, 'userid')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_ip(queryset, queries):
-    q = query("ip", queries)
+    q = process_queries("ip", queries)
     ids = get_model_field("ip", q, 'userid')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_project(queryset, queries):
-    q = query("project", queries)
+    q = process_queries("project", queries)
     member_ids = Project.objects.filter(q).values('members__uuid')
     owner_ids = Project.objects.filter(q).values('owner__uuid')
     qor = Q(uuid__in=member_ids) | Q(uuid__in=owner_ids)

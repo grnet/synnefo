@@ -18,53 +18,53 @@ import django_filters
 from django.db.models import Q
 
 from astakos.im.models import Project, ProjectApplication
-from synnefo_admin.admin.queries_common import (query, model_filter,
+from synnefo_admin.admin.queries_common import (process_queries, model_filter,
                                                 get_model_field)
 
 
 @model_filter
 def filter_project(queryset, queries):
-    q = query("project", queries)
+    q = process_queries("project", queries)
     return queryset.filter(q)
 
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     ids = get_model_field("user", q, 'uuid')
     qor = Q(members__uuid__in=ids) | Q(owner__uuid__in=ids)
     # BIG FAT FIXME: The below two lines in theory should not be necessary, but
     # if they don't exist, the queryset will produce weird results with the
     # addition of values list.
-    qs = queryset.select_related("owner__uuid").filter(qor)
+    qs = queryset.select_related("owner__uuid").filter(qor).distinct()
     len(qs)
     return qs
 
 
 @model_filter
 def filter_vm(queryset, queries):
-    q = query("vm", queries)
+    q = process_queries("vm", queries)
     ids = get_model_field("vm", q, 'project')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_volume(queryset, queries):
-    q = query("volume", queries)
+    q = process_queries("volume", queries)
     ids = get_model_field("volume", q, 'project')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_network(queryset, queries):
-    q = query("network", queries)
+    q = process_queries("network", queries)
     ids = get_model_field("network", q, 'project')
     return queryset.filter(uuid__in=ids)
 
 
 @model_filter
 def filter_ip(queryset, queries):
-    q = query("ip", queries)
+    q = process_queries("ip", queries)
     ids = get_model_field("ip", q, 'project')
     return queryset.filter(uuid__in=ids)
 

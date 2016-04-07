@@ -1095,6 +1095,53 @@ each backend.  Also, the administrator can route instances between different
 nodes of the same Ganeti backend, by modifying the same options at the
 nodegroup level (see `gnt-group` manpage for mor details).
 
+Allocation based on custom allocator
+************************************
+
+In order to determine which ganeti cluster is best for allocating a
+virtual machine, the allocator uses two methods:
+
+    - `filter_backends`
+    - `allocate`
+
+The `filter_backends` method is used to filter the backends that the allocator
+shouldn't even consider. It takes two arguements:
+
+    1. A list of the available backends. A backend is available
+    if it is not drained or offline. Each backend is a django object
+    and is an instance of the `Backend` model.
+
+    2. A map with 3 keys:
+        - `ram`: The size of the memory we want to allocate
+        on the backend.
+        - `disk`: The size of the disk we want to allocate
+        on the backend.
+        - `cpu`: The size of the CPU we want to allocate
+        on the backend.
+
+
+The `allocate` method returns the backend that will be used to allocate the virtual
+machine. It takes two arguements:
+
+    1. A list of the available backends. A backend is available
+    if it is not drained or offline. Each backend is a django object
+    and is an instance of the `Backend` model.
+
+    2. A map with 3 keys:
+        - `ram`: The size of the memory we want to allocate
+        on the backend.
+        - `disk`: The size of the disk we want to allocate
+        on the backend.
+        - `cpu`: The size of the CPU we want to allocate
+        on the backend.
+
+So the administrator can create his own allocation algorithm by creating a class
+that inherits the `AllocatorBase` located at `synnefo.logic.allocators.base`,
+and implements the above methods.
+
+If the administrator wants synnefo to use his allocation algorithm he just has to change
+the `BACKEND_ALLOCATOR_MODULE` setting to the path of his allocator class.
+
 Removing an existing Ganeti backend
 ```````````````````````````````````
 In order to remove an existing backend from Synnefo, you must first make
@@ -1451,6 +1498,33 @@ expensive operations triggered by shutdown, such as Windows updates.
 The command outputs the list of applied actions and reports whether each
 action succeeded or not. Failure is reported if for any reason cyclades
 failed to process the job and submit it to the backend.
+
+Shared Resources
+~~~~~~~~~~~~~~~~
+
+Since version 0.17, it is possible to share resources among the members of
+the project that the resource belongs to.
+
+The owner of the resource can choose to grant full access to all users that are
+members of the project that the resource is charged to. Users will be able to
+see the resource and use it exactly as if they were the owners of the resource.
+For example, users will be able to restart or destroy a shared virtual server.
+
+The sharing mechanism suppports fine-grained granularity at the resource level,
+which means that you can share a resource (e.g. virtual server) without
+sharing related resources (e.g. volumes, floating IPs, etc.). This results
+to what we call "ghost resources", which are resources that are visible to a
+user only because they are somehow related with a shared resource, and the user
+has no access to them. For example, after sharing a volume that is attached to
+some server, project members will be able to see the server that the volume is
+attached to, but they will not have any access to the server.
+
+This is an optional feature which is by default disabled.  To enable the
+sharing functionality, the administrator must set the
+`CYCLADES_SHARED_RESOURCES_ENABLE` setting in
+`/etc/synnefo/20-snf-cyclades-app-api.conf` to `True`. After this, users
+will be able to grant/remove access from resources from the project reassign
+view in the web UI.
 
 Cyclades advanced operations
 ----------------------------
@@ -1939,7 +2013,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-astakos-app <http://www.synnefo.org/docs/astakos/latest/index.html>`_
  * `snf-pithos-backend <http://www.synnefo.org/docs/pithos/latest/backends.html>`_
  * `snf-pithos-app <http://www.synnefo.org/docs/pithos/latest/index.html>`_
- * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
+ * `snf-ui-app <http://www.synnefo.org/docs/ui/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `snf-admin-app <http://www.synnefo.org/docs/snf-admin-app/latest/index.html>`_
@@ -2740,7 +2814,7 @@ Role **ASTAKOS_DB**
     * Synnefo components: `None`
     * 3rd party components: PostgreSQL
 Role **PITHOS**
-    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-pithos-webclient`
+    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-ui-app`
     * 3rd party components: Django, Gunicorn
 Role **PITHOS_DB**
     * Synnefo components: `None`
@@ -2796,7 +2870,7 @@ Node2:
         * :ref:`apache <i-apache>`
         * :ref:`snf-webproject <i-webproject>`
         * :ref:`snf-pithos-app <i-pithos>`
-        * :ref:`snf-pithos-webclient <i-pithos>`
+        * :ref:`snf-ui-app <i-pithos>`
 Node3:
     **WEBSERVER**, **CYCLADES**
       Guide sections:
@@ -2980,6 +3054,7 @@ Upgrade Notes
    v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
    v0.16.1 -> v0.16.2 <upgrade/upgrade-0.16.2>
+   v0.16.2 -> v0.17 <upgrade/upgrade-0.17>
 
 
 .. _changelog-news:
@@ -2988,6 +3063,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.17rc1 :ref:`Changelog <Changelog-0.17rc1>`, :ref:`NEWS <NEWS-0.17rc1>`
 * v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`

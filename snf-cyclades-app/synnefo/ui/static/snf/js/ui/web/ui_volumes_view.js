@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
     };
     
     views.ext.VM_STATUS_CLS_MAP = {
-        'UNKNOWN':          ['status-error'],
+        'UNKNOWN':          ['status-unknown'],
         'BUILD':            ['build-state status-progress'],
         'REBOOT':           ['status-progress reboot-state'],
         'STOPPED':          ['status-terminated'],
@@ -151,7 +151,7 @@
     });
 
     views.CreateVolumeProjectStepView = views.CreateWizardStepView.extend({
-        step: 2,
+        step: 3,
         
         new_volume_title: "New disk",
 
@@ -198,6 +198,19 @@
         },
         
         init_subviews: function() {
+
+          if (!this.volume_types_select_view) {
+            this.volume_types_collection = synnefo.storage.volume_types;
+            this.volume_types_select_view = new views.VolumeTypeSelectView({
+              collection: this.volume_types_collection,
+              container: this.$(".volume-types-list"),
+              parent: this,
+              allow_multiple: false,
+              allow_empty: false
+            });
+            this.volume_types_select_view.show(true);
+          }
+
           if (!this.project_select_view) {
             var view_cls = views.CreateVolumeSelectProjectView;
             this.project_select_view = new view_cls({
@@ -229,6 +242,30 @@
         },
 
         update_layout: function() {
+          if (this.volume_types_select_view) {
+            var view = this.volume_types_select_view;
+            var vm = this.parent.steps[2].get().vm;
+            if (!vm || vm.id == '_empty') {
+              this.volume_types_select_view.each_model_view(function(model, view) {
+                if (_.contains(synnefo.config.detachable_volume_types, model.get('disk_template'))) {
+                  view.set_enabled();
+                  view.deselect();
+                } else {
+                  view.set_disabled();
+                }
+              });
+            } else {
+              var vm_tpl = synnefo.storage.flavors.get(vm.get('flavor')).get('disk_template');
+              this.volume_types_select_view.each_model_view(function(model, view) {
+                if (model.get('disk_template') != vm_tpl) { 
+                  view.set_disabled(); 
+                } else {
+                  view.set_enabled();
+                  view.select();
+                }
+              });
+            }
+          }
         },
         
         handle_project_select: function(projects) {
@@ -292,13 +329,23 @@
         get: function() {
             return {
                 'project': this.parent.project,
-                'size': parseInt(this.size_input.val()) || 1
+                'size': parseInt(this.size_input.val()) || 1,
+                'type': this.volume_types_select_view.get_selected()[0].id
             }
         }
     });
 
+    views.VolumeTypeSelectItemView = views.ext.SelectModelView.extend({
+      tpl: '#volume-type-select-model-tpl',
+    });
+
+    views.VolumeTypeSelectView = views.ext.CollectionSelectView.extend({
+      tpl: '#volume-type-select-collection-tpl',
+      model_view_cls: views.VolumeTypeSelectItemView
+    });
+
     views.CreateVolumeMachineStepView = views.CreateWizardStepView.extend({
-        step: 3,
+        step: 2,
         initialize: function() {
             views.CreateVolumeMachineStepView.__super__.initialize.apply(
                 this, arguments);
@@ -319,7 +366,21 @@
               container: this.$(".vms-list"),
               parent: this,
               allow_multiple: false,
-              allow_empty: false
+              allow_empty: false,
+              empty_model: new (models.VM.extend())({
+                id: '_empty',
+                name: 'No machine',
+                status: 'ACTIVE',
+              }),
+              process_empty_view: function(view) {
+                view.set_enabled();
+                view.el.find(".ico").hide();
+                view.el.find(".indicators").hide();
+                view.el.addClass("empty-selection");
+                if (!this.get_selected().length) {
+                  view.select();
+                }
+              }
             });
             this.vm_select_view.max_title_length = 38;
             this.vm_select_view.show(true);
@@ -338,6 +399,7 @@
         },
 
         disabled_filter_ext: function(m) {
+            if (m.id == "_empty") { return false; }
             var check = !m.can_attach_volume() || !m.is_ext();
             if (check) {
                 return "You can only attach an empty disk to this machine."
@@ -402,8 +464,9 @@
         },
 
         get: function() {
+            var vm = this.vm_select_view.get_selected()[0];
             return {
-                'vm': this.vm_select_view.get_selected()[0]
+                'vm': vm
             }
         }
 
@@ -505,8 +568,8 @@
             this.steps[1].bind("change", _.bind(function(data) {
                 this.trigger("image:change", data)
             }, this));
-            this.steps[2] = new views.CreateVolumeProjectStepView(this);
-            this.steps[3] = new views.CreateVolumeMachineStepView(this);
+            this.steps[2] = new views.CreateVolumeMachineStepView(this);
+            this.steps[3] = new views.CreateVolumeProjectStepView(this);
             this.steps[4] = new views.CreateVolumeDetailsStepView(this);
             this.steps[5] = new views.CreateVolumeConfirmStepView(this);
         },
@@ -515,7 +578,10 @@
             views.VolumeCreateView.__super__.show_step.call(this, step);
         },
         
-        validate: function() { return true },
+        validate: function(data) { 
+          if (data.vm && data.vm.id == '_empty') { data.vm = null; }
+          return true 
+        },
 
         onClose: function() {
           this.current_view && this.current_view.hide && this.current_view.hide(true);
@@ -535,8 +601,8 @@
                     data.image = undefined;
                 }
                 storage.volumes.create(
-                    data.name, data.size, data.vm, data.project, data.image,
-                    data.description, {}, 
+                    data.name, data.size, data.type, data.vm, data.project, 
+                    data.image, data.description, {}, 
                     _.bind(function(data) {
                       window.setTimeout(function() {
                         self.submiting = false;
@@ -638,16 +704,22 @@
       },
 
       status_map: {
+        'available': 'Detached',
         'in_use': 'Attached',
         'error': 'Error',
         'deleting': 'Destroying...',
+        'detaching': 'Detaching...',
+        'attaching': 'Attaching...',
         'creating': 'Building...'
       },
 
       status_cls_map: {
+        'available': 'status-inactive',
         'in_use': 'status-active',
         'error': 'status-error',
         'deleting': 'status-progress destroying-state',
+        'detaching': 'status-progress build-state',
+        'attaching': 'status-progress build-state',
         'creating': 'status-progress build-state'
       },
 
@@ -662,14 +734,19 @@
       },
 
       show_reassign_view: function() {
-          if (this.model.get('is_root')) { return }
-          synnefo.ui.main.volume_reassign_view.show(this.model);
+          if (!this.model.get('is_root')) {
+            synnefo.ui.main.volume_reassign_view.show(this.model);
+          }
       },
 
       check_can_reassign: function() {
           var action = this.$(".project-name");
-          if (this.model.get("is_root")) {
+          if (this.model.get("is_root") && !this.model.get("is_ghost")) {
               snf.util.set_tooltip(action, "You cannot change the project of boot disks.<br>Boot disks are assigned to the same project as the parent VM.", {tipClass:"tooltip warning"});
+              return "project-name-cont disabled";
+          } else if (this.model.get("shared_to_me")) {
+              snf.util.set_tooltip(action,
+                "Not the owner of this resource, cannot reassign.", {tipClass:"tooltip"});
               return "project-name-cont disabled";
           } else {
               snf.util.unset_tooltip(action);
@@ -677,10 +754,19 @@
           }
       },
 
-      status_cls: function() {
-          var status = this.model.get('status');
-          var vm = this.model.get("vm");
-          if (status == "in_use" && vm) {
+      clear_junk: function(vm) {
+        // hacky fix for rivetsjs multiple element creation
+        if (this.model.get('_vm_id')) {
+          var vms = this.$(".vm-view-cont > div > div");
+          if (vms.length > 1) {
+            vms.get(0).remove();
+          }
+        }
+        return "vm-view-cont";
+      },
+
+      status_cls: function() { var status = this.model.get('status'); var vm =
+          this.model.get("vm"); if (status == "in_use" && vm) {
             return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");
           } else {
             return this.status_cls_map[this.model.get('status')];
@@ -715,18 +801,56 @@
         synnefo.ui.main.create_snapshot_view.show(vm, this.model);
       },
 
+      show_attach_overlay: function() {
+        this.model.actions.reset_pending();
+        var model = this.model;
+        var vms = new bb.FilteredCollection(undefined, {
+          collection: synnefo.storage.vms,
+          collectionFilter: function(vm) { return vm.can_attach_volume(model); }
+        });
+        var overlay = this.parent_view.attach_view;
+        overlay.show_vms(this.model, vms, [], this.attach_vm);
+      },
+
+      attach_vm: function(vms) {
+        var vm = vms[0];
+        var self = this;
+        var overlay = self.parent_view.attach_view;
+        vm.attach_volume(this.model, function() {
+          overlay.hide();
+          overlay.unset_in_progress();
+          self.model.set({'status': 'attaching'});
+        }, function() {
+          overlay.hide();
+          overlay.unset_in_progress();
+        });
+      },
+
       remove: function(model, e) {
         e && e.stopPropagation();
         this.model.do_destroy();
+      },
+
+      detach: function(model, e) {
+        e && e.stopPropagation();
+        this.model.do_detach();
       }
     });
 
     views.VolumesCollectionView = views.ext.CollectionView.extend({
-      collection: storage.volumes,
+      collection: new Backbone.FilteredCollection(undefined, {
+        collection: synnefo.storage.volumes,
+        collectionFilter: function(f) { return !f.get('is_ghost'); }
+      }),
       collection_name: 'volumes',
       model_view_cls: views.VolumeView,
       create_view_cls: views.VolumeCreateView,
       quota_key: 'volume',
+
+      initialize: function() {
+        views.VolumesCollectionView.__super__.initialize.apply(this, arguments);
+        this.attach_view = new views.VolumeAttachVmOverlay();
+      },
 
       check_empty: function() {
         views.VolumesCollectionView.__super__.check_empty.apply(this, arguments);
@@ -969,6 +1093,26 @@
 
     views.VolumeItemRenameView = views.ModelRenameView.extend({
         title_attr: 'display_name'
+    });
+
+    views.VolumeAttachVmOverlay = views.NetworkConnectVMsOverlay.extend({
+        css_class: "overlay-info connect-volume",
+        title: "Attach Volume to machine",
+        allow_multiple: false,
+        allow_empty: false,
+
+        show_vms: function(volume, vms, selected, callback, subtitle) {
+            views.IPConnectVmOverlay.__super__.show_vms.call(this, 
+                  undefined, vms, selected, callback, subtitle);
+            this.volume = volume;
+            this.set_desc("Select machine to attach <em>" + 
+                          volume.escape('name') + 
+                          "</em> to.");
+        },
+        
+        set_desc: function(desc) {
+            this.$(".description p").html(desc);
+        }
     });
 
 })(this);

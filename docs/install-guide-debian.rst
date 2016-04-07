@@ -1164,15 +1164,19 @@ previously), by running:
 
    # apt-get install snf-pithos-app snf-pithos-backend
 
-Now, install the pithos web interface:
+Now, install the Synnefo web interface:
 
 .. code-block:: console
 
-   # apt-get install snf-pithos-webclient
+   # apt-get install snf-ui-app
 
-This package provides the standalone Pithos web client. The web client is the
+This package includes the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
+
+For pithos ui to be accessible via the `/pithos/ui/` endpoint change the 
+`UI_BASE_URL` setting in `/etc/synnefo/20-snf-ui-settings.conf` file 
+to `/pithos/ui/`.
 
 .. _conf-pithos:
 
@@ -1250,7 +1254,7 @@ object checksums. This results to improved performance during object uploading.
 However, if compatibility with the OpenStack Object Storage API is important
 then it should be changed to ``True``.
 
-Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
+Then edit ``/etc/synnefo/20-snf-ui-cloudbar.conf``, to connect the
 Pithos web UI with the Astakos web UI (through the top cloudbar):
 
 .. code-block:: console
@@ -2191,7 +2195,7 @@ cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
 used by the Cyclades Web UI to get from Astakos all the information needed to
 fill its own cloudbar. So, we put our Astakos deployment urls there. All the
 above should have the same values we put in the corresponding variables in
-``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
+``/etc/synnefo/20-snf-ui-cloudbar.conf`` on the previous
 :ref:`Pithos configuration <conf-pithos>` section.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
@@ -2494,6 +2498,29 @@ skipped.
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
+Helper server creation
+----------------------
+
+Starting from Synnefo version 0.17, the administrator needs to create some
+helper servers for internal Synnefo actions regarding Archipelago. These helper
+servers will be spread in all Ganeti clusters and will be in STOPPED state so
+that they don't reserve any resources:
+
+.. code-block:: console
+
+  # snf-manage helper-servers-sync --flavor <flavor_id> --image <image_id> \
+        --user <admin_user_id> --password <password>
+
+
+The administrator must have in mind the following:
+
+#. These servers must be created under an administrator account. This account
+   must have the necessary quota to hold as many VMs as the Ganeti clusters.
+#. The ``<flavor_id>``, ``<image_id>`` and ``<password>`` variables will be
+   used for all the servers that will be created.
+#. While the flavor is of little importance, note that the disk template that
+   will be chosen must be Archipelago.
+
 VM stats configuration
 ----------------------
 
@@ -2505,7 +2532,6 @@ If all the above return successfully, then you have finished with the Cyclades
 installation and setup.
 
 Let's test our installation now.
-
 
 Testing of Cyclades
 ===================

@@ -1,0 +1,267 @@
+#!/usr/bin/env python
+"""Tool to update Archipelago VMs.
+
+Rename the disks of all Archipelago VMs, using the logical_id of the disks as
+their name. This change should also be stored in the Cyclades DB.
+"""
+
+# Gevent patching
+import gevent
+from gevent import monkey
+monkey.patch_all()
+
+import sys
+import subprocess
+from optparse import OptionParser, TitledHelpFormatter
+from operator import or_
+
+# Configure Django env
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
+from django.db import close_connection
+from django.db.models import Q
+from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo.management.common import get_resource
+
+import logging
+logger = logging.getLogger("migrate_disks")
+handler = logging.StreamHandler()
+
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+logger.propagate = False
+
+DESCRIPTION = """\
+Tool to update the disks of all Archipelago VMs in order to use the logical_id
+of their disks as their name.
+"""
+
+
+def main():
+    parser = OptionParser(description=DESCRIPTION,
+                          formatter=TitledHelpFormatter())
+    parser.add_option("--backend-id", dest="backend_id",
+                      help="Update instances only of this Ganeti backend."),
+    parser.add_option("--dry-run", dest="dry_run", default=False,
+                      action="store_true",
+                      help="Do not send any jobs to Ganeti backend.")
+    parser.add_option("--ganeti-dry-run", dest="ganeti_dry_run", default=False,
+                      action="store_true",
+                      help="Pass --dry-run option to Ganeti jobs.")
+    parser.add_option("--parallel", dest="parallel", default=False,
+                      action="store_true",
+                      help="Use a seperate process for each backend.")
+    parser.add_option("-d", "--debug", dest="debug", default=False,
+                      action="store_true",
+                      help="Display debug information.")
+    parser.add_option("--restore", dest="restore", default=False,
+                      action="store_true",
+                      help="Restore the original Ganeti disk names.")
+    options, args = parser.parse_args()
+
+    if options.backend_id:
+        backends = [get_resource("backend", options.backend_id)]
+    else:
+        if Backend.objects.filter(offline=True).exists():
+            msg = "Can not update intances. An 'offline' backend exists."
+            raise Exception(msg)
+        backends = Backend.objects.all()
+
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+
+    if len(backends) > 1 and options.parallel:
+        cmd = sys.argv
+        processes = []
+        for backend in backends:
+            p = subprocess.Popen(cmd + ["--backend-id=%s" % backend.id])
+            processes.append(p)
+        for p in processes:
+            p.wait()
+        return
+    else:
+        [upgrade_backend(b, options.dry_run, options.ganeti_dry_run,
+                         options.restore)
+         for b in backends]
+    return
+
+
+def upgrade_backend(backend, dry_run, ganeti_dry_run, restore):
+    """Assign each job for a backend to a Greenlet."""
+    vms = get_archipelago_vms(backend)
+    if not vms:
+        logger.info("No Archipelago VMs in backend '%s'. Nothing to do!",
+                    backend.clustername)
+        return
+
+    jobs = [gevent.spawn(upgrade_vm, vm, dry_run, ganeti_dry_run, restore)
+            for vm in vms]
+
+    if jobs:
+        gevent.joinall(jobs)
+
+    return
+
+
+def get_archipelago_vms(backend):
+    """Get all Archipelago VMs of a backend.
+
+    Archipelago VMS are the VMs whose disk template starts with
+    "ext_archipelago" or "ext_vlmc".
+    """
+    dt_query = "flavor__volume_type__disk_template__startswith"
+    target_dts = ["ext_archipelago", "ext_vlmc"]
+    vms = backend.virtual_machines\
+        .filter(deleted=False)\
+        .select_related("backend")\
+        .prefetch_related("volumes")
+
+    qor = [Q(**{dt_query: dt}) for dt in target_dts]
+    qor = reduce(or_, qor)
+    vms = vms.filter(qor)
+
+    logger.info("Backend %s: %s Archipelago vms", backend.clustername,
+                vms.count())
+
+    return vms
+
+
+def send_get_instance_info_job(vm):
+    """Send a GetInstanceInfo command for a VM."""
+    logger.debug("VM %s: Sending 'GetInstanceInfo' job", vm.backend_vm_id)
+    with pooled_rapi_client(vm) as rc:
+        job_id = rc.GetInstanceInfo(vm.backend_vm_id, static=1)
+    logger.debug("VM %s: Job id: %s, Backend: %s", vm.backend_vm_id, job_id,
+                 vm.backend.clustername)
+    return job_id
+
+
+def get_logical_ids(vm, job_id):
+    """Wait for GetInstanceInfo to complete and get the necessary data."""
+    logger.debug("VM %s: Waiting for job with id %s", vm.backend_vm_id, job_id)
+    with pooled_rapi_client(vm) as rc:
+        if not rc.WaitForJobCompletion(job_id, period=1):
+            logger.error("VM %s: Oh noes...", vm.backend_vm_id)
+            return
+
+        logger.debug("VM %s: Job %s has finished successfully",
+                     vm.backend_vm_id, job_id)
+        job_result = rc.GetJobStatus(job_id)
+
+    vm_info = job_result["opresult"][0][vm.backend_vm_id]
+    if vm_info["disk_template"] != "ext":
+        logger.warning("VM %s: Inconsistent flavor", vm.backend_vm_id)
+        return
+
+    # This is more fragile than a Ming vase...
+    disks = vm_info["disks"]
+
+    index_to_logical_id = {}
+    for disk in disks:
+        # Get the necessary data for a Ganeti disk and store it in a dict using
+        # the disk index as the key.
+        index = int(disk["iv_name"].replace("disk/", ""))
+        volume = vm.volumes.get(index=index, deleted=False)
+
+        # Make one more check to ensure that we are not dealing with the wrong
+        # disk
+        if disk["name"] != volume.backend_volume_uuid:
+            logger.error("Volume %s: Ganeti name is different: %s",
+                         volume.backend_volume_uuid, disk["name"])
+            return
+
+        index_to_logical_id[index] = disk["logical_id"][1]
+
+    return index_to_logical_id
+
+
+def rename_vm_disks(vm, index_to_logical_id, dry_run, ganeti_dry_run):
+    """Rename a Ganeti disk using its logical id."""
+    renamed_disks = [("modify", index, {"name": logical_id})
+                     for index, logical_id in index_to_logical_id.items()]
+
+    logger.debug("Modifying disks of instance '%s'. New disks: '%s'",
+                 vm.backend_vm_id, renamed_disks)
+
+    if dry_run:
+        return
+
+    # Add names to disks
+    with pooled_rapi_client(vm) as rc:
+        rc.ModifyInstance(vm.backend_vm_id, disks=renamed_disks,
+                          dry_run=ganeti_dry_run)
+
+    # Change the name in the backend
+    for index, logical_id in index_to_logical_id.items():
+        vol = vm.volumes.get(index=index, deleted=False)
+        vol.legacy_backend_volume_uuid = logical_id
+        vol.save()
+
+
+def restore_vm_disks(vm, dry_run, ganeti_dry_run):
+    """Restore a Ganeti disk using its backend name."""
+    renamed_disks = []
+    for vol in vm.volumes.filter(deleted=False):
+        # Restore the backend volume uuid in the Cyclades DB
+        vol.legacy_backend_volume_uuid = None
+        if not dry_run:
+            vol.save()
+        # Construct the Ganeti args
+        args = ("modify", vol.index, {"name": vol.backend_volume_uuid})
+        renamed_disks.append(args)
+
+    logger.debug("Modifying disks of instance '%s'. New disks: '%s'",
+                 vm.backend_vm_id, renamed_disks)
+
+    if dry_run:
+        return
+
+    # Rename the disks
+    with pooled_rapi_client(vm) as rc:
+        rc.ModifyInstance(vm.backend_vm_id, disks=renamed_disks,
+                          dry_run=ganeti_dry_run)
+
+
+def check_already_processed(vm):
+    """Check if the VM's disks have already been processed.
+
+    If the "legacy_backend_volume_uuid" field for all non-deleted volumes is
+    not null, then the VM has already been processed by a previous run of the
+    script.
+    """
+    processed = vm.volumes.exclude(legacy_backend_volume_uuid__isnull=True)\
+        .filter(deleted=False)\
+        .exists()
+
+    return processed
+
+
+def upgrade_vm(vm, dry_run, ganeti_dry_run, restore):
+    """Add names to Ganeti Disks."""
+    if restore:
+        logger.debug("Restoring disks of instance %s" % vm.backend_vm_id)
+        restore_vm_disks(vm, dry_run, ganeti_dry_run)
+        close_connection()
+        return
+
+    if check_already_processed(vm):
+        logger.info("The volumes of VM %s have already been processed", vm.id)
+        return
+
+    logger.debug("Updating disks of instance %s" % vm.backend_vm_id)
+
+    job_id = send_get_instance_info_job(vm)
+    logical_ids = get_logical_ids(vm, job_id)
+    if logical_ids:
+        rename_vm_disks(vm, logical_ids, dry_run, ganeti_dry_run)
+
+    close_connection()
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

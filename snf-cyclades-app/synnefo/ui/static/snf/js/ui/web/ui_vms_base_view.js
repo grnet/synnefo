@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -170,7 +170,10 @@
                 this.remove_vm(model)
                 return;
             }
-            
+
+            updated = _.filter(updated, function(m) { 
+              return !m.get('is_ghost') 
+            });
             this.update_vms(updated);
         },
 
@@ -230,21 +233,39 @@
             var el = this.vm(vm);
 
             var project = vm.get('project');
-            if (project) {
-              project.bind('change', function() {
-                el.find(".project-name").text(
-                  _.truncate(project.get('name'), 20));
-              }, this);
-            };
+
+            if (vm.get('shared_to_me')) {
+              el.find(".project-name-cont").addClass("disabled");
+              el.find(".project-name").addClass("disabled");
+            }
+
+            if (!vm.get('is_ghost')) {
+              if (project) {
+                project.bind('change', function() {
+                  el.find(".project-name").text(
+                    _.truncate(project.get('name'), 20));
+                }, this);
+              }
+            } else {
+                el.find(".project-name-cont").addClass("disabled");
+                if (project) {
+                  el.find(".project-name").text(
+                    _.truncate(project.get('name'), 20))
+                } else {
+                  el.find(".project-name").text("[Unknown]");
+                }
+            }
 
             // hidden feature, double click on indicators to display 
             // vm diagnostics.
             el.find(".indicators").bind("dblclick", function(){
+                if (vm.get('is_ghost')) { return }
                 self.show_build_details_for_vm(vm);
             });
 
             // this button gets visible if vm creation failed.
             el.find("div.build-progress .btn").click(function(){
+                if (vm.get('is_ghost')) { return }
                 self.show_build_details_for_vm(vm);
             });
         },
@@ -275,7 +296,7 @@
 
         show: function() {
             views.VMListView.__super__.show.apply(this, arguments);
-            if (storage.vms.length == 0) { this.hide() };
+            if (storage.vms.no_ghost_vms().length == 0) { this.hide() };
             if (!snf.config.update_hidden_views) {
                 this.update_vms(storage.vms.models);
             }
@@ -288,6 +309,7 @@
             _.each(vms, _.bind(function(vm){
                 // vm will be removed
                 // no need to update
+                if (vm.get("is_ghost")) { return; }
                 if (vm.get("status") == "DELETED") { return; }
                 this.add(vm);
                 this.update_vm(vm);
@@ -310,7 +332,12 @@
             this.vm(vm).find(".cont-toggler-wrapper." + t).removeClass("disabled");
         },
 
+
         update_toggles_visibility: function(vm) {
+          if (vm.get('is_ghost')) {
+            this.disable_toggler(vm, 'info');
+            this.disable_toggler(vm, 'tags');
+          }
           if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
               this.disable_toggler(vm, 'ips');
               this.disable_toggler(vm, 'volumes');
@@ -329,7 +356,6 @@
             // do not update deleted state vms
             if (!vm || vm.get("status") == 'DELETED') { return };
             this.check_vm_container(vm);
-
             this.update_details(vm);
             this.update_transition_state(vm);
             this.update_toggles_visibility(vm);
@@ -338,7 +364,11 @@
                 this.action_views[vm.id].update();
                 this.action_views[vm.id].update_layout();
             }
-            
+
+            if (this.info_views) {
+               this.info_views[vm.id].update_layout();
+            }
+
             var el = this.vm(vm);
             if (!vm.in_error_state()) {
                 el.addClass("can-resize");
@@ -526,9 +556,11 @@
           el.addClass("disabled-visible");
         },
 
+
         // update the actions layout, depending on the selected actions
         update_layout: function() {
-            
+            if (!this.vm) { return }
+
             if (this.vm.get('status') == 'STOPPED') {
               if (this.vm.can_start()) {
                 this.set_can_start();
@@ -548,8 +580,6 @@
                 this.init_vm_handlers();
             }
 
-            if (!this.vm) { return }
-            
             if (!this.hovered && !this.vm.has_pending_action() && this.hide && !this.vm.action_error) { 
                 this.el.hide();
                 this.view.hide_indicator(this.vm);

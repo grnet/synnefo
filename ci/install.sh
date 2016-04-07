@@ -16,3 +16,7 @@ for project in $PROJECTS; do
   python setup.py develop -N $OPTIONS
   cd -
 done
+
+for pkg in $DEV_PACKAGES; do
+    pip install -U $pkg
+done

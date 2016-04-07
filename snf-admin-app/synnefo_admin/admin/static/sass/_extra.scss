@@ -319,7 +319,11 @@ body .shortcuts {
 	}
 	dd {
 		margin-left: 60px;
-	}
+		p {
+			line-height: 2rem;
+			margin-bottom: 6px;
+		}
+    }
 }
 
 .popover {

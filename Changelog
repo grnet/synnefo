@@ -6,6 +6,188 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.17rc1:
+
+v0.17rc1
+========
+
+Released: UNRELEASED
+
+
+Synnefo-wide
+------------
+
+* Fixed postgresql connection pooling. The pool manager now closes the 
+  real connection objects when pool verify fails.
+
+
+Astakos
+-------
+
+* Support LDAP authentication by creating the 'LDAP' authentication
+  provider.
+* Add 'autoverify' provider policy to automatically verify the user's
+  email. Obsolete the 'SKIP_EMAIL_VERIFICATION' setting.
+* Extend authentication provider mechanism to support mapping arbitraty
+  provider's attributes to user attributes. Also, support making these
+  attributes to be 'forced' by the provider so that user cannot change
+  them (e.g. the user's email).
+* Minor changes so that 'local' authentication provider is treated
+  in the same way as all other providers.
+* Add the UUIDs of the projects that the user is member in the response
+  of 'identity/v2.0/tokens' API call.
+* Display uuid in expired projects list.
+* Fix checkbox behaviour in project members list.
+* Add project_creation_date column in `snf-manage` projects list.
+* Fixed `how-to` broken link in projects view.
+* Extend tokens API response with user's projects.
+* Fixed 'Unlimited' value handling in project submission form.
+* Return 302 instead of 301 on logout to avoid the user-agents caching the
+  logout redirect.
+
+
+Cyclades
+--------
+
+* Implement detachable volumes support.
+
+  * Support for detached volume creation.
+  * Support for VM attach/detach volume actions.
+
+* Implement shared resources among members of a project.
+
+  * Extend Cyclades API with the 'shared_to_project' field, indicating whether
+    a resource is shared to the members of the project that the resource belongs
+    to.
+  * Extend `reassign` API call with the 'shared_to_project' field that can be
+    used to share or unshare a resource to project members.
+  * Update Cyclades API to return all resources that are accessible to a user,
+    and not only those that are owned by the user.
+  * Update snf-manage commands to show whether a resource is shared or not.
+
+* Fix RAM rounding error in `snf-manage flavor-create`.
+* `snf-manage` `server-create`, `floating-ip-create` and `network-create`
+  commands now accept a project argument.
+* Show creation time in `snf-manage server-inspect`.
+* Detect and handle disk resizes from Ganeti.
+* Include the disks of the instance on snf-ganeti-eventd when
+  processing an OP_INSTANCE_GROW_DISK Ganeti job.
+* Extend the log records of all actions to include the user that
+  performed them.
+* Extend the ports that are accessible to the user with the ports that are
+  having a floating IP that is accessible to the user.
+* Add an snf-manage command (helper-servers-sync) that syncs helper servers
+  across Ganeti backends.
+* Add the 'CYCLADES_SHARED_RESOURCES_ENABLE' option to enable/disable the
+  feature of sharing a resource to the members of the project that
+  the resource belongs to.
+* Create an allocator interface in order to allow the creation of different
+  backend allocation algorithms. Default backend allocator setting is changed 
+  to `synnefo.logic.allocators.default_allocator.DefaultAllocator`.
+* Implement an interface for memory caching.
+* Add the option to retrieve the front page statistics
+  from the memory cache.
+* Add the `PUBLIC_STATS_CACHE_POPULATE_INTERVAL` setting.
+* Store the password in the cache on VM creation until the user
+  confirms that they stored it.
+
+
+Cyclades UI
+-----------
+
+* Extend Cyclades UI to work with shared resources
+
+ * Add option to share/unshare a resource in the project reassign view.
+ * Add icons to distinquish resources that are either shared by the user
+   or a shared to the user.
+ * Properly handle ghost resources, which are resources that are visible to
+   the user only because they are related with some shared resource, but the
+   user has no access to them. Add tooltip to explain this to the user.
+ * Custom image sections. Allow images uploaded by designated users to be 
+   displayed in separate sections in image listing overlay.
+ * Include machine icon images for bitnami
+ * Show public networks without a floating IP in IPs wizard
+
+* Display "No machine" option when creating volume from image source.
+* Display "No machine" option when the user has no machines created.
+* Add confirmation message on the password modal. If the user doesn't
+  confirm that they stored the password, the password modal will appear
+  each time they try to access their virtual machine.
+
+
+Pithos
+------
+
+* Add new setting for block module arguments
+* Fix access check for public files.
+
+  * The fact that a public URL for a file exists doesn't
+    grant an arbitrary user with read access to the file.
+
+
+Pithos UI
+---------
+
+* Pithos UI has been rewritten from scratch. Some of the features of the new 
+  UI are the following:
+  
+  * Based on modern web technologies (EmberJS, Foundation CSS)
+  * Revised styles and responsive layout
+  * Improved perfomance
+  * Enhanced user experience
+  * Styles themes
+  * Container management support
+  * Astakos quota API integration
+  * Chunked upload support
+
+  The introduced web application is now packaged as `snf-ui-app`. The new
+  package replaces the previous one, `snf-pithos-webclient` which from now on
+  is deprecated and should no longer be used.
+
+
+Admin
+-----
+
+* Enable OR operation between same type query terms
+
+
+Admin UI
+--------
+
+* Update tips and tricks content.
+
+
+CI
+--
+
+* Add an option (--local-package-dir) to upload local Debian packages to
+  the snf-deploy local packages directory.
+* New config option to enable ssh forwarding.
+
+
+Management
+----------
+
+* Allow specification of project when creating a new network, floating IP
+  or server using (cli) snf-manage.
+* Add the `floating-ip-show` command.
+
+
+Deploy
+------
+
+* Create helper VMs when running deploy.
+* Remove the x2go repo.
+
+
+Development
+-----------
+
+* Install/uninstall the required packages for development on the
+  install/uninstall scripts.
+* Switch to the django-nose test runner.
+
+
 .. _Changelog-0.16.2:
 
 v0.16.2
@@ -98,6 +280,7 @@ Documentation
 Pithos
 ------
 
+* Remove obsolete billing code
 * Fix off-by-one error in Pithos API tests.
 
 

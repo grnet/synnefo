@@ -69,8 +69,6 @@ Limitations
 
 * Limits are currently not supported.
 
-* Extensions are currently not supported.
-
 
 API Operations
 ==============
@@ -1683,11 +1681,11 @@ Request body contents::
 
 * **reboot type** can be either ``SOFT`` or ``HARD``.
 
-*Example (soft) Reboot Server: JSON*
+*Example (SOFT) Reboot Server: JSON*
 
 .. code-block:: javascript
 
-  {"reboot" : { "type": "soft"}}
+  {"reboot" : { "type": "SOFT"}}
 
 Resize Server
 .............

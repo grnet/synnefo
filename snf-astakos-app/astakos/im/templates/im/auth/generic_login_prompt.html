@@ -1,4 +1,7 @@
 {% load astakos_tags %}
+{% if provider.module == primary_provider.module %}
+<a href="{% provider_login_url provider 1 %}" alt="{{ provider.get_title_msg }}" class="icons selected">
+{% else %}
 <a href="{% provider_login_url provider 1 %}" alt="{{ provider.get_title_msg }}" class="icons">
+{% endif %}
 <img src="{{ provider.get_module_icon }}" alt="{{ provider.get_title_msg }}" /></a>
-

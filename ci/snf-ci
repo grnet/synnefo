@@ -108,6 +108,9 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
     parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
                       help="Upload/Install the public ssh keys contained"
                            " in this file to the server")
+    parser.add_option("--local-package-dir", dest="local_package_dir",
+                      default=None, help="Upload local packages from this dir "
+                      "to the server")
     parser.add_option("--name", dest="server_name", default=None,
                       help="")
     parser.add_option("-n", "--build-id", dest="build_id", default=None,
@@ -214,7 +217,8 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
             dest = os.path.abspath(options.fetch_docs)
             synnefo_ci.fetch_documentation(dest=dest)
     if getattr(options, DEPLOY_SYNNEFO_CMD, False):
-        synnefo_ci.deploy_synnefo(schema=options.schema)
+        synnefo_ci.deploy_synnefo(schema=options.schema,
+                                  local_package_dir=options.local_package_dir)
     if getattr(options, TEST_SYNNEFO_CMD, False):
         synnefo_ci.unit_test()
     if getattr(options, RUN_BURNIN_CMD, False):

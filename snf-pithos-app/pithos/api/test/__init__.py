@@ -19,6 +19,7 @@ from urlparse import urlunsplit, urlsplit, urlparse
 from xml.dom import minidom
 from urllib import quote, unquote
 from mock import patch, PropertyMock
+from django_nose import NoseTestSuiteRunner
 
 from snf_django.utils.testing import with_settings, astakos_user
 
@@ -31,7 +32,6 @@ from synnefo.lib import join_urls
 
 from django.test import TestCase
 from django.test.client import Client, MULTIPART_CONTENT, FakePayload
-from django.test.simple import DjangoTestSuiteRunner
 from django.conf import settings
 from django.utils.http import urlencode
 from django.utils.encoding import smart_unicode
@@ -124,7 +124,7 @@ def filter_headers(headers, prefix):
     return meta
 
 
-class PithosTestSuiteRunner(DjangoTestSuiteRunner):
+class PithosTestSuiteRunner(NoseTestSuiteRunner):
     def setup_test_environment(self, **kwargs):
         pithos_settings.BACKEND_MAPFILE_PREFIX = \
             'snf_test_pithos_app_%s_' % time.time()

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,37 @@ from django.test import TestCase
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
 from mock import patch
+
+
+class MurphysLaw(Exception):
+
+    """Exception for test purposes.
+
+    This exception should be used in mock functions. It simulates a generic
+    error during a function call that would need a transaction rollback or
+    clean up code to ensure that the system remains in a sane state.
+
+    While no different than a common exception, it makes all the difference
+    when used in conjuction with "assertRaises". Consider the scenario where we
+    want to test the function `foo` and we have added an exception at some
+    point:
+
+    >>> with self.assertRaise(Exception):
+    ...     foo()
+    ... # Check that the foo function left no side-effects
+
+    If foo happened to have an error at some other point that would cause some
+    other exception to be raised, then we would falsely continue with the test.
+    Therefore, we need a special exception to make sure that foo crashed at the
+    point we wanted to. This is a better solution:
+
+    >>> with self.assertRaise(MurphysLaw):
+    ...     foo()
+    ... # Check that the foo function left no side-effects
+
+    """
+
+    pass
 
 
 @contextmanager
@@ -103,7 +134,7 @@ serial = 0
 
 
 @contextmanager
-def astakos_user(user):
+def astakos_user(user, projects=None, roles=None):
     """
     Context manager to mock astakos response.
 
@@ -114,6 +145,8 @@ def astakos_user(user):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
+        if roles is None:
+            roles = [{"id": 1, "name": "default"}]
         with patch('astakosclient.AstakosClient.authenticate') as m2:
             m2.return_value = {"access": {
                 "token": {
@@ -128,7 +161,8 @@ def astakos_user(user):
                 "user": {
                     "roles_links": [],
                     "id": smart_unicode(user, encoding='utf-8'),
-                    "roles": [{"id": 1, "name": "default"}],
+                    "roles": roles,
+                    "projects": projects,
                     "name": "Firstname Lastname"}}
                 }
 
@@ -205,19 +239,22 @@ def mocked_quotaholder(success=True):
 
 class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):
-        with astakos_user(user):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder():
                 response = self.client.get(url, *args, **kwargs)
         return response
 
     def head(self, url, user='user', *args, **kwargs):
-        with astakos_user(user):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder():
                 response = self.client.head(url, *args, **kwargs)
         return response
 
-    def delete(self, url, user='user'):
-        with astakos_user(user):
+    def delete(self, url, user='user', **kwargs):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.delete(url)
@@ -226,7 +263,8 @@ class BaseAPITest(TestCase):
     def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
-        with astakos_user(user):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.post(url, params,
@@ -237,7 +275,8 @@ class BaseAPITest(TestCase):
     def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
-        with astakos_user(user):
+        with astakos_user(user, kwargs.pop('_projects', None),
+                          kwargs.pop('_roles', None)):
             with mocked_quotaholder() as m:
                 self.mocked_quotaholder = m
                 response = self.client.put(url, params,

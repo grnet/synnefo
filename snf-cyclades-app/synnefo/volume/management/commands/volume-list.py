@@ -39,6 +39,7 @@ class Command(ListCommand):
         "id": ("id", "ID of the server"),
         "name": ("name", "Name of the server"),
         "user.uuid": ("userid", "The UUID of the server's owner"),
+        "project": ("project", "The project UUID"),
         "size": ("size", "The size of the volume (GB)"),
         "server_id": ("machine_id", "The UUID of the server that the volume"
                                     " is currently attached"),

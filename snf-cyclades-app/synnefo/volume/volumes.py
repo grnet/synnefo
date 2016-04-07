@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,40 +18,98 @@ import logging
 from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
-from synnefo.db.models import Volume, VolumeMetadata
+from synnefo.db.models import Volume, VolumeMetadata, VirtualMachine
 from synnefo.volume import util
 from synnefo.logic import server_attachments, utils, commands
 from synnefo.plankton.backend import OBJECT_AVAILABLE
 from synnefo import quotas
+from synnefo.api.util import get_random_helper_vm
 
 log = logging.getLogger(__name__)
 
 
+def get_volume(volume_id):
+    """Simple function to get and lock a Volume."""
+    return Volume.objects.select_for_update().get(id=volume_id, deleted=False)
+
+
+def get_vm(vm_id):
+    """Simple function to get and lock a Virtual Machine."""
+    vms = VirtualMachine.objects.select_for_update()
+    try:
+        return vms.get(id=vm_id, deleted=False)
+    except VirtualMachine.DoesNotExist:
+        raise faults.BadRequest("Virtual machine '%s' does not exist" % vm_id)
+
+
 @transaction.commit_on_success
-def create(user_id, size, server_id, name=None, description=None,
+def create(user_id, size, server=None, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
-           project=None):
+           project_id=None, shared_to_project=False):
+    """Create a new volume and optionally attach it to a server.
 
-    # Currently we cannot create volumes without being attached to a server
-    if server_id is None:
-        raise faults.BadRequest("Volume must be attached to server")
-    server = util.get_server(user_id, server_id, for_update=True,
-                             non_deleted=True,
-                             exception=faults.BadRequest)
+    This function serves as the main entry-point for volume creation. It gets
+    the necessary data either from the API or from an snf-manage command and
+    then feeds that data to the lower-level functions that handle the actual
+    creation of the volume and the server attachments.
+    """
+    volume_type = None
 
-    server_vtype = server.flavor.volume_type
-    if volume_type_id is not None:
+    # If given a server id, assert that it exists and that it belongs to the
+    # user.
+    if server:
+        volume_type = server.flavor.volume_type
+        # If the server's volume type conflicts with the provided volume type,
+        # raise an exception.
+        if volume_type_id and \
+           volume_type.id != util.normalize_volume_type_id(volume_type_id):
+            raise faults.BadRequest("Cannot create a volume with type '%s' to"
+                                    " a server with volume type '%s'."
+                                    % (volume_type_id, volume_type.id))
+
+    # If the user has not provided a valid volume type, raise an exception.
+    if volume_type is None:
         volume_type = util.get_volume_type(volume_type_id,
                                            include_deleted=False,
                                            exception=faults.BadRequest)
-        if volume_type != server_vtype:
-            raise faults.BadRequest("Cannot create a volume with type '%s' to"
-                                    " a server with volume type '%s'."
-                                    % (volume_type.id, server_vtype.id))
-    else:
-        volume_type = server_vtype
 
+    # We cannot create a non-detachable volume without a server.
+    if server is None:
+        util.assert_detachable_volume_type(volume_type)
+
+    volume = create_common(user_id, size, name=name,
+                           description=description,
+                           source_image_id=source_image_id,
+                           source_snapshot_id=source_snapshot_id,
+                           source_volume_id=source_volume_id,
+                           volume_type=volume_type, metadata={},
+                           project_id=project_id,
+                           shared_to_project=shared_to_project)
+
+    if server is not None:
+        server_attachments.attach_volume(server, volume)
+    else:
+        quotas.issue_and_accept_commission(volume, action="BUILD")
+        # If the volume has been created in the DB, consider it available.
+        volume.status = "AVAILABLE"
+        volume.save()
+
+    return volume
+
+
+def create_common(user_id, size, name=None, description=None,
+                  source_volume_id=None, source_snapshot_id=None,
+                  source_image_id=None, volume_type=None, metadata=None,
+                  project_id=None, shared_to_project=False):
+    """Common tasks and checks for the creation of a new volume.
+
+    This function processes the necessary arguments in order to call the
+    `_create_volume` function, which creates the volume in the DB.
+
+    The main duty of `create_common` is to handle the metadata creation of the
+    volume and to update the quota of the user.
+    """
     # Assert that not more than one source are used
     sources = filter(lambda x: x is not None,
                      [source_volume_id, source_snapshot_id, source_image_id])
@@ -71,8 +129,8 @@ def create(user_id, size, server_id, name=None, description=None,
         source_type = "blank"
         source_uuid = None
 
-    if project is None:
-        project = user_id
+    if project_id is None:
+        project_id = user_id
 
     if metadata is not None and \
        len(metadata) > settings.CYCLADES_VOLUME_MAX_METADATA:
@@ -80,53 +138,50 @@ def create(user_id, size, server_id, name=None, description=None,
                                 "items" %
                                 settings.CYCLADES_VOLUME_MAX_METADATA)
 
-    volume = _create_volume(server, user_id, project, size,
-                            source_type, source_uuid,
-                            volume_type=volume_type, name=name,
-                            description=description, index=None)
+    volume = _create_volume(user_id, project_id, size, source_type,
+                            source_uuid, volume_type=volume_type,
+                            name=name, description=description, index=None,
+                            shared_to_project=shared_to_project)
 
     if metadata is not None:
         for meta_key, meta_val in metadata.items():
             utils.check_name_length(meta_key, VolumeMetadata.KEY_LENGTH,
                                     "Metadata key is too long")
             utils.check_name_length(meta_val, VolumeMetadata.VALUE_LENGTH,
-                                    "Metadata key is too long")
+                                    "Metadata value is too long")
             volume.metadata.create(key=meta_key, value=meta_val)
-
-    server_attachments.attach_volume(server, volume)
 
     return volume
 
 
-def _create_volume(server, user_id, project, size, source_type, source_uuid,
+def _create_volume(user_id, project, size, source_type, source_uuid,
                    volume_type, name=None, description=None, index=None,
-                   delete_on_termination=True):
+                   delete_on_termination=True, shared_to_project=False):
+    """Create the volume in the DB.
 
+    This function can be called from two different places:
+    1) During server creation, when creating the volumes of a new server
+    2) During volume creation.
+    """
     utils.check_name_length(name, Volume.NAME_LENGTH,
                             "Volume name is too long")
     utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
                             "Volume description is too long")
     validate_volume_termination(volume_type, delete_on_termination)
 
-    if index is None:
-        # Counting a server's volumes is safe, because we have an
-        # X-lock on the server.
-        index = server.volumes.filter(deleted=False).count()
-
     if size is not None:
         try:
             size = int(size)
         except (TypeError, ValueError):
-            raise faults.BadRequest("Volume 'size' needs to be a positive"
-                                    " integer value.")
+            raise faults.BadRequest("Volume size must be a positive integer")
         if size < 1:
             raise faults.BadRequest("Volume size must be a positive integer")
         if size > settings.CYCLADES_VOLUME_MAX_SIZE:
-            raise faults.BadRequest("Maximum volume size is '%sGB'" %
+            raise faults.BadRequest("Maximum volume size is %sGB" %
                                     settings.CYCLADES_VOLUME_MAX_SIZE)
 
     # Only ext_ disk template supports cloning from another source. Otherwise
-    # is must be the root volume so that 'snf-image' fill the volume
+    # it must be the root volume so that 'snf-image' fill the volume
     can_have_source = (index == 0 or
                        volume_type.provider in settings.GANETI_CLONE_PROVIDERS)
     if not can_have_source and source_type != "blank":
@@ -200,16 +255,16 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
 
     volume = Volume.objects.create(userid=user_id,
                                    project=project,
+                                   index=index,
+                                   shared_to_project=shared_to_project,
                                    size=size,
                                    volume_type=volume_type,
                                    name=name,
-                                   machine=server,
                                    description=description,
                                    delete_on_termination=delete_on_termination,
                                    source=source,
                                    source_version=source_version,
                                    origin=origin,
-                                   index=index,
                                    status="CREATING")
 
     # Store the size of the origin in the volume object but not in the DB.
@@ -219,22 +274,109 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
     return volume
 
 
+def attach(server, volume_id):
+    """Attach a volume to a server."""
+    volume = get_volume(volume_id)
+    server_attachments.attach_volume(server, volume)
+
+    return volume
+
+
+def delete_detached_volume(volume):
+    """Delete a detached volume.
+
+    There is actually no way (that involves Ganeti) to delete a detached
+    volume. Instead, we need to attach it to a helper VM and then delete it.
+    The purpose of this function is to do the first step; find an available
+    helper VM and attach the volume to it. In order to differentiate this
+    action from a common attach action, we set the volume status as DELETING.
+    Then, the dispatcher will handle the deletion of the volume.
+    """
+    # Fetch a random helper VM from an online and undrained Ganeti backend
+    server = get_random_helper_vm(for_update=True)
+    if server is None:
+        raise faults.ItemNotFound("Cannot find an available helper server")
+    log.debug("Using helper server %s for the removal of volume %s",
+              server, volume)
+
+    # Attach the volume to the helper server, in order to delete it
+    # internally later.
+    server_attachments.attach_volume(server, volume)
+    volume.status = "DELETING"
+    volume.save()
+
+    return volume
+
+
+def delete_volume_from_helper(volume, helper_vm):
+    """Delete a volume that has been attached to a helper VM.
+
+    This special-purpose function should be called only by the dispatcher, when
+    we are notified that a detached volume has been attached to a helper VM.
+    """
+    if not helper_vm.helper:
+        raise faults.BadRequest("Server %s is not a helper server" %
+                                helper_vm.backend_vm_id)
+    log.debug("Attempting to delete volume '%s' from helper server '%s'",
+              volume.id, helper_vm.id)
+    server_attachments.delete_volume(helper_vm, volume)
+    log.info("Deleting volume '%s' from server '%s', job: %s",
+             volume.id, helper_vm.id, volume.backendjobid)
+
+
 @transaction.commit_on_success
 def delete(volume):
-    """Delete a Volume"""
-    # A volume is deleted by detaching it from the server that is attached.
-    # Deleting a detached volume is not implemented.
+    """Delete a Volume.
+
+    The canonical way of deleting a volume is to send a command to Ganeti to
+    remove the volume from a specific server. There are two cases however when
+    a volume may not be attached to a server:
+
+    * Case 1: The volume has been created only in DB and was never attached to
+    a server. In this case, we can simply mark the volume as deleted without
+    using Ganeti to do so.
+    * Case 2: The volume has been detached from a VM. This means that there are
+    still data in the storage backend. Thus, in order to delete the volume
+    safely, we must attach it to a helper VM, thereby handing the delete action
+    to the dispatcher.
+    """
     server_id = volume.machine_id
     if server_id is not None:
-        server = util.get_server(volume.userid, server_id, for_update=True,
-                                 non_deleted=True,
-                                 exception=faults.BadRequest)
+        server = get_vm(server_id)
+        server_attachments.delete_volume(server, volume)
+        log.info("Deleting volume '%s' from server '%s', job: %s",
+                 volume.id, server_id, volume.backendjobid)
+    elif volume.backendjobid is None:
+        # Case 1: Uninitialized volume
+        if volume.status not in ("AVAILABLE", "ERROR"):
+            raise faults.BadRequest("Volume is in invalid state: %s" %
+                                    volume.status)
+        log.debug("Attempting to delete uninitialized volume %s.", volume)
+        util.mark_volume_as_deleted(volume, immediate=True)
+        quotas.issue_and_accept_commission(volume, action="DESTROY")
+        log.info("Deleting uninitialized volume '%s'", volume.id)
+    else:
+        # Case 2: Detached volume
+        log.debug("Attempting to delete detached volume %s", volume)
+        delete_detached_volume(volume)
+        log.info("Deleting volume '%s' from helper server '%s', job: %s",
+                 volume.id, volume.machine.id, volume.backendjobid)
+
+    return volume
+
+
+@transaction.commit_on_success
+def detach(volume_id):
+    """Detach a Volume"""
+    volume = get_volume(volume_id)
+    server_id = volume.machine_id
+    if server_id is not None:
+        server = get_vm(server_id)
         server_attachments.detach_volume(server, volume)
-        log.info("Detach volume '%s' from server '%s', job: %s",
+        log.info("Detaching volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
     else:
-        raise faults.BadRequest("Cannot delete a detached volume")
-
+        raise faults.BadRequest("Volume is already detached")
     return volume
 
 
@@ -257,22 +399,32 @@ def update(volume, name=None, description=None, delete_on_termination=None):
 
 
 @transaction.commit_on_success
-def reassign_volume(volume, project):
+def reassign_volume(volume, project, shared_to_project):
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %
                               volume.id)
-    if volume.machine_id is not None:
-        server = util.get_server(volume.userid, volume.machine_id,
-                                 for_update=True, non_deleted=True,
-                                 exception=faults.BadRequest)
+
+    server = volume.machine
+    if server is not None:
         commands.validate_server_action(server, "REASSIGN")
-    action_fields = {"from_project": volume.project, "to_project": project}
-    log.info("Reassigning volume %s from project %s to %s",
-             volume.id, volume.project, project)
-    volume.project = project
-    volume.save()
-    quotas.issue_and_accept_commission(volume, action="REASSIGN",
-                                       action_fields=action_fields)
+
+    if volume.project == project:
+        if volume.shared_to_project != shared_to_project:
+            log.info("%s volume %s to project %s",
+                "Sharing" if shared_to_project else "Unsharing",
+                volume, project)
+            volume.shared_to_project = shared_to_project
+            volume.save()
+    else:
+        action_fields = {"to_project": project, "from_project": volume.project}
+        log.info("Reassigning volume %s from project %s to %s, shared: %s",
+                volume, volume.project, project, shared_to_project)
+        volume.project = project
+        volume.shared_to_project = shared_to_project
+        volume.save()
+        quotas.issue_and_accept_commission(volume, action="REASSIGN",
+                                           action_fields=action_fields)
+    return volume
 
 
 def validate_volume_termination(volume_type, delete_on_termination):

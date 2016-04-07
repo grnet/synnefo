@@ -15,13 +15,14 @@
 
 from mock import MagicMock
 
-from pithos.backends.base import ItemNotExists
-from pithos.backends.util import connect_backend
+from pithos.backends.test.util import get_random_data
 
-from .util import get_random_data
+from pithos.backends.exceptions import ItemNotExists
+from pithos.backends.util import connect_backend
 
 import random
 import unittest
+
 
 class CommonMixin(unittest.TestCase):
     block_size = 1024

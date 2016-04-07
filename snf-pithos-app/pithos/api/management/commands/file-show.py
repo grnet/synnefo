@@ -82,7 +82,7 @@ class Command(SynnefoCommand):
                                options["output_format"], vertical=True)
 
             success_status = True
-        except Exception, e:
+        except Exception as e:
             raise CommandError(e)
         finally:
             b.post_exec(success_status)

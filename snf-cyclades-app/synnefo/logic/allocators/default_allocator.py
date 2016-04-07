@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,54 +16,59 @@
 from __future__ import division
 import logging
 
+from synnefo.logic.allocators.base import AllocatorBase
+
 
 log = logging.getLogger(__name__)
 
 
-def allocate(backends, vm):
-    if len(backends) == 1:
-        return backends[0]
+class DefaultAllocator(AllocatorBase):
+    def allocate(self, backends, vm):
+        if len(backends) == 1:
+            return backends[0]
 
-    # Filter those that cannot host the vm
-    capable_backends = [backend for backend in backends
-                        if vm_fits_in_backend(backend, vm)]
+        # Compute the scores for each backend
+        backend_scores = [(backend, self.backend_score(backend))
+                          for backend in backends]
 
-    log.debug("Capable backends for VM %s: %s", vm, capable_backends)
+        log.debug("Backend scores %s", backend_scores)
 
-    # Since we are conservatively updating backend resources on each
-    # allocation, a backend may actually be able to host a vm (despite
-    # the state of the backend in db)
-    if not capable_backends:
-        capable_backends = backends
+        # Pick out the best
+        result = min(backend_scores, key=lambda (b, b_score): b_score)
+        backend = result[0]
 
-    # Compute the scores for each backend
-    backend_scores = [(backend, backend_score(backend, vm))
-                      for backend in capable_backends]
+        return backend
 
-    log.debug("Backend scores %s", backend_scores)
+    def filter_backends(self, backends, vm):
+        # Filter those that cannot host the vm
+        capable_backends = [backend for backend in backends
+                            if self.vm_fits_in_backend(backend, vm)]
 
-    # Pick out the best
-    result = min(backend_scores, key=lambda (b, b_score): b_score)
-    backend = result[0]
+        log.debug("Capable backends for VM %s: %s", vm, capable_backends)
 
-    return backend
+        # Since we are conservatively updating backend resources on each
+        # allocation, a backend may actually be able to host a vm (despite
+        # the state of the backend in db)
+        if not capable_backends:
+            capable_backends = backends
 
+        return capable_backends
 
-def vm_fits_in_backend(backend, vm):
-    has_disk = backend.dfree > vm['disk']
-    has_mem = backend.mfree > vm['ram']
-    # Consider each VM having 4 Virtual CPUs
-    vcpu_ratio = ((backend.pinst_cnt + 1) * 4) / backend.ctotal
-    # Consider max vcpu/cpu ratio 3
-    has_cpu = vcpu_ratio < 3
-    return has_cpu and has_disk and has_mem
+    def backend_score(self, backend):
+        mem_ratio = 1 - (backend.mfree / backend.mtotal) if backend.mtotal else 0
+        disk_ratio = 1 - (backend.dfree / backend.dtotal) if backend.dtotal else 0
+        if backend.ctotal:
+            cpu_ratio = ((backend.pinst_cnt + 1) * 4) / (backend.ctotal * 3)
+        else:
+            cpu_ratio = 1
+        return 0.5 * cpu_ratio + 0.5 * (mem_ratio + disk_ratio)
 
+    def vm_fits_in_backend(self, backend, vm):
+        has_disk = backend.dfree > vm['disk']
+        has_mem = backend.mfree > vm['ram']
+        # Consider each VM having 4 Virtual CPUs
+        vcpu_ratio = ((backend.pinst_cnt + 1) * 4) / backend.ctotal
+        # Consider max vcpu/cpu ratio 3
+        has_cpu = vcpu_ratio < 3
 
-def backend_score(backend, flavor):
-    mem_ratio = 1 - (backend.mfree / backend.mtotal) if backend.mtotal else 0
-    disk_ratio = 1 - (backend.dfree / backend.dtotal) if backend.dtotal else 0
-    if backend.ctotal:
-        cpu_ratio = ((backend.pinst_cnt + 1) * 4) / (backend.ctotal * 3)
-    else:
-        cpu_ratio = 1
-    return 0.5 * cpu_ratio + 0.5 * (mem_ratio + disk_ratio)
+        return has_cpu and has_disk and has_mem

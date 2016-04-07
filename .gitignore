@@ -20,6 +20,7 @@ _sass/
 selenium-server-standalone-2.0b2.jar
 .project
 .pydevproject
+.ropeproject
 .settings/
 settings.d/*-local.conf
 *.egg-info

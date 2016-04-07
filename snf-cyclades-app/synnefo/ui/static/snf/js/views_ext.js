@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -228,7 +228,7 @@
             this.disabled_filter = this.options.disabled_filter;
         }
         var handlers = {};
-        handlers[this.collection_name] = {
+        handlers[this.collection || this.collection_name] = {
           'collection_change': ['update', 'sort'],
           'collection_reset': ['reset'],
           'model_change': ['change'],
@@ -238,6 +238,7 @@
         this.storage_handlers = _.extend(handlers, this.storage_handlers)
         this._model_views = {};
         this.list_el = $(this.$(".items-list").get(0));
+        this.empty_option_view = null;
         this.empty_el = $(this.$(".empty-list").get(0));
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
@@ -258,7 +259,7 @@
                                       _.bind(this.update_quota, this));
           this.update_quota();
         }
-
+        
       },
       
       update_quota: function() {
@@ -349,6 +350,11 @@
       },
 
       check_empty: function() {
+        if (this.options.empty_model) {
+          this.list_el.show();
+          this.hide_empty();
+          return;
+        }
         if (this.collection.length == 0) {
           this.show_empty();
           this.list_el.hide();
@@ -391,7 +397,7 @@
         if (!view_cls) { return }
         
         // avoid duplicate entries
-        if (this._model_views[m.id]) { return }
+        if (this._model_views[m.id]) { return this._model_views[m.id]}
         
         // handle empty collection
         this.check_empty();
@@ -405,6 +411,7 @@
         this.add_model_view(view, m, index);
         this.fix_sort();
         this.check_disabled(view);
+        return view;
       },
     
       update_disabled: function() {
@@ -497,6 +504,11 @@
     
       post_update_models: function() {},
       update_models: function(m) {
+        if (this.options.empty_model) { 
+          this.empty_view = this.add_model(this.options.empty_model, 0);
+          var process = this.options.process_empty_view;
+          process && process.bind(this)(this.empty_view);
+        }
         this.check_empty();
         this.collection.each(function(model, index) {
           if (!(model.id in this._model_views)) {
@@ -514,14 +526,14 @@
         this.each_model_view(function(model, view, model_id){
           if (!model) {
             model = {'id': model_id};
+            if (model_id == '_empty') { return }
             this.remove_model(model);
           }
         });
-
         this.fix_sort();
         this.post_update_models();
       },
-        
+      
       _get_view_at_index: function(i) {
           var found = undefined;
           _.each(this._model_views, function(view) {
@@ -533,6 +545,10 @@
 
       fix_sort: function() {
         var container_indexes = {};
+        if (this.options.empty_model && this.empty_view) {
+          var parent = this.empty_view.el.parent();
+          container_indexes[parent.index()] = ['_empty'];
+        }
         this.collection.each(function(m, i) {
             var view = this._model_views[m.id];
             if (!view) { return }
@@ -636,8 +652,24 @@
             actions.reset_pending();
           });
         }
+
+        this.model.bind("change:is_ghost", this.handle_ghost_tooltip);
+        this.handle_ghost_tooltip()
       },
       
+      handle_ghost_tooltip: function(x) {
+        main_content = this.el.find(".main-content");
+        if (this.model.get('is_ghost')) {
+            snf.util.set_tooltip(main_content,
+              'You do not have access to this resource.<br/>You are only seeing' +
+              ' it because it is related to another resource already' +
+              ' shared to you.', {tipClass: 'info tooltip'});
+        } else {
+          snf.util.unset_tooltip(main_content);
+        }
+
+      },
+
       action_cls_map: {
         'remove': 'destroy'
       },
@@ -725,10 +757,20 @@
         return this.el;
       },
 
-      update_layout: function() {}
+      update_layout: function() {},
+
+      shared_icon: function() {
+        if (this.model.get("shared_to_me")) {
+          return snf.config.media_url + 'images/shared-to-me.png';
+        } else if (this.model.get("shared_to_project")) {
+          return snf.config.media_url + 'images/shared-by-me.png';
+        } else {
+          return undefined;
+        }
+      }
 
     });
-    
+
     views.ModelRenameView = views.ext.ModelView.extend({
       tpl: '#rename-view-tpl',
       title_attr: 'name',

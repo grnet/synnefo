@@ -66,7 +66,7 @@ class AstakosTestSuite(BurninTests):
         self.assertEqual(self.clients.token, access['token']['id'])
         self.info('Token is correct')
         self.assertEqual(
-            set(['roles', 'name', 'id', 'roles_links']),
+            set(['roles', 'name', 'id', 'roles_links', 'projects']),
             set(astakos.user_info))
         self.info('User section is correct')
 

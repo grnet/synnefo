@@ -42,7 +42,7 @@ from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
 from astakos.im.util import get_context, prepare_response, get_query, \
     restrict_next
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
-    SignApprovalTermsForm, EmailChangeForm
+    SignApprovalTermsForm, EmailChangeForm, LDAPLoginForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
 from astakos.im.user_utils import send_feedback, logout as auth_logout, \
@@ -58,6 +58,36 @@ from astakos.api import projects as projects_api
 from astakos.api.util import _dthandler
 
 logger = logging.getLogger(__name__)
+
+PRIMARY_PROVIDER = auth.get_provider(settings.IM_MODULES[0])
+
+
+def handle_get_to_login_view(request, primary_provider, login_form,
+                             template_name="im/login.html",
+                             extra_context=None):
+    """Common handling of a GET request to a login view.
+
+    Handle a GET request to a login view either by redirecting the user
+    to landing page in case the user is authenticated, or by rendering
+    the login template with the 'primary_provider' correctly set.
+
+    """
+    extra_context = extra_context or {}
+
+    third_party_token = request.GET.get('key', False)
+    if third_party_token:
+        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('landing'))
+
+    extra_context['primary_provider'] = primary_provider
+
+    return render_response(
+        template_name,
+        login_form=login_form,
+        context_instance=get_context(request, extra_context)
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -77,20 +107,10 @@ def login(request, template_name='im/login.html', extra_context=None):
         An dictionary of variables to add to the template context.
     """
 
-    extra_context = extra_context or {}
-
-    third_party_token = request.GET.get('key', False)
-    if third_party_token:
-        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
-
-    if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('landing'))
-
-    return render_response(
-        template_name,
-        login_form=LoginForm(request=request),
-        context_instance=get_context(request, extra_context)
-    )
+    return handle_get_to_login_view(request, primary_provider=PRIMARY_PROVIDER,
+                                    login_form=LoginForm(request),
+                                    template_name=template_name,
+                                    extra_context=extra_context)
 
 
 @require_http_methods(["GET", "POST"])
@@ -484,8 +504,13 @@ def signup(request, template_name='im/signup.html', on_success='index',
             messages.add_message(request, status, message)
             return HttpResponseRedirect(reverse(on_success))
 
+    ldap_login_form = None
+    if 'ldap' in settings.IM_MODULES:
+        ldap_login_form = LDAPLoginForm(request)
+
     return render_response(
         template_name,
+        login_form=ldap_login_form,
         signup_form=form,
         third_party_token=third_party_token,
         provider=provider,
@@ -561,7 +586,7 @@ def logout(request, template='registration/logged_out.html',
         auth_logout(request)
     else:
         response['Location'] = reverse('index')
-        response.status_code = 301
+        response.status_code = 302
         return response
 
     next = restrict_next(
@@ -574,7 +599,7 @@ def logout(request, template='registration/logged_out.html',
         response.status_code = 302
     elif settings.LOGOUT_NEXT:
         response['Location'] = settings.LOGOUT_NEXT
-        response.status_code = 301
+        response.status_code = 302
     else:
         last_provider = request.COOKIES.get(
             'astakos_last_login_method', 'local')
@@ -590,7 +615,7 @@ def logout(request, template='registration/logged_out.html',
             message += "<br />" + extra
         messages.success(request, message)
         response['Location'] = reverse('index')
-        response.status_code = 301
+        response.status_code = 302
     return response
 
 

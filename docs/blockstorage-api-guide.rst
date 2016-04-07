@@ -329,18 +329,23 @@ Request body contents::
 Volume Attribute    Value                            Cyclades OS/Block Storage
 =================== ================================ ======== ================
 size                Volume size in GB                required required
-server_id           An existing VM to create from    required **✘**
+server_id           An existing VM to create from    ✔*       **✘**
 availability_zone   Respond in xml                   **✘**    ✔
 source_volid        Existing volume to create from   **✘**    ✔
-display_description A description                     ✔        ✔
+display_description A description                    ✔        ✔
 snapshot_id         Existing snapshot to create from ✔        ✔
 display_name        The name                         required ✔
 imageRef            Image to create from             ✔        ✔
-volume_type         The associated volume type       ✔        ✔
+volume_type         The associated volume type       ✔*       ✔
 bootable            Whether the volume is bootable   **✘**    ✔
 metadata            Key-Value metadata pairs         ✔        ✔
 project             Assigned project for quotas      ✔        **✘**
 =================== ================================ ======== ================
+
+.. note::
+
+  * ``server_id`` is required for non-detachable volumes
+  * if ``server_id`` is not provided, then ``volume_type`` is required
 
 *Example Create Volume Request: JSON*
 

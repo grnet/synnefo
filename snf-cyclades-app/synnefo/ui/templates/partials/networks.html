@@ -112,7 +112,7 @@
       </div>
     <div class="border2"></div>
     <div data-rv-class="model.vm.status|vm_status_cls">
-      <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
+      <img class="model-logo" data-rv-class-logo-ghost="model.vm.is_ghost" data-rv-src="model.vm.status|vm_logo_url" />
       <h5 class="title" data-rv-text="model.vm.name|truncate 35"></h5>
       <div class="state state-indicator">
         <div class="action-indicator"></div>
@@ -166,8 +166,9 @@
         </div>
       </div>
       <div class="actions-content">
-        <div class="action-container isactive" 
-          data-rv-on-click="view.show_vm_details">
+        <div class="action-container"
+            data-rv-class-isactive="model.device_id"
+            data-rv-on-click="view.show_vm_details">
              <a>Details</a>
         </div>
         <div class="action-container disconnect warn" 
@@ -195,15 +196,19 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <img class="logo" data-rv-src="model.is_public|get_network_icon" />
+        <img class="logo" data-rv-class-logo-ghost="model.is_ghost" data-rv-src="model.is_public|get_network_icon" />
+        <img class="logo-shared" data-rv-show="model.sharing" data-rv-src="model.sharing|shared_icon"/>
+
         <div class="entry">
           <div data-rv-show="model" 
             data-rv-model-view="model|ModelRenameView">
           </div>
-            <div class="project-name-cont" 
-            data-rv-on-click="view.show_reassign_view"
-            data-rv-show="model.tenant_id">
-                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            <div class="project-name-cont"
+                data-rv-class="model.sharing|check_can_reassign"
+                data-rv-hide="model.is_public"
+                data-rv-on-click="view.show_reassign_view">
+                <span class="project-name" data-rv-show="model.tenant_id" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+                <span class="project-name" data-rv-hide="model.tenant_id">[Unknown project]</span>
             </div>
           <div class="toggler-wrap clearfix network-ports-toggler">
             <div class="cont-toggler">
@@ -244,7 +249,7 @@
       </div>
     </div>
     <div class="actions-content">
-      <div class="action-container connect" 
+      <div class="action-container connect"
            data-rv-class-isactive="model.can_connect"
            data-rv-on-click="view.show_connect_vms_overlay">
            <a>{% trans "Connect machine" %}</a>

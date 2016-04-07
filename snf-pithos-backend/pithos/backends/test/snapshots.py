@@ -15,9 +15,9 @@
 
 import uuid as uuidlib
 
-from pithos.backends.base import (IllegalOperationError, NotAllowedError,
-                                  ItemNotExists, BrokenSnapshot,
-                                  MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE)
+from pithos.backends.exceptions import (IllegalOperationError, NotAllowedError,
+                                        ItemNotExists, BrokenSnapshot)
+from pithos.backends.modular import MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE
 
 
 class TestSnapshotsMixin(object):

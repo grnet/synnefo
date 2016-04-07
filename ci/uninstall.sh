@@ -13,3 +13,7 @@ for project in $PROJECTS; do
   python setup.py develop --uninstall $OPTIONS
   cd -
 done
+
+for pkg in $DEV_PACKAGES; do
+    pip uninstall -y $pkg
+done

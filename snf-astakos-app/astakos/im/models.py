@@ -56,7 +56,7 @@ DEFAULT_CONTENT_TYPE = None
 _content_type = None
 
 SYSTEM_PROJECT_NAME_TPL = getattr(astakos_settings, "SYSTEM_PROJECT_NAME_TPL",
-                                u"[system] %s")
+                                  u"[system] %s")
 
 
 def get_content_type():
@@ -375,7 +375,7 @@ class AstakosUser(User):
     affiliation = models.CharField(_('Affiliation'), max_length=255,
                                    blank=True, null=True)
 
-    #for invitations
+    # for invitations
     user_level = astakos_settings.DEFAULT_USER_LEVEL
     level = models.IntegerField(_('Inviter level'), default=user_level)
     invitations = models.IntegerField(
@@ -647,14 +647,24 @@ class AstakosUser(User):
         self.invitations = astakos_settings.INVITATIONS_PER_LEVEL.get(level, 0)
 
     def can_change_password(self):
-        return self.has_auth_provider('local', auth_backend='astakos')
+        return (self.has_auth_provider('local', auth_backend='astakos') and
+                self.has_usable_password())
 
     def can_change_email(self):
-        if not self.has_auth_provider('local'):
-            return True
+        return astakos_settings.EMAILCHANGE_ENABLED and \
+            self.can_change_profile_attr('email')
 
-        local = self.get_auth_provider('local')._instance
-        return local.auth_backend == 'astakos'
+    def can_change_first_name(self):
+        return self.can_change_profile_attr('first_name')
+
+    def can_change_last_name(self):
+        return self.can_change_profile_attr('last_name')
+
+    def can_change_profile_attr(self, attr):
+        for provider in self.auth_providers.active():
+            if attr in provider.settings.get_provider_forced_attributes():
+                return False
+        return True
 
     # Auth providers related methods
     def get_auth_provider(self, module=None, identifier=None, **filters):
@@ -722,7 +732,7 @@ class AstakosUser(User):
         modules = astakos_settings.IM_MODULES
 
         def key(p):
-            if not p.module in modules:
+            if p.module not in modules:
                 return 100
             return modules.index(p.module)
 
@@ -769,7 +779,7 @@ class AstakosUser(User):
         msg_inactive = provider.get_account_inactive_msg
         msg_pending = provider.get_pending_activation_msg
         msg_pending_help = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
-        #msg_resend_prompt = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
+        # msg_resend_prompt = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
         msg_pending_mod = provider.get_pending_moderation_msg
         msg_rejected = _(astakos_messages.ACCOUNT_REJECTED)
         msg_resend = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
@@ -858,7 +868,6 @@ class AstakosUser(User):
             display.append("[%s] %s" % (module, date))
 
         return ", ".join(display)
-
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -1293,8 +1302,8 @@ class UserSetting(models.Model):
         unique_together = ("user", "setting")
 
 
-### PROJECTS ###
-################
+# ## PROJECTS ###
+# ###############
 
 class Chain(models.Model):
     chain = models.AutoField(primary_key=True)
@@ -1642,7 +1651,6 @@ class ProjectManager(models.Manager):
         return self.limit_on_members_number == units.PRACTICALLY_INFINITE
 
 
-
 class Project(models.Model):
 
     id = models.BigIntegerField(db_column='id', primary_key=True)
@@ -1836,7 +1844,7 @@ class Project(models.Model):
     def is_initialized(self):
         return self.state in self.INITIALIZED_STATES
 
-    ### Deactivation calls
+    # ## Deactivation calls
 
     def _log_create(self, from_state, to_state, actor=None, reason=None,
                     comments=None):
@@ -1879,7 +1887,7 @@ class Project(models.Model):
     def can_modify(self):
         return self.state not in [self.UNINITIALIZED, self.DELETED]
 
-    ### Logical checks
+    # ## Logical checks
     @property
     def is_alive(self):
         return self.state in [self.NORMAL, self.SUSPENDED]
@@ -1896,7 +1904,7 @@ class Project(models.Model):
         limit = self.limit_on_members_number
         return (len(self.approved_members) + adding > limit)
 
-    ### Other
+    # ## Other
 
     def count_pending_memberships(self):
         return self.projectmembership_set.requested().count()
@@ -2107,7 +2115,7 @@ class ProjectMembership(models.Model):
 
     class Meta:
         unique_together = ("person", "project")
-        #index_together = [["project", "state"]]
+        # index_together = [["project", "state"]]
 
     def __unicode__(self):
         return (_("<'%s' membership in '%s'>") %
@@ -2204,7 +2212,7 @@ class ProjectMembershipLog(models.Model):
     objects = ProjectMembershipLogManager()
 
 
-### SIGNALS ###
+# ## SIGNALS ###
 ################
 
 def resource_post_save(sender, instance, created, **kwargs):

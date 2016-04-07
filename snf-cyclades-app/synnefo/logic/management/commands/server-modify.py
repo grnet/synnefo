@@ -110,7 +110,8 @@ class Command(SynnefoCommand):
             self.stdout.write(msg % (server, old_owner, new_owner))
             msg = "Changed the project of server '%s' from '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_project, new_owner))
-            for vol in server.volumes.all():
+            for vol in server.volumes.filter(
+                    userid=old_owner).select_for_update():
                 vol.userid = new_owner
                 vol_old_project = vol.project
                 vol.project = new_owner

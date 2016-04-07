@@ -15,6 +15,7 @@
 
 import json
 
+from django.test.utils import override_settings
 from mock import patch, Mock
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models_factory import (VolumeFactory, VolumeTypeFactory,
@@ -31,16 +32,26 @@ VOLUMES_URL = join_urls(VOLUME_URL, "volumes")
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class VolumeAPITest(BaseAPITest):
+    @override_settings(CYCLADES_DETACHABLE_DISK_TEMPLATES=("ext_vlmc",))
     def test_create_volume(self, mrapi):
         vm = VirtualMachineFactory(
             operstate="ACTIVE",
             flavor__volume_type__disk_template="ext_vlmc")
+        vt = VolumeTypeFactory(disk_template="ext_vlmc")
         user = vm.userid
         _data = {"display_name": "test_vol",
                  "size": 2,
-                 "server_id": vm.id}
+                 "volume_type": vt.id}
 
-        # Test Success
+        # Test standalone create success
+        mrapi().ModifyInstance.return_value = 42
+        with mocked_quotaholder():
+            r = self.post(VOLUMES_URL, user,
+                          json.dumps({"volume": _data}), "json")
+        self.assertSuccess(r)
+
+        # Test create and attach success
+        _data["server_id"] = vm.id
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder():
             r = self.post(VOLUMES_URL, user,

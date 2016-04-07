@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -151,6 +151,13 @@ HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
 
 VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200)
 SNAPSHOTS_ENABLED = getattr(settings, "CYCLADES_SNAPSHOTS_ENABLED", True)
+SHARED_RESOURCES_ENABLED = getattr(settings,
+                                   "CYCLADES_SHARED_RESOURCES_ENABLED", False)
+DETACHABLE_VOLUME_TYPES = getattr(settings,
+                                  "CYCLADES_DETACHABLE_DISK_TEMPLATES", [])
+ASTAKOS_AUTH_URL = getattr(uisettings, 'AUTH_URL')
+FLAVOR_OVERRIDE_ALLOW_CREATE = getattr(settings, 'CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE', {})
+
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -231,7 +238,11 @@ def home(request):
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
         'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE),
         'volume_max_size': json.dumps(VOLUME_MAX_SIZE),
-        'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED)
+        'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED),
+        'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED),
+        'astakos_auth_url': json.dumps(ASTAKOS_AUTH_URL),
+        'flavor_override_allow_create': json.dumps(FLAVOR_OVERRIDE_ALLOW_CREATE),
+        'detachable_volume_types': json.dumps(DETACHABLE_VOLUME_TYPES)
     }
     return template('home', request, context)
 

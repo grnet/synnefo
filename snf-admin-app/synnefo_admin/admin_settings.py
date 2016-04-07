@@ -142,3 +142,7 @@ ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY = getattr(
 
 # The sign that will indicate that a filter term concerns a model field.
 ADMIN_FIELD_SIGN = getattr(settings, 'ADMIN_FIELD_SIGN', '=')
+
+# The sign that will indicate that an OR operation will be performed
+# between terms.
+ADMIN_OR_SIGN = getattr(settings, 'ADMIN_OR_SIGN', 'OR')

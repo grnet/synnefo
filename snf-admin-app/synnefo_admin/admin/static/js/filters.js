@@ -103,31 +103,28 @@ $(document).ready(function() {
 		snf.timer = 0;
 		var $input = $(extraSearch).find('input');
 
-		$input.keyup(function(e) {
-			// if enter or space is pressed do nothing
-			if(e.which !== 32 && e.which !== 13) {
-				var key, value, pastValue, valuHasChanged;
-				key = $(this).data('filter');
-				value = $.trim($(this).val());
-				if(snf.filters[key]) {
-					pastValue = snf.filters[key];
-				}
-				else {
-					pastValue = undefined;
-				}
-				snf.filters[key] = value;
-				if (snf.filters[key] === '') {
-					delete snf.filters[key];
-				}
-				valueHasChanged = snf.filters[key] !== pastValue;
-				if(valueHasChanged) {
-					if(snf.timer === 0) {
-						snf.timer = 1;
-						setTimeout(function() {
-							$(tableDomID).dataTable().api().ajax.reload();
-							snf.timer = 0;
-						}, snf.ajaxdelay)
-					}
+		$input.on('textInput keyup input', function(e) {
+			var key, value, pastValue, valuHasChanged;
+			key = $(this).data('filter');
+			value = $.trim($(this).val());
+			if(snf.filters[key]) {
+				pastValue = snf.filters[key];
+			}
+			else {
+				pastValue = undefined;
+			}
+			snf.filters[key] = value;
+			if (snf.filters[key] === '') {
+				delete snf.filters[key];
+			}
+			valueHasChanged = snf.filters[key] !== pastValue;
+			if(valueHasChanged) {
+				if(snf.timer === 0) {
+					snf.timer = 1;
+					setTimeout(function() {
+						$(tableDomID).dataTable().api().ajax.reload();
+						snf.timer = 0;
+					}, snf.ajaxdelay)
 				}
 			}
 		})

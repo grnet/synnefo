@@ -25,9 +25,9 @@ to the broker.
 from synnefo import settings
 
 if settings.AMQP_BACKEND == 'puka':
-    from amqp_puka import AMQPPukaClient as Client
+    from amqp_puka import AMQPPukaClient as Client, AMQPConnectionError
 elif settings.AMQP_BACKEND == 'haigha':
-    from amqp_haigha import AMQPHaighaClient as Client
+    from amqp_haigha import AMQPHaighaClient as Client, AMQPConnectionError
 else:
     raise Exception('Unknown Backend %s' % settings.AMQP_BACKEND)
 

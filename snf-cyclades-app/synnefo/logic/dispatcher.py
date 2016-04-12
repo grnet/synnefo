@@ -49,7 +49,7 @@ except:
     from daemon import pidlockfile
 import setproctitle
 
-from synnefo.lib.amqp import AMQPClient
+from synnefo.lib.amqp import AMQPClient, AMQPConnectionError
 from synnefo.logic import callbacks
 from synnefo.logic import queues
 from synnefo.db.models import Backend, pooled_rapi_client
@@ -69,6 +69,9 @@ LOGGERS = [log, log_amqp, log_logic]
 # After this timeout the snf-dispatcher will reconnect to the AMQP broker.
 DISPATCHER_RECONNECT_TIMEOUT = 600
 
+# Seconds to wait before retrying, if the connection to the AMQP broker has
+# failed.
+DISPATCHER_FAILED_CONNECTION_WAIT = 10
 
 # Time out after S Seconds while waiting messages from Ganeti clusters to
 # arrive. Warning: During this period snf-dispatcher will not consume any other
@@ -114,15 +117,29 @@ class Dispatcher:
                                 " to a different host. Verify that"
                                 " snf-ganeti-eventd is running!!", timeout)
                     self.client.reconnect(timeout=1)
+            except AMQPConnectionError as e:
+                log.error("AMQP connection failed: %s" % e)
+                log.warning("Sleeping for %d seconds before retrying to "
+                            "connect to an AMQP broker" %
+                            DISPATCHER_FAILED_CONNECTION_WAIT)
+                time.sleep(DISPATCHER_FAILED_CONNECTION_WAIT)
             except select.error as e:
                 if e[0] != errno.EINTR:
                     log.exception("Caught unexpected exception: %s", e)
+                    log.warning("Sleeping for %d seconds before retrying to "
+                                "connect to an AMQP broker" %
+                                DISPATCHER_FAILED_CONNECTION_WAIT)
+                    time.sleep(DISPATCHER_FAILED_CONNECTION_WAIT)
                 else:
                     break
             except (SystemExit, KeyboardInterrupt):
                 break
             except Exception as e:
                 log.exception("Caught unexpected exception: %s", e)
+                log.warning("Sleeping for %d seconds before retrying to "
+                            "connect to an AMQP broker" %
+                            DISPATCHER_FAILED_CONNECTION_WAIT)
+                time.sleep(DISPATCHER_FAILED_CONNECTION_WAIT)
 
         log.info("Clean up AMQP connection before exit")
         self.client.basic_cancel(timeout=1)

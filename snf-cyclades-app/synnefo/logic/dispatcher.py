@@ -53,6 +53,7 @@ from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
 from synnefo.logic import queues
 from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo import cyclades_settings
 
 import logging
 import select
@@ -478,7 +479,10 @@ def setup_logging(opts):
 
     for l in LOGGERS:
         l.addHandler(log_handler)
-        l.setLevel(logging.DEBUG)
+
+    log.setLevel(cyclades_settings.DISPATCHER_LOGGING_LEVEL)
+    log_amqp.setLevel(cyclades_settings.AMQP_LOGGING_LEVEL)
+    log_logic.setLevel(cyclades_settings.LOGIC_LOGGING_LEVEL)
 
 
 def main():

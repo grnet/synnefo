@@ -6,9 +6,9 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.17rc1:
+.. _Changelog-0.17rc4:
 
-v0.17rc1
+v0.17rc4
 ========
 
 Released: UNRELEASED
@@ -17,7 +17,7 @@ Released: UNRELEASED
 Synnefo-wide
 ------------
 
-* Fixed postgresql connection pooling. The pool manager now closes the 
+* Fixed postgresql connection pooling. The pool manager now closes the
   real connection objects when pool verify fails.
 
 
@@ -82,7 +82,7 @@ Cyclades
   feature of sharing a resource to the members of the project that
   the resource belongs to.
 * Create an allocator interface in order to allow the creation of different
-  backend allocation algorithms. Default backend allocator setting is changed 
+  backend allocation algorithms. Default backend allocator setting is changed
   to `synnefo.logic.allocators.default_allocator.DefaultAllocator`.
 * Implement an interface for memory caching.
 * Add the option to retrieve the front page statistics
@@ -90,6 +90,9 @@ Cyclades
 * Add the `PUBLIC_STATS_CACHE_POPULATE_INTERVAL` setting.
 * Store the password in the cache on VM creation until the user
   confirms that they stored it.
+* Add config options for setting the dispatcher's logging severity:
+  `DISPATCHER_LOGGING_LEVEL`, `AMQP_LOGGING_LEVEL`, `LOGIC_LOGGING_LEVEL`
+  in `20-snf-cyclades-app-dispatcher.conf`.
 
 
 Cyclades UI
@@ -103,7 +106,7 @@ Cyclades UI
  * Properly handle ghost resources, which are resources that are visible to
    the user only because they are related with some shared resource, but the
    user has no access to them. Add tooltip to explain this to the user.
- * Custom image sections. Allow images uploaded by designated users to be 
+ * Custom image sections. Allow images uploaded by designated users to be
    displayed in separate sections in image listing overlay.
  * Include machine icon images for bitnami
  * Show public networks without a floating IP in IPs wizard
@@ -128,9 +131,9 @@ Pithos
 Pithos UI
 ---------
 
-* Pithos UI has been rewritten from scratch. Some of the features of the new 
+* Pithos UI has been rewritten from scratch. Some of the features of the new
   UI are the following:
-  
+
   * Based on modern web technologies (EmberJS, Foundation CSS)
   * Revised styles and responsive layout
   * Improved perfomance
@@ -902,9 +905,9 @@ Cyclades UI
 - New setting ``UI_SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST``. A list of image OS
   families for which ui will disable ssh key injection in machine wizard.
 - Setting ``UI_SUPPORT_SSH_OS_LIST`` removed and no longer used.
-- Group public networks by name if setting ``UI_GROUP_PUBLIC_NETWORKS`` is set 
+- Group public networks by name if setting ``UI_GROUP_PUBLIC_NETWORKS`` is set
   to True.
-- Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer 
+- Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer
   used.
 - Fix UI to filter available flavors in VM wizard
 
@@ -912,7 +915,7 @@ Cyclades UI
 Cyclades Userdata
 -----------------
 
-- Maximum allowed length of ssh key content. Configurable from the 
+- Maximum allowed length of ssh key content. Configurable from the
   ``USERDATA_SSH_KEY_MAX_CONTENT_SIZE`` setting.
 
 

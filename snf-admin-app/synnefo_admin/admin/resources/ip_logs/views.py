@@ -60,7 +60,7 @@ class IPLogJSONView(AdminJSONView):
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -95,7 +95,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = None
     context['filter_dict'] = IPLogFilterSet().filters.values()
-    context['columns'] = ["Address", "Owner", "Server ID", "Network ID",
+    context['columns'] = ["Address", "Owner UUID", "Server ID", "Network ID",
                           "Allocation date", "Release date", "Active", ""]
     context['item_type'] = 'ip_log'
 

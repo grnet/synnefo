@@ -114,7 +114,7 @@ class VMJSONView(AdminJSONView):
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -192,7 +192,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VMFilterSet().filters.values()
-    context['columns'] = ["ID", "Owner", "Name", "State", "Suspended", ""]
+    context['columns'] = ["ID", "Owner UUID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
 
     return context

@@ -109,7 +109,7 @@ class NetworkJSONView(AdminJSONView):
         }
 
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -166,7 +166,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = NetworkFilterSet().filters.values()
-    context['columns'] = ["ID", "Owner", "Name", "Status", "Public",
+    context['columns'] = ["ID", "Owner UUID", "Name", "Status", "Public",
                           "Drained", ""]
     context['item_type'] = 'network'
 

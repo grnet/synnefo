@@ -123,7 +123,7 @@ class VolumeJSONView(AdminJSONView):
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -189,7 +189,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VolumeFilterSet().filters.values()
-    context['columns'] = ["ID", "Owner", "Name", "Status", "Size (GB)",
+    context['columns'] = ["ID", "Owner UUID", "Name", "Status", "Size (GB)",
                           "Disk template", "VM ID", "Created at",
                           "Updated at", ""]
     context['item_type'] = 'volume'

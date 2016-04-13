@@ -122,7 +122,7 @@ class IPJSONView(AdminJSONView):
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -175,7 +175,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = IPFilterSet().filters.values()
-    context['columns'] = ["ID", "Owner", "Address", "Floating",
+    context['columns'] = ["ID", "Owner UUID", "Address", "Floating",
                           "Creation date", "User ID", ""]
     context['item_type'] = 'ip'
 

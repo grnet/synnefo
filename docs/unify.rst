@@ -106,5 +106,5 @@ Objects are also RO Archipelago resources exposed and handled by the Object
 Storage service via the Swift API.
 
 For a deeper dive in the internals of the above workflows please refer to the
-:ref:`Snapshots <design/volume-snapshots>` and :ref:`Volumes <design/volumes>`
+:doc:`Snapshots <design/volume-snapshots>` and :doc:`Volumes <design/volumes>`
 design documents.

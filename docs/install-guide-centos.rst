@@ -57,7 +57,7 @@ to your installation. To do so, run:
   # yum localinstall https://dev.grnet.gr/files/grnet-repo.rpm
 
 To verify the authenticity of the package you can use our public key found
-`here <https://dev.grnet.gr/files/apt-grnetdev.pub>`_.
+`here <https://dev.grnet.gr/files/apt-grnetdev.pub>`__.
 
 You'll also need to add the `EPEL repo <https://fedoraproject.org/wiki/EPEL>`_.
 To install it, run:
@@ -132,7 +132,7 @@ Now run:
    # chkconfig postgresql-9.3 on
 
 For more information on how to install postgresql on CentOS, please see `this
-<https://wiki.postgresql.org/wiki/YUM_Installation>`_.
+<https://wiki.postgresql.org/wiki/YUM_Installation>`__.
 
 To install gunicorn and gevent, run:
 
@@ -1064,8 +1064,7 @@ When running in production, the activation is done automatically with different
 types of moderation, that Astakos supports. You can see the moderation methods
 (by invitation, whitelists, matching regexp, etc.) at the Astakos specific
 documentation. In production, you can also manually activate a user, by sending
-him/her an activation email. See how to do this at the :ref:`User
-activation <user_activation>` section.
+him/her an activation email.
 
 Now let's go back to the homepage. Open ``http://node1.example.com/astakos/ui/`` with
 your browser again. Try to sign in using your new credentials. If the Astakos
@@ -1369,15 +1368,14 @@ Ganeti
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the `ganeti documentation <http://docs.ganeti.org/ganeti/2.8/html>`_ for all
 the gory details. A successful Ganeti installation concludes with a working
-:ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
-<GANETI_NODES>`.
+'GANETI-MASTER' and a number of 'GANETI-NODE's.
 
 The above Ganeti cluster can run on different physical machines than node1 and
 node2 and can scale independently, according to your needs.
 
-For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
-<GANETI_NODES>` runs on node1 and is VM-capable. Also, node2 is a
-:ref:`GANETI-NODE <GANETI_NODES>` and is Master-capable and VM-capable too.
+For the purpose of this guide, we will assume that the 'GANETI-MASTER' runs on
+node1 and is VM-capable. Also, node2 is a 'GANETI-NODE' and is Master-capable
+and VM-capable too.
 
 We highly recommend that you read the official Ganeti documentation, if you are
 not familiar with Ganeti.
@@ -1391,7 +1389,7 @@ You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
    # yum install lvm2 vconfig bridge-utils
 
 Ganeti requires FQDN. To properly configure your nodes please
-see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`_.
+see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`__.
 
 Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
 ``ganeti.node1.example.com``. Add this IP to your DNS server configuration, as
@@ -1416,7 +1414,7 @@ device:
 
 Then substitute `/dev/sdb1` with `/dev/loop0` on pvcreate and vgcreate commands.
 For more information, see
-`this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
+`this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`__.
 
 Moreover, node1 and node2 must have the same dsa, rsa keys and authorised_keys
 under ``/root/.ssh/`` for password-less root ssh between each other. To
@@ -1434,7 +1432,7 @@ public key to the ``/root/.ssh/authorized_keys`` file:
    # cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 
 For more information on how to generate and use keys, see
-`this <http://wiki.centos.org/HowTos/Network/SecuringSSH#head-9c5717fe7f9bb26332c9d67571200f8c1e4324bc>`_.
+`this <http://wiki.centos.org/HowTos/Network/SecuringSSH#head-9c5717fe7f9bb26332c9d67571200f8c1e4324bc>`__.
 
 In the following sections, we assume that the public interface of all nodes is
 ``eth0`` and there are two extra interfaces ``eth1`` and ``eth2``, which can
@@ -1448,7 +1446,7 @@ run:
    # vconfig add eth0 2
 
 For information on how to create vlans, please see
-`this <https://wiki.debian.org/NetworkConfiguration#Howto_use_vlan_.28dot1q.2C_802.1q.2C_trunk.29_.28Etch.2C_Lenny.29>`_.
+`this <https://wiki.debian.org/NetworkConfiguration#Howto_use_vlan_.28dot1q.2C_802.1q.2C_trunk.29_.28Etch.2C_Lenny.29>`__.
 
 Finally, setup two bridges on the host machines (e.g: br1/br2 on eth1/eth2
 respectively):
@@ -1460,7 +1458,7 @@ respectively):
    # brctl addif br1 eth0.1
    # brctl addif br2 eth0.2
 
-For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`_.
+For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`__.
 
 Ganeti Installation and Initialization
 --------------------------------------
@@ -1563,7 +1561,7 @@ Then run on node1:
 ``br1`` will be the default interface for any newly created VMs.
 
 You can verify that the ganeti cluster is successfully setup, by running on the
-:ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
+'GANETI-MASTER' (in our case node1):
 
 .. code-block:: console
 
@@ -1576,11 +1574,12 @@ snf-image
 
 Installation
 ~~~~~~~~~~~~
+
 For :ref:`Cyclades <cyclades>` to be able to launch VMs from specified Images,
 you need the `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`_ OS
 Definition installed on *all* VM-capable Ganeti nodes. This means we need
-:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>` on
-node1 and node2. You can do this by running on *both* nodes:
+`snf-image <snf-image_>`_ on node1 and node2. You can do this by running on
+*both* nodes:
 
 .. code-block:: console
 
@@ -1615,7 +1614,7 @@ Pithos.
 Testing
 ~~~~~~~
 You can test that snf-image is successfully installed by running on the
-:ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
+'GANETI-MASTER' (in our case node1):
 
 .. code-block:: console
 
@@ -1625,7 +1624,7 @@ This should return ``valid`` for snf-image.
 
 If you are interested to learn more about snf-image's internals (and even use
 it alongside Ganeti without Synnefo), please see
-`here <http://www.synnefo.org/docs/snf-image/latest/index.html>`_ for information
+`here <http://www.synnefo.org/docs/snf-image/latest/index.html>`__ for information
 concerning installation instructions, documentation on the design and
 implementation, and supported Image formats.
 
@@ -1636,13 +1635,13 @@ Actual Images for snf-image
 
 Now that snf-image is installed successfully we need to provide it with some
 Images.
-:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+`snf-image <snf-image_>`_
 supports Images stored in ``extdump``, ``ntfsdump`` or ``diskdump`` format. We
 recommend the use of the ``diskdump`` format. For more information about
 snf-image Image formats see `here
-<http://www.synnefo.org/docs/snf-image/latest/usage.html#image-format>`_.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#image-format>`__.
 
-:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+`snf-image <snf-image_>`_
 also supports three (3) different locations for the above Images to be stored:
 
     * Under a local folder (usually an NFS mount, configurable as ``IMAGE_DIR``
@@ -1706,7 +1705,7 @@ container and filename you used, when uploading the file.
 The hashmap is the field ``x-object-hash``, while the size of the file is the
 ``content-length`` field, that ``kamaki file info`` command returns.
 
-Run on the :ref:`GANETI-MASTER's <GANETI_NODES>` (node1) command line:
+Run on the 'GANETI-MASTER' (node1) command line:
 
 .. code-block:: console
 

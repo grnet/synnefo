@@ -13,7 +13,7 @@ The login URI accepts the following parameters:
 URI        Method Description
 ========== ====== ===============
 ``/login`` GET    Authenticate user and return authentication token
-========== ====== ==================
+========== ====== ===============
 
 |
 

@@ -208,7 +208,7 @@ Admin
 * Handle unicode chars in VM search field.
 * Check usage to decide if resource is useful.
 * Display last login per auth provider if more than one exists.
-* Display `comments for review' in project applications.
+* Display 'comments for review' in project applications.
 * Display effective limit in user's quotas.
 * Fix IP updated time since timestamp.
 * Fetch image info using UUID and version.
@@ -392,21 +392,21 @@ Astakos
     activation, resources missing are automatically completed using a
     skeleton.
 
-  * Field `uplimit' of registed resources is exposed as `system_default' and
+  * Field 'uplimit' of registed resources is exposed as 'system_default' and
     provide the skeleton for user-specific system projects. A new field
-    `project_default' is introduce to act as a skeleton for conventional
+    'project_default' is introduced to act as a skeleton for conventional
     projects.
 
   * The quotaholder now also records project quota besides user quota. The
-    two types of holders are distinguished with a prefix: `user:' and
-    `project:'.
+    two types of holders are distinguished with a prefix: 'user:' and
+    'project:'.
 
   * The quota API is extended to make project quota available.
 
-  * Removed setting `ASTAKOS_PROJECTS_VISIBLE'; we now always display
-    projects in Astakos menu.
+  * Removed setting 'ASTAKOS_PROJECTS_VISIBLE'; we now always display
+    projects in the Astakos menu.
 
-* Projects can be set `private', making it accessible only to its owner and
+* Projects can be set 'private', making it accessible only to its owner and
   members.
 
 * Admin users API
@@ -439,12 +439,12 @@ Cyclades
 
   * Implement 'cyclades_volumes' service, containing the /volumes, /types,
     and /snapshots API endpoints under '/volumes/v2.0'.
-  * Implement `snf-manage volume-{create, list, show, modify, inspect, remove}'
-    management commands for handling of volumes.
-  * Implement `snf-manage snapshot-{create, list, show, modify}` management
-    commands for handling of snapshots.
-  * Implement 'volume-type-{create, list, modify, show, remove}` management
-    commands for handling of volume types.
+  * Implement 'snf-manage volume-{create, list, show, modify, inspect, remove}'
+    management commands for handling volumes.
+  * Implement 'snf-manage snapshot-{create, list, show, modify}' management
+    commands for handling snapshots.
+  * Implement 'volume-type-{create, list, modify, show, remove}' management
+    commands for handling volume types.
   * Implement reconciliation for stale snapshots.
   * Add new settings:
 
@@ -643,9 +643,10 @@ Pithos
 
 * Support selectable storage backend
 
-  * new settings:
-   - PITHOS_BACKEND_STORAGE: Possible values are 'nfs' and 'rados'.
-   - PITHOS_RADOS_CEPH_CONF: The Ceph configuration file.
+  * Add new settings:
+
+    - PITHOS_BACKEND_STORAGE: Possible values are 'nfs' and 'rados'.
+    - PITHOS_RADOS_CEPH_CONF: The Ceph configuration file.
 
 * Remove unused variable PITHOS_RADOS_STORAGE
 * Add 'pithos-sync-rados.sh' shell script in Pithos tools,
@@ -693,20 +694,20 @@ Astakos
 
   * A Project entry is created when submitting an application for a new
     project, rather than on approval. Its state is dependent on the state
-    of its `reference' application (current definition). Lock Project rather
+    of its 'reference' application (current definition). Lock Project rather
     than Chain (the latter is semantically obsolete).
 
   * Project states "Active - Pending" and "Suspended - Pending" have been
-    removed. In management command `project-list', the existence of a pending
-    modification is indicated by a non-blank `Pending AppID'.
+    removed. In management command 'project-list', the existence of a pending
+    modification is indicated by a non-blank 'Pending AppID'.
 
   * Improve recording of project, application, and membership actions.
 
 * Implement API calls for projects.
-* Store the base URL of a component. Deployer should provide it when adding
-  a new component. Service endpoints originating from a component are
-  expected to match its base URL; otherwise, a warning is issued.
-  Re-registration with `snf-component-register' affects both the base and
+* Store the base URL of a component. The deployer should provide it when
+  adding a new component. Service endpoints originating from a component
+  are expected to match its base URL; otherwise, a warning is issued.
+  re-registration with 'snf-component-register' affects both the base and
   the ui URL.
 * Changes in resource and quota handling:
 
@@ -775,9 +776,9 @@ Cyclades
     /subnets and /floatingips API endpoints under '/network/v2.0'. The old
     /networks API of 'cyclades_compute' (under /compute/v2.0) is
     removed.
-  * Implement `snf-manage subnet-{create, list, modify, inspect}' management
+  * Implement 'snf-manage subnet-{create, list, modify, inspect}' management
     commands for handling of subnets.
-  * Implement `snf-manage port-{create, list, remove, inspect}' management
+  * Implement 'snf-manage port-{create, list, remove, inspect}' management
     commands for handling of ports.
   * Add two new settings, 'CYCLADES_FORCED_SERVER_NETWORKS' and
     'CYCLADES_DEFAULT_SERVER_NETWORKS' to control the networks that newly
@@ -961,12 +962,12 @@ Pithos
 .. _Changelog-0.14.10:
 
 v0.14.10
-=======
+========
 
 Released: Tue Nov 26 11:03:37 EET 2013
 
 Cyclades
--------
+--------
 
 * This is the first release to support Ganeti 2.8. Support for older versions
   of Ganeti is dropped.
@@ -1119,7 +1120,7 @@ Pithos
 ------
 
 * Refactor metadata schema (table attributes) in Pithos DB to speedup current
-objects by domain attribute. This is used by Plankton for listing VM images.
+  objects by domain attribute. This is used by Plankton for listing VM images.
 
 
 .. _Changelog-0.14:
@@ -1390,6 +1391,7 @@ Astakos
   * New Overview page
 
 * refactored/improved /login endpoint used by desktop/mobile clients.
+
   * endpoint url is now exposed by `weblogin` service
   * clients should use unauthenticated identity/tokens api to resolve the
     endpoint url
@@ -1417,7 +1419,8 @@ Cyclades
   infrastructure
 
 UI
-^^
+--
+
 * Removed feedback endpoint. Feedback requests delegate to astakos feedback
   service. ``FEEDBACK_CONTACTS``, ``FEEDBACK_EMAIL_FROM`` settings removed,
   and no longer used.

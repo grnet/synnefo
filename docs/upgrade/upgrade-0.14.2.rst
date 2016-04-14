@@ -70,7 +70,7 @@ The upgrade from v0.14 to v0.14.2 consists in three steps:
 
 .. note::
 
-    Make sure `snf-webproject' has the same version with snf-common
+    Make sure 'snf-webproject' has the same version with snf-common
 
 2.2 Sync and migrate the database
 ---------------------------------

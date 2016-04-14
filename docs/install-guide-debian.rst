@@ -612,7 +612,7 @@ As in node1, enable sites and modules by running:
 
       # a2dismod autoindex
 
-.. warning:: Do NOT start/restart the server yet. If the server is running::
+.. warning:: Do NOT start/restart the server yet. If the server is running:
 
    .. code-block:: console
 
@@ -740,12 +740,12 @@ to make it a valid gunicorn configuration file:
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. We will start the server after successfully
-    installing of Astakos. If the server is running:
+   ``synnefo.settings`` module. We will start the server after successfully
+   installing of Astakos. If the server is running:
 
-    .. code-block:: console
+   .. code-block:: console
 
-       # /etc/init.d/gunicorn stop
+      # /etc/init.d/gunicorn stop
 
 
 Conf Files

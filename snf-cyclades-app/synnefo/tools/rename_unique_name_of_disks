@@ -40,6 +40,17 @@ Tool to update the disks of all Archipelago VMs in order to use the logical_id
 of their disks as their name.
 """
 
+class Progress(object):
+    backend_id = 0
+    count = 0
+    total_vms = 0
+
+    @staticmethod
+    def print_progress(green):
+        Progress.count += 1
+        print '\r\033[KBackend %d: Processed %d from %d vms' \
+                    % (Progress.backend_id, Progress.count, Progress.total_vms),
+
 
 def main():
     parser = OptionParser(description=DESCRIPTION,
@@ -102,6 +113,10 @@ def upgrade_backend(backend, dry_run, ganeti_dry_run, restore):
             for vm in vms]
 
     if jobs:
+        Progress.count = 0
+        Progress.total_vms = vms.count()
+        Progress.backend_id = backend.id
+        [g.link(Progress.print_progress) for g in jobs]
         gevent.joinall(jobs)
 
     return

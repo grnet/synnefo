@@ -51,7 +51,7 @@ templates = {
 
 class IPJSONView(AdminJSONView):
     model = IPAddress
-    fields = ('pk', 'userid', 'address', 'floating_ip', 'created', 'userid',)
+    fields = ('pk', 'userid', 'address', 'floating_ip', 'created',)
     filters = IPFilterSet
 
     def format_data_row(self, row):
@@ -176,7 +176,7 @@ def catalog(request):
                                                    request.user)
     context['filter_dict'] = IPFilterSet().filters.values()
     context['columns'] = ["ID", "Owner UUID", "Address", "Floating",
-                          "Creation date", "User ID", ""]
+                          "Creation date", ""]
     context['item_type'] = 'ip'
 
     return context

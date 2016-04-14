@@ -43,7 +43,7 @@ def reconnect_decorator(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            if self.client.sd is None:
+            if self.client is None or self.client.sd is None:
                 self.connect()
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:

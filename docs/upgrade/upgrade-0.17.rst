@@ -54,12 +54,7 @@ On Pithos node, the gunicorn must also be stopped first:
 
    .. code-block:: console
 
-     cyclades.host$ /usr/lib/synnefo/tools/rename_unique_name_of_disks \
-                      --parallel
-
-
-   The ``--parallel`` switch is optional, but it will greatly improve the
-   script's running time.
+     cyclades.host$ /usr/lib/synnefo/tools/rename_unique_name_of_disks
 
 
    .. warning:: This script must not be re-run after cyclades API is started.

@@ -63,9 +63,6 @@ def main():
     parser.add_option("--ganeti-dry-run", dest="ganeti_dry_run", default=False,
                       action="store_true",
                       help="Pass --dry-run option to Ganeti jobs.")
-    parser.add_option("--parallel", dest="parallel", default=False,
-                      action="store_true",
-                      help="Use a seperate process for each backend.")
     parser.add_option("-d", "--debug", dest="debug", default=False,
                       action="store_true",
                       help="Display debug information.")
@@ -85,19 +82,9 @@ def main():
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
-    if len(backends) > 1 and options.parallel:
-        cmd = sys.argv
-        processes = []
-        for backend in backends:
-            p = subprocess.Popen(cmd + ["--backend-id=%s" % backend.id])
-            processes.append(p)
-        for p in processes:
-            p.wait()
-        return
-    else:
-        [upgrade_backend(b, options.dry_run, options.ganeti_dry_run,
-                         options.restore)
-         for b in backends]
+    [upgrade_backend(b, options.dry_run, options.ganeti_dry_run,
+                     options.restore)
+     for b in backends]
     return
 
 

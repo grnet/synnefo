@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,17 +76,27 @@ def sort_vms():
 
 
 def handle_stop_active(viol_id, resource, vms, diff, actions, remains,
-                       options=None):
+                       options=None, soft=False):
     vm_actions = actions["vm"]
-    vms = [vm for vm in vms if vm.operstate in ["STARTED", "BUILD", "ERROR"]]
     vms = sorted(vms, key=sort_vms(), reverse=True)
     for vm in vms:
         if diff < 1:
             break
-        diff -= CHANGE[resource](vm)
+        change = CHANGE[resource](vm)
+        if vm.operstate not in ["STARTED", "BUILD", "ERROR"]:
+            if soft:
+                diff -= change
+            continue
+        diff -= change
         if vm_actions.get(vm.id) is None:
             action = "REMOVE" if vm.operstate == "ERROR" else "SHUTDOWN"
             vm_actions[vm.id] = viol_id, vm.operstate, vm.backend_id, action
+
+
+def handle_stop_soft(viol_id, resource, vms, diff, actions, remains,
+                     options=None):
+    return handle_stop_active(viol_id, resource, vms, diff, actions, remains,
+                              options=options, soft=True)
 
 
 def has_extra_disks(volumes):
@@ -442,11 +452,15 @@ def perform_actions(actions, maxops=None, fix=False, options={}):
 # It is important to check resources in this order, especially
 # floating_ip after vm resources.
 RESOURCE_HANDLING = [
-    ("cyclades.cpu", handle_stop_active, "vm"),
-    ("cyclades.ram", handle_stop_active, "vm"),
-    ("cyclades.total_cpu", handle_destroy, "vm"),
-    ("cyclades.total_ram", handle_destroy, "vm"),
-    ("cyclades.vm", handle_destroy, "vm"),
-    ("cyclades.disk", handle_volume, "volume"),
-    ("cyclades.floating_ip", handle_floating_ip, "floating_ip"),
+    ("cyclades.cpu", False, handle_stop_active, "vm"),
+    ("cyclades.ram", False, handle_stop_active, "vm"),
+    ("cyclades.total_cpu", True, handle_stop_soft, "vm"),
+    ("cyclades.total_ram", True, handle_stop_soft, "vm"),
+    ("cyclades.vm", True, handle_stop_soft, "vm"),
+
+    ("cyclades.total_cpu", False, handle_destroy, "vm"),
+    ("cyclades.total_ram", False, handle_destroy, "vm"),
+    ("cyclades.vm", False, handle_destroy, "vm"),
+    ("cyclades.disk", False, handle_volume, "volume"),
+    ("cyclades.floating_ip", False, handle_floating_ip, "floating_ip"),
     ]

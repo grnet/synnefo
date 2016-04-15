@@ -93,6 +93,7 @@ Cyclades
 * Add config options for setting the dispatcher's logging severity:
   `DISPATCHER_LOGGING_LEVEL`, `AMQP_LOGGING_LEVEL`, `LOGIC_LOGGING_LEVEL`
   in `20-snf-cyclades-app-dispatcher.conf`.
+* Change dispatcher's default logging level to "INFO" (was: "DEBUG").
 
 
 Cyclades UI

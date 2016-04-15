@@ -49,11 +49,9 @@ VOLUME_PREFIX = cyclades_services['cyclades_volume']['prefix']
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 
-DISPATCHER_LOGGING_LEVEL = getattr(settings, 'DISPATCHER_LOGGING_LEVEL',
-                                   logging.DEBUG)
-AMQP_LOGGING_LEVEL = getattr(settings, 'AMQP_LOGGING_LEVEL', logging.DEBUG)
-LOGIC_LOGGING_LEVEL = getattr(settings, 'SYNNEFO_LOGIC_LOGGING_LEVEL',
-                              logging.DEBUG)
+DISPATCHER_LOGGING_LEVEL = getattr(settings, 'DISPATCHER_LOGGING_LEVEL', 'INFO')
+AMQP_LOGGING_LEVEL = getattr(settings, 'AMQP_LOGGING_LEVEL', 'INFO')
+LOGIC_LOGGING_LEVEL = getattr(settings, 'LOGIC_LOGGING_LEVEL', 'INFO')
 
 
 # --------------------------------------------------------------------

@@ -115,3 +115,22 @@ On Pithos node, the gunicorn must also be stopped first:
    mechanism. Due to this change the default BACKEND_ALLOCATOR_MODULE setting
    is now changed to "synnefo.logic.allocators.default_allocator.DefaultAllocator".
    Notice that previous default value for this setting is no longer supported.
+
+10. As of 0.17 VM passwords are stored to a volatile memory cache. This allows 
+    cyclades UI to inform users who accidentally forgot the password provided 
+    during vm creation process of the password once they open the machine 
+    connection info modal. The password is removed from cache once the user 
+    explicitly accepts that the password is written down or once a specific 
+    period is reached. To enable this feature add the following setting in 
+    `20-snf-cyclades-app-api.conf` (you may use the same memcached 
+    server as the one in `VMAPI_CACHE_BACKEND`):
+
+    .. code-block:: python
+    
+        CACHE_BACKEND = '<memcached-server-uri>'
+
+    or you may use the format below to change the default timeout period:
+
+    .. code-block:: python
+    
+        CACHE_BACKEND = '<memcached-server-uri>/?timeout=3600'

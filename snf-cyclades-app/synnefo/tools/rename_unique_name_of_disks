@@ -40,6 +40,17 @@ Tool to update the disks of all Archipelago VMs in order to use the logical_id
 of their disks as their name.
 """
 
+class Progress(object):
+    backend_id = 0
+    count = 0
+    total_vms = 0
+
+    @staticmethod
+    def print_progress(green):
+        Progress.count += 1
+        print '\r\033[KBackend %d: Processed %d from %d vms' \
+                    % (Progress.backend_id, Progress.count, Progress.total_vms),
+
 
 def main():
     parser = OptionParser(description=DESCRIPTION,
@@ -52,9 +63,6 @@ def main():
     parser.add_option("--ganeti-dry-run", dest="ganeti_dry_run", default=False,
                       action="store_true",
                       help="Pass --dry-run option to Ganeti jobs.")
-    parser.add_option("--parallel", dest="parallel", default=False,
-                      action="store_true",
-                      help="Use a seperate process for each backend.")
     parser.add_option("-d", "--debug", dest="debug", default=False,
                       action="store_true",
                       help="Display debug information.")
@@ -74,19 +82,9 @@ def main():
     if options.debug:
         logger.setLevel(logging.DEBUG)
 
-    if len(backends) > 1 and options.parallel:
-        cmd = sys.argv
-        processes = []
-        for backend in backends:
-            p = subprocess.Popen(cmd + ["--backend-id=%s" % backend.id])
-            processes.append(p)
-        for p in processes:
-            p.wait()
-        return
-    else:
-        [upgrade_backend(b, options.dry_run, options.ganeti_dry_run,
-                         options.restore)
-         for b in backends]
+    [upgrade_backend(b, options.dry_run, options.ganeti_dry_run,
+                     options.restore)
+     for b in backends]
     return
 
 
@@ -102,6 +100,10 @@ def upgrade_backend(backend, dry_run, ganeti_dry_run, restore):
             for vm in vms]
 
     if jobs:
+        Progress.count = 0
+        Progress.total_vms = vms.count()
+        Progress.backend_id = backend.id
+        [g.link(Progress.print_progress) for g in jobs]
         gevent.joinall(jobs)
 
     return
@@ -233,10 +235,11 @@ def check_already_processed(vm):
     not null, then the VM has already been processed by a previous run of the
     script.
     """
-    processed = vm.volumes.exclude(legacy_backend_volume_uuid__isnull=True)\
+    null_exists = vm.volumes.filter(legacy_backend_volume_uuid__isnull=True)\
         .filter(deleted=False)\
         .exists()
 
+    processed = not null_exists
     return processed
 
 

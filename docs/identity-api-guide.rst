@@ -25,7 +25,7 @@ Revision                   Description
 0.14 (June 03, 2013)       Remove endpoint listing
 0.14 (May 28, 2013)        Extend token api with authenticate call
 0.14 (May 23, 2013)        Extend api to list endpoints
-0.14 (May 14, 2013)        Do not serve user quotas in :ref:`authenticate-api-label`
+0.14 (May 14, 2013)        Do not serve user quotas in 'authenticate-api-label'
 0.14 (May 02, 2013)        Change URIs (keep also the old ones until the next version)
 0.13 (January 21, 2013)    Extend api to export user presentation & quota information.
 0.6 (June 06, 2012)        Split service and user API.
@@ -439,7 +439,7 @@ Uri                                       Method     Description
 Request Parameter Name  Value
 ======================  =========================
 belongsTo               Validates that a access token has the specified scope.
-                        The belongsTo parameter is optional.
+\                       The 'belongsTo' parameter is optional.
 ======================  =========================
 
 
@@ -461,6 +461,7 @@ Example response
              "id": "c18088be-16b1-4263-8180-043c54e22903",
              "roles": [{"id": 1, "name": "default"}],
              "name": "Firstname Lastname"}}}
+
 |
 
 =========================== =====================

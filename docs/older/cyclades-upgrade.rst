@@ -24,15 +24,14 @@ source:
     * Copy custom settings files located in project's ``settings.d`` directory
       to ``/etc/synnefo/`` directory.
 
-    * Migrate location from which :ref:`static files <static-files>` are served from.
+    * Migrate location from which static files are served.
 
 .. warning::
    
-   Synnefo settings have been refactored as part of the
-   :ref:`snf-common <snf-common>` component. File locations may be inaccurate
-   and the list of changed settings incomplete.  Please consult the actual
-   files installed under ``/etc/synnefo`` as the authoritative source for new
-   settings.
+   Synnefo settings have been refactored as part of the 'snf-common' component.
+   File locations may be inaccurate and the list of changed settings incomplete.
+   Please consult the actual files installed under ``/etc/synnefo`` as the
+   authoritative source for new settings.
 
 NEW APPS
     * The ``synnefo.ui.userdata`` application has been added in

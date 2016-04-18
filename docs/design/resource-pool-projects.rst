@@ -54,12 +54,13 @@ Project-related quota holdings
 The Quotaholder is responsible to record all resource allocations and
 deallocations, and enforce the limits. It keeps counters of the following
 structure:
- * resource: the resource name (e.g. cyclades.vm)
- * holder: the entity holding the resource (user or project)
- * source: the origin of the resource; a user-holder reserves from a
-   project, a project is a top-level entity and reserves from nowhere (None)
- * limit: maximum allowed allocation (an integer)
- * usage: current allocation (an integer)
+
+* resource: the resource name (e.g. cyclades.vm)
+* holder: the entity holding the resource (user or project)
+* source: the origin of the resource; a user-holder reserves from a
+  project, a project is a top-level entity and reserves from nowhere (None)
+* limit: maximum allowed allocation (an integer)
+* usage: current allocation (an integer)
 
 [Due to the transactional nature of the mechanism, there are actually two
 usage fields (usage_min and usage_max). Details are beyond the scope of
@@ -100,7 +101,7 @@ be clearly associated with a single user, restrict join/leave actions and
 specify the quota granted by the system. When a user is accepted, their system
 project will be automatically created, activated, and linked back to the user,
 granting the default resource quota. These projects will have no owner, marked
-thusly as `system' projects. The administrator can, following the usual
+thusly as 'system' projects. The administrator can, following the usual
 project logic, alter quota by modifying the project. Users cannot apply for
 modification of their system projects.
 
@@ -475,13 +476,14 @@ Project conversion
 
 Existing projects need to be converted to resource-pool ones. The following
 steps must be taken in Astakos:
-  * compute project-level limits for each resource as
-    max_members * member-level limit
-  * create system projects based on base quota for each user
-  * make Quotaholder entries for projects and user/project pairs
-  * assign all current usage to the system projects (both project
-    and user/project entries)
-  * set usage for all other entries to zero
+
+* compute project-level limits for each resource as
+  max_members * member-level limit
+* create system projects based on base quota for each user
+* make Quotaholder entries for projects and user/project pairs
+* assign all current usage to the system projects (both project
+  and user/project entries)
+* set usage for all other entries to zero
 
 Cyclades and Pithos should initialize their project attribute on each resource
 with the user's system project, that is, the same UUID as the resource owner.
@@ -493,8 +495,9 @@ Once migration has finished, users will be off-quota on their system project,
 if they had used additional quota from projects. To alleviate this
 situation, each service can attempt to reassign resources to other projects,
 following this strategy:
-  * consult Astakos for projects and quota for a given user
-  * select resources that can fit in another project
-  * issue a commission to decrease usage of the system project and likewise
-    increase usage of the available project
-  * record the new ProjectUUID for the reassigned resources
+
+* consult Astakos for projects and quota for a given user
+* select resources that can fit in another project
+* issue a commission to decrease usage of the system project and likewise
+  increase usage of the available project
+* record the new ProjectUUID for the reassigned resources

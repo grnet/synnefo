@@ -635,7 +635,7 @@ $(document).ready(function() {
 	};
 
 	/* Checks how many rows are selected and adjusts the classes and
-	the text of the select-qll btn */
+	the text of the select-all btn */
 	function updateToggleAllSelect() {
 		var $togglePageItems = $('#select-page');
 		var $label = $togglePageItems.find('span')
@@ -775,6 +775,8 @@ $(document).ready(function() {
 		var idsArray = [];
 		var warningMsg = snf.modals.html.warningDuplicates;
 		var warningInserted = false;
+		// association tracks for each user the related resource
+		// use to contact by selecting the resource of the user, not the user himself
 		var associations = {};
 		var $btn = $(modalID).find('.toggle-more');
 		$tableBody.empty();
@@ -782,11 +784,15 @@ $(document).ready(function() {
 			uniqueProp = 'contact_id';
 			for(var i=0; i<rowsNum; i++) {
 				var currContactID = selected.items[i][uniqueProp];
+
+				// if there is no record of the current user, keep it and keep and the corresponding resource
 				if(associations[currContactID] === undefined) {
 					associations[currContactID] = [selected.items[i]['item_name']];
 				}
+				// if the user is already kept (selected other resource that he owns)
+				// keep and the other resource
 				else {
-					selected.items[i]['notFirst'] = true; // not the first item with the current contact_id
+					selected.items[i]['notFirst'] = true;
 					associations[currContactID].push(selected.items[i]['item_name']);
 				}
 				if(!warningInserted && selected.items[i]['notFirst']) {
@@ -797,7 +803,17 @@ $(document).ready(function() {
 			for(var i=0; i<rowsNum; i++) {
 				if (!selected.items[i]['notFirst']) {
 					idsArray.push(selected.items[i][uniqueProp]);
-					currentRow = _.template(snf.modals.html.contactRow, {itemID: selected.items[i].contact_id, showAssociations: (itemType !== 'user'), associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '), fullName: selected.items[i].contact_name, email: selected.items[i].contact_email, hidden: (i >maxVisible)})
+					currentRow = _.template(
+						snf.modals.html.contactRow,
+						{
+							itemID: selected.items[i].contact_id,
+							showAssociations: (itemType !== 'user'),
+							associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '),
+							fullName: selected.items[i].contact_name,
+							email: selected.items[i].contact_email,
+							hidden: (i > maxVisible)
+						}
+					);
 					htmlRows += currentRow;
 				}
 			}
@@ -807,7 +823,16 @@ $(document).ready(function() {
 			uniqueProp = 'id';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
-				currentRow = _.template(snf.modals.html.commonRow, {itemID: selected.items[i].id, itemName: selected.items[i].item_name, ownerEmail: selected.items[i].contact_email, ownerName: selected.items[i].contact_name, hidden: (i >=maxVisible)})
+				currentRow = _.template(
+					snf.modals.html.commonRow,
+					{
+						itemID: selected.items[i].id,
+						itemName: selected.items[i].item_name,
+						ownerEmail: selected.items[i].contact_email,
+						ownerName: selected.items[i].contact_name,
+						hidden: (i >= maxVisible)
+					}
+				);
 				htmlRows += currentRow;
 			}
 		}

@@ -241,8 +241,14 @@ def sort_ips(vm_actions):
     return f
 
 
+def handle_floating_ip_soft(viol_id, resource, ips, diff, actions, remains,
+                            options=None):
+    return handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
+                              options=options, soft=True)
+
+
 def handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
-                       options=None):
+                       options=None, soft=False):
     vm_actions = actions.get("vm", {})
     ip_actions = actions["floating_ip"]
     ips = sorted(ips, key=sort_ips(vm_actions), reverse=True)
@@ -251,11 +257,14 @@ def handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
             break
         diff -= CHANGE[resource](ip)
         state = "USED" if ip.in_use() else "FREE"
+        if soft and state == "FREE":
+            continue
         if ip.nic and ip.nic.machine:
             backend_id = ip.nic.machine.backend_id
         else:
             backend_id = None
-        ip_actions[ip.id] = viol_id, state, backend_id, "REMOVE"
+        action = "DETACH" if soft else "REMOVE"
+        ip_actions[ip.id] = viol_id, state, backend_id, action
 
 
 def get_vms(users=None, projects=None):
@@ -400,16 +409,25 @@ def wait_for_ip(ip_id):
         "Floating_ip %s: Waiting for port delete timed out." % ip_id)
 
 
+def delete_port(port_id):
+    try:
+        port = NetworkInterface.objects.select_for_update().get(id=port_id)
+        servers.delete_port(port)
+        if port.machine:
+            wait_server_job(port.machine)
+        return True
+    except BaseException:
+        raise
+
+
 def remove_ip(ip_id):
     try:
         ip = IPAddress.objects.select_for_update().get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
-            objs = NetworkInterface.objects.select_for_update()
-            port = objs.get(id=port_id)
-            servers.delete_port(port)
-            if port.machine:
-                wait_server_job(port.machine)
+            r = delete_port(port_id)
+            if not r:
+                return False
             ip = wait_for_ip(ip_id)
         logic_ips.delete_floating_ip(ip)
         return True
@@ -417,17 +435,31 @@ def remove_ip(ip_id):
         return False
 
 
+def detach_ip(ip_id):
+    try:
+        ip = IPAddress.objects.select_for_update().get(id=ip_id)
+        port_id = ip.nic_id
+        if port_id:
+            return delete_port(port_id)
+        return True
+    except BaseException:
+        raise
+
+
 def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False,
                                 options={}):
     log = []
+    ACTIONS = {"REMOVE": remove_ip,
+               "DETACH": detach_ip,
+               }
+
     for ip_id, (viol_id, state, backend_id, ip_action) in actions.iteritems():
         if not allow_operation(backend_id, opcount, maxops):
             continue
         data = ("floating_ip", ip_id, state, backend_id, ip_action, viol_id)
-        if ip_action == "REMOVE":
-            if fix:
-                r = remove_ip(ip_id)
-                data += ("DONE" if r else "FAILED",)
+        if fix:
+            r = ACTIONS[ip_action](ip_id)
+            data += ("DONE" if r else "FAILED",)
         log.append(data)
     return log
 
@@ -462,5 +494,6 @@ RESOURCE_HANDLING = [
     ("cyclades.total_ram", False, handle_destroy, "vm"),
     ("cyclades.vm", False, handle_destroy, "vm"),
     ("cyclades.disk", False, handle_volume, "volume"),
+    ("cyclades.floating_ip", True, handle_floating_ip_soft, "floating_ip"),
     ("cyclades.floating_ip", False, handle_floating_ip, "floating_ip"),
     ]

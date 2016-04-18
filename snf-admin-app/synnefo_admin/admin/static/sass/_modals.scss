@@ -13,7 +13,7 @@ p.progress-area {
 
 .modal {
 	&[data-item="user"] {
-		&:not([data-type="contact"]) .table-selected td:nth-child(3){
+		&:not([data-type="contact"]) .table-selected .owner-name {
 			display: none;
 		}
 	}
@@ -214,7 +214,10 @@ p.progress-area {
 .modal {
     .table-selected {
         th,td {
-            word-break: break-word; 
+            word-break: break-word;
+            &.td-with-input {
+                width: 250px;
+            }
         }
         td:last-child {
             .wrap {

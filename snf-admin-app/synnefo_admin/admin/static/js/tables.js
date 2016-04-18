@@ -819,6 +819,24 @@ $(document).ready(function() {
 			}
 		}
 
+		else if(modalType === "modify-email") {
+			console.log('%c modaltype modify email')
+			uniqueProp = 'id';
+			for(var i=0; i<rowsNum; i++) {
+				idsArray.push(selected.items[i][uniqueProp]);
+				currentRow = _.template(
+					snf.modals.html.modifyEmailRow,
+					{
+						itemID: selected.items[i].contact_id,
+						fullName: selected.items[i].contact_name,
+						email: selected.items[i].contact_email,
+						hidden: (i > maxVisible)
+					}
+				);
+				htmlRows += currentRow;
+			}
+		}
+
 		else {
 			uniqueProp = 'id';
 			for(var i=0; i<rowsNum; i++) {

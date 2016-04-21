@@ -129,8 +129,9 @@ def handle_destroy(viol_id, resource, vms, diff, actions, remains,
 
 
 def volume_remove_action(viol_id, volume, machine=None):
-    backend_id = (machine.backend_id if machine is not None
-                  else volume.machine.backend_id)
+    if machine is None:
+        machine = volume.machine
+    backend_id = machine.backend_id if machine is not None else None
     return (viol_id, volume.status, backend_id, "REMOVE")
 
 
@@ -376,7 +377,7 @@ def remove_volume(volume_id):
         objs = Volume.objects.select_for_update()
         volume = objs.get(id=volume_id)
         machine = volume.machine
-        if not machine.deleted and machine.task != "DESTROY":
+        if not machine or not machine.deleted and machine.task != "DESTROY":
             volumes_logic.delete(volume)
         return True
     except BaseException:

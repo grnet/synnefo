@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -2080,6 +2080,10 @@ class ProjectMembership(models.Model):
 
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
+    OVERQUOTA_OK = 'OK'
+    overquota_state = models.CharField(max_length=255, default=OVERQUOTA_OK)
+    overquota_state_date = models.DateTimeField(auto_now_add=True)
+    overquota_date = models.DateTimeField(default=None, null=True)
 
     initialized = models.BooleanField(default=False)
     objects = ProjectMembershipManager()

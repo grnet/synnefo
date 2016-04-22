@@ -2078,6 +2078,8 @@ class ProjectMembership(models.Model):
 
     ACTUALLY_ACCEPTED = set([ACCEPTED, LEAVE_REQUESTED])
 
+    DEACTIVATED_STATES = {USER_SUSPENDED, REMOVED}
+
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
     OVERQUOTA_OK = 'OK'

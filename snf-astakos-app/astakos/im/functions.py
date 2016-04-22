@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import importlib
 import logging
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -29,10 +30,19 @@ import synnefo.util.date as date_util
 from astakos.im.models import AstakosUser, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock, \
     create_project, ProjectResourceQuota, ProjectResourceGrant
+from astakos.im import settings
 from astakos.im import quotas
 from astakos.im import project_notif
 
 import astakos.im.messages as astakos_messages
+
+QUOTA_POLICY = settings.QUOTA_POLICY_MODULE
+if QUOTA_POLICY is not None:
+    try:
+        QUOTA_POLICY = importlib.import_module(QUOTA_POLICY)
+    except ImportError:
+        QUOTA_POLICY = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +261,8 @@ def accept_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("accept", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'ACCEPT')
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
 
@@ -322,6 +334,8 @@ def remove_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("remove", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'REMOVE')
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
 
@@ -346,6 +360,8 @@ def suspend_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("suspend", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'SUSPEND')
     logger.info("User %s has been suspended from %s." %
                 (user.log_display, project))
 
@@ -370,6 +386,8 @@ def unsuspend_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("unsuspend", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'UNSUSPEND')
     logger.info("User %s has been unsuspended from %s." %
                 (user.log_display, project))
 
@@ -403,6 +421,8 @@ def enroll_member(project_id, user, request_user=None, reason=None):
                                     enroll=True)
 
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'ENROLL')
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
@@ -453,6 +473,8 @@ def leave_project(memb_id, request_user, reason=None):
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.perform_action("remove", actor=request_user, reason=reason)
         quotas.qh_sync_membership(membership)
+        if QUOTA_POLICY:
+            QUOTA_POLICY.check_state_membership(membership, 'LEAVE')
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
@@ -519,6 +541,8 @@ def join_project(project_id, request_user, reason=None):
             not project.violates_members_limit(adding=1))):
         membership.perform_action("accept", actor=request_user, reason=reason)
         quotas.qh_sync_membership(membership)
+        if QUOTA_POLICY:
+            QUOTA_POLICY.check_state_membership(membership, 'JOIN')
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
     else:
@@ -661,6 +685,8 @@ def _modify_projects(projects, request):
         filter(project__in=projects, resource__in=changed_resources).delete()
     ProjectResourceQuota.objects.bulk_create(pquotas)
     quotas.qh_sync_projects(projects)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects(projects, 'MODIFY')
 
 
 MAX_TEXT_INPUT = 4096
@@ -986,6 +1012,8 @@ def approve_application(application_id, project_id=None, request_user=None,
     project.activate(actor=request_user, reason=reason)
 
     quotas.qh_sync_project(project)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects([project], 'MODIFY')
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
     return project
@@ -1171,7 +1199,8 @@ def _perform_action_project(project_id, action, request_user, reason):
     validate_project_action(project, action, request_user, silent=False)
     action_methods[action](actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
-
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects([project], action)
     project_notif.project_notify(project, action.lower())
     return project
 

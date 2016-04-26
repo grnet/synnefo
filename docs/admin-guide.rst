@@ -430,6 +430,22 @@ add up quota from different projects. Note also that if allocating an entity
 requires multiple resources (e.g. cpu and ram for a Cyclades VM) these must
 be all assigned to a single project.
 
+Reclaiming resources
+````````````````````
+
+When a project is deactivated or a user is removed from a project, the quota
+that have been granted to the user are revoked. If the user still owns
+resources assigned to the project, the user quota appear overlimit on that
+project. The services are responsible to inspect the overquota state of
+users and reclaim their resources. For instance, cyclades provides
+the management command ``enforce-resources-cyclades`` to reclaim VMs,
+volumes, and floating IPs.
+
+When a user is deactivated, their system project, owned projects and project
+memberships are suspended. Subsequently, the user's resources can be
+reclaimed as explained above.
+
+
 Control projects
 ````````````````
 

@@ -26,6 +26,21 @@ from snf_django.management.utils import pprint_table
 from collections import defaultdict
 
 
+SHUTDOWN_VM = "shutdown VM"
+DELETE_VM = "delete VM"
+DELETE_VOLUME = "delete volume"
+DETACH_IP = "detach IP"
+DELETE_IP = "delete IP"
+RESOURCES_HELP = [
+    ("cyclades.cpu", SHUTDOWN_VM, ""),
+    ("cyclades.ram", SHUTDOWN_VM, ""),
+    ("cyclades.vm", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.disk", DELETE_VOLUME, ""),
+    ("cyclades.total_cpu", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.total_ram", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.floating_ip", DELETE_IP, DETACH_IP),
+]
+
 DESTROY_RESOURCES = ["cyclades.vm",
                      "cyclades.total_cpu",
                      "cyclades.total_ram",
@@ -55,6 +70,10 @@ class Command(SynnefoCommand):
                     help="Specify resources to check"),
         make_option("--soft-resources",
                     help="Specify resources to check for soft enforce"),
+        make_option("--list-resources",
+                    action="store_true",
+                    default=False,
+                    help="List available resources and respective actions"),
         make_option("--fix",
                     default=False,
                     action="store_true",
@@ -78,6 +97,11 @@ class Command(SynnefoCommand):
                           "(non system) volumes attached. This will also "
                           "remove these volumes")),
     )
+
+    def help_resources(self, options):
+        headers = ("Name", "Enforce action", "Soft enforce action")
+        pprint_table(self.stdout, RESOURCES_HELP, headers,
+                     options["output_format"], title="Resources")
 
     def confirm(self):
         self.stdout.write("Confirm? [y/N] ")
@@ -125,6 +149,10 @@ class Command(SynnefoCommand):
     @transaction.commit_on_success
     def handle(self, *args, **options):
         write = self.stderr.write
+        if options["list_resources"]:
+            self.help_resources(options)
+            exit()
+
         fix = options["fix"]
         force = options["force"]
         handlers = self.get_handlers(options["resources"],
@@ -189,7 +217,9 @@ class Command(SynnefoCommand):
             self.stderr.write("Checking resources for soft enforce %s...\n" %
                               ",".join(list(resources_soft)))
         if not resources and not resources_soft:
-            self.stderr.write("No resources specified, aborted.\n")
+            self.stderr.write(
+                "No resources specified; use '--list-resources' "
+                "to list available resources.\n")
             exit()
 
         hopts = {"cascade_remove": cascade_remove,

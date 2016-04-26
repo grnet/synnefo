@@ -1461,20 +1461,30 @@ quota limits, dependent on the overlimit resource:
 * `cyclades.cpu`: Shutdown VMs
 * `cyclades.total_ram`: Delete VMs
 * `cyclades.ram`: Shutdown VMs
-* `cyclades.disk`: Delete VMs
-* `cyclades.floating_ip`: Detach and remove IPs
+* `cyclades.disk`: Delete volumes (may also trigger VM deletion)
+* `cyclades.floating_ip`: Detach and delete IPs
 
 VMs to be deleted/shutdown are chosen first by state in the following order:
 ERROR, BUILD, STOPPED, STARTED or RESIZE and then by decreasing ID. When
 needing to remove IPs, we first choose IPs that are free, then those
 attached to VMs, using the same VM ordering.
 
-By default, the command checks only the following resources: `cyclades.cpu`,
-`cyclades.ram`, and `cyclades.floating_ip`; that is, the less dangerous
-ones, those that do not result in *deleting* any VM. One can change the
-default behavior by specifying the desired resources with option
-``--resources``. It is also possible to specify users to be checked or
-excluded.
+You need to specify the resources to be checked, using the option
+``--resources``. A safe first attempt would be to specify
+``cyclades.cpu,cyclades.ram``, that is, to check the less dangerous resources,
+those that do not result in *deleting* any VM, volume, or IP.
+
+If you want to handle overlimit quota in a safer way for resources that
+would normally trigger a deletion, you can use the option
+``--soft-resources``. Enforcing e.g. `cyclades.vm` in a "soft" way will
+shutdown the VMs rather than deleting them. This is useful as an initial
+warning for a user who is overquota; but notice that the user may restart
+their shutdown VMs, if the resources that control starting VMs allows them
+to do so.
+
+With option ``--list-resources`` you can inspect the available resources
+along with the related standard and soft enforce actions. It is also
+possible to specify users and projects to be checked or excluded.
 
 Actual enforcement is done with option ``--fix``. In order to control the
 load that quota enforcement may cause on Cyclades, one can limit the number

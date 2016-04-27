@@ -132,7 +132,7 @@ There are also the following tools:
 Design
 ======
 
-v.0.17
+v0.17
 ------
 
 .. toctree::

@@ -1,13 +1,13 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides:		  snf-dispatcher
-# Required-Start:	$remote_fs $syslog
-# Required-Stop:	 $remote_fs $syslog
-# Default-Start:	 2 3 4 5
-# Default-Stop:	  0 1 6
+# Provides:          snf-dispatcher
+# Required-Start     $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Short-Description: Synnefo dispatcher daemon
-# Description:	   Dispatcher is a daemon for the synnefo middleware logic layer
+# Description:	     Daemon for the synnefo middleware logic layer
 ### END INIT INFO
 
 # Do NOT "set -e",

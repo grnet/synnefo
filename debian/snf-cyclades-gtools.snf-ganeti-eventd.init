@@ -1,13 +1,13 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides:		  snf-ganeti-eventd
-# Required-Start:	$remote_fs $syslog
-# Required-Stop:	 $remote_fs $syslog
-# Default-Start:	 2 3 4 5
-# Default-Stop:	  0 1 6
-# Short-Description: Synnefo Ganeti eventd daemon
-# Description: Synnefo Ganeti eventd daemon
+# Provides:          snf-ganeti-eventd
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Synnefo Ganeti event daemon
+# Description:       Daemon that monitors the Ganeti job list for Synnefo
 ### END INIT INFO
 
 # Do NOT "set -e",

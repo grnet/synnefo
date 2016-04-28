@@ -5,6 +5,7 @@ Upgrade Steps
 =============
 
 The upgrade to v0.17 consists of the following steps:
+
 0. Upgrade Archipelago on all nodes to the latest version (0.4.4).
 
    .. note::
@@ -18,7 +19,7 @@ The upgrade to v0.17 consists of the following steps:
      host# archipelago start
 
 
-On Pithos node, the gunicorn must also be stopped first:
+    On Pithos node, the gunicorn must also be stopped first:
 
    .. code-block:: console
 
@@ -37,8 +38,8 @@ On Pithos node, the gunicorn must also be stopped first:
 
 2. Upgrade Synnefo on all nodes to the latest version (0.17)
 
-3. Install the latest Archipelago, Ganeti and Synnefo, Archipelago and Ganeti packages. For the
-   following steps, the Cyclades API must be down.
+3. Install the Ganeti and Synnefo. For the following steps, the Cyclades API
+   must be down.
 
    .. code-block:: console
 

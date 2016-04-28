@@ -50,6 +50,7 @@ class Progress(object):
         Progress.count += 1
         print '\r\033[KBackend %d: Processed %d from %d vms' \
                     % (Progress.backend_id, Progress.count, Progress.total_vms),
+        sys.stdout.flush()
 
 
 def main():
@@ -103,7 +104,7 @@ def upgrade_backend(backend, dry_run, ganeti_dry_run, restore):
         Progress.count = 0
         Progress.total_vms = vms.count()
         Progress.backend_id = backend.id
-        [g.link(Progress.print_progress) for g in jobs]
+        [g.rawlink(Progress.print_progress) for g in jobs]
         gevent.joinall(jobs)
 
     return

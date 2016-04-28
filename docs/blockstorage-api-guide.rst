@@ -35,39 +35,39 @@ API Operations
 
 .. rubric:: Volumes
 
-==================================== =============================== ====== ======== ==========
-Description                          URI                             Method Cyclades OS/Block Storage
-==================================== =============================== ====== ======== ==========
-`List <#list-volumes>`_              ``/volumes``                    GET    ✔        ✔
-\                                    ``/volumes/detail``             GET    ✔        ✔
-`Create <#create-volume>`_           ``/volumes``                    POST   ✔        ✔
-`Get Details <#get-volume-details>`_ ``/volumes/<volume id>``        GET    ✔        ✔
-`Update <#update-volume>`_           ``/volumes/<volume id>``        PUT    ✔        ✔
-`Delete <#delete-volume>`_           ``/volumes/<volume id>``        DELETE ✔        ✔
-`Reassign <#reassign-volume>`_       ``/volumes/<volume id>/action`` POST   ✔        **✘**
-==================================== =============================== ====== ======== ==========
+===================================== =============================== ====== ======== ==========
+Description                           URI                             Method Cyclades OS/Block Storage
+===================================== =============================== ====== ======== ==========
+`List <#list-volumes>`__              ``/volumes``                    GET    ✔        ✔
+\                                     ``/volumes/detail``             GET    ✔        ✔
+`Create <#create-volume>`__           ``/volumes``                    POST   ✔        ✔
+`Get Details <#get-volume-details>`__ ``/volumes/<volume id>``        GET    ✔        ✔
+`Update <#update-volume>`__           ``/volumes/<volume id>``        PUT    ✔        ✔
+`Delete <#delete-volume>`__           ``/volumes/<volume id>``        DELETE ✔        ✔
+`Reassign <#reassign-volume>`_        ``/volumes/<volume id>/action`` POST   ✔        **✘**
+===================================== =============================== ====== ======== ==========
 
 .. rubric:: Snapshots
 
-====================================== ============================ ====== ======== ==========
-Description                            URI                          Method Cyclades OS/Block Storage
-====================================== ============================ ====== ======== ==========
-`List <#list-snapshots>`_              ``/snapshots``               GET    ✔        ✔
-\                                      ``/snapshots/detail``        GET    ✔        ✔
-`Create <#create-snapshot>`_           ``/snapshots``               POST   ✔        ✔
-`Get Details <#get-snapshot-details>`_ ``/snapshots/<snapshot id>`` GET    ✔        ✔
-`Update <#update-snapshot>`_           ``/snapshots/<snapshot id>`` PUT    ✔        ✔
-`Delete <#delete-snapshot>`_           ``/snapshots/<snapshot id>`` DELETE ✔        ✔
-====================================== ============================ ====== ======== ==========
+======================================= ============================ ====== ======== ==========
+Description                             URI                          Method Cyclades OS/Block Storage
+======================================= ============================ ====== ======== ==========
+`List <#list-snapshots>`__              ``/snapshots``               GET    ✔        ✔
+\                                       ``/snapshots/detail``        GET    ✔        ✔
+`Create <#create-snapshot>`__           ``/snapshots``               POST   ✔        ✔
+`Get Details <#get-snapshot-details>`__ ``/snapshots/<snapshot id>`` GET    ✔        ✔
+`Update <#update-snapshot>`__           ``/snapshots/<snapshot id>`` PUT    ✔        ✔
+`Delete <#delete-snapshot>`__           ``/snapshots/<snapshot id>`` DELETE ✔        ✔
+======================================= ============================ ====== ======== ==========
 
 .. rubric:: Volume types
 
-========================================= ================================== ====== ======== ==========
-Description                               URI                                Method Cyclades OS/Block Storage
-========================================= ================================== ====== ======== ==========
-`List <#list-volume-types>`_              ``/volume-types``                  GET    ✔        ✔
-`Get Details <#get-volume-type-details>`_ ``/volume-types/<volume-type id>`` GET    ✔        ✔
-========================================= ================================== ====== ======== ==========
+========================================== ================================== ====== ======== ==========
+Description                                URI                                Method Cyclades OS/Block Storage
+========================================== ================================== ====== ======== ==========
+`List <#list-volume-types>`__              ``/volume-types``                  GET    ✔        ✔
+`Get Details <#get-volume-type-details>`__ ``/volume-types/<volume-type id>`` GET    ✔        ✔
+========================================== ================================== ====== ======== ==========
 
 List Volumes
 ------------
@@ -85,9 +85,10 @@ URI                 Method Cyclades OS/Block Storage
 
 * Both requests return a list of volumes. The first returns just ``id``,
   ``display_name`` and ``links``, while the second returns the
-  `full collection <#volume-ref>`_ of volume attributes
+  `full collection <#volume-ref>`__ of volume attributes
 
 |
+  
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -117,7 +118,7 @@ Response body contents::
     }, ...
   ]
 
-The volume attributes are listed `here <#volume-ref>`_
+The volume attributes are listed `here <#volume-ref>`__.
 
 *Example List Volumes: JSON (regular)*
 
@@ -260,7 +261,7 @@ Response body contents::
     ...
   }
 
-Volume attributes are explained `here <#volume-ref>`_
+Volume attributes are explained `here <#volume-ref>`__.
 
 *Example Get Volume Response*
 
@@ -310,6 +311,7 @@ URI          Method Cyclades OS/Block Storage
 ============ ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -329,18 +331,23 @@ Request body contents::
 Volume Attribute    Value                            Cyclades OS/Block Storage
 =================== ================================ ======== ================
 size                Volume size in GB                required required
-server_id           An existing VM to create from    required **✘**
+server_id           An existing VM to create from    ✔*       **✘**
 availability_zone   Respond in xml                   **✘**    ✔
 source_volid        Existing volume to create from   **✘**    ✔
-display_description A description                     ✔        ✔
+display_description A description                    ✔        ✔
 snapshot_id         Existing snapshot to create from ✔        ✔
 display_name        The name                         required ✔
 imageRef            Image to create from             ✔        ✔
-volume_type         The associated volume type       ✔        ✔
+volume_type         The associated volume type       ✔*       ✔
 bootable            Whether the volume is bootable   **✘**    ✔
 metadata            Key-Value metadata pairs         ✔        ✔
 project             Assigned project for quotas      ✔        **✘**
 =================== ================================ ======== ================
+
+.. note::
+
+  * ``server_id`` is required for non-detachable volumes
+  * if ``server_id`` is not provided, then ``volume_type`` is required
 
 *Example Create Volume Request: JSON*
 
@@ -383,7 +390,7 @@ Response body contents::
     ...
   }
 
-Volume attributes are `listed here <#server-ref>`_.
+Volume attributes are listed `here <#server-ref>`__.
 
 *Example Create Volume Response: JSON*
 
@@ -429,6 +436,7 @@ URI                      Method Cyclades OS/Block Storage
 ======================== ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -484,7 +492,7 @@ Response body contents::
     ...
   }
 
-Volume attributes are explained `here <#volume-ref>`_
+Volume attributes are explained `here <#volume-ref>`__.
 
 *Example update volume Response*
 
@@ -584,6 +592,7 @@ URI                      Method Cyclades OS/Block Storage
 ======================== ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -618,6 +627,7 @@ URI                             Method Cyclades OS/Block Storage
 =============================== ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -673,9 +683,10 @@ URI                    Method Cyclades OS/Block Storage
 
 * Both requests return a list of snapshots. The first returns just ``id``,
   ``display_name`` and ``links``, while the second returns the
-  `full collection <#snapshot-ref>`_ of snapshot attributes
+  `full collection <#snapshot-ref>`__ of snapshot attributes.
 
 |
+  
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Block Storage
 ==============  ========================= ======== ==========
@@ -705,7 +716,7 @@ Response body contents::
     }, ...
   ]
 
-The snapshot attributes are listed `here <#snapshot-ref>`_
+The snapshot attributes are listed `here <#snapshot-ref>`__.
 
 *Example List Snapshots: JSON (regular)*
 
@@ -852,7 +863,7 @@ Response body contents::
     ...
   }
 
-Snapshot attributes are explained `here <#snapshot-ref>`_
+Snapshot attributes are explained `here <#snapshot-ref>`__.
 
 *Example Get Snapshot Response*
 
@@ -897,6 +908,7 @@ URI            Method Cyclades OS/Block Storage
 ============== ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -960,7 +972,7 @@ Response body contents::
     ...
   }
 
-Snapshots attributes are `listed here <#snapshot-ref>`_.
+Snapshots attributes are listed `here <#snapshot-ref>`__.
 
 *Example Create Snapshot Response: JSON*
 
@@ -1001,6 +1013,7 @@ URI                          Method Cyclades OS/Block Storage
 ============================ ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -1055,7 +1068,7 @@ Response body contents::
     ...
   }
 
-Snapshot attributes are explained `here <#snapshot-ref>`_
+Snapshot attributes are explained `here <#snapshot-ref>`__.
 
 *Example update snapshot Response*
 
@@ -1081,6 +1094,7 @@ URI                          Method Cyclades OS/Block Storage
 ============================ ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -1116,6 +1130,7 @@ URI        Method Cyclades OS/Block Storage
 ========== ====== ======== ==========
 
 |
+
 ============== ========================= ======== ==========
 Request Header Value                     Cyclades OS/Block Storage
 ============== ========================= ======== ==========
@@ -1145,7 +1160,7 @@ Response body contents::
     }, ...
   ]
 
-The volume type attributes are listed `here <#volume-type-ref>`_
+The volume type attributes are listed `here <#volume-type-ref>`__.
 
 *Example List Volumes: JSON (regular)*
 
@@ -1212,7 +1227,7 @@ Response body contents::
     ...
   }
 
-Volume attributes are explained `here <#volume-type-ref>`_
+Volume attributes are explained `here <#volume-type-ref>`__.
 
 *Example Get Volume Response*
 

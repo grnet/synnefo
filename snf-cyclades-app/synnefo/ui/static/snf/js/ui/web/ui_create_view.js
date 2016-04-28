@@ -160,14 +160,32 @@
 
             this.password = this.$("#new-machine-password");
             this.copy = this.$(".clipboard");
+            this.confirm = this.$(".confirm");
+            this.show_machine = this.$(".show-machine");
 
-            this.$(".show-machine").click(_.bind(function(){
+            this.show_machine.click(_.bind(function(){
                 if (this.$(".show-machine").hasClass("in-progress")) {
                     return;
                 }
-                this.hide();
+                this.show_machine.hide();
+                if (this.supports_password) {
+                  this.confirm.show();
+                } else {
+                  this.hide();
+                }
             }, this));
             
+            this.confirm.find("button.no").click(_.bind(function() {
+                this.prevent_close = false;
+                this.hide();
+            }, this));
+
+            this.confirm.find("button.yes").click(_.bind(function() {
+                storage.vms.delete_admin_password(this.vm_id);
+                this.prevent_close = false;
+                this.hide();
+            }, this));
+
             var self = this;
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
@@ -204,21 +222,27 @@
         },
 
         show: function(pass, vm_id, image) {
+            this.confirm.hide();
+            this.show_machine.show();
             this.pass = pass;
             this.vm_id = vm_id;
             this.image = image;
             var self = this;
+
             this.password.unbind("click").click(function() {
                 self.password.selectRange(0);
             });
 
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
             if (this.image.supports("password")) {
+                this.supports_password = true;
+                this.prevent_close = true;
                 this.$(".password-cont").show();
                 this.$(".subinfo.description").show();
                 this.$(".disabled.password-cont").hide();
                 this.$(".disabled.subinfo.description").hide();
             } else {
+                this.supports_password = false;
                 this.$(".password-cont").hide();
                 this.$(".subinfo.description").hide();
                 this.$(".disabled.password-cont").show();
@@ -1165,9 +1189,16 @@
         },
         
         get_active_flavors: function() {
+            var user_overrides = synnefo.config.user_override_allow_create;
             return storage.flavors.active().filter(function(flv) {
-	        return flv.get("SNF:allow_create")
-	    });
+              var allow_create = flv.get("SNF:allow_create");
+              if (allow_create) { return true; }
+              if (_.filter(user_overrides, function(reg) {
+                var _flv = flv;
+                return reg.exec(flv.get('name'));
+              }).length) { return true };
+              return false;
+            });
         },
 
         get_valid_flavors: function() {

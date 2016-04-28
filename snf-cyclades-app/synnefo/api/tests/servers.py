@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from copy import deepcopy
 
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
+from django.test.utils import override_settings as django_override_settings
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
@@ -27,7 +28,11 @@ from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from django.conf import settings
+from django.core.urlresolvers import resolve
+from django.http import HttpRequest
 from synnefo.logic.rapi import GanetiApiError
+from synnefo.api.util import VMPasswordCache
+from synnefo.api import servers
 
 from mock import patch, Mock
 
@@ -351,6 +356,8 @@ class ServerCreateAPITest(ComputeAPITest):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
 
+        vm_password_cache = VMPasswordCache()
+
         mrapi().CreateInstance.return_value = 12
         with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
@@ -366,9 +373,77 @@ class ServerCreateAPITest(ComputeAPITest):
                          u"Meta in the \u2601")
         self.assertTrue('adminPass' in api_server)
 
+        password = vm_password_cache.get(str(api_server['id']))
+        self.assertEqual(password, api_server['adminPass'])
+
         db_vm = VirtualMachine.objects.get(userid='test_user')
         self.assertEqual(api_server['name'], u"Server in the \u2601")
         self.assertEqual(api_server['status'], db_vm.operstate)
+
+    def test_demux_server_password(self, mrapi):
+        # Check that the url resolves to `demux_server_passwords`
+        url = join_urls(self.compute_path, 'servers/1/password')
+        resolved = resolve(url)
+        self.assertEqual(
+            'synnefo.api.servers.demux_server_password',
+            resolved.view_name
+        )
+
+        vm = mfactory.VirtualMachineFactory()
+        request = HttpRequest()
+
+        request.method = 'GET'
+        with patch('synnefo.api.servers.get_server_password') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, vm.userid)
+
+        request.method = 'DELETE'
+        with patch('synnefo.api.servers.delete_server_password') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, vm.userid)
+
+        request.method = 'INVALID'
+        with patch('snf_django.lib.api.api_method_not_allowed') as mocked:
+            servers.demux_server_password(request, vm.userid)
+            mocked.assert_called_once_with(request, allowed_methods=['GET', 'DELETE'])
+
+
+    def test_get_server_password(self, mrapi):
+        vm = mfactory.VirtualMachineFactory()
+        # If a password is not set in the cache, the view should
+        # produce a 404(Not Found) status code.
+        response = self.myget('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 404)
+
+        # If a password is set the view should produce a
+        # 200(OK) status code and return a JSON dict containing
+        # the password
+        password = 'mysecretcombination'
+        VMPasswordCache().set(**{str(vm.pk): password})
+
+        response = self.myget('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 200)
+        returned_password = json.loads(response.content)['password']
+
+        self.assertEqual(returned_password, password)
+
+
+    def test_delete_server_password(self, mrapi):
+        # If a password is set the view should produce a
+        # 204(No Content) status code and return a JSON dict containing
+        vm = mfactory.VirtualMachineFactory()
+        password = 'mysecretcombination'
+        memory_cache = VMPasswordCache()
+        memory_cache.set(**{str(vm.pk): password})
+
+        response = self.mydelete('servers/' + str(vm.pk) + '/password', vm.userid)
+
+        self.assertEqual(response.status_code, 204)
+
+        self.assertIsNone(memory_cache.get(str(vm.pk)))
+
 
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist
@@ -388,6 +463,29 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 403)
+
+    @django_override_settings(CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE= \
+                              {'admins': ['.*']})
+    def test_override_flavor_allow_create(self, mrapi):
+        # Test with an flavor that is not allowed
+        flavor = mfactory.FlavorFactory(allow_create=False)
+        request = deepcopy(self.request)
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 403)
+
+        request = deepcopy(self.request)
+        request["server"]["flavorRef"] = flavor.id
+        mrapi().CreateInstance.return_value = 12
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json',
+                                       _roles=[{'id': '1', 'name': 'admins'}])
+        self.assertEqual(response.status_code, 202)
 
     def test_create_server_error(self, mrapi):
         """Test if the create server call returns the expected response
@@ -437,11 +535,19 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # User requested public networks
         # but no floating IP..
-        s1 = mfactory.IPv4SubnetFactory(network__public=True)
+        s1 = mfactory.IPv4SubnetFactory(network__public=True, network__floating_ip_pool=True)
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"uuid": s1.network_id}]
         response = self.mypost('servers', "test", json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
+
+        # deny empty port creation for non floating ip public networks
+        s2 = mfactory.IPv4SubnetFactory(network__public=True)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s2.network_id}]
+        response = self.mypost('servers', "test", json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 409)
+        assert "Cannot find an unused floating IP" in response.content
 
         # Add one floating IP
         fp1 = mfactory.IPv4AddressFactory(userid="test", subnet=s1,
@@ -721,9 +827,11 @@ class ServerMetadataAPITest(ComputeAPITest):
         request = {'meta': {'foo2': 'bar2'}}
         response = self.myput('servers/%d/metadata/foo2' % vm.id,
                               vm.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 201)
 
         # Get the new meta
         response = self.myget('servers/%d/metadata/foo2' % vm.id, vm.userid)
+        self.assertEqual(response.status_code, 200)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo2'], 'bar2')
 
@@ -984,7 +1092,7 @@ class ServerAttachments(ComputeAPITest):
                          0)
 
     def test_attach_detach_volume(self, mrapi):
-        vol = mfactory.VolumeFactory(status="AVAILABLE")
+        vol = mfactory.VolumeFactory(status="AVAILABLE", index=0)
         vm = vol.machine
         volume_type = vm.flavor.volume_type
         # Test that we cannot detach the root volume
@@ -1015,9 +1123,11 @@ class ServerAttachments(ComputeAPITest):
         vol1.volume_type = volume_type
         vol1.save()
         mrapi().ModifyInstance.return_value = 43
-        response = self.mypost("servers/%d/os-volume_attachments" %
-                               vm.id, vm.userid,
-                               request, "json")
+        with patch("synnefo.volume.util.is_volume_type_detachable") as m:
+            m.return_value = True
+            response = self.mypost("servers/%d/os-volume_attachments" %
+                                   vm.id, vm.userid,
+                                   request, "json")
         self.assertEqual(response.status_code, 202, response.content)
         attachment = json.loads(response.content)["volumeAttachment"]
         self.assertEqual(attachment, {"volumeId": vol1.id,
@@ -1031,6 +1141,8 @@ class ServerAttachments(ComputeAPITest):
         vm.task = None
         vm.save()
         vm.volumes.all().update(status="IN_USE")
-        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
-                                 (vm.id, vol1.id), vm.userid)
+        with patch("synnefo.volume.util.is_volume_type_detachable") as m:
+            m.return_value = True
+            response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                     (vm.id, vol1.id), vm.userid)
         self.assertEqual(response.status_code, 202, response.content)

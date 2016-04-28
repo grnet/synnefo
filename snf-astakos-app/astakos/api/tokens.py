@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ from snf_django.lib.api import faults, utils, api_method
 from django.core.cache import cache
 
 from astakos.im import settings
-from astakos.im.models import Service, AstakosUser
+from astakos.im.models import Service, AstakosUser, ProjectMembership
 from astakos.oa2.backends.base import OA2Error
 from astakos.oa2.backends.djangobackend import DjangoBackend
 from .util import json_response, xml_response, validate_user,\
@@ -106,6 +106,9 @@ def authenticate(request):
             if user.uuid != tenant:
                 raise faults.BadRequest('Not conforming tenantName')
 
+        user_projects = user.project_set.filter(projectmembership__state__in=\
+            ProjectMembership.ACCEPTED_STATES).values_list("uuid", flat=True)
+
         d["access"]["token"] = {
             "id": user.auth_token,
             "expires": utils.isoformat(user.auth_token_expires),
@@ -114,7 +117,9 @@ def authenticate(request):
             "id": user.uuid, 'name': user.realname,
             "roles": [dict(id=str(g['id']), name=g['name']) for g in
                       user.groups.values('id', 'name')],
-            "roles_links": []}
+            "roles_links": [],
+            "projects": list(user_projects),
+            }
 
     d["access"]["serviceCatalog"] = get_endpoints()
 

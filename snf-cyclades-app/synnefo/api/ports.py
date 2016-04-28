@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,16 +65,13 @@ def port_demux(request, port_id):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_ports(request, detail=True):
-
-    log.debug('list_ports detail=%s', detail)
-
-    user_ports = NetworkInterface.objects.filter(userid=request.user_uniq)
-
+    ports = NetworkInterface.objects.for_user(userid=request.user_uniq,
+                                              projects=request.user_projects)
     if detail:
-        user_ports = user_ports.prefetch_related("ips")
+        ports = ports.prefetch_related("ips")
 
     port_dicts = [port_to_dict(port, detail)
-                  for port in user_ports.order_by('id')]
+                  for port in ports.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_ports.xml', {
@@ -90,7 +87,9 @@ def list_ports(request, detail=True):
 def create_port(request):
     user_id = request.user_uniq
     req = api.utils.get_json_body(request)
-    log.info('create_port user: %s request: %s', user_id, req)
+
+    log.debug("User: %s, Action: create_port, Request: %s",
+              user_id, req)
 
     port_dict = api.utils.get_attribute(req, "port", attr_type=dict)
     net_id = api.utils.get_attribute(port_dict, "network_id",
@@ -100,8 +99,8 @@ def create_port(request):
                                         attr_type=(basestring, int))
     vm = None
     if device_id is not None:
-        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
-                         non_suspended=True)
+        vm = util.get_vm(device_id, user_id, request.user_projects,
+                         for_update=True, non_deleted=True, non_suspended=True)
 
     # Check if the request contains a valid IPv4 address
     fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False,
@@ -126,8 +125,8 @@ def create_port(request):
     else:
         fixed_ip_address = None
 
-    network = util.get_network(net_id, user_id, non_deleted=True,
-                               for_update=True)
+    network = util.get_network(net_id, user_id, request.user_projects,
+                               non_deleted=True, for_update=True)
 
     ipaddress = None
     if network.public:
@@ -138,7 +137,9 @@ def create_port(request):
             msg = ("'fixed_ips' attribute must contain a floating IP address"
                    " in order to connect to a public network.")
             raise faults.BadRequest(msg)
-        ipaddress = util.get_floating_ip_by_address(user_id, fixed_ip_address,
+        ipaddress = util.get_floating_ip_by_address(user_id,
+                                                    request.user_projects,
+                                                    fixed_ip_address,
                                                     for_update=True)
     elif fixed_ip_address:
         ipaddress = ips.allocate_ip(network, user_id,
@@ -167,6 +168,9 @@ def create_port(request):
     new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
                                    machine=vm, name=name)
 
+    log.info("User %s created port %s, network: %s, machine: %s, ip: %s",
+             user_id, new_port.id, network, vm, ipaddress)
+
     response = render_port(request, port_to_dict(new_port), status=201)
 
     return response
@@ -174,8 +178,7 @@ def create_port(request):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_port_details(request, port_id):
-    log.debug('get_port_details %s', port_id)
-    port = util.get_port(port_id, request.user_uniq)
+    port = util.get_port(port_id, request.user_uniq, request.user_projects)
     return render_port(request, port_to_dict(port))
 
 
@@ -184,8 +187,12 @@ def update_port(request, port_id):
     '''
     You can update only name, security_groups
     '''
-    port = util.get_port(port_id, request.user_uniq, for_update=True)
+    port = util.get_port(port_id, request.user_uniq, request.user_projects,
+                         for_update=True)
     req = api.utils.get_json_body(request)
+
+    log.debug("User %s, Port %s, Action: update, Request: %s",
+              request.user_uniq, port_id, req)
 
     port_info = api.utils.get_attribute(req, "port", required=True,
                                         attr_type=dict)
@@ -213,8 +220,10 @@ def update_port(request, port_id):
 
         #add the new groups
         port.security_groups.add(*sg_list)
-
     port.save()
+
+    log.info("User %s updated port %s", request.user_uniq, port.id)
+
     return render_port(request, port_to_dict(port), 200)
 
 
@@ -223,7 +232,8 @@ def update_port(request, port_id):
 def delete_port(request, port_id):
     log.info('delete_port %s', port_id)
     user_id = request.user_uniq
-    port = util.get_port(port_id, user_id, for_update=True)
+    port = util.get_port(port_id, user_id, request.user_projects,
+                         for_update=True)
 
     # Deleting port that is connected to a public network is allowed only if
     # the port has an associated floating IP address.
@@ -236,6 +246,9 @@ def delete_port(request, port_id):
         raise faults.Forbidden("Administratively Suspended VM.")
 
     servers.delete_port(port)
+
+    log.info("User %s deleted port %s", user_id, port_id)
+
     return HttpResponse(status=204)
 
 #util functions

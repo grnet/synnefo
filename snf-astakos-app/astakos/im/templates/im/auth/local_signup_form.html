@@ -1,7 +1,7 @@
-<div class="form-stacked">
+<div class="form-stacked {% if is_open %}open{% endif %}">
   <form action="{% url signup %}" method="post"
       class="innerlabels signup">{% csrf_token %}
-       
+
       <input type="hidden" name="next" value="{{ next }}">
       <input type="hidden" name="code" value="{{ code }}">
       <input type="hidden" name="provider" value={{ provider|default:"local" }}>
@@ -12,25 +12,22 @@
       {% include "im/form_render.html" %}
       {% endwith %}
       <div class="form-row submit">
-          
           <input type="submit" class="submit altcol" value="SUBMIT" />
-          	{% if third_party_token %}
-				<a href={%url index %} class="rt-link">CANCEL</a>
-			{% endif %}
+          {% if third_party_token %}
+            <a href={%url index %} class="rt-link">CANCEL</a>
+          {% endif %}
       </div>
   </form>
 </div>
-{% if auth_providers|length == 1 or provider_obj.is_primary %}
+{% if auth_providers|length == 1 %}
 <style>
-  .two-cols .rt > p { display: none }
   .form-stacked { display: block !important }
   a.submit.standalone.{{ provider_obj.module }}-provider { display: none !important }
 </style>
-  
+
 <script>
 $(document).ready(function(){
     $('.lt .pic').attr('src', '{{ IM_STATIC_URL }}images/ringer2.png');
 });
 </script>
- 
 {% endif %}

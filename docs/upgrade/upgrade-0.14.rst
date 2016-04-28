@@ -77,17 +77,17 @@ The upgrade to v0.14 consists in three steps:
 
 .. note::
 
-   Make sure `snf-webproject' has the same version with snf-common
+   Make sure 'snf-webproject' has the same version as 'snf-common'.
 
 .. note::
 
-   Package `kamaki', installed on all nodes in version 0.13, is not required
+   Package 'kamaki', installed on all nodes in version 0.13, is not required
    any more and can safely be uninstalled.
 
 .. note::
 
-    Installing the packages will cause services to start. Make sure you bring
-    them down again (at least ``gunicorn``, ``snf-dispatcher``)
+   Installing the packages will cause services to start. Make sure you bring
+   them down again (at least ``gunicorn``, ``snf-dispatcher``).
 
 2.2 Sync and migrate the database
 ---------------------------------
@@ -164,8 +164,8 @@ then ``UI_URL = https://accounts.example.synnefo.org/astakos/ui/``)::
 
     astakos-host$ snf-component-register
 
-(ATTENTION: make sure to go to the next step *WITHOUT* running
-``snf-manage resource-modify``, suggested at the end of this command)
+(ATTENTION: Make sure to go to the next step *WITHOUT* running
+``snf-manage resource-modify``, as suggested at the end of this command.)
 
 .. note::
 

@@ -3,7 +3,7 @@
 	<h2 class="panel-heading">Shortcuts</h2>
 	<dl class="dl-horizontal shortcuts panel-body">
 		<dt><span class="key">i</span></dt>
-		<dd>Open/close the windowthat contains information regarding the state of the actions.</dd>
+		<dd>Open/close the window that contains information regarding the state of the actions.</dd>
 		<dt><span class="key">esc</span></dt><dd>Close confirmation window.</dd>
 		<dt><span class="key">shift</span> + <span class="key">click</span></dt>
 		<dd>Order the contents of the table by selecting multiple columns.</dd>
@@ -23,12 +23,15 @@
 			{% endfor %}
 		</b>
 		</p>
-		<h3>Examples</h3>
+		<h3>Usage Examples</h3>
 		<dl class="filters-examples">
 			<dt>Search for the keyword "John" in the most common text fields of the <b>User model</b>.</dt>
 			<dd><span class="highlight">user:John</span></dd>
 			<dd class="divider"></dd>
-      			<dt>Search for the keywords "John" and "Doe" in the most common text fields of the <b>User model</b> and return the conjuction <b>(logical AND)</b> of their results.</dt>
+			<dt>Search for the keywords "John" and "Jane" in the most common text fields of the <b>User model</b> and return the disjunction <b>(logical OR)</b> of their results.</dt>
+			<dd><span class="highlight">user: John {{ ADMIN_OR_SIGN }} Jane</span></dd>
+			<dd class="divider"></dd>
+			<dt>Search for the keywords "John" and "Doe" in the most common text fields of the <b>User model</b> and return the conjuction <b>(logical AND)</b> of their results.</dt>
 			<dd><span class="highlight">user:John Doe</span></dd>
 			<dd><span class="highlight">user: John Doe</span></dd>
 			<dd class="divider"></dd>
@@ -43,11 +46,25 @@
 			<dd><span class="highlight">user:John Doe status:pending moderation,active vm:operstate=started ip:.27</span></dd>
 			<dd class="divider"></dd>
 		</dl>
-		<dl class="notes dl-horizontal">
+		<dl class="notes dl-horizontal filters-examples">
 			<dt>Note 1:</dt>
 			<dd>You can also experiment with Compact View by switching to and from Standard View.</dd>
 			<dt>Note 2:</dt>
 			<dd>For the time being, you can find more model field names by reading the <b>models.py files of Cyclades/Astakos</b>.</dd>
+			<dt>Note 3:</dt>
+            <dd>
+                <p>When you search for keywords in text fields you can perform <b>logical AND</b> by using <b>spaces</b> and <b>logical OR</b> by using <b>{{ ADMIN_OR_SIGN }}</b>. The evaluation order of these two operators is from left to right.</p>
+            <p>Also, it is recommended to use the logical operators in uppercase and the keywords in lowercase or camelcase.</p>
+            <p><b>Example</b></br> We have the users Jane Roe and John Doe.</p>
+            <p>
+                <b>Search:</b> <span class="highlight">user: Jane {{ ADMIN_OR_SIGN}} John Doe</span> => (Jane OR John) AND Doe =><br>
+                <b>Result:</b> John Doe
+            </p>
+            <p>
+                <b>Search:</b><span class="highlight">user: Jane Roe {{ ADMIN_OR_SIGN}} John</span> => (Jane and Roe) OR John =><br>
+                <b>Result:</b> Jane Roe, John Doe
+            </p>
+            </dd>
 		</dl>
 	</div>
 	{% endif %}

@@ -145,22 +145,30 @@ class ActivationBackend(object):
         return formclass(initial_data, **kwargs)
 
     def prepare_user(self, user, email_verified=None):
-        """
-        Initialization of a newly registered user. The method sets email
-        verification code. If email_verified is set to True we automatically
-        process user through the verification step.
+        """ Initialization of a newly registered user.
+
+        The method sets email verification code. If email_verified is set to
+        True or the provider's policy dictates that the email is automatically
+        verified we automatically process user through the verification step.
+
         """
         logger.info("Initializing user registration %s", user.log_display)
 
+        reason = None
         if not email_verified:
-            email_verified = settings.SKIP_EMAIL_VERIFICATION
+            if user.get_auth_provider().get_autoverify_policy:
+                # Verify email according to provider's policy
+                email_verified = True
+                reason = "skip email verification provider's policy."
 
         user.renew_verification_code()
         user.save()
 
         if email_verified:
-            logger.info("Auto verifying user email. %s",
-                        user.log_display)
+            msg = "Auto verifying user email %s." % user.log_display
+            if reason:
+                msg += " reason: %s" % reason
+            logger.info(msg)
             return self.verify_user(user,
                                     user.verification_code)
 
@@ -252,7 +260,8 @@ class ActivationBackend(object):
                 return fail(faults.NotAllowed)
 
         else:
-            return fail(faults.BadRequest, "Unknown action: {}.".format(action))
+            return fail(faults.BadRequest,
+                        "Unknown action: {}.".format(action))
 
         return True, None
 

@@ -1,6 +1,3 @@
 # Synnefo packages
 deb http://apt.dev.grnet.gr wheezy/
 deb http://apt.dev.grnet.gr unstable/
-
-# X2Go repo
-deb http://packages.x2go.org/debian wheezy main

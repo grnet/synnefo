@@ -67,33 +67,41 @@ class AMQPHaighaClient():
         self.consumers = {}
         self.unacked = OrderedDict()
 
-    def connect(self, retries=0):
-        if retries > self.max_retries:
-            logger.error("Aborting after %s retries", retries - 1)
-            raise AMQPConnectionError('Aborting after %d connection failures.'
-                                      % (retries - 1))
-            return
+    def connect(self):
+        """Initialize a connection with the AMQP server. If it fails, retry at
+        most <max_retries> times.
+        """
 
-        # Pick up a host
-        host = self.hosts.pop()
-        self.hosts.insert(0, host)
-
-        #Patch gevent
+        # Patch gevent
         monkey.patch_all()
 
-        try:
-            self.connection = \
-                RabbitConnection(logger=logger, debug=True,
-                                 user='rabbit', password='r@bb1t',
-                                 vhost='/', host=host,
-                                 heartbeat=None,
-                                 sock_opts=sock_opts,
-                                 transport='gevent')
-        except socket.error as e:
-            logger.error('Cannot connect to host %s: %s', host, e)
-            if retries > 2 * len(self.hosts):
-                sleep(1)
-            return self.connect(retries + 1)
+        retries = 0
+        self.connection = None
+
+        # Try to connect at most <max_retries> times
+        while self.max_retries == 0 or retries < self.max_retries:
+            retries += 1
+            # Pick up a host
+            host = self.hosts.pop()
+            self.hosts.insert(0, host)
+            try:
+                self.connection = RabbitConnection(logger=logger, debug=True,
+                                                   user='rabbit',
+                                                   password='r@bb1t',
+                                                   vhost='/', host=host,
+                                                   heartbeat=None,
+                                                   sock_opts=sock_opts,
+                                                   transport='gevent')
+                break
+            except socket.error as e:
+                self.connection = None
+                logger.error('Cannot connect to host %s: %s', host, e)
+                if retries > 2 * len(self.hosts):
+                    sleep(1)
+
+        if not self.connection:
+            raise AMQPConnectionError('Aborting after %d connection failures!'
+                                      % self.max_retries)
 
         logger.info('Successfully connected to host: %s', host)
 
@@ -273,5 +281,5 @@ class AMQPHaighaClient():
         pass
 
 
-class AMQPConnectionError():
+class AMQPConnectionError(Exception):
     pass

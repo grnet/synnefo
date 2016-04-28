@@ -69,8 +69,6 @@ Limitations
 
 * Limits are currently not supported.
 
-* Extensions are currently not supported.
-
 
 API Operations
 ==============
@@ -80,20 +78,20 @@ API Operations
 ================================================== ========================================= ====== ======== ==========
 Description                                        URI                                       Method Cyclades OS/Compute
 ================================================== ========================================= ====== ======== ==========
-`List <#list-servers>`_                            ``/servers``                              GET    ✔        ✔
+`List <#list-servers>`__                           ``/servers``                              GET    ✔        ✔
 \                                                  ``/servers/detail``                       GET    ✔        ✔
 `Create <#create-server>`_                         ``/servers``                              POST   ✔        ✔
 `Get Stats <#get-server-stats>`_                   ``/servers/<server-id>/stats``            GET    ✔        **✘**
 `Get Diagnostics <#get-server-diagnostics>`_       ``/servers/<server-id>/diagnostics``      GET    ✔        **✘**
-`Get Details <#get-server-details>`_               ``/servers/<server id>``                  GET    ✔        ✔
+`Get Details <#get-server-details>`__              ``/servers/<server id>``                  GET    ✔        ✔
 `Rename <#rename-server>`_                         ``/servers/<server id>``                  PUT    ✔        ✔
-`Delete <#delete-server>`_                         ``/servers/<server id>``                  DELETE ✔        ✔
+`Delete <#delete-server>`__                        ``/servers/<server id>``                  DELETE ✔        ✔
 `List Connections <#list-server-connections>`_     ``/servers/<server id>/ips``              GET    ✔        ✔
 `Get Connection <#connection-with-network>`_       ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
-`List Metadata <#list-server-metadata>`_           ``/servers/<server-id>/metadata``         GET    ✔        ✔
-`Update Metadata <#set-update-server-metadata>`_   ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
+`List Metadata <#list-server-metadata>`__          ``/servers/<server-id>/metadata``         GET    ✔        ✔
+`Update Metadata <#set-update-server-metadata>`__  ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
 \                                                  ``/servers/<server-id>/metadata``         POST   ✔        ✔
-`Get Meta Item <#get-server-metadata-item>`_       ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
+`Get Meta Item <#get-server-metadata-item>`__      ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
 `Update Meta Item <#update-server-metadata-item>`_ ``/servers/<server-id>/metadata/<key>``   PUT    ✔        ✔
 `Delete Meta Item <#delete-server-metadata>`_      ``/servers/<server-id>/metadata/<key>``   DELETE ✔        ✔
 `Actions <#server-actions>`_                       ``/servers/<server id>/action``           POST   ✔        ✔
@@ -101,30 +99,30 @@ Description                                        URI                          
 
 .. rubric:: Flavors
 
-==================================== ======================== ====== ======== ==========
-Description                          URI                      Method Cyclades OS/Compute
-==================================== ======================== ====== ======== ==========
-`List <#list-flavors>`_              ``/flavors``             GET    ✔        ✔
-\                                    ``/flavors/detail``      GET    ✔        **✘**
-`Get details <#get-flavor-details>`_ ``/flavors/<flavor-id>`` GET    ✔        ✔
-==================================== ======================== ====== ======== ==========
+===================================== ======================== ====== ======== ==========
+Description                           URI                      Method Cyclades OS/Compute
+===================================== ======================== ====== ======== ==========
+`List <#list-flavors>`__              ``/flavors``             GET    ✔        ✔
+\                                     ``/flavors/detail``      GET    ✔        **✘**
+`Get details <#get-flavor-details>`__ ``/flavors/<flavor-id>`` GET    ✔        ✔
+===================================== ======================== ====== ======== ==========
 
 .. rubric:: Images
 
-=========================================== ===================================== ====== ======== ==========
-Description                                 URI                                   Method Cyclades OS/Compute
-=========================================== ===================================== ====== ======== ==========
-`List <#list-images>`_                      ``/images``                           GET    ✔        ✔
-\                                           ``/images/detail``                    GET    ✔        ✔
-`Get details <#get-image-details>`_         ``/images/<image-id>``                GET    ✔        ✔
-`Delete <#delete-image>`_                   ``/images/<image id>``                DELETE ✔        ✔
-`List Metadata <#list-image-metadata>`_     ``/images/<image-id>/metadata``       GET    ✔        ✔
-`Update Metadata <#update-image-metadata>`_ ``/images/<image-id>/metadata``       POST   ✔        ✔
-\                                           ``/images/<image-id>/metadata``       PUT    **✘**    ✔
-`Get Meta Item <#get-image-metadata>`_      ``/image/<image-id>/metadata/<key>``  GET    ✔        ✔
-`Update Metadata <#update-image-metadata>`_ ``/images/<image-id>/metadata/<key>`` PUT    ✔        ✔
-`Delete Metadata <#delete-image-metadata>`_ ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
-=========================================== ===================================== ====== ======== ==========
+============================================ ===================================== ====== ======== ==========
+Description                                  URI                                   Method Cyclades OS/Compute
+============================================ ===================================== ====== ======== ==========
+`List <#list-images>`__                      ``/images``                           GET    ✔        ✔
+\                                            ``/images/detail``                    GET    ✔        ✔
+`Get details <#get-image-details>`__         ``/images/<image-id>``                GET    ✔        ✔
+`Delete <#delete-image>`__                   ``/images/<image id>``                DELETE ✔        ✔
+`List Metadata <#list-image-metadata>`__     ``/images/<image-id>/metadata``       GET    ✔        ✔
+`Update Metadata <#update-image-metadata>`__ ``/images/<image-id>/metadata``       POST   ✔        ✔
+\                                            ``/images/<image-id>/metadata``       PUT    **✘**    ✔
+`Get Meta Item <#get-image-metadata>`_       ``/image/<image-id>/metadata/<key>``  GET    ✔        ✔
+`Update Metadata <#update-image-metadata>`__ ``/images/<image-id>/metadata/<key>`` PUT    ✔        ✔
+`Delete Metadata <#delete-image-metadata>`_  ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
+============================================ ===================================== ====== ======== ==========
 
 List Servers
 ------------
@@ -145,6 +143,7 @@ URI                 Method Cyclades OS/Compute
   server attributes.
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -152,6 +151,7 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS/Compute
 ================= =================================== ======== ==========
@@ -166,8 +166,8 @@ marker            Last list last ID                   **✘**    ✔
 limit             Page size                           **✘**    ✔
 ================= =================================== ======== ==========
 
-* **json** and **xml** parameters are mutually exclusive. If none supported,
-the response will be formated in json.
+* **json** and **xml** parameters are mutually exclusive. If none supported, the
+  response will be formated in json.
 
 * **status** refers to the `server status <#status-ref>`_
 
@@ -199,7 +199,7 @@ Response body contents::
     }, ...
   ]
 
-The server attributes are listed `here <#server-ref>`_
+The server attributes are listed `here <#server-ref>`__.
 
 *Example List Servers: JSON (regular)*
 
@@ -477,6 +477,7 @@ URI          Method Cyclades OS/Compute
 ============ ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -486,6 +487,7 @@ Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= ===============
 Request Parameter Value
 ================= ===============
@@ -583,7 +585,7 @@ Response body contents::
     ...
   }
 
-Server attributes are `listed here <#server-ref>`_.
+Server attributes are listed `here <#server-ref>`__.
 
 .. note:: The ``adminPass`` attribute is generated in the response. This is the
     only case where this attribute appears in a response.
@@ -730,6 +732,7 @@ URI                            Method Cyclades OS/Compute
 ============================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -737,6 +740,7 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= ===============
 Request Parameter Value          
 ================= ===============
@@ -744,8 +748,8 @@ json              Respond in json
 xml               Respond in xml 
 ================= ===============
 
-* **json** and **xml** parameters are mutually exclusive. If none supported,
-the response will be formated in json.
+* **json** and **xml** parameters are mutually exclusive. If none supported, the
+  response will be formated in json.
 
 .. rubric:: Response
 
@@ -813,6 +817,7 @@ URI                                  Method Cyclades OS/Compute
 ==================================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -926,7 +931,7 @@ Response body contents::
     ...
   }
 
-Server attributes are explained `here <#server-ref>`_
+Server attributes are explained `here <#server-ref>`__.
 
 *Example get server Details*
 
@@ -1059,6 +1064,7 @@ URI                      Method Cyclades OS/Compute
 ======================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1131,6 +1137,7 @@ URI                      Method Cyclades OS/Compute
 * **server-id** is the identifier of the virtual server.
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1168,6 +1175,7 @@ URI                          Method Cyclades OS/Compute
 ============================ ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1210,7 +1218,7 @@ Response body contents::
     ...
   ]
 
-Attachment attributes are explained `here <#attachments-ref>`_
+Attachment attributes are explained `here <#attachments-ref>`__.
 
 *Example List Addresses: JSON*
 
@@ -1270,6 +1278,7 @@ URI                                       Method Cyclades OS/Compute
 ========================================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1336,6 +1345,7 @@ URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1397,10 +1407,11 @@ remain intact, while metadata referred by the operation will be overwritten.
 URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
 ``/servers/<server-id>/metadata`` PUT    **✘**    ✔
-``/servers/<server-id>/metadata`` POST   ✔       ✔
+``/servers/<server-id>/metadata`` POST   ✔        ✔
 ================================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1465,6 +1476,7 @@ URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1543,7 +1555,7 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
-=========================== ====================
+=========================== =====================
 
 Response body content::
 
@@ -1569,6 +1581,7 @@ URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1613,7 +1626,7 @@ Operations                                      Cyclades OS/Compute
 `Resize <#resize-server>`_                      ✔        ✔
 `Confirm Resized <#os-compute-specific>`_       **✘**    ✔
 `Revert Resized <#os-compute-specific>`_        **✘**    ✔
-`Create Image <#os-compute-specific>`_          **✘**    ✔
+`Create Image <#os-compute-specific>`__         **✘**    ✔
 .. `Reassign to project <#server-reassign>`_    .. ✔     .. **✘**
 =============================================== ======== ==========
 
@@ -1626,6 +1639,7 @@ URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1683,11 +1697,11 @@ Request body contents::
 
 * **reboot type** can be either ``SOFT`` or ``HARD``.
 
-*Example (soft) Reboot Server: JSON*
+*Example (SOFT) Reboot Server: JSON*
 
 .. code-block:: javascript
 
-  {"reboot" : { "type": "soft"}}
+  {"reboot" : { "type": "SOFT"}}
 
 Resize Server
 .............
@@ -1840,6 +1854,7 @@ URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1847,6 +1862,7 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= ===============
 Request Parameter Value
 ================= ===============
@@ -1880,7 +1896,7 @@ Response code contents::
     ...
   ]
 
-Flavor attributes are `listed here <#flavor-ref>`_. Regular listing contains
+Flavor attributes are listed `here <#flavor-ref>`__. Regular listing contains
 only ``id`` and ``name`` attributes.
 
 *Example List Flavors (regular): JSON*
@@ -1991,6 +2007,7 @@ URI                     Method Cyclades OS/Compute
 ======================= ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1998,6 +2015,7 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= ===============
 Request Parameter Value
 ================= ===============
@@ -2027,7 +2045,7 @@ Response code contents::
     ...
   }
 
-All flavor attributes are `listed here <#flavor-ref>`_.
+All flavor attributes are listed `here <#flavor-ref>`__.
 
 *Example Flavor Details: JSON*
 
@@ -2068,11 +2086,12 @@ List all images accessible by the user
 =================== ====== ======== ==========
 URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
-``/images``        GET    ✔        ✔
-``/images/detail`` GET    ✔        ✔
+``/images``         GET    ✔        ✔
+``/images/detail``  GET    ✔        ✔
 =================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2080,6 +2099,7 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
 ================= ======================== ======== ==========
 Request Parameter Value                    Cyclades OS/Compute
 ================= ======================== ======== ==========
@@ -2128,7 +2148,7 @@ Response body contents::
   ]
 
 The regular response returns just ``id`` and ``name``, while the detail returns
-a collections of the `image attributes listed here <#image-ref>`_.
+a collections of the image attributes listed `here <#image-ref>`__.
 
 *Example List Image (detail): JSON*
 
@@ -2201,6 +2221,7 @@ URI                    Method Cyclades OS/Compute
 ====================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2233,7 +2254,7 @@ Response body contents::
     }
   }
 
-Image attributes are `listed here <#image-ref>`_.
+Image attributes are listed `here <#image-ref>`__.
 
 *Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON*
 
@@ -2265,8 +2286,8 @@ Image attributes are `listed here <#image-ref>`_.
           "USERS": "root",
           "OS": "ubuntu",
         }
-    }
-}
+      }
+  }
 
 Delete Image
 ------------
@@ -2282,6 +2303,7 @@ URI                    Method Cyclades OS/Compute
 ====================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2317,6 +2339,7 @@ URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2387,6 +2410,7 @@ URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2461,6 +2485,7 @@ URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2508,6 +2533,7 @@ URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2571,6 +2597,7 @@ URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 
 |
+
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2636,7 +2663,7 @@ deleted             ✔        **✘**
 
 * **addresses** Networks related to this server. All information in this field
   is redundant, since it can be infered from the ``attachments`` field, but
-  it is used for compatibility with OS/Computet
+  it is used for compatibility with OS/Compute
 
 * **user_id** The UUID of the owner of the virtual server
 
@@ -2648,7 +2675,7 @@ deleted             ✔        **✘**
 * **progress** Shows the building progress of a virtual server. After the server
   is built, it is always ``100``
 
-* **status** values are described `here <#status-ref>`_
+* **status** values are described `here <#status-ref>`__
 
 * **updated** and **created** are date-formated
 
@@ -2665,7 +2692,7 @@ deleted             ✔        **✘**
   ``USERS`` metadata are automatically retrieved from the servers image during
   creation
 
-* **attachments** List of connection ports. Details `here <#attachments-ref>`_.
+* **attachments** List of connection ports. Details `here <#attachments-ref>`__.
 
 .. _status-ref:
 

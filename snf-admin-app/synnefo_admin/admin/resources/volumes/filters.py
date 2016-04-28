@@ -23,9 +23,12 @@ from synnefo.db.models import Volume
 
 import django_filters
 
-from synnefo_admin.admin.queries_common import (query, model_filter,
+from synnefo_admin.admin.queries_common import (process_queries, model_filter,
                                                 get_model_field)
+import re
+from synnefo_admin import admin_settings
 
+or_sign = admin_settings.ADMIN_OR_SIGN
 
 def get_disk_template_choices():
     # Check if the choices exist in the cache.
@@ -47,34 +50,32 @@ def get_disk_template_choices():
 
 @model_filter
 def filter_volume(queryset, queries):
-    q = query("volume", queries)
+    q = process_queries("volume", queries)
     return queryset.filter(q)
 
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     ids = get_model_field("user", q, 'uuid')
     return queryset.filter(userid__in=ids)
 
 
 @model_filter
 def filter_vm(queryset, queries):
-    q = query("vm", queries)
+    q = process_queries("vm", queries)
     ids = get_model_field("vm", q, 'volumes__id')
     return queryset.filter(id__in=ids)
 
 
 @model_filter
 def filter_project(queryset, queries):
-    q = query("project", queries)
+    q = process_queries("project", queries)
     ids = get_model_field("project", q, 'uuid')
     return queryset.filter(project__in=ids)
 
 
 def filter_disk_template(queryset, choices):
-    if not query:
-        return queryset
     choices = choices or ()
     dt_choices = get_disk_template_choices()
     if len(choices) == len(dt_choices):
@@ -92,6 +93,20 @@ def filter_index(queryset, query):
         return queryset.none()
     return queryset.filter(index=query)
 
+def filter_source(queryset, query):
+    if not query:
+        return queryset
+    query = re.sub("^\s+|\s*" + or_sign + "\s*|\s+$", or_sign, query)
+    q = Q()
+
+    if or_sign in query:
+        parts = query.split(or_sign)
+        for p in parts:
+            if p:
+                q |= Q(source__icontains=p)
+    else:
+        q &= Q(source__icontains=query)
+    return queryset.filter(q)
 
 class VolumeFilterSet(django_filters.FilterSet):
 
@@ -110,8 +125,9 @@ class VolumeFilterSet(django_filters.FilterSet):
         label="Disk template", choices=get_disk_template_choices(),
         action=filter_disk_template)
     index = django_filters.CharFilter(label="Index", action=filter_index)
-    source = django_filters.CharFilter(label="Soure image", name="source",
-                                       lookup_type='icontains')
+    source = django_filters.CharFilter(label="Source image", name="source",
+            action=filter_source)
+
 
     class Meta:
         model = Volume

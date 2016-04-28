@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -x
 
 runAstakosTests () {
     if [ -z "$astakos_tests" ]; then return; fi
@@ -72,13 +72,11 @@ runTest () {
 runCoverage () {
     # Stop here, if we are on dry run
     if [ $DRY_RUN ]; then
-        echo "coverage run $1"
+        echo "$1 --with-coverage --nologcapture"
         return
     fi
 
-    coverage erase
-    coverage run $1
-    coverage report --include="*${CURRENT_COMPONENT}*"
+    $1 --with-coverage --nologcapture
 }
 
 usage(){
@@ -124,7 +122,12 @@ extract_tests () {
     for c in $ALL_COMPONENTS; do
         if contains $1 $c; then
             if [ "$1" = "$c" ]; then
-                append "${c}_tests" "$(eval "echo \$"${c}"_all_tests")"
+                all_tests_var=${c}_all_tests
+                eval all_tests=`echo '$'$all_tests_var`
+                for word in $all_tests
+                do
+                    append "${c}_tests" "$word "
+                done
                 return
             elif contains $1 "$c."; then
                 append "${c}_tests" $(echo $1 | sed -e 's/^[a-z]*\.//g')
@@ -138,10 +141,10 @@ extract_tests () {
 
 export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 
-astakos_all_tests="im quotaholder_app oa2"
-cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata volume"
-admin_all_tests="admin"
-pithos_all_tests="api"
+astakos_all_tests="astakos.im astakos.quotaholder_app astakos.oa2"
+cyclades_all_tests="synnefo.api synnefo.db synnefo.logic synnefo.plankton synnefo.quotas synnefo.vmapi synnefo.helpdesk synnefo.userdata synnefo.volume"
+admin_all_tests="synnefo_admin.admin"
+pithos_all_tests="pithos.api.tests"
 astakosclient_all_tests="astakosclient"
 ALL_COMPONENTS="astakos cyclades admin pithos astakosclient"
 

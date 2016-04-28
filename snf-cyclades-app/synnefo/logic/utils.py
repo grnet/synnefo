@@ -15,7 +15,7 @@
 
 # Utility functions
 
-from synnefo.db.models import VirtualMachine, Network
+from synnefo.db.models import VirtualMachine, Network, Volume
 from snf_django.lib.api import faults
 from django.conf import settings
 from copy import deepcopy
@@ -81,7 +81,10 @@ def id_from_disk_name(name):
 
     """
     if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise ValueError("Invalid Disk name: %s" % name)
+        try:
+            return Volume.objects.get(legacy_backend_volume_uuid=name).id
+        except Exception:
+            raise ValueError("Invalid Disk name: %s" % name)
     ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'vol-', "", 1)
     if not ns.isdigit():
         raise ValueError("Invalid Disk name: %s" % name)
@@ -90,7 +93,7 @@ def id_from_disk_name(name):
 
 
 def id_to_disk_name(id):
-    return "%svol-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+    return Volume.objects.get(id=id).backend_logical_uuid
 
 
 def get_rsapi_state(vm):
@@ -163,7 +166,8 @@ OPCODE_TO_ACTION = {
     "OP_INSTANCE_STARTUP": "START",
     "OP_INSTANCE_SHUTDOWN": "STOP",
     "OP_INSTANCE_REBOOT": "REBOOT",
-    "OP_INSTANCE_REMOVE": "DESTROY"}
+    "OP_INSTANCE_REMOVE": "DESTROY",
+    "OP_INSTANCE_GROW_DISK": "MODIFY_VOLUME"}
 
 
 def get_action_from_opcode(opcode, job_fields):

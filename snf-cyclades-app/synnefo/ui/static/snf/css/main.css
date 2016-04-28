@@ -1113,6 +1113,7 @@ div.connect-border:hover {
     height: 54px;
     margin: 1px 14px 0;
 }
+
 .machine .logo {
     background-image: url("../images/icons/machines/medium/unknown-sprite.png");
     background-repeat: no-repeat;
@@ -1175,6 +1176,10 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 
 .running.disabled {
     background: transparent;
+}
+
+.unknown-state .indicator1, .unknown-state .indicator2, .unknown-state .indicator3, .unknown-state .indicator4 {
+    background-color: lightgray;
 }
 
 .connecting-state .indicator1, .connecting-state .indicator2, .connecting-state .indicator3, .connecting-state .indicator4 {
@@ -4305,13 +4310,37 @@ h3.overlay-inner-title {
 
 #creation-password-overlay .form-action {
     position: absolute;
-    bottom: 15px;
+    bottom: 9px;
     right: 13px;
     font-size: 0.8em;
 }
 
+
+#vm-connect-overlay-content #creation-password-overlay .form-action {
+    right: 0;
+    bottom: -3px;
+}
+
 #creation-password-overlay .password-label {
     float: left;
+}
+
+#creation-password-overlay .confirm {
+    margin-top: 10px;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache {
+    margin-top: 4px;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache button.yes {
+    background-color: #FF9955;
+    border-color: #FF7F2A;
+}
+
+#creation-password-overlay .confirm .confirm-password-cache button.no {
+    background-color: #777;
+    border-color: #222;
 }
 
 #creation-password-overlay .password {
@@ -7268,6 +7297,10 @@ input.has-errors {
   background-color: #5e1616;
 }
 
+.model-item .status-unknown .status-indicator .indicator {
+  background-color: lightgray;
+}
+
 .model-item .status-error .status-indicator .indicator {
   background-color: #ff0000;
 }
@@ -7933,6 +7966,10 @@ input.has-errors {
   float: none;
 }
 
+#reassign-share-description {
+	margin-top: 3px;
+}
+
 .select-item .name {
   float: left;
   width: 90%;
@@ -8329,3 +8366,39 @@ input.reset {
     color: inherit !important;
     background-color: transparent;
 }
+
+.logo-ghost {
+	opacity: 0.4;
+}
+
+.reassign-separator {
+	height: 20px;
+}
+
+.sharing label {
+    cursor: pointer;
+}
+
+.logo-shared {
+  position: absolute;
+  top: 22px;
+  left: 57px;
+}
+
+#ips-list-view .logo-shared { top: 19px; left: 68px; }
+#volumes-list-view .logo-shared { top: 19px; left: 66px; }
+#networks-list-view .logo-shared { top: 62px; left: 66px; }
+.model-item.empty-selection .select-item .name span { margin-left: 40px; color: #000 }
+.model-item.empty-selection .select-item {
+    background-color: #ddd;
+}
+
+.model-item .name p.info {
+    font-size: 0.8em;
+    color: #888;
+}
+.model-item .selected .name p.info {
+    color: #efefef;
+}
+
+.volume-item div.vm-placeholder { height: 17px; }

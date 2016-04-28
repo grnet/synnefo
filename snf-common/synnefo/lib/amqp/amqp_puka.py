@@ -43,7 +43,7 @@ def reconnect_decorator(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
-            if self.client.sd is None:
+            if self.client is None or self.client.sd is None:
                 self.connect()
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
@@ -88,32 +88,41 @@ class AMQPPukaClient(object):
             logging.basicConfig()
             self.log = logger
 
-    def connect(self, retries=0):
-        if self.max_retries and retries >= self.max_retries:
-            self.log.error("Aborting after %d retries", retries)
+    def connect(self):
+        """Initialize a connection with the AMQP server. If it fails, retry at
+        most <max_retries> times.
+        """
+
+        retries = 0
+        self.client = None
+
+        # Try to connect at most <max_retries> times
+        while self.max_retries == 0 or retries < self.max_retries:
+            retries += 1
+            # Pick up a host
+            host = self.hosts.pop()
+            self.hosts.insert(0, host)
+
+            self.client = Client(host, pubacks=self.confirms)
+
+            host = host.split('@')[-1]
+            self.log.debug('Connecting to node %s' % host)
+
+            try:
+                promise = self.client.connect()
+                self.client.wait(promise)
+                break
+            except socket_error as e:
+                self.client = None
+                if retries < len(self.hosts):
+                    self.log.warning('Cannot connect to host %s: %s', host, e)
+                else:
+                    self.log.error('Cannot connect to host %s: %s', host, e)
+                    sleep(1)
+
+        if not self.client:
             raise AMQPConnectionError('Aborting after %d connection failures.'
                                       % retries)
-            return
-
-        # Pick up a host
-        host = self.hosts.pop()
-        self.hosts.insert(0, host)
-
-        self.client = Client(host, pubacks=self.confirms)
-
-        host = host.split('@')[-1]
-        self.log.debug('Connecting to node %s' % host)
-
-        try:
-            promise = self.client.connect()
-            self.client.wait(promise)
-        except socket_error as e:
-            if retries < len(self.hosts):
-                self.log.warning('Cannot connect to host %s: %s', host, e)
-            else:
-                self.log.error('Cannot connect to host %s: %s', host, e)
-                sleep(1)
-            return self.connect(retries + 1)
 
         self.log.info('Successfully connected to host: %s', host)
 

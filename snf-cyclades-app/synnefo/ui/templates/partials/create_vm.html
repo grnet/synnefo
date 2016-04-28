@@ -295,7 +295,7 @@
                             <h4>{% trans "IP Addresses" %}</h4>
                             <ul class="confirm-params ip-addresses">
                             </ul>
-                            <h4>{% trans "Private networks" %}</h4>
+                            <h4>{% trans "Networks" %}</h4>
                             <ul class="confirm-params private-networks">
                             </ul>
                         </div>
@@ -322,29 +322,4 @@
 </div>
 </div>
 
-<div id="creation-password-overlay" class="overlay-content overlay-info hidden">
-    <div class="description">
-        <p>{% blocktrans %}Your new machine is now buidling... (this might take a few minutes){% endblocktrans %}</p>
-    </div>
-    <div class="password-cont clearfix">
-        <div class="password-label">{% blocktrans %}Write down your password now:{% endblocktrans %}</div>
-        <input class="password reset" readonly id="new-machine-password"/>
-        <div class="clipboard new-vm-password-copy"></div>
-    </div>
-    <div class="password-cont disabled clearfix hidden">
-        <div class="password-label">Not setting a new password for this machine.</div>
-    </div>
-    <div class="description subinfo">
-        <p>{% blocktrans %}You will need this later to connect to your machine.{% endblocktrans %}</p>
-        <p class="important">{% blocktrans %}After closing this window you will <em>NOT</em> be able to retrieve it again
-        {% endblocktrans %}</p>
-    </div>
-    <div class="description subinfo disabled hidden">
-        <p class="important">{% blocktrans %}This Image/Snapshot already contains valid login credentials,
-        {% endblocktrans %}</p>
-        <p class="important">{% blocktrans %}which have been left unchanged.
-        {% endblocktrans %}</p>
-    </div>
-    <div class="form-action show-machine">{% trans "OK" %}</div>
-</div>
-
+{% include "partials/show_password.html" %}

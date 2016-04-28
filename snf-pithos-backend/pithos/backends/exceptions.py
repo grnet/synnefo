@@ -13,6 +13,58 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from queue import Queue
 
-__all__ = ["Queue"]
+class NotAllowedError(Exception):
+    pass
+
+
+class IllegalOperationError(NotAllowedError):
+    pass
+
+
+class QuotaError(Exception):
+    pass
+
+
+class AccountExists(NameError):
+    pass
+
+
+class ContainerExists(NameError):
+    pass
+
+
+class AccountNotEmpty(IndexError):
+    pass
+
+
+class ContainerNotEmpty(IndexError):
+    pass
+
+
+class ItemNotExists(NameError):
+    pass
+
+
+class VersionNotExists(IndexError):
+    pass
+
+
+class InvalidHash(TypeError):
+    pass
+
+
+class InconsistentContentSize(ValueError):
+    pass
+
+
+class InvalidPolicy(ValueError):
+    pass
+
+
+class LimitExceeded(Exception):
+    pass
+
+
+class BrokenSnapshot(Exception):
+    pass

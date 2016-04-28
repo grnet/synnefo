@@ -19,13 +19,13 @@ import logging
 from synnefo.db.models import IPAddressLog, VirtualMachine
 import django_filters
 
-from synnefo_admin.admin.queries_common import (query, model_filter,
+from synnefo_admin.admin.queries_common import (process_queries, model_filter,
                                                 get_model_field)
 
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     user_ids = get_model_field("user", q, 'uuid')
     vm_ids = VirtualMachine.objects.filter(userid__in=user_ids)
     return queryset.filter(server_id__in=vm_ids)
@@ -33,21 +33,21 @@ def filter_user(queryset, queries):
 
 @model_filter
 def filter_vm(queryset, queries):
-    q = query("vm", queries)
+    q = process_queries("vm", queries)
     ids = get_model_field("vm", q, 'id')
     return queryset.filter(server_id__in=ids)
 
 
 @model_filter
 def filter_network(queryset, queries):
-    q = query("network", queries)
+    q = process_queries("network", queries)
     ids = get_model_field("network", q, 'id')
     return queryset.filter(network_id__in=ids)
 
 
 @model_filter
 def filter_ip(queryset, queries):
-    q = query("ip", queries)
+    q = process_queries("ip", queries)
     return queryset.filter(q)
 
 

@@ -78,7 +78,7 @@ The previous roles are combinations of the following software components:
 * Apache: web server with Apache
 * Gunicorn: gunicorn server
 * Common: synnefo common
-* WEB: synnefo webclient
+* WEB: synnefo ui app
 * Astakos: astakos webapp
 * Pithos: pithos webapp
 * Cyclades: cyclades webapp

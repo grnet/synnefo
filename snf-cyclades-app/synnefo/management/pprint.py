@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +44,8 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
         ("userid", userid),
         ("username", ucache.get_name(userid) if (display_mails and userid is
                                                  not None) else None),
+        ("project", network.project),
+        ("shared_to_project", network.shared_to_project),
         ("public", network.public),
         ("floating_ip_pool", network.floating_ip_pool),
         ("external_router", network.external_router),
@@ -284,10 +286,13 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
         ("name", server.name),
         ("userid", server.userid),
         ("username", ucache.get_name(userid) if display_mails else None),
+        ("project", server.project),
+        ("shared_to_project", server.shared_to_project),
         ("flavor_id", server.flavor_id),
         ("flavor_name", server.flavor.name),
         ("imageid", server.imageid),
         ("image_name", image),
+        ("created", server.created),
         ("state", server.operstate),
         ("backend", server.backend),
         ("deleted", server.deleted),
@@ -361,7 +366,7 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     GANETI_INSTANCE_FIELDS = ('name', 'oper_state', 'admin_state', 'status',
                               'pnode', 'snode', 'network_port',
                               'disk_template', 'disk_usage',
-                              'oper_ram', 'oper_vcpus', 'mtime')
+                              'oper_ram', 'oper_vcpus', 'mtime', 'ctime')
     server_dict = OrderedDict([(k, server_info.get(k))
                               for k in GANETI_INSTANCE_FIELDS])
 
@@ -418,8 +423,9 @@ def pprint_volume(volume, display_mails=False, stdout=None, title=None):
         ("disk_provider", volume_type.provider),
         ("server_id", volume.machine_id),
         ("userid", volume.userid),
-        ("project", volume.project),
         ("username", ucache.get_name(userid) if display_mails else None),
+        ("project", volume.project),
+        ("shared_to_project", volume.shared_to_project),
         ("index", volume.index),
         ("name", volume.name),
         ("state", volume.status),
@@ -480,6 +486,33 @@ def pprint_volume_type(volume_type, stdout=None, title=None):
         ("name", volume_type.name),
         ("disk template", volume_type.disk_template),
         ("deleted", volume_type.deleted),
+    ])
+
+    pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)
+
+def pprint_floating_ip(ip, display_mails=False, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "Floating IP %s" % ip.id
+
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
+    userid = ip.userid
+
+    vtype_info = OrderedDict([
+        ("id", ip.id),
+        ("address", ip.address),
+        ("network", ip.network_id),
+        ("port", ip.nic_id),
+        ("server", ip.nic.machine_id),
+        ("userid", userid),
+        ("username", ucache.get_name(userid) if (display_mails and userid is
+                                                 not None) else None),
+        ("project", ip.project),
+        ("shared_to_project", ip.shared_to_project),
+        ("deleted", ip.deleted),
+        ("created", ip.created),
+        ("updated", ip.updated),
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)

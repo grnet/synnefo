@@ -5,6 +5,25 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.17:
+
+v0.17
+=====
+
+Released: UNRELEASED
+
+The Synnefo 0.17 release brings major new features and significant bug fixes
+across Synnefo. All users are strongly encouraged to upgrade. Please see
+the Synnefo documentation for upgrade instructions to v0.17.
+
+The most notables changes are:
+
+* Cyclades shared resources among members of a project.
+* Cyclades support for detachable volumes
+* Brand new pithos UI web application
+* Support LDAP authentication in Astakos service
+
+
 .. _NEWS-0.16.2:
 
 v0.16.2

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,16 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-
 from blocker import Blocker
 from mapper import Mapper
 
 
 class Store(object):
     """Store.
-       Required constructor parameters: path, block_size, hash_algorithm,
-       blockpool, mappool.
+       Required constructor parameters: block_size, hash_algorithm,
+                                        archipelago_cfile, namelen
     """
 
     def __init__(self, **params):

@@ -709,6 +709,19 @@
             synnefo.config.limit_reached_msg = 'Usage limit reached';
             synnefo.config.volume_max_size = {{ volume_max_size|safe }};
             synnefo.config.snapshots_enabled = {{ snapshots_enabled|safe }};
+            synnefo.config.auth_url = {{ astakos_auth_url|safe }};
+            synnefo.config.flavor_override_allow_create = {{ flavor_override_allow_create|safe }};
+            synnefo.config.user_override_allow_create = [];
+
+            if (synnefo.config.snapshots_enabled instanceof Array) {
+              synnefo.config.snapshots_groups = synnefo.config.snapshots_enabled;
+              synnefo.config.snapshots_enabled = false;
+            } else {
+              synnefo.config.snapshots_groups = [];
+            }
+
+            synnefo.config.shared_resources_enabled = {{ shared_resources_enabled|safe }};
+            synnefo.config.detachable_volume_types = {{ detachable_volume_types|safe }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,

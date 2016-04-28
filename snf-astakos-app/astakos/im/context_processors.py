@@ -40,7 +40,8 @@ def auth_providers(request):
             active_auth_providers.append(provider(request.user))
 
     return {'auth_providers': active_auth_providers,
-            'master_auth_provider': active_auth_providers[0]}
+            'master_auth_provider': active_auth_providers[0],
+            'show_signup': settings.SHOW_SIGNUP}
 
 
 def next(request):

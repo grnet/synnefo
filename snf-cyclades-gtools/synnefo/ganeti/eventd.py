@@ -333,7 +333,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
              op.status == "success") or
-            (op_id == "OP_INSTANCE_SET_PARAMS" and
+            (op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_GROW_DISK"] and
              op.status in ["success", "error", "cancelled"])):
                 attachments = get_instance_attachments(msg["instance"],
                                                        self.logger)

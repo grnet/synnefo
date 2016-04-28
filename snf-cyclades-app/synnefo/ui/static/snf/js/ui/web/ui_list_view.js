@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -345,8 +345,17 @@
             img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
-            var name = _.escape(util.truncate(vm.get('name'), 25));
-            var flavor = vm.get_flavor().details_string();
+            var name;
+            var flavor;
+
+            if (vm.get('is_ghost')) {
+              name = "Unknown"
+              flavor = "Unknown";
+            } else {
+              name = _.escape(util.truncate(vm.get('name'), 25));
+              flavor = vm.get_flavor().details_string();
+            }
+
             var status = STATE_TEXTS[vm.state()];
             
             return [checkbox, img, name, flavor, status, vm.id];
@@ -499,7 +508,7 @@
     views.ListView.VM_OS_ICONS = window.os_icons || [];
 
     views.ListView.STATE_CLASSES = {
-        'UNKNOWN':          ['error-state'],
+        'UNKNOWN':          ['unknown-state'],
         'BUILD':            ['build-state'],
         'REBOOT':           ['rebooting-state'],
         'STOPPED':          ['terminated-state'],

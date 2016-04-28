@@ -72,6 +72,12 @@ CLOUDBAR_LOCATION = '/static/im/cloudbar/'
 CLOUDBAR_SERVICES_URL = '/ui/get_services'
 CLOUDBAR_MENU_URL = '/ui/get_menu'
 
-TEST_RUNNER = 'pithos.api.test.PithosTestSuiteRunner'
+try:
+    from pithos.api.test import PithosTestSuiteRunner
+    TEST_RUNNER = 'pithos.api.test.PithosTestSuiteRunner'
+except ImportError:
+    TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 CYCLADES_VOLUME_MAX_SIZE = 100000
+
+INSTALLED_APPS.append('django_nose')

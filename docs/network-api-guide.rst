@@ -21,53 +21,57 @@ API Operations
 ==============
 
 .. rubric:: Networks
-===================================== ================================= ====== ======== ======= ==========
-Description                           URI                               Method Cyclades/Network OS/Neutron
-===================================== ================================= ====== ================ ==========
-`List <#list-networks>`_              ``/networks``                     GET    ✔                ✔
-`Get details <#get-network-details>`_ ``/networks/<network-id>``        GET    ✔                ✔
-`Create <#create-network>`_           ``/networks``                     POST   ✔                ✔
-Bulk creation                         ``/networks``                     POST   **✘**            ✔
-`Update <#update-network>`_           ``/networks/<network-id>``        PUT    ✔                ✔
-`Delete <#delete-network>`_           ``/networks/<network id>``        DELETE ✔                ✔
-`Reassign <#reassign-network>`_       ``/networks/<network-id>/action`` POST   ✔                **✘**
-===================================== ================================= ====== ================ ==========
+
+====================================== ================================= ====== ======== ======= ==========
+Description                            URI                               Method Cyclades/Network OS/Neutron
+====================================== ================================= ====== ================ ==========
+`List <#list-networks>`__              ``/networks``                     GET    ✔                ✔
+`Get details <#get-network-details>`__ ``/networks/<network-id>``        GET    ✔                ✔
+`Create <#create-network>`__           ``/networks``                     POST   ✔                ✔
+Bulk creation                          ``/networks``                     POST   **✘**            ✔
+`Update <#update-network>`__           ``/networks/<network-id>``        PUT    ✔                ✔
+`Delete <#delete-network>`__           ``/networks/<network id>``        DELETE ✔                ✔
+`Reassign <#reassign-network>`__       ``/networks/<network-id>/action`` POST   ✔                **✘**
+====================================== ================================= ====== ================ ==========
 
 .. rubric:: Subnets
-==================================== ======================== ====== ======== ======= ==========
-Description                          URI                      Method Cyclades/Network OS/Neutron
-==================================== ======================== ====== ================ ==========
-`List <#list-subnets>`_              ``/subnets``             GET    ✔                ✔
-`Get details <#get-subnet-details>`_ ``/subnets/<subnet-id>`` GET    ✔                ✔
-`Create <#create-subnet>`_           ``/subnets``             POST   ✔                ✔
-Bulk creation                        ``/subnets``             POST   **✘**            ✔
-`Update <#update-subnet>`_           ``/subnets/<subnet-id>`` PUT    ✔                ✔
-Delete                               ``/subnets/<subnet-id>`` DELETE **✘**            ✔
-==================================== ======================== ====== ================ ==========
+
+===================================== ======================== ====== ======== ======= ==========
+Description                           URI                      Method Cyclades/Network OS/Neutron
+===================================== ======================== ====== ================ ==========
+`List <#list-subnets>`__              ``/subnets``             GET    ✔                ✔
+`Get details <#get-subnet-details>`__ ``/subnets/<subnet-id>`` GET    ✔                ✔
+`Create <#create-subnet>`__           ``/subnets``             POST   ✔                ✔
+Bulk creation                         ``/subnets``             POST   **✘**            ✔
+`Update <#update-subnet>`__           ``/subnets/<subnet-id>`` PUT    ✔                ✔
+Delete                                ``/subnets/<subnet-id>`` DELETE **✘**            ✔
+===================================== ======================== ====== ================ ==========
 
 .. rubric:: Ports
-================================== ==================== ====== ======== ======= ==========
-Description                        URI                  Method Cyclades/Network OS/Neutron
-================================== ==================== ====== ================ ==========
-`List <#list-ports>`_              ``/ports``           GET    ✔                ✔
-`Get details <#get-port-details>`_ ``/ports/<port-id>`` GET    ✔                ✔
-`Create <#create-port>`_           ``/ports``           POST   ✔                ✔
-Bulk creation                      ``/ports``           POST   **✘**            ✔
-`Update <#update-port>`_           ``/ports/<port-id>`` PUT    ✔                ✔
-`Delete <#delete-port>`_           ``/ports/<port id>`` DELETE ✔                ✔
-================================== ==================== ====== ================ ==========
+
+=================================== ==================== ====== ======== ======= ==========
+Description                         URI                  Method Cyclades/Network OS/Neutron
+=================================== ==================== ====== ================ ==========
+`List <#list-ports>`__              ``/ports``           GET    ✔                ✔
+`Get details <#get-port-details>`__ ``/ports/<port-id>`` GET    ✔                ✔
+`Create <#create-port>`__           ``/ports``           POST   ✔                ✔
+Bulk creation                       ``/ports``           POST   **✘**            ✔
+`Update <#update-port>`__           ``/ports/<port-id>`` PUT    ✔                ✔
+`Delete <#delete-port>`__           ``/ports/<port id>`` DELETE ✔                ✔
+=================================== ==================== ====== ================ ==========
 
 .. rubric:: Floating IPs
-========================================= ======================================= ====== ================ ==========
-Description                               URI                                     Method Cyclades/Network OS/Neutron Extensions
-========================================= ======================================= ====== ================ ==========
-`List <#list-floating-ips>`_              ``/floatingips``                        GET    ✔                ✔
-`Get details <#get-floating-ip-details>`_ ``/floatingips/<floatingip-id>``        GET    ✔                ✔
-`Create <#create-floating-ip>`_           ``/floatingips``                        POST   ✔                ✔
-Update                                    ``/floatingips/<floatingip-id>``        PUT    **✘**            ✔
-`Delete <#delete-floating-ip>`_           ``/floatingips/<floatingip id>``        DELETE ✔                ✔
-`Reassign <#reassign-floating-ip>`_       ``/floatingips/<floatingip-id>/action`` POST   ✔                **✘**
-========================================= ======================================= ====== ================ ==========
+
+========================================== ======================================= ====== ================ ==========
+Description                                URI                                     Method Cyclades/Network OS/Neutron Extensions
+========================================== ======================================= ====== ================ ==========
+`List <#list-floating-ips>`__              ``/floatingips``                        GET    ✔                ✔
+`Get details <#get-floating-ip-details>`__ ``/floatingips/<floatingip-id>``        GET    ✔                ✔
+`Create <#create-floating-ip>`__           ``/floatingips``                        POST   ✔                ✔
+Update                                     ``/floatingips/<floatingip-id>``        PUT    **✘**            ✔
+`Delete <#delete-floating-ip>`__           ``/floatingips/<floatingip id>``        DELETE ✔                ✔
+`Reassign <#reassign-floating-ip>`__       ``/floatingips/<floatingip-id>/action`` POST   ✔                **✘**
+========================================== ======================================= ====== ================ ==========
 
 List networks
 -------------
@@ -83,6 +87,7 @@ URI           Method Cyclades/Network OS/Neutron
 ============= ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -108,7 +113,7 @@ Response body contents::
     }, ...
   ]
 
-The attributes of a network are listed `here <#network-ref>`_
+The attributes of a network are listed `here <#network-ref>`__.
 
 *Example List Networks: JSON*
 
@@ -146,27 +151,27 @@ The attributes of a network are listed `here <#network-ref>`_
         "type": "IP_LESS_ROUTED",
         "public": true
       }, {
-        "id": "3141", 
-        "name": "My Private Network", 
-        "status": "ACTIVE", 
-        "router:external": false, 
-        "updated": "2014-02-13T09:40:05.195945+00:00", 
-        "user_id": "s0m3-u5e7-1d", 
+        "id": "3141",
+        "name": "My Private Network",
+        "status": "ACTIVE",
+        "router:external": false,
+        "updated": "2014-02-13T09:40:05.195945+00:00",
+        "user_id": "s0m3-u5e7-1d",
         "links": [
           {
-              "href": "https://example.org/network/v2.0/networks/3141", 
+              "href": "https://example.org/network/v2.0/networks/3141",
               "rel": "self"
-          }, 
+          },
           {
-              "href": "https://example.org/network/v2.0/networks/3141", 
+              "href": "https://example.org/network/v2.0/networks/3141",
               "rel": "bookmark"
           }
-        ], 
-        "created": "2014-02-13T09:40:05.101008+00:00", 
-        "tenant_id": "s0m3-u5e7-1d", 
-        "admin_state_up": true, 
-        "type": "MAC_FILTERED", 
-        "subnets": [], 
+        ],
+        "created": "2014-02-13T09:40:05.101008+00:00",
+        "tenant_id": "s0m3-u5e7-1d",
+        "admin_state_up": true,
+        "type": "MAC_FILTERED",
+        "subnets": [],
         "SNF:floating_ip_pool": false,
         "public": false
       }
@@ -186,6 +191,7 @@ URI                        Method Cyclades/Network OS/Neutron
 ========================== ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -209,7 +215,7 @@ Response body contents::
     ...
   }
 
-The attributes of a network are listed `here <#network-ref>`_
+The attributes of a network are listed `here <#network-ref>`__.
 
 *Example Get Network Details: JSON*
 
@@ -220,27 +226,27 @@ The attributes of a network are listed `here <#network-ref>`_
 
   {
     "network": {
-      "id": "3141", 
-      "name": "My Private Network", 
-      "status": "ACTIVE", 
-      "router:external": false, 
-      "updated": "2014-02-13T09:40:05.195945+00:00", 
-      "user_id": "s0m3-u5e7-1d", 
+      "id": "3141",
+      "name": "My Private Network",
+      "status": "ACTIVE",
+      "router:external": false,
+      "updated": "2014-02-13T09:40:05.195945+00:00",
+      "user_id": "s0m3-u5e7-1d",
       "links": [
         {
-            "href": "https://example.org/network/v2.0/networks/3141", 
+            "href": "https://example.org/network/v2.0/networks/3141",
             "rel": "self"
-        }, 
+        },
         {
-            "href": "https://example.org/network/v2.0/networks/3141", 
+            "href": "https://example.org/network/v2.0/networks/3141",
             "rel": "bookmark"
         }
-      ], 
-      "created": "2014-02-13T09:40:05.101008+00:00", 
-      "tenant_id": "s0m3-u5e7-1d", 
-      "admin_state_up": true, 
-      "type": "MAC_FILTERED", 
-      "subnets": [], 
+      ],
+      "created": "2014-02-13T09:40:05.101008+00:00",
+      "tenant_id": "s0m3-u5e7-1d",
+      "admin_state_up": true,
+      "type": "MAC_FILTERED",
+      "subnets": [],
       "SNF:floating_ip_pool": false,
       "public": false
     }
@@ -258,6 +264,7 @@ URI           Method Cyclades/Network OS/Neutron
 ============= ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -372,7 +379,9 @@ URI                        Method Cyclades/Network OS/Neutron
 ========================== ====== ================ ==========
 ``/networks/<network id>`` DELETE ✔                ✔
 ========================== ====== ================ ==========
+
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -450,6 +459,7 @@ URI          Method Cyclades/Network OS/Neutron
 ============ ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron
 ============== ========================= ================ ==========
@@ -474,7 +484,7 @@ Response body contents::
     }, ...
   ]
 
-The attributes of a subnet are listed `here <#subnet-ref>`_
+The attributes of a subnet are listed `here <#subnet-ref>`__.
 
 *Example List subnets: JSON*
 
@@ -485,54 +495,54 @@ The attributes of a subnet are listed `here <#subnet-ref>`_
   {
     "subnets": [
       {
-        "user_id": null, 
-        "name": "IPv6 Subnet of Network 2718", 
+        "user_id": null,
+        "name": "IPv6 Subnet of Network 2718",
         "links": [
             {
-                "href": "https://example.org/network/v2.0/subnets/8172", 
+                "href": "https://example.org/network/v2.0/subnets/8172",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/network/v2.0/subnets/8172", 
+                "href": "https://example.org/network/v2.0/subnets/8172",
                 "rel": "bookmark"
             }
-        ], 
-        "network_id": "2718", 
-        "tenant_id": null, 
-        "dns_nameservers": [], 
-        "enable_slaac": true, 
-        "public": true, 
-        "allocation_pools": [], 
-        "host_routes": [], 
-        "ip_version": 6, 
-        "gateway_ip": "2001:123:4abc:5678::9", 
-        "cidr": "2001:876:5cba:4321::/64", 
-        "enable_dhcp": true, 
+        ],
+        "network_id": "2718",
+        "tenant_id": null,
+        "dns_nameservers": [],
+        "enable_slaac": true,
+        "public": true,
+        "allocation_pools": [],
+        "host_routes": [],
+        "ip_version": 6,
+        "gateway_ip": "2001:123:4abc:5678::9",
+        "cidr": "2001:876:5cba:4321::/64",
+        "enable_dhcp": true,
         "id": "8172"
       }, {
-        "user_id": "s0m3-u5e7-1d", 
-        "name": "IPv6 Subnet of Network 3141", 
+        "user_id": "s0m3-u5e7-1d",
+        "name": "IPv6 Subnet of Network 3141",
         "links": [
             {
-                "href": "https://example.org/network/v2.0/subnets/1413", 
+                "href": "https://example.org/network/v2.0/subnets/1413",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/network/v2.0/subnets/1413", 
+                "href": "https://example.org/network/v2.0/subnets/1413",
                 "rel": "bookmark"
             }
-        ], 
-        "network_id": "3141", 
-        "tenant_id": "s0m3-u5e7-1d", 
-        "dns_nameservers": [], 
-        "enable_slaac": false, 
-        "public": false, 
-        "allocation_pools": [], 
-        "host_routes": [], 
-        "ip_version": 6, 
+        ],
+        "network_id": "3141",
+        "tenant_id": "s0m3-u5e7-1d",
+        "dns_nameservers": [],
+        "enable_slaac": false,
+        "public": false,
+        "allocation_pools": [],
+        "host_routes": [],
+        "ip_version": 6,
         "gateway_ip": "2001:321:4abc:8765::9",
-        "cidr": "2001:678:5cba:1234::/64", 
-        "enable_dhcp": true, 
+        "cidr": "2001:678:5cba:1234::/64",
+        "enable_dhcp": true,
         "id": "1413"
       }
     ]
@@ -540,7 +550,7 @@ The attributes of a subnet are listed `here <#subnet-ref>`_
 
 
 Get subnet details
-----------------
+------------------
 
 .. rubric:: Request
 
@@ -551,6 +561,7 @@ URI                      Method Cyclades/Network OS/Neutron
 ======================== ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron
 ============== ========================= ================ ==========
@@ -574,7 +585,7 @@ Response body contents::
     ...
   }
 
-The attributes of a subnet are listed `here <#subnet-ref>`_
+The attributes of a subnet are listed `here <#subnet-ref>`__.
 
 *Example Get subnet Details: JSON*
 
@@ -585,29 +596,29 @@ The attributes of a subnet are listed `here <#subnet-ref>`_
 
   {
     "subnet": {
-        "user_id": "s0m3-u5e7-1d", 
-        "name": "IPv6 Subnet of Network 3141", 
+        "user_id": "s0m3-u5e7-1d",
+        "name": "IPv6 Subnet of Network 3141",
         "links": [
             {
-                "href": "https://example.org/network/v2.0/subnets/1413", 
+                "href": "https://example.org/network/v2.0/subnets/1413",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/network/v2.0/subnets/1413", 
+                "href": "https://example.org/network/v2.0/subnets/1413",
                 "rel": "bookmark"
             }
-        ], 
-        "network_id": "3141", 
-        "tenant_id": "s0m3-u5e7-1d", 
-        "dns_nameservers": [], 
-        "enable_slaac": false, 
-        "public": false, 
-        "allocation_pools": [], 
-        "host_routes": [], 
-        "ip_version": 6, 
+        ],
+        "network_id": "3141",
+        "tenant_id": "s0m3-u5e7-1d",
+        "dns_nameservers": [],
+        "enable_slaac": false,
+        "public": false,
+        "allocation_pools": [],
+        "host_routes": [],
+        "ip_version": 6,
         "gateway_ip": "2001:321:4abc:8765::9",
-        "cidr": "2001:678:5cba:1234::/64", 
-        "enable_dhcp": true, 
+        "cidr": "2001:678:5cba:1234::/64",
+        "enable_dhcp": true,
         "id": "1413"
       }
   }
@@ -617,13 +628,14 @@ Create subnet
 
 .. rubric:: Request
 
-========== ====== ================ ==========
-URI        Method Cyclades/Network OS/Neutron
-========== ====== ================ ==========
-``/subnets`` POST   ✔              ✔
-========== ====== ================ ==========
+============ ====== ================ ==========
+URI          Method Cyclades/Network OS/Neutron
+============ ====== ================ ==========
+``/subnets`` POST   ✔                ✔
+============ ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -654,7 +666,7 @@ id                **✘**            ✔
 enable_dhcp       ✔                ✔
 ================= ================ ==========
 
-* All the attributes are explained `here <#subnet-ref>`_
+* All the attributes are explained `here <#subnet-ref>`__.
 
 * **ip_version** must be set to 6 if ``cidr`` is an IPc6 subnet
 
@@ -688,6 +700,7 @@ URI                      Method Cyclades/Network OS/Neutron
 ======================== ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron
 ============== ========================= ================ ==========
@@ -747,6 +760,7 @@ URI        Method Cyclades/Network OS/Neutron
 ========== ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron
 ============== ========================= ================ ==========
@@ -772,7 +786,7 @@ Response body contents::
     }, ...
   ]
 
-The attributes of a port are listed `here <#port-ref>`_
+The attributes of a port are listed `here <#port-ref>`__.
 
 *Example List Ports: JSON*
 
@@ -783,20 +797,20 @@ The attributes of a port are listed `here <#port-ref>`_
   {
     "ports": [
       {
-        "status": "ACTIVE", 
-        "updated": "2014-02-12T08:32:41.785217+00:00", 
-        "user_id": "s0m3-u5e7-1d", 
+        "status": "ACTIVE",
+        "updated": "2014-02-12T08:32:41.785217+00:00",
+        "user_id": "s0m3-u5e7-1d",
         "name": "Port to public network",
         "links": [
             {
-                "href": "https://example.org/network/v2.0/ports/18", 
+                "href": "https://example.org/network/v2.0/ports/18",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/network/v2.0/ports/18", 
+                "href": "https://example.org/network/v2.0/ports/18",
                 "rel": "bookmark"
             }
-        ], 
+        ],
         "admin_state_up": true,
         "network_id": "2718",
         "tenant_id": "s0m3-u5e7-1d",
@@ -805,28 +819,28 @@ The attributes of a port are listed `here <#port-ref>`_
         "mac_address": "aa:01:02:6c:34:ab",
         "fixed_ips": [
             {
-                "subnet": "28", 
+                "subnet": "28",
                 "ip_address": "2001:443:2dfc:1232:a810:3cf:fe9b:21ab"
             }
-        ], 
-        "id": "18", 
-        "security_groups": [], 
+        ],
+        "id": "18",
+        "security_groups": [],
         "device_id": "42"
       }, {
-        "status": "ACTIVE", 
-        "updated": "2014-02-15T08:32:41.785217+00:00", 
-        "user_id": "s0m3-u5e7-1d", 
+        "status": "ACTIVE",
+        "updated": "2014-02-15T08:32:41.785217+00:00",
+        "user_id": "s0m3-u5e7-1d",
         "name": "Port to public network",
         "links": [
             {
-                "href": "https://example.org/network/v2.0/ports/19", 
+                "href": "https://example.org/network/v2.0/ports/19",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/network/v2.0/ports/19", 
+                "href": "https://example.org/network/v2.0/ports/19",
                 "rel": "bookmark"
             }
-        ], 
+        ],
         "admin_state_up": true,
         "network_id": "2719",
         "tenant_id": "s0m3-u5e7-1d",
@@ -835,12 +849,12 @@ The attributes of a port are listed `here <#port-ref>`_
         "mac_address": "aa:00:0c:6d:34:bb",
         "fixed_ips": [
             {
-                "subnet": "29", 
+                "subnet": "29",
                 "ip_address": "192.168.1.2"
             }
-        ], 
-        "id": "19", 
-        "security_groups": [], 
+        ],
+        "id": "19",
+        "security_groups": [],
         "device_id": "42"
       }
     ]
@@ -859,6 +873,7 @@ URI                  Method Cyclades/Network OS/Neutron
 ==================== ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron
 ============== ========================= ================ ==========
@@ -882,7 +897,7 @@ Response body contents::
     ...
   }
 
-The attributes of a port are listed `here <#port-ref>`_
+The attributes of a port are listed `here <#port-ref>`__.
 
 *Example Get Port Details: JSON*
 
@@ -893,20 +908,20 @@ The attributes of a port are listed `here <#port-ref>`_
 
   {
     "port": {
-      "status": "ACTIVE", 
-      "updated": "2014-02-12T08:32:41.785217+00:00", 
-      "user_id": "s0m3-u5e7-1d", 
+      "status": "ACTIVE",
+      "updated": "2014-02-12T08:32:41.785217+00:00",
+      "user_id": "s0m3-u5e7-1d",
       "name": "Port to public network",
       "links": [
         {
-            "href": "https://example.org/network/v2.0/ports/18", 
+            "href": "https://example.org/network/v2.0/ports/18",
             "rel": "self"
-        }, 
+        },
         {
-            "href": "https://example.org/network/v2.0/ports/18", 
+            "href": "https://example.org/network/v2.0/ports/18",
             "rel": "bookmark"
         }
-      ], 
+      ],
       "admin_state_up": true,
       "network_id": "2718",
       "tenant_id": "s0m3-u5e7-1d",
@@ -915,12 +930,12 @@ The attributes of a port are listed `here <#port-ref>`_
       "mac_address": "aa:01:02:6c:34:ab",
       "fixed_ips": [
         {
-            "subnet": "28", 
+            "subnet": "28",
             "ip_address": "2001:443:2dfc:1232:a810:3cf:fe9b:21ab"
         }
-      ], 
-      "id": "18", 
-      "security_groups": [], 
+      ],
+      "id": "18",
+      "security_groups": [],
       "device_id": "42"
       }
   }
@@ -937,6 +952,7 @@ URI        Method Cyclades/Network OS/Neutron
 ========== ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -1072,6 +1088,7 @@ URI                        Method Cyclades/Network OS/Neutron
 ========================== ====== ================ ==========
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron
 ==============  ========================= ================ ==========
@@ -1102,6 +1119,7 @@ URI              Method Cyclades/Network OS/Neutron Extensions
 ================ ====== ================ ==========
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron Extensions
 ============== ========================= ================ ==========
@@ -1126,7 +1144,7 @@ Response body contents::
     }, ...
   ]
 
-The attributes of a floating ip are listed `here <#floating-ip-ref>`_
+The attributes of a floating ip are listed `here <#floating-ip-ref>`__.
 
 *Example List Floating IPs: JSON*
 
@@ -1142,7 +1160,7 @@ The attributes of a floating ip are listed `here <#floating-ip-ref>`_
         "fixed_ip_address": None
         "floating_ip_address": "192.168.1.2"
         "port_id": 19
-      }, 
+      },
       {
         "instance_id": 84
         "floating_network_id": 4178
@@ -1165,6 +1183,7 @@ URI                      Method Cyclades/Network OS/Neutron Extensions
 ======================== ====== ================ =====================
 
 |
+
 ============== ========================= ================ ==========
 Request Header Value                     Cyclades/Network OS/Neutron Extensions
 ============== ========================= ================ ==========
@@ -1188,7 +1207,7 @@ Response body contents::
     ...
   }
 
-The attributes of a floating ip are listed `here <#floating-ip-ref>`_
+The attributes of a floating ip are listed `here <#floating-ip-ref>`__.
 
 *Example Get Floating IP Details: JSON*
 
@@ -1248,7 +1267,7 @@ fixed_ip_address      **✘**            ✔
   will automatically pick a public network with a sufficient number of
   available IPs
 
-* All the attributes are explained `here <#floating-ip-ref>`_
+* All the attributes are explained `here <#floating-ip-ref>`__.
 
 .. rubric:: Response
 
@@ -1276,6 +1295,7 @@ URI                              Method Cyclades/Network OS/Neutron Extensions
 ================================ ====== ================ =====================
 
 |
+
 ==============  ========================= ================ ==========
 Request Header  Value                     Cyclades/Network OS/Neutron Extensions
 ==============  ========================= ================ ==========

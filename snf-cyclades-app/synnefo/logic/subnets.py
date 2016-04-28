@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,16 +39,6 @@ def subnet_command(action):
             return func(subnet, *args, **kwargs)
         return wrapper
     return decorator
-
-
-def list_subnets(user_id):
-    """List all subnets of a user"""
-    log.debug('list_subnets %s', user_id)
-
-    query = (((Q(network__userid=user_id) & Q(network__public=False)) |
-              Q(network__public=True)) & Q(deleted=False))
-    user_subnets = Subnet.objects.filter(query)
-    return user_subnets
 
 
 @transaction.commit_on_success
@@ -139,14 +129,14 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     return sub
 
 
-def get_subnet(subnet_id, user_id, for_update=False):
+def get_subnet(subnet_id, user_id, user_projects, for_update=False):
     """Return a Subnet instance or raise ItemNotFound."""
 
     try:
-        objects = Subnet.objects
-        subnet_id = int(subnet_id)
-        return objects.get(Q(userid=user_id) | Q(public=True),
-                           id=subnet_id)
+        objects = Subnet.objects.for_user(user_id, user_projects, public=True)
+        if for_update:
+            objects.select_for_update()
+        return objects.get(id=subnet_id)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid subnet ID '%s'" % subnet_id)
     except Subnet.DoesNotExist:

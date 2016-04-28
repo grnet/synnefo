@@ -156,17 +156,18 @@ def login(request,
     email = tokens.get(Tokens.SHIB_MAIL, '')
     provider_info = {'eppn': eppn, 'email': email, 'name': fullname,
                      'headers': shibboleth_headers, 'user_id': user_id}
+    user_info = {'affiliation': affiliation,
+                 'first_name': first_name,
+                 'last_name': last_name,
+                 'email': email}
 
     try:
         return handle_third_party_login(request, 'shibboleth',
                                         user_id, provider_info,
-                                        affiliation, third_party_key)
+                                        affiliation, third_party_key,
+                                        user_info=user_info)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation,
-                     'first_name': first_name,
-                     'last_name': last_name,
-                     'email': email}
         return handle_third_party_signup(request, user_id, 'shibboleth',
                                          third_party_key,
                                          provider_info,

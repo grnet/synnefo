@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,20 +28,17 @@ from pithos.workers import glue
 from archipelago.common import Segment, Xseg_ctx
 from objpool import ObjectPool
 
-
 try:
     from astakosclient import AstakosClient
 except ImportError:
     AstakosClient = None
 
-from pithos.backends.base import (
-    DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
-    DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
-    BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
+from pithos.backends.exceptions import (
+    NotAllowedError, QuotaError,
+    AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
     InvalidHash, IllegalOperationError, InconsistentContentSize,
-    LimitExceeded, InvalidPolicy, BrokenSnapshot,
-    MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE)
+    LimitExceeded, InvalidPolicy, BrokenSnapshot)
 
 
 class DisabledAstakosClient(object):
@@ -90,19 +87,17 @@ DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_HASH_ALGORITHM = 'sha256'
-# DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
-DEFAULT_BLOCK_PARAMS = {'mappool': None, 'blockpool': None}
-# DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
-# DEFAULT_QUEUE_EXCHANGE = 'pithos'
+
+# Default setting for new accounts.
+DEFAULT_ACCOUNT_QUOTA = 0  # No quota.
+DEFAULT_CONTAINER_QUOTA = 0  # No quota.
+DEFAULT_CONTAINER_VERSIONING = 'auto'
+
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
 DEFAULT_ARCHIPELAGO_CONF_FILE = '/etc/archipelago/archipelago.conf'
-
-QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
-QUEUE_CLIENT_ID = 'pithos'
-QUEUE_INSTANCE_ID = '1'
 
 (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED) = range(3)
 
@@ -130,6 +125,8 @@ _propnames = ('serial', 'node', 'hash', 'size', 'type', 'source', 'mtime',
               'muser', 'uuid', 'checksum', 'cluster', 'available',
               'map_check_timestamp', 'mapfile', 'is_snapshot')
 _props = lambda props: OrderedDict((props[i], i) for i in range(len(props)))
+
+(MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE) = range(-1, 2)
 
 
 def backend_method(func):
@@ -186,8 +183,11 @@ def check_allowed_paths(action):
     the method returns successfully (no exceptions are raised), the requested
     path is added to the user's cached allowed paths.
 
-    :param action: (int) 0 for reads / 1 for writes
-    :raises NotAllowedError: the user does not have access to the path
+    Parameters:
+        'action': (int) 0 for reads / 1 for writes
+
+    Raises:
+        NotAllowedError: the user does not have access to the path
     """
     def decorator(func):
         @wraps(func)
@@ -218,68 +218,60 @@ def list_method(func):
     return wrapper
 
 
-class ModularBackend(BaseBackend):
+class ModularBackend(object):
     """A modular backend.
 
     Uses modules for SQL functions and storage.
     """
     _class_version = 1
 
-    def __init__(self, db_module=None, db_connection=None,
-                 block_module=None, block_size=None, hash_algorithm=None,
-                 queue_module=None, queue_hosts=None, queue_exchange=None,
-                 astakos_auth_url=None, service_token=None,
+    def __init__(self,
+                 db_module=None,
+                 db_connection=None,
+                 block_module=None,
+                 block_size=DEFAULT_BLOCK_SIZE,
+                 hash_algorithm=DEFAULT_HASH_ALGORITHM,
+                 astakos_auth_url=None,
+                 service_token=None,
                  astakosclient_poolsize=None,
-                 free_versioning=True, block_params=None,
-                 public_url_security=None,
-                 public_url_alphabet=None,
-                 account_quota_policy=None,
-                 container_quota_policy=None,
-                 container_versioning_policy=None,
-                 archipelago_conf_file=None,
+                 free_versioning=True,
+                 block_params=None,
+                 public_url_security=DEFAULT_PUBLIC_URL_SECURITY,
+                 public_url_alphabet=DEFAULT_PUBLIC_URL_ALPHABET,
+                 account_quota_policy=DEFAULT_ACCOUNT_QUOTA,
+                 container_quota_policy=DEFAULT_CONTAINER_QUOTA,
+                 container_versioning_policy=DEFAULT_CONTAINER_VERSIONING,
+                 archipelago_conf_file=DEFAULT_ARCHIPELAGO_CONF_FILE,
                  xseg_pool_size=8,
-                 map_check_interval=None,
-                 mapfile_prefix=None,
-                 resource_max_metadata=None,
-                 acc_max_groups=None,
-                 acc_max_group_members=None):
-        db_module = db_module or DEFAULT_DB_MODULE
-        db_connection = db_connection or DEFAULT_DB_CONNECTION
-        block_module = block_module or DEFAULT_BLOCK_MODULE
-        block_params = block_params or DEFAULT_BLOCK_PARAMS
-        block_size = block_size or DEFAULT_BLOCK_SIZE
-        hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
-        # queue_module = queue_module or DEFAULT_QUEUE_MODULE
-        account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
-        container_quota_policy = container_quota_policy \
-            or DEFAULT_CONTAINER_QUOTA
-        container_versioning_policy = container_versioning_policy \
-            or DEFAULT_CONTAINER_VERSIONING
-        archipelago_conf_file = archipelago_conf_file \
-            or DEFAULT_ARCHIPELAGO_CONF_FILE
-        map_check_interval = map_check_interval \
-            or DEFAULT_MAP_CHECK_INTERVAL
-        mapfile_prefix = mapfile_prefix \
-            or DEFAULT_MAPFILE_PREFIX
-        resource_max_metadata = resource_max_metadata\
-            or DEFAULT_RESOURCE_MAX_METADATA
-        acc_max_groups = acc_max_groups \
-            or DEFAULT_ACC_MAX_GROUPS
-        acc_max_group_members = acc_max_group_members\
-            or DEFAULT_ACC_MAX_GROUP_MEMBERS
+                 map_check_interval=DEFAULT_MAPFILE_PREFIX,
+                 mapfile_prefix=DEFAULT_MAPFILE_PREFIX,
+                 resource_max_metadata=DEFAULT_RESOURCE_MAX_METADATA,
+                 acc_max_groups=DEFAULT_ACC_MAX_GROUPS,
+                 acc_max_group_members=DEFAULT_ACC_MAX_GROUP_MEMBERS):
+
+        not_nullable = ('block_size', 'hash_algorithm',
+                        'public_url_security', 'public_url_alphabet',
+                        'account_quota_policy', 'container_versioning_policy',
+                        'archipelago_conf_file', 'xseg_pool_size',
+                        'map_check_interval', 'mapfile_prefix',
+                        'resource_max_metadata', 'acc_max_groups',
+                        'acc_max_group_members')
+        for f in not_nullable:
+            if locals()[f] is None:
+                raise ValueError("Backend argument %s cannot be None" % f)
 
         self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
             PROJECT: None}
-        # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
-        # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
-        self.public_url_security = (public_url_security or
-                                    DEFAULT_PUBLIC_URL_SECURITY)
-        self.public_url_alphabet = (public_url_alphabet or
-                                    DEFAULT_PUBLIC_URL_ALPHABET)
+        db_module = db_module or DEFAULT_DB_MODULE
+        db_connection = db_connection or DEFAULT_DB_CONNECTION
+        block_module = block_module or DEFAULT_BLOCK_MODULE
+
+        self.public_url_security = public_url_security
+        self.public_url_alphabet = public_url_alphabet
         self.hash_algorithm = hash_algorithm
         self.block_size = block_size
         self.free_versioning = free_versioning
@@ -321,24 +313,9 @@ class ModularBackend(BaseBackend):
         params = {'block_size': self.block_size,
                   'hash_algorithm': self.hash_algorithm,
                   'archipelago_cfile': archipelago_conf_file}
-        params.update(self.block_params)
+        if block_params is not None:
+            params.update(block_params)
         self.store = self.block_module.Store(**params)
-
-        if queue_module and queue_hosts:
-            self.queue_module = load_module(queue_module)
-            params = {'hosts': queue_hosts,
-                      'exchange': queue_exchange,
-                      'client_id': QUEUE_CLIENT_ID}
-            self.queue = self.queue_module.Queue(**params)
-        else:
-            class NoQueue:
-                def send(self, *args):
-                    pass
-
-                def close(self):
-                    pass
-
-            self.queue = NoQueue()
 
         self.astakos_auth_url = astakos_auth_url
         self.service_token = service_token
@@ -355,7 +332,6 @@ class ModularBackend(BaseBackend):
                 pool_size=astakosclient_poolsize)
 
         self.serials = []
-        self.messages = []
 
         self._move_object = partial(self._copy_object, is_move=True)
 
@@ -379,10 +355,6 @@ class ModularBackend(BaseBackend):
 
     def post_exec(self, success_status=True):
         if success_status:
-            # send messages produced
-            for m in self.messages:
-                self.queue.send(*m)
-
             # register serials
             if self.serials:
                 self.commission_serials.insert_many(
@@ -413,8 +385,8 @@ class ModularBackend(BaseBackend):
         self.in_transaction = False
 
     def close(self):
+        """Close the backend connection."""
         self.wrapper.close()
-        self.queue.close()
 
     @property
     def using_external_quotaholder(self):
@@ -424,21 +396,39 @@ class ModularBackend(BaseBackend):
     @backend_method
     @list_method
     def list_accounts(self, user, marker=None, limit=10000):
-        """Return a list of accounts the user can access."""
+        """Return a list of accounts the user can access.
 
+        Keyword arguments:
+            'marker': Start list from the next item after 'marker'
+            'limit': Number of containers to return
+        """
         return self._allowed_accounts(user)
 
     @debug_method
     @backend_method
     def get_account_meta(self, user, account, domain=None, until=None,
                          include_user_defined=True):
-        """Return a dictionary with the account metadata for the domain."""
+        """Return a dictionary with the account metadata for the domain.
 
+        The keys returned are all user-defined, except:
+            'name': The account name
+            'count': The number of containers (or 0)
+            'bytes': The total data size (or 0)
+            'modified': Last modification timestamp (overall)
+            'until_timestamp': Last modification until the timestamp provided
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ValueError: if domain is None and include_user_defined==True
+        """
         self._can_read_account(user, account)
         path, node = self._lookup_account(account, user == account)
         if user != account:
-            if until or (node is None):
-                raise NotAllowedError
+            if until:
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
+            if node is None:
+                raise NotAllowedError("Account does not exist")
         try:
             props = self._get_properties(node, until)
             mtime = props[self.MTIME]
@@ -461,8 +451,8 @@ class ModularBackend(BaseBackend):
             if props is not None and include_user_defined:
                 if domain is None:
                     raise ValueError(
-                        'Domain argument is obligatory for getting '
-                        'user defined metadata')
+                        "Domain argument is obligatory for getting "
+                        "user defined metadata")
                 meta.update(
                     dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
@@ -481,9 +471,16 @@ class ModularBackend(BaseBackend):
     def update_account_meta(self, user, account, domain, meta, replace=False):
         """Update the metadata associated with the account for the domain.
 
-           Raises:
-               NotAllowedError: Operation not permitted
-               LimitExceeded: if the metadata number exceeds the allowed limit.
+        Parameters:
+            'domain': Metadata domain
+
+        Keyword arguments:
+            'meta': Dictionary with metadata to update
+            'replace': Replace instead of update
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
 
         self._can_write_account(user, account)
@@ -494,7 +491,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_account_groups(self, user, account):
-        """Return a dictionary with the user groups defined for the account."""
+        """Return a dictionary with the user groups defined for the account.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
 
         self._can_read_account(user, account)
         if user != account:
@@ -528,12 +529,12 @@ class ModularBackend(BaseBackend):
                 groups = existing
 
         if len(groups) > self.acc_max_groups:
-            raise LimitExceeded('Pithos+ accounts cannot have more than %s '
-                                'groups' % self.acc_max_groups)
+            raise LimitExceeded("Pithos+ accounts cannot have more than %s "
+                                "groups" % self.acc_max_groups)
         for k in groups:
             if len(groups[k]) > self.acc_max_group_members:
-                raise LimitExceeded('Pithos+ groups cannot have more than %s '
-                                    'members' % self.acc_max_group_members)
+                raise LimitExceeded("Pithos+ groups cannot have more than %s "
+                                    "members" % self.acc_max_group_members)
 
         self.permissions.group_destroy(account)
         self.permissions.group_addmany(account, groups)
@@ -541,7 +542,15 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_account_policy(self, user, account):
-        """Return a dictionary with the account policy."""
+        """Return a dictionary with the account policy.
+
+        The keys returned are:
+            'quota': The maximum bytes allowed (default is 0 - unlimited)
+            'versioning': Can be 'auto', 'manual' or 'none' (default: 'manual')
+
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
 
         self._can_read_account(user, account)
         if user != account:
@@ -553,8 +562,8 @@ class ModularBackend(BaseBackend):
             external_quota = self.astakosclient.service_get_quotas(
                 account)[account]
             for k, v in external_quota.items():
-                policy['%s-%s' % (QUOTA_POLICY, k)] = \
-                    v['pithos.diskspace']['limit']
+                key = '%s-%s' % (QUOTA_POLICY, k)
+                policy[key] = v['pithos.diskspace']['limit']
                 policy[QUOTA_POLICY] += v['pithos.diskspace']['limit']
 
         return policy
@@ -562,7 +571,12 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
-        """Update the policy associated with the account."""
+        """Update the policy associated with the account.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ValueError: Invalid policy defined
+        """
 
         self._can_write_account(user, account)
         path, node = self._lookup_account(account, True)
@@ -572,14 +586,19 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def put_account(self, user, account, policy=None):
-        """Create a new account with the given name."""
+        """Create a new account with the given name.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            InvalidPolicy: Invalid policy defined
+        """
 
         self._check_account(account)
         policy = policy or {}
         self._can_write_account(user, account)
         node = self.node.node_lookup(account)
         if node is not None:
-            raise AccountExists('Account already exists')
+            raise AccountExists("Account already exists")
         node = self._put_path(user, self.ROOTNODE, account,
                               update_statistics_ancestors_depth=-1)
         self._put_policy(node, policy, True, is_account_policy=True,
@@ -588,7 +607,12 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def delete_account(self, user, account):
-        """Delete the account with the given name."""
+        """Delete the account with the given name.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            AccountNotEmpty: Account is not empty
+        """
 
         self._can_write_account(user, account)
         node = self.node.node_lookup(account)
@@ -596,7 +620,7 @@ class ModularBackend(BaseBackend):
             return
         if not self.node.node_remove(node,
                                      update_statistics_ancestors_depth=-1):
-            raise AccountNotEmpty('Account is not empty')
+            raise AccountNotEmpty("Account is not empty")
         self.permissions.group_destroy(account)
 
         # remove all the cached allowed paths
@@ -608,12 +632,23 @@ class ModularBackend(BaseBackend):
     @list_method
     def list_containers(self, user, account, marker=None, limit=10000,
                         shared=False, until=None, public=False):
-        """Return a list of containers existing under an account."""
+        """Return a list of container names existing under an account.
+
+        Keyword arguments:
+            'marker': Start list from the next item after 'marker'
+            'limit': Number of containers to return
+            'shared': Only list containers with permissions set
+            'public': Only list containers containing public objects
+
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
 
         self._can_read_account(user, account)
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
             return self._allowed_containers(user, account)
         if shared or public:
             allowed = set()
@@ -632,13 +667,19 @@ class ModularBackend(BaseBackend):
     @backend_method
     def list_container_meta(self, user, account, container, domain,
                             until=None):
-        """Return a list of the container's object meta keys for a domain."""
+        """Return a list of the container's object meta keys for a domain.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+        """
 
         self._can_read_container(user, account, container)
         allowed = []
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
         path, node = self._lookup_container(account, container)
         before = until if until is not None else inf
         allowed = self._get_formatted_paths(allowed)
@@ -649,12 +690,26 @@ class ModularBackend(BaseBackend):
     @backend_method
     def get_container_meta(self, user, account, container, domain=None,
                            until=None, include_user_defined=True):
-        """Return a dictionary with the container metadata for the domain."""
+        """Return a dictionary with the container metadata for the domain.
+
+        The keys returned are all user-defined, except:
+            'name': The container name
+            'count': The number of objects
+            'bytes': The total data size
+            'modified': Last modification timestamp (overall)
+            'until_timestamp': Last modification until the timestamp provided
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+            ValueError: if domain is None and include_user_defined==True
+        """
 
         self._can_read_container(user, account, container)
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Accessing other account's "
+                                      "historical information is not allowed")
         path, node = self._lookup_container(account, container)
         props = self._get_properties(node, until)
         mtime = props[self.MTIME]
@@ -674,8 +729,8 @@ class ModularBackend(BaseBackend):
             if include_user_defined:
                 if domain is None:
                     raise ValueError(
-                        'Domain argument is obligatory for getting '
-                        'user defined metadata')
+                        "Domain argument is obligatory for getting "
+                        "user defined metadata")
                 meta.update(
                     dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
@@ -690,10 +745,17 @@ class ModularBackend(BaseBackend):
                               replace=False):
         """Update the metadata associated with the container for the domain.
 
-           Raises:
-               NotAllowedError: Operation not permitted
-               ItemNotExists: Container does not exist
-               LimitExceeded: if the metadata number exceeds the allowed limit.
+        Parameters:
+            'domain': Metadata domain
+
+        Keyword arguments:
+            'meta': Dictionary with metadata to update
+            'replace': Replace instead of update
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
 
         self._can_write_container(user, account, container)
@@ -711,7 +773,16 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_container_policy(self, user, account, container):
-        """Return a dictionary with the container policy."""
+        """Return a dictionary with the container policy.
+
+        The keys returned are:
+            'quota': The maximum bytes allowed (default is 0 - unlimited)
+            'versioning': Can be 'auto', 'manual' or 'none' (default: 'manual')
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+        """
 
         self._can_read_container(user, account, container)
         if user != account:
@@ -725,7 +796,11 @@ class ModularBackend(BaseBackend):
                                 replace=False):
         """Update the policy associated with the container.
 
-        Raises: AstakosClientException
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+            InvalidPolicy: Invalid policy defined
+            AstakosClientException: Error originated from astakos
         """
 
         self._can_write_container(user, account, container)
@@ -752,7 +827,13 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def put_container(self, user, account, container, policy=None):
-        """Create a new container with the given name."""
+        """Create a new container with the given name.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ContainerExists: Container already exists
+            InvalidPolicy: Invalid policy defined
+        """
 
         policy = policy or {}
         self._can_write_container(user, account, container)
@@ -761,7 +842,7 @@ class ModularBackend(BaseBackend):
         except NameError:
             pass
         else:
-            raise ContainerExists('Container already exists')
+            raise ContainerExists("Container already exists")
         path = '/'.join((account, container))
         node = self._put_path(
             user, self._lookup_account(account, True)[1], path,
@@ -774,14 +855,24 @@ class ModularBackend(BaseBackend):
     @backend_method
     def delete_container(self, user, account, container, until=None, prefix='',
                          delimiter=None, listing_limit=None):
-        """Delete/purge the container with the given name."""
+        """Delete/purge the container with the given name.
+
+        Keyword arguments:
+            'delimiter': If not None, deletes the container contents starting
+                         with the delimiter
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+            ContainerNotEmpty: Container is not empty
+        """
 
         self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
         project = self._get_project(node)
 
         if until is not None:
-            hashes, size, serials = self.node.node_purge_children(
+            hashes, size, _ = self.node.node_purge_children(
                 node, until, CLUSTER_HISTORY,
                 update_statistics_ancestors_depth=0)
             for h in hashes:
@@ -790,18 +881,13 @@ class ModularBackend(BaseBackend):
                                           update_statistics_ancestors_depth=0)
             if not self.free_versioning:
                 self._report_size_change(
-                    user, account, -size, project, {
-                        'action': 'container purge',
-                        'path': path,
-                        'versions': ','.join(str(i) for i in serials)
-                    }
-                )
+                    user, account, -size, project, name=path)
             return
 
         if not delimiter:
             if self._get_statistics(node)[0] > 0:
-                raise ContainerNotEmpty('Container is not empty')
-            hashes, size, serials = self.node.node_purge_children(
+                raise ContainerNotEmpty("Container is not empty")
+            hashes, size, _ = self.node.node_purge_children(
                 node, inf, CLUSTER_HISTORY,
                 update_statistics_ancestors_depth=0)
             for h in hashes:
@@ -811,12 +897,7 @@ class ModularBackend(BaseBackend):
             self.node.node_remove(node, update_statistics_ancestors_depth=0)
             if not self.free_versioning:
                 self._report_size_change(
-                    user, account, -size, project, {
-                        'action': 'container purge',
-                        'path': path,
-                        'versions': ','.join(str(i) for i in serials)
-                    }
-                )
+                    user, account, -size, project, name=path)
         else:
             # remove only contents
             src_names = self._list_objects_no_limit(
@@ -824,38 +905,17 @@ class ModularBackend(BaseBackend):
                 virtual=False, domain=None, keys=[], shared=False, until=None,
                 size_range=None, all_props=True, public=False,
                 listing_limit=listing_limit)
-            paths = []
             freed_space = 0
-            dest_versions = []
             for t in src_names:
-                path = '/'.join((account, container, t[0]))
-                node = t[2]
-                if not self._exists(node):
-                    continue
-
-                # keep reference to the mapfile
-                # in case we will want to delete them in the future
-                src_version_id, dest_version_id, _ = \
-                    self._put_version_duplicate(
-                        user, node, size=0, type='', hash=None, checksum='',
-                        cluster=CLUSTER_DELETED,
-                        update_statistics_ancestors_depth=1,
-                        keep_src_mapfile=True)
-                dest_versions.append(dest_version_id)
-                del_size = self._apply_versioning(
-                    account, container, src_version_id,
-                    update_statistics_ancestors_depth=1)
+                del_size = self._delete_object(user, account, container, t[0],
+                                               delimiter=None,
+                                               report_size_change=False)
                 freed_space += del_size
-                self._report_object_change(
-                    user, account, path, details={'action': 'object delete'})
-                paths.append(path)
-            self.permissions.access_clear_bulk(paths)
 
             self._report_size_change(
-                user, account, -freed_space, project, {
-                    'action': 'object delete',
-                    'path': '/'.join((account, container, '')),
-                    'versions': ','.join([str(id_) for id_ in dest_versions])})
+                user, account, -freed_space, project, name='/'.join((account,
+                                                                    container,
+                                                                    '')))
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
@@ -865,7 +925,8 @@ class ModularBackend(BaseBackend):
                       marker, limit, virtual, domain, keys, shared, until,
                       size_range, all_props, public):
         if user != account and until:
-            raise NotAllowedError
+            raise NotAllowedError("Browsing other account's "
+                                  "history is not allowed")
 
         objects = set()
         if shared and public:
@@ -940,7 +1001,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             allowed = self.permissions.access_list_paths(user, path)
             if not allowed:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
         else:
             allowed = set()
             if shared:
@@ -959,7 +1021,33 @@ class ModularBackend(BaseBackend):
                      marker=None, limit=10000, virtual=True, domain=None,
                      keys=None, shared=False, until=None, size_range=None,
                      public=False):
-        """List (object name, object version_id) under a container."""
+        """List (object name, object version_id) under a container.
+
+        Keyword arguments:
+            'prefix': List objects starting with 'prefix'
+            'delimiter': Return unique names before 'delimiter' and
+                         after 'prefix'
+            'marker': Start list from the next item after 'marker'
+            'limit': Number of objects to return
+            'virtual': If not set, the result will only include names starting
+                       with 'prefix' and ending without a 'delimiter' or with
+                       the first occurance of the 'delimiter' after 'prefix'.
+                       If set, the result will include all names after 'prefix'
+                       up to and including the 'delimiter' if it is found
+            'domain': Metadata domain for keys
+            'keys': Include objects that satisfy the key queries in the list.
+                    Use 'key', '!key' for existence queries, 'key op value' for
+                    value queries, where 'op' can be one of =, !=, <=, >=, <, >
+            'shared': Only list objects with permissions set
+            'size_range': Include objects with byte size in (from, to).
+                          Use None to specify unlimited
+            'public': Only list public objects
+
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+        """
 
         keys = keys or []
         return self._list_objects(
@@ -972,7 +1060,15 @@ class ModularBackend(BaseBackend):
                          delimiter=None, marker=None, limit=10000,
                          virtual=True, domain=None, keys=None, shared=False,
                          until=None, size_range=None, public=False):
-        """Return a list of metadata dicts of objects under a container."""
+        """Return a list of metadata dicts of objects under a container.
+
+        Same parameters with list_objects. Returned dicts have no user-defined
+        metadata and, if until is not None, a None 'modified' timestamp.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+        """
 
         keys = keys or []
         props = self._list_objects(
@@ -1001,7 +1097,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def list_object_permissions(self, user, account, container, prefix=''):
-        """Return a list of paths enforce permissions under a container."""
+        """Return a list of paths enforce permissions under a container.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
 
         return self._list_object_permissions(user, account, container, prefix,
                                              True, False)
@@ -1022,7 +1122,28 @@ class ModularBackend(BaseBackend):
     @backend_method
     def get_object_meta(self, user, account, container, name, domain=None,
                         version=None, include_user_defined=True):
-        """Return a dictionary with the object metadata for the domain."""
+        """Return a dictionary with the object metadata for the domain.
+
+        The keys returned are all user-defined, except:
+            'name': The object name
+            'bytes': The total data size
+            'type': The content type
+            'hash': The hashmap hash
+            'modified': Last modification timestamp (overall)
+            'modified_by': The user that committed the object
+                           (version requested)
+            'version': The version identifier
+            'version_timestamp': The version's modification timestamp
+            'uuid': A unique identifier that persists data or metadata updates
+                    and renames
+            'checksum': The MD5 sum of the object (may be empty)
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            VersionNotExists: Version does not exist
+            ValueError: if domain is None and include_user_defined==True
+        """
 
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
@@ -1045,7 +1166,7 @@ class ModularBackend(BaseBackend):
                 del_props = self.node.version_lookup(
                     node, inf, CLUSTER_DELETED)
                 if del_props is None:
-                    raise ItemNotExists('Object does not exist')
+                    raise ItemNotExists("Object does not exist")
                 modified = del_props[self.MTIME]
 
         meta = {}
@@ -1078,10 +1199,15 @@ class ModularBackend(BaseBackend):
                            replace=False):
         """Update object metadata for a domain and return the new version.
 
-           Raises:
-               NotAllowedError: Operation not permitted
-               ItemNotExists: Container/object does not exist
-               LimitExceeded: if the metadata number exceeds the allowed limit.
+        Parameters:
+            'domain': Metadata domain
+            'meta': Dictionary with metadata to update
+            'replace': Replace instead of update
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
 
         self._can_write_object(user, account, container, name)
@@ -1119,7 +1245,8 @@ class ModularBackend(BaseBackend):
                 try:
                     allowed = access_objects[path]
                 except KeyError:
-                    raise NotAllowedError
+                    raise NotAllowedError("User does not have access "
+                                          "to path: %s" % path)
             access_dict, allowed = \
                 self.permissions.access_get_for_bulk(access_objects[path])
             nobject_permissions[name] = (self.ALLOWED[allowed], path,
@@ -1132,7 +1259,16 @@ class ModularBackend(BaseBackend):
     def get_object_permissions(self, user, account, container, name):
         """Return the action allowed on the object, the path
         from which the object gets its permissions from,
-        along with a dictionary containing the permissions."""
+        along with a dictionary containing the permissions.
+
+        The dictionary keys are (also used for defining the action):
+            'read': The object is readable by the users/groups in the list
+            'write': The object is writable by the users/groups in the list
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+        """
 
         allowed = 'write'
         permissions_path = self._get_permissions_path(account, container, name)
@@ -1144,7 +1280,7 @@ class ModularBackend(BaseBackend):
                                                user):
                 allowed = 'read'
             else:
-                raise NotAllowedError
+                raise NotAllowedError("User does not have access to the path")
         self._lookup_object(account, container, name)
         return (allowed,
                 permissions_path,
@@ -1154,20 +1290,27 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_object_permissions(self, user, account, container, name,
                                   permissions):
-        """Update the permissions associated with the object."""
+        """Update (set) the permissions associated with the object.
+
+        Parameters:
+            'permissions': Dictionary with permissions to set
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            ValueError: Invalid users/groups in permissions
+        """
 
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("Modifying other account's object "
+                                  "permissions is not allowed")
         path = self._lookup_object(account, container, name,
                                    lock_container=True)[0]
         self._check_permissions(path, permissions)
         try:
             self.permissions.access_set(path, permissions)
         except:
-            raise ValueError
-        else:
-            self._report_sharing_change(user, account, path, {'members':
-                                        self.permissions.access_members(path)})
+            raise ValueError("Invalid users/groups in permissions")
 
         # remove all the cached allowed paths
         # filtering out only those affected could be more expensive
@@ -1176,7 +1319,13 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_object_public(self, user, account, container, name):
-        """Return the public id of the object if applicable."""
+        """Return the public id of the object if applicable.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+
+            ItemNotExists: Container/object does not exist
+        """
 
         self._can_read_object(user, account, container, name)
         path = self._lookup_object(account, container, name)[0]
@@ -1186,7 +1335,15 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_object_public(self, user, account, container, name, public):
-        """Update the public status of the object."""
+        """Update the public status of the object.
+
+        Parameters:
+            'public': Boolean value
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+        """
 
         self._can_write_object(user, account, container, name)
         path = self._lookup_object(account, container, name,
@@ -1201,16 +1358,22 @@ class ModularBackend(BaseBackend):
         """Checks if the object map exists and updates the database"""
 
         if props[self.AVAILABLE] == MAP_ERROR:
-            raise BrokenSnapshot('This Archipelago volume is broken.')
+            raise BrokenSnapshot("This Archipelago volume is broken.")
 
         if props[self.AVAILABLE] == MAP_UNAVAILABLE:
+            # Don't try to read a snapshot mapfile, until Cyclades mark it as
+            # available
+            if props[self.IS_SNAPSHOT]:
+                raise IllegalOperationError(
+                    'Unable to retrieve Archipelago volume hashmap')
+
             if props[self.MAP_CHECK_TIMESTAMP]:
                 elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
                 if elapsed_time < self.map_check_interval:
                     raise IllegalOperationError(
                         'Unable to retrieve Archipelago volume hashmap')
         try:
-            hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
+            hashmap = self.store.map_get(props[self.MAPFILE], props[self.SIZE])
         except:  # map does not exist
             # Raising an exception results in db transaction rollback
             # However we have to force the update of the database
@@ -1244,7 +1407,13 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
-        """Return the object's size and a list with partial hashes."""
+        """Return the object's size and a list with partial hashes.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            VersionNotExists: Version does not exist
+        """
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
@@ -1274,7 +1443,8 @@ class ModularBackend(BaseBackend):
                             force_mapfile=None, is_snapshot=False):
         available = available if available is not None else MAP_AVAILABLE
         if permissions is not None and user != account:
-            raise NotAllowedError
+            raise NotAllowedError("Modifying other account's "
+                                  "object content is not allowed")
         self._can_write_object(user, account, container, name)
         if permissions is not None:
             path = '/'.join((account, container, name))
@@ -1332,18 +1502,10 @@ class ModularBackend(BaseBackend):
 
         if report_size_change:
             self._report_size_change(
-                user, account, size_delta, project,
-                {'action': 'object update', 'path': path,
-                 'versions': ','.join([str(dest_version_id)])})
+                user, account, size_delta, project, name=path)
         if permissions is not None:
             self.permissions.access_set(path, permissions)
-            self._report_sharing_change(
-                user, account, path,
-                {'members': self.permissions.access_members(path)})
 
-        self._report_object_change(
-            user, account, path,
-            details={'version': dest_version_id, 'action': 'object update'})
         return dest_version_id, size_delta, mapfile
 
     @debug_method
@@ -1357,34 +1519,24 @@ class ModularBackend(BaseBackend):
         create a version pointing to the mapfile
         and issue the size change in the quotaholder.
 
-        :param user: the user account which performs the action
+        Parameters:
+            'user': the user account which performs the action
+            'account': the account under which the object resides
+            'container': the container under which the object resides
+            'name': the object name
+            'size': the object size
+            'type': the object mimetype
+            'mapfile': the mapfile pointing to the object data
+            'checkcum': the md5 checksum (optional)
+            'domain': the object domain
+            'meta': a dict with custom object metadata
+            'replace_meta': replace existing metadata or not
+            'permissions': a dict with the read and write object permissions
 
-        :param account: the account under which the object resides
+        Returns: the new object uuid
 
-        :param container: the container under which the object resides
-
-        :param name: the object name
-
-        :param size: the object size
-
-        :param type: the object mimetype
-
-        :param mapfile: the mapfile pointing to the object data
-
-        :param checkcum: the md5 checksum (optional)
-
-        :param domain: the object domain
-
-        :param meta: a dict with custom object metadata
-
-        :param replace_meta: replace existing metadata or not
-
-        :param permissions: a dict with the read and write object permissions
-
-        :returns: the new object uuid
-
-        :raises: ItemNotExists, NotAllowedError, QuotaError,
-                 AstakosClientException, LimitExceeded
+        Raises: ItemNotExists, NotAllowedError, QuotaError,
+                AstakosClientException, LimitExceeded
         """
 
         meta = meta or {}
@@ -1411,7 +1563,7 @@ class ModularBackend(BaseBackend):
         uuid_ = self._validate_uuid(uuid)
         info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
         if info is None:
-            raise NameError('No object found for this UUID.')
+            raise NameError("No object found for this UUID.")
         _, serial = info
         self.node.version_put_property(serial, 'available', state)
 
@@ -1421,22 +1573,24 @@ class ModularBackend(BaseBackend):
                               replace_meta=False, permissions=None):
         """Create/update an object's hashmap and return the new version.
 
-           Raises:
-               NotAllowedError: Operation not permitted
+        Parameters:
+            'domain': Metadata domain
+            'meta': Dictionary with metadata to change
+            'replace_meta': Replace metadata instead of update
+            'permissions': Updated object permissions
 
-               ItemNotExists: Container does not exist
-
-               ValueError: Invalid users/groups in permissions
-
-               QuotaError: Account or container quota exceeded
-
-               LimitExceeded: if the metadata number exceeds the allowed limit.
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container does not exist
+            ValueError: Invalid users/groups in permissions
+            QuotaError: Account or container quota exceeded
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
 
         if not self._size_is_consistent(size, hashmap):
             raise InconsistentContentSize(
-                'The object\'s size does not match '
-                'with the object\'s hashmap length')
+                "The object's size does not match "
+                "with the object's hashmap length")
 
         try:
             path, node = self._lookup_object(account, container, name,
@@ -1497,7 +1651,8 @@ class ModularBackend(BaseBackend):
                      dest_account, dest_container, dest_name, type,
                      dest_domain=None, dest_meta=None, replace_meta=False,
                      permissions=None, src_version=None, is_move=False,
-                     delimiter=None, listing_limit=10000):
+                     delimiter=None, listing_limit=10000,
+                     report_size_change=True):
 
         dest_meta = dest_meta or {}
         dest_versions = []
@@ -1547,8 +1702,8 @@ class ModularBackend(BaseBackend):
             dest_account, dest_container, dest_name)  # New uuid.
 
         if is_copy and props[self.AVAILABLE] != MAP_AVAILABLE:
-            raise NotAllowedError('Copying objects not available in the '
-                                  'storage backend is forbidden.')
+            raise NotAllowedError("Copying objects not available in the "
+                                  "storage backend is forbidden.")
 
         src_mapfile = props[self.MAPFILE]
         force_mapfile = src_mapfile if not is_copy else None
@@ -1557,7 +1712,8 @@ class ModularBackend(BaseBackend):
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
-            report_size_change=(not bulk_report_size_change),
+            report_size_change=(report_size_change and
+                                (not bulk_report_size_change)),
             keep_available=True, is_snapshot=is_snapshot,
             force_mapfile=force_mapfile)
 
@@ -1578,7 +1734,8 @@ class ModularBackend(BaseBackend):
                 dest_account, dest_container, dest_name):
             del_size = self._delete_object(
                 user, src_account, src_container, src_name,
-                report_size_change=(not bulk_report_size_change))
+                report_size_change=(report_size_change and
+                                    (not bulk_report_size_change)))
             freed_space += del_size
 
         if delimiter:
@@ -1596,65 +1753,30 @@ class ModularBackend(BaseBackend):
             # in duplicate version...
             props = self._get_versions(nodes)
 
-            for prop, path, node in zip(props, paths, nodes):
-                src_version_id = prop[self.SERIAL]
-                hash = prop[self.HASH]
-                vtype = prop[self.TYPE]
-                size = prop[self.SIZE]
-                is_snapshot = prop[self.IS_SNAPSHOT]
-                dest_prefix = dest_name + delimiter if not dest_name.endswith(
-                    delimiter) else dest_name
-                vdest_name = path.replace(prefix, dest_prefix, 1)
-
-                if is_copy and prop[self.AVAILABLE] != MAP_AVAILABLE:
-                    raise NotAllowedError('Copying objects not available in '
-                                          'the storage backend is forbidden.')
-
-                src_mapfile = prop[self.MAPFILE]
-                force_mapfile = src_mapfile if not is_copy else None
-
-                # _update_object_hash() locks destination path
-                dest_version_id, size_delta, dest_mapfile = \
-                    self._update_object_hash(
-                        user, dest_account, dest_container, vdest_name, size,
-                        vtype, hash, None, dest_domain, meta={},
-                        replace_meta=False, permissions=None, src_node=node,
-                        src_version_id=src_version_id, is_copy=is_copy,
-                        report_size_change=(not bulk_report_size_change),
-                        keep_available=True, is_snapshot=is_snapshot,
-                        force_mapfile=force_mapfile)
-
-                # store destination mapfile
-                if size != 0 and src_mapfile != dest_mapfile:
-                    try:
-                        hashmap = self._get_object_hashmap(
-                            prop, update_available=False)
-                    except:
-                        raise NotAllowedError(
-                            "Copy is not permitted: failed to get "
-                            "source object's mapfile: %s" % src_mapfile)
-                    self.store.map_put(dest_mapfile, hashmap, size,
-                                       self.block_size)
-
-                dest_versions.append(dest_version_id)
+            for prop, vsrc_name, node in zip(props, paths, nodes):
+                dest_prefix = (dest_name + delimiter if not
+                               dest_name.endswith(delimiter) else dest_name)
+                _version_id = prop[self.SERIAL]
+                _type = prop[self.TYPE]
+                _dest_name = vsrc_name.replace(prefix, dest_prefix, 1)
+                serials, size_delta, del_size = self._copy_object(
+                    user, src_account, src_container, vsrc_name,
+                    dest_account, dest_container, _dest_name, _type,
+                    src_version=_version_id, is_move=is_move,
+                    delimiter=None,
+                    report_size_change=(not bulk_report_size_change))
+                dest_versions.extend(serials)
                 occupied_space += size_delta
-                if is_move and (src_account, src_container, path) != (
-                        dest_account, dest_container, vdest_name):
-                    del_size = self._delete_object(
-                        user, src_account, src_container, path,
-                        report_size_change=(not bulk_report_size_change))
-                    freed_space += del_size
+                freed_space += del_size
 
-        if bulk_report_size_change:     # bulk report size change
+        # bulk repost size change
+        if report_size_change and bulk_report_size_change:
             dest_obj_path = '/'.join((dest_container_path, dest_name))
             size_delta = occupied_space - freed_space
             self._report_size_change(
                 user, dest_account, size_delta, dest_project,
-                details={'action': 'object move',
-                         'path': dest_obj_path,
-                         'versions': ','.join([str(id_) for id_ in
-                                               dest_versions])})
-        return dest_versions
+                name=dest_obj_path)
+        return dest_versions, occupied_space, freed_space
 
     @debug_method
     @backend_method
@@ -1662,7 +1784,17 @@ class ModularBackend(BaseBackend):
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
                     src_version=None, delimiter=None, listing_limit=None):
-        """Copy an object's data and metadata.
+        """Copy an object's data and metadata and return the new version.
+
+        Parameters:
+            'domain': Metadata domain
+            'meta': Dictionary with metadata to change from source
+                    to destination
+            'replace_meta': Replace metadata instead of update
+            'permissions': New object permissions
+            'src_version': Copy from the version provided
+            'delimiter': Copy objects whose path starts with
+                         src_name + delimiter
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -1678,7 +1810,7 @@ class ModularBackend(BaseBackend):
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
             permissions, src_version, False, delimiter,
-            listing_limit=listing_limit)
+            listing_limit=listing_limit)[0]
         # propagate only the first version created
         return dest_versions[0] if dest_versions >= 1 else None
 
@@ -1688,7 +1820,23 @@ class ModularBackend(BaseBackend):
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
                     delimiter=None, listing_limit=None):
-        """Move an object's data and metadata."""
+        """Move an object's data and metadata and return the new version.
+
+        Parameters:
+            'domain': Metadata domain
+            'meta': Dictionary with metadata to change from source
+                    to destination
+            'replace_meta': Replace metadata instead of update
+            'permissions': New object permissions
+            'delimiter': Move objects whose path starts with
+                         src_name + delimiter
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            ValueError: Invalid users/groups in permissions
+            QuotaError: Account or container quota exceeded
+        """
 
         meta = meta or {}
         if user != src_account:
@@ -1717,18 +1865,15 @@ class ModularBackend(BaseBackend):
                 return
             hashes = []
             size = 0
-            serials = []
-            h, s, v = self.node.node_purge(node, until, CLUSTER_NORMAL,
+            h, s, _ = self.node.node_purge(node, until, CLUSTER_NORMAL,
                                            update_statistics_ancestors_depth=1)
             hashes += h
             size += s
-            serials += v
-            h, s, v = self.node.node_purge(node, until, CLUSTER_HISTORY,
+            h, s, _ = self.node.node_purge(node, until, CLUSTER_HISTORY,
                                            update_statistics_ancestors_depth=1)
             hashes += h
             if not self.free_versioning:
                 size += s
-            serials += v
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge(node, until, CLUSTER_DELETED,
@@ -1738,16 +1883,11 @@ class ModularBackend(BaseBackend):
             except NameError:
                 self.permissions.access_clear(path)
             self._report_size_change(
-                user, account, -size, project, {
-                    'action': 'object purge',
-                    'path': path,
-                    'versions': ','.join(str(i) for i in serials)
-                }
-            )
+                user, account, -size, project, name=path)
             return size
 
         if not self._exists(node):
-            raise ItemNotExists('Object is deleted.')
+            raise ItemNotExists("Object is deleted.")
 
         # keep reference to the mapfile
         # in case we will want to delete them in the future
@@ -1755,14 +1895,10 @@ class ModularBackend(BaseBackend):
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1,
             keep_src_mapfile=True)
-        del_size = self._apply_versioning(account, container, src_version_id,
-                                          update_statistics_ancestors_depth=1)
-
-        freed_space = del_size
-        dest_versions = []
-        self._report_object_change(
-            user, account, path, details={'action': 'object delete'})
-        self.permissions.access_clear(path)
+        freed_space = self._apply_versioning(
+            account, container, src_version_id,
+            update_statistics_ancestors_depth=1)
+        paths = [path]
 
         if delimiter:
             prefix = name + delimiter if not name.endswith(delimiter) else name
@@ -1771,40 +1907,21 @@ class ModularBackend(BaseBackend):
                 virtual=False, domain=None, keys=[], shared=False, until=None,
                 size_range=None, all_props=True, public=False,
                 listing_limit=listing_limit)
-            paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
-                node = t[2]
-                if not self._exists(node):
-                    continue
-
-                # keep reference to the mapfile
-                # in case we will want to delete them in the future
-                src_version_id, dest_version_id, _ = \
-                    self._put_version_duplicate(
-                        user, node, size=0, type='', hash=None, checksum='',
-                        cluster=CLUSTER_DELETED,
-                        update_statistics_ancestors_depth=1,
-                        keep_src_mapfile=True)
-                del_size = self._apply_versioning(
-                    account, container, src_version_id,
-                    update_statistics_ancestors_depth=1)
+                del_size = self._delete_object(user, account, container, t[0],
+                                               delimiter=None,
+                                               report_size_change=False)
                 freed_space += del_size
-                dest_versions.append(dest_version_id)
-                self._report_object_change(
-                    user, account, path, details={'action': 'object delete'})
                 paths.append(path)
-            self.permissions.access_clear_bulk(paths)
+        self.permissions.access_clear_bulk(paths)
 
         if report_size_change:
             path = '/'.join([account, container, name])
             if delimiter:
                 path += '/'
             self._report_size_change(
-                user, account, -freed_space, project,
-                {'action': 'object delete',
-                 'path': path,
-                 'versions': ','.join([str(id_) for id_ in dest_versions])})
+                user, account, -freed_space, project, name=path)
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
@@ -1815,7 +1932,16 @@ class ModularBackend(BaseBackend):
     @backend_method
     def delete_object(self, user, account, container, name, until=None,
                       prefix='', delimiter=None, listing_limit=None):
-        """Delete/purge an object."""
+        """Delete/purge an object.
+
+        Parameters:
+            'delimiter': Delete objects whose path starting with
+                         name + delimiter
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+        """
 
         self._delete_object(user, account, container, name, until, delimiter,
                             listing_limit=listing_limit)
@@ -1823,7 +1949,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def list_versions(self, user, account, container, name):
-        """Return a list of all object (version, version_timestamp) tuples."""
+        """Return a list of all object (version, version_timestamp) tuples.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+        """
 
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
@@ -1834,11 +1964,17 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_uuid(self, user, uuid, check_permissions=True):
-        """Return the (account, container, name) for the UUID given."""
+        """Return the (account, container, name) for the UUID given.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+
+            NameError: UUID does not exist
+        """
 
         info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
         if info is None:
-            raise NameError
+            raise NameError("No object found for this UUID.")
         path, serial = info
         account, container, name = path.split('/', 2)
         if check_permissions:
@@ -1864,7 +2000,7 @@ class ModularBackend(BaseBackend):
         uuid_ = self._validate_uuid(uuid)
         info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
         if info is None:
-            raise NameError('No object found for this UUID.')
+            raise NameError("No object found for this UUID.")
         path, serial = info
         account, container, name = path.split('/', 2)
         self._delete_object(user, account, container, name)
@@ -1914,22 +2050,31 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_public(self, user, public):
-        """Return the (account, container, name) for the public id given."""
+        """Return the (account, container, name) for the public id given.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            NameError: Public id does not exist
+        """
 
         path = self.permissions.public_path(public)
         if path is None:
-            raise NameError
+            raise NameError("No object found associated with this public path")
         account, container, name = path.split('/', 2)
         self._can_read_object(user, account, container, name)
         return (account, container, name)
 
     def get_block(self, hash):
-        """Return a block's data."""
+        """Return a block's data.
+
+        Raises:
+            ItemNotExists: Block does not exist
+        """
 
         logger.debug("get_block: %s", hash)
         block = self.store.block_get_archipelago(hash)
         if not block:
-            raise ItemNotExists('Block does not exist')
+            raise ItemNotExists("Block does not exist")
         return block
 
     def put_block(self, data):
@@ -1939,7 +2084,11 @@ class ModularBackend(BaseBackend):
         return binascii.hexlify(self.store.block_put(data))
 
     def update_block(self, hash, data, offset=0, is_snapshot=False):
-        """Update a known block and return the hash."""
+        """Update a known block and return the hash.
+
+        Raises:
+            IndexError: Offset or data outside block limits
+        """
 
         logger.debug("update_block: %s %s %s %s", hash, len(data),
                      is_snapshot, offset)
@@ -1958,11 +2107,11 @@ class ModularBackend(BaseBackend):
 
     def _validate_uuid(self, uuid):
         if not isinstance(uuid, basestring):
-            raise ValueError('A string value is expected for UUID.')
+            raise ValueError("A string value is expected for UUID.")
         try:
             uuid = uuidlib.UUID(uuid)
         except:
-            raise ValueError('Invalid UUID value.')
+            raise ValueError("Invalid UUID value.")
         prefix = 'urn:uuid:'
         return uuid.urn[len(prefix):]
 
@@ -2000,7 +2149,7 @@ class ModularBackend(BaseBackend):
         path = '/'.join((account, container))
         node = self.node.node_lookup(path, for_update)
         if node is None:
-            raise ItemNotExists('Container does not exist')
+            raise ItemNotExists("Container does not exist")
         return path, node
 
     def _lookup_object(self, account, container, name, lock_container=False):
@@ -2010,7 +2159,7 @@ class ModularBackend(BaseBackend):
         path = '/'.join((account, container, name))
         node = self.node.node_lookup(path)
         if node is None:
-            raise ItemNotExists('Object does not exist')
+            raise ItemNotExists("Object does not exist")
         return path, node
 
     def _lookup_objects(self, paths):
@@ -2025,7 +2174,7 @@ class ModularBackend(BaseBackend):
         if props is None and until is not None:
             props = self.node.version_lookup(node, before, CLUSTER_HISTORY)
         if props is None:
-            raise ItemNotExists('Path does not exist')
+            raise ItemNotExists("Path does not exist")
         return props
 
     def _get_statistics(self, node, until=None, compute=False):
@@ -2047,16 +2196,16 @@ class ModularBackend(BaseBackend):
             props = self.node.version_lookup(node, inf, CLUSTER_NORMAL,
                                              keys=keys)
             if props is None:
-                raise ItemNotExists('Object does not exist')
+                raise ItemNotExists("Object does not exist")
         else:
             try:
                 version = int(version)
             except ValueError:
-                raise VersionNotExists('Version does not exist')
+                raise VersionNotExists("Version does not exist")
             props = self.node.version_get_properties(version, node=node,
                                                      keys=keys)
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
-                raise VersionNotExists('Version does not exist')
+                raise VersionNotExists("Version does not exist")
         return props
 
     def _get_versions(self, nodes, keys=()):
@@ -2148,10 +2297,10 @@ class ModularBackend(BaseBackend):
                 map_check_timestamp=src_map_check_timestamp,
                 mapfile=mapfile,
                 is_snapshot=src_is_snapshot)
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             # TODO handle failures
-            raise ValueError
+            raise ValueError("New object version creation has been failed.")
 
         self.node.attribute_unset_is_latest(node, dest_version_id)
 
@@ -2173,8 +2322,8 @@ class ModularBackend(BaseBackend):
             meta = existing
 
         if len(meta) > self.resource_max_metadata:
-            raise LimitExceeded('Pithos+ resources cannot have more than %s '
-                                'metadata items per domain' %
+            raise LimitExceeded("Pithos+ resources cannot have more than %s "
+                                "metadata items per domain" %
                                 self.resource_max_metadata)
 
         self.node.attribute_set(dest_version_id, domain, node, meta)
@@ -2229,63 +2378,35 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def _report_size_change(self, user, account, size, source, details=None):
+    def _report_size_change(self, user, account, size, source, name=''):
         """Report quota modifications.
 
         Raises: AstakosClientException
         """
 
-        details = details or {}
-
         if size == 0:
             return
-
-        account_node = self._lookup_account(account, True)[1]
-        total = self._get_statistics(account_node, compute=True)[1]
-        details.update({'user': user, 'total': total})
-        self.messages.append(
-            (QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
-             account, QUEUE_INSTANCE_ID, 'diskspace', float(size), details))
 
         if not self.using_external_quotaholder:
             return
 
-        name = details['path'] if 'path' in details else ''
         serial = self.astakosclient.issue_one_commission(
             holder=account,
             provisions={(source, 'pithos.diskspace'): size},
             name=name)
         self.serials.append(serial)
 
-    @debug_method
-    @backend_method
-    def _report_object_change(self, user, account, path, details=None):
-        details = details or {}
-        details.update({'user': user})
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
-                              account, QUEUE_INSTANCE_ID, 'object', path,
-                              details))
-
-    @debug_method
-    @backend_method
-    def _report_sharing_change(self, user, account, path, details=None):
-        details = details or {}
-        details.update({'user': user})
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
-                              account, QUEUE_INSTANCE_ID, 'sharing', path,
-                              details))
-
     # Policy functions.
 
     def _check_project(self, value):
-        # raise InvalidPolicy('Bad quota source policy')
+        # raise InvalidPolicy("Bad quota source policy")
         pass
 
     def _check_policy(self, policy):
         for k, v in policy.iteritems():
             if k == QUOTA_POLICY:
-                error_msg = ('The quota policy value '
-                             'should be a positive integer.')
+                error_msg = ("The quota policy value "
+                             "should be a positive integer.")
                 try:
                     q = int(v)  # May raise ValueError.
                 except ValueError:
@@ -2294,13 +2415,13 @@ class ModularBackend(BaseBackend):
                     raise InvalidPolicy(error_msg)
             elif k == VERSIONING_POLICY:
                 if v not in ['auto', 'none']:
-                    raise InvalidPolicy('The versioning policy value should '
-                                        'be either \'auto\' or \'none\'.')
+                    raise InvalidPolicy("The versioning policy value should "
+                                        "be either 'auto' or 'none'.")
             elif k == PROJECT:
                 self._check_project(v)
             else:
-                raise InvalidPolicy('The only allowed policies are '
-                                    '\'quota\' or \'versioning\'.')
+                raise InvalidPolicy("The only allowed policies are "
+                                    "'quota' or 'versioning'.")
 
     def _get_default_policy(self, node=None, is_account_policy=True,
                             default_project=None):
@@ -2367,21 +2488,21 @@ class ModularBackend(BaseBackend):
 
     def _check_account(self, user):
         if user is not None and len(user) > 256:
-            raise LimitExceeded('User identifier should be at most '
-                                '256 characters long.')
+            raise LimitExceeded("User identifier should be at most "
+                                "256 characters long.")
 
     def _check_groups(self, groups):
         for k, members in groups.iteritems():
             if len(k) > 256:
-                raise LimitExceeded('Group names should be at most '
-                                    '256 characters long.')
+                raise LimitExceeded("Group names should be at most "
+                                    "256 characters long.")
             for m in members:
                 if len(m) > 256:
-                    raise LimitExceeded('Group members should be at most '
-                                        '256 characters long.')
+                    raise LimitExceeded("Group members should be at most "
+                                        "256 characters long.")
 
     def _check_permissions(self, path, permissions):
-        # raise ValueError('Bad characters in permissions')
+        # raise ValueError("Bad characters in permissions")
         pass
 
     def _get_formatted_paths(self, paths):
@@ -2459,23 +2580,27 @@ class ModularBackend(BaseBackend):
     def _can_read_account(self, user, account):
         if user != account:
             if account not in self._allowed_accounts(user):
-                raise NotAllowedError
+                raise NotAllowedError("User does not have read "
+                                      "access to the account")
 
     @check_allowed_paths(action=1)
     def _can_write_account(self, user, account):
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write "
+                                  "access to the account")
 
     @check_allowed_paths(action=0)
     def _can_read_container(self, user, account, container):
         if user != account:
             if container not in self._allowed_containers(user, account):
-                raise NotAllowedError
+                raise NotAllowedError("User does not have read "
+                                      "access to the container")
 
     @check_allowed_paths(action=1)
     def _can_write_container(self, user, account, container):
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write "
+                                  "access to the container")
 
     def can_write_container(self, user, account, container):
         return self._can_write_container(user, account, container)
@@ -2483,27 +2608,29 @@ class ModularBackend(BaseBackend):
     @check_allowed_paths(action=0)
     def _can_read_object(self, user, account, container, name):
         if user == account:
-            return True
+            return
         path = '/'.join((account, container, name))
         if self.permissions.public_get(path) is not None:
-            return True
+            return
         path = self._get_permissions_path(account, container, name)
         if not path:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have access to the object")
         if (not self.permissions.access_check(path, self.READ, user) and not
                 self.permissions.access_check(path, self.WRITE, user)):
-            raise NotAllowedError
+            raise NotAllowedError("User does not have read access "
+                                  "to the object")
 
     @check_allowed_paths(action=1)
     def _can_write_object(self, user, account, container, name):
         if user == account:
-            return True
+            return
         path = '/'.join((account, container, name))
         path = self._get_permissions_path(account, container, name)
         if not path:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have access to the object")
         if not self.permissions.access_check(path, self.WRITE, user):
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write access "
+                                  "to the object")
 
     def _allowed_accounts(self, user):
         allow = set()
@@ -2597,7 +2724,7 @@ class ModularBackend(BaseBackend):
         try:
             return binascii.unhexlify(hash)
         except TypeError:
-            raise InvalidHash(hash)
+            raise InvalidHash("Invalid hash: %s" % hash)
 
     def _size_is_consistent(self, size, hashmap):
         if size < 0:

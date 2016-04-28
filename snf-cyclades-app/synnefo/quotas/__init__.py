@@ -98,7 +98,7 @@ class AstakosClientExceptionHandler(object):
 
 
 def issue_commission(resource, action, name="", force=False, auto_accept=False,
-                     action_fields=None):
+                     action_fields=None, for_user=None):
     """Issue a new commission to the quotaholder.
 
     Issue a new commission to the quotaholder, and create the
@@ -109,10 +109,11 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
     provisions = get_commission_info(resource=resource, action=action,
                                      action_fields=action_fields)
 
-    if provisions is None:
+    if not provisions:
         return None
 
-    user = resource.userid
+    user = for_user if for_user is not None else resource.userid
+
     projects = set(p for (p, r) in provisions.keys())
 
     qh = Quotaholder.get()
@@ -341,12 +342,6 @@ def get_commission_info(resource, action, action_fields=None):
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
                 resources.update(online_resources)
             return reverse_quantities(resources)
-        elif action == "RESIZE" and action_fields:
-            beparams = action_fields.get("beparams")
-            cpu = beparams.get("vcpus", flavor.cpu)
-            ram = beparams.get("maxmem", flavor.ram)
-            return {(project, "cyclades.total_cpu"): cpu - flavor.cpu,
-                    (project, "cyclades.total_ram"): (ram - flavor.ram) << 20}
         elif action == "REASSIGN":
             resources.update(offline_resources)
             system_volumes = resource.volumes.filter(index=0, deleted=False)
@@ -354,17 +349,37 @@ def get_commission_info(resource, action, action_fields=None):
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
                 resources.update(online_resources)
             return resources
-        elif action in ["ATTACH_VOLUME", "DETACH_VOLUME", "MODIFY_VOLUME"]:
-            if action_fields is not None:
-                volumes_changes = action_fields.get("disks")
-                if volumes_changes is not None:
-                    for action, db_volume, info in volumes_changes:
-                        project = db_volume.project
-                        resources[(project, "cyclades.disk")] += \
-                            get_volume_size_delta(action, db_volume, info)
+        elif action in ["RESIZE", "ATTACH_VOLUME", "DELETE_VOLUME",
+                        "DETACH_VOLUME", "MODIFY_VOLUME"]:
+            if action_fields is None:
                 return resources
+
+            # CPU/RAM changes
+            beparams = action_fields.get("beparams")
+            if beparams is not None:
+                cpu_diff = beparams.get("vcpus", flavor.cpu) - flavor.cpu
+                ram_diff = \
+                    (beparams.get("maxmem", flavor.ram) - flavor.ram) << 20
+
+                resources[(project, "cyclades.total_cpu")] = cpu_diff
+                resources[(project, "cyclades.total_ram")] = ram_diff
+
+                # If instance is online, we must also update cpu/ram quotas
+                if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                    resources[(project, "cyclades.cpu")] = cpu_diff
+                    resources[(project, "cyclades.ram")] = ram_diff
+
+            # Volume changes
+            volumes_changes = action_fields.get("disks")
+            if volumes_changes is not None:
+                for action, db_volume, info in volumes_changes:
+                    project = db_volume.project
+                    resources[(project, "cyclades.disk")] += \
+                        get_volume_size_delta(action, db_volume, info)
+            return resources
         else:
-            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE",
+            # "DETACH_VOLUME"]:
             return None
     elif isinstance(resource, Network):
         resources = {(project, "cyclades.network.private"): 1}
@@ -416,7 +431,7 @@ def reverse_quantities(resources):
 
 def handle_resource_commission(resource, action, commission_name,
                                force=False, auto_accept=False,
-                               action_fields=None):
+                               action_fields=None, for_user=None):
     """Handle a issuing of a commission for a resource.
 
     Create a new commission for a resource based on the action that
@@ -434,7 +449,7 @@ def handle_resource_commission(resource, action, commission_name,
 
     serial = issue_commission(resource, action, name=commission_name,
                               force=force, auto_accept=auto_accept,
-                              action_fields=action_fields)
+                              action_fields=action_fields, for_user=for_user)
 
     # Correlate the serial with the resource. Resolved serials are not
     # attached to resources

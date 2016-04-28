@@ -262,7 +262,7 @@ class ShibbolethTests(TestCase):
         client.reset_tokens()
         self.assertRedirects(r, ui_url("signup?third_party_token=%s" % token))
 
-        form = r.context['login_form']
+        form = r.context['signup_form']
         signupdata = copy.copy(form.initial)
         signupdata['email'] = 'kpap@synnefo.org'
         signupdata['third_party_token'] = token
@@ -1276,6 +1276,8 @@ class TestAuthProvidersAPI(TestCase):
         # regenerate messages cache
         provider = auth_providers.get_provider('shibboleth')
         self.assertEqual(provider.get_message('title'), 'New title')
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_LOGIN_TITLE =\
+            'New title LOGIN'
         self.assertEqual(provider.get_message('login_title'),
                          'New title LOGIN')
         self.assertEqual(provider.get_login_title_msg, 'New title LOGIN')
@@ -1312,7 +1314,7 @@ class TestAuthProvidersAPI(TestCase):
 
         provider = auth_providers.get_provider('shibboleth')
         self.assertEqual(provider.get_template('login'),
-                         'im/auth/shibboleth_login.html')
+                         'im/auth/generic_login.html')
         provider = auth_providers.get_provider('google')
         self.assertEqual(provider.get_template('login'),
                          'im/auth/generic_login.html')

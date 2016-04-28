@@ -796,11 +796,9 @@ class Image(base.Component):
     @base.run_cmds
     def prepare(self):
         url = config.debian_base_url
-        d = config.images_dir
-        image = "debian_base.diskdump"
+        image = config.debian_base_image
         return [
-            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image),
-            "cp /tmp/%s %s/%s" % (image, d, image),
+            "test -e %s || wget -4 %s -O %s" % (image, url, image),
             "mv /etc/default/snf-image /etc/default/snf-image.orig",
             ]
 
@@ -1374,7 +1372,7 @@ EOF
 class Pithos(base.Component):
     REQUIRED_PACKAGES = [
         "snf-pithos-app",
-        "snf-pithos-webclient",
+        "snf-ui-app",
         ]
 
     alias = constants.PITHOS
@@ -1404,14 +1402,6 @@ class Pithos(base.Component):
             "snf-manage service-export-pithos > %s" % f
             ]
 
-    @base.run_cmds
-    def prepare(self):
-        return [
-            # FIXME: Workaround until snf-pithos-webclient creates conf
-            # files properly with root:synnefo
-            "chown root:synnefo /etc/synnefo/*snf-pithos-webclient*conf",
-            ]
-
     def _configure(self):
         r1 = {
             "ACCOUNTS": self.ctx.astakos.cname,
@@ -1425,11 +1415,12 @@ class Pithos(base.Component):
         r2 = {
             "ACCOUNTS": self.ctx.astakos.cname,
             "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": context.service_id,
+            "UI_BASE_URL": "/pithos/ui/"
             }
 
         return [
             ("/etc/synnefo/pithos.conf", r1, {}),
-            ("/etc/synnefo/webclient.conf", r2, {}),
+            ("/etc/synnefo/ui.conf", r2, {}),
             ]
 
     @base.run_cmds
@@ -1520,6 +1511,38 @@ snf-manage network-create --subnet6={0} \
       --gateway6={1} --public --dhcp=True --flavor={2} --mode=bridged \
        --link={3} --name=IPv6PublicNetwork
 """.format(subnet, gw, ntype, link)
+
+        return [cmd]
+
+    @update_admin
+    @base.run_cmds
+    def sync_helper_servers(self):
+        """Create the smallest possible Archipelago helper VM.
+
+        If there is no Archipelago flavor, then we can exit.
+        """
+        storage_flavor = "ext_archipelago"
+        if storage_flavor not in config.flavor_storage:
+            return []
+        cpu_flavor = config.flavor_cpu[0]
+        ram_flavor = config.flavor_ram[0]
+        disk_flavor = config.flavor_disk[0]
+
+        # Get the admin user UUID
+        self.DB.get_user_info_from_db(config.user_email)
+
+        # Get the smallest Archipelago flavor by parsing the `snf-manage
+        # flavor-list` command.
+        flavor_id = """$(snf-manage flavor-list \
+--filter-by='cpu=%s,ram=%s,disk=%s,volume_type__disk_template=%s' | \
+awk 'END {print $1}')""" % (cpu_flavor, int(ram_flavor) * 1024, disk_flavor,
+                            storage_flavor)
+
+        # Get an image by parsing the `snf-manage image-list` command.
+        image_uuid = "$(snf-manage image-list | awk 'END {print $1}')"
+        cmd = """
+snf-manage helper-servers-sync --flavor %s --user %s --password %s --image %s
+""" % (flavor_id, context.user_uuid, config.user_passwd, image_uuid)
 
         return [cmd]
 
@@ -1769,41 +1792,48 @@ class Kamaki(base.Component):
 
     def _fetch_image(self):
         url = config.debian_base_url
-        image = "debian_base.diskdump"
+        image = config.debian_base_image
         return [
-            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image)
+            "test -e %s || wget -4 %s -O %s" % (image, url, image)
             ]
 
     def _fetch_image_meta(self):
         url = config.debian_base_url + ".meta"
-        meta = "debian_base.diskdump.meta"
+        meta = config.debian_base_image + ".meta"
         return [
-            "test -e /srv/images/%s || wget -4 %s -O /srv/images/%s" % (meta, url, meta)
+            "test -e %s || wget -4 %s -O %s" % (meta, url, meta)
             ]
 
     def _upload_image(self):
-        image = "debian_base.diskdump"
+        local = config.debian_base_image
+        remote = config.debian_base_name
         return [
-            "kamaki file upload --container images /tmp/%s %s" % (image, image)
+            "kamaki file upload --container images %s %s" % (local, remote)
             ]
 
     def _upload_image_meta(self):
-        image = "debian_base.diskdump.meta"
+        local = config.debian_base_image + ".meta"
+        remote = config.debian_base_name + ".meta"
         return [
-            "kamaki file upload --container images /srv/images/%s %s" % (image, image)
+            "kamaki file upload --container images %s %s" % (local, remote)
             ]
 
     def _register_image(self):
-        image = "debian_base.diskdump"
-        image_location = "/images/%s" % image
+        meta = config.debian_base_image + ".meta"
+        image_location = "/images/%s" % config.debian_base_name
         cmd = """
         kamaki image register --name "Debian Base" --location {0} --public \
-            --force --metafile /srv/{0}.meta
-        """.format(image_location)
+            --force --metafile {1}
+        """.format(image_location, meta)
         return [
             "sleep 5",
             cmd
             ]
+
+    @update_admin
+    @update_cluster_admin
+    def admin_post(self):
+        self.CYCLADES.sync_helper_servers()
 
     @base.run_cmds
     def test(self):
@@ -1927,7 +1957,7 @@ class Archip(base.Component):
             # FIXME: See https://github.com/grnet/archipelago/pull/44
             "mkdir -p /dev/shm/posixfd",
             "chown -R synnefo:synnefo /dev/shm/posixfd",
-            "archipelago restart",
+            "service archipelago restart",
             ]
 
 

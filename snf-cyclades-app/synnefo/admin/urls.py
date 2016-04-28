@@ -27,5 +27,6 @@ urlpatterns = patterns(
     '',
     url(r'^$', index),
     url(r'^stats$', views.get_public_stats),
+    url(r'^stats/simple$', views.get_public_stats_from_cache),
     url(r'^stats/detail$', views.get_cyclades_stats),
 )

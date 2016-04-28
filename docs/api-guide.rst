@@ -89,6 +89,19 @@ This is the Cyclades/Compute API:
    Compute API (Compute) <compute-api-guide>
 
 
+Compute Service API Extensions (Cyclades)
+=========================================
+
+The Compute API extensions cover some Compute actions that are not included by
+default in the Openstack Compute API.
+
+This is the Cyclades/Compute API Extensions guide:
+
+.. toctree::
+   :maxdepth: 2
+
+   Compute API Extensions (Compute) <compute-api-extensions-guide>
+
 
 Network Service API (Cyclades)
 ==============================
@@ -177,27 +190,28 @@ functionalities that should be common to all implementations.
 Upon entrance to the service, a user is presented with the following elements -
 which can be represented as folders or with other related icons:
 
- * The ``home`` element, which is used as the default entry point to the user's
-   "files". Objects under ``home`` are represented in the usual hierarchical
-   organization of folders and files.
- * The ``trash`` element, which contains files that have been marked for
-   deletion, but can still be recovered.
- * The ``shared by me`` element, which contains all objects shared by the
-   user to other users of the system.
- * The ``shared with me`` element, which contains all objects that other users
-   share with the user.
- * The ``groups`` element, which contains the names of groups the user has
-   defined. Each group consists of a user list. Group creation, deletion, and
-   manipulation is carried out by actions originating here.
+* The ``home`` element, which is used as the default entry point to the user's
+  "files". Objects under ``home`` are represented in the usual hierarchical
+  organization of folders and files.
+* The ``trash`` element, which contains files that have been marked for
+  deletion, but can still be recovered.
+* The ``shared by me`` element, which contains all objects shared by the
+  user to other users of the system.
+* The ``shared with me`` element, which contains all objects that other users
+  share with the user.
+* The ``groups`` element, which contains the names of groups the user has
+  defined. Each group consists of a user list. Group creation, deletion, and
+  manipulation is carried out by actions originating here.
+
 .. * The ``history`` element, which allows browsing past instances of ``home``
-..   and - optionally - ``trash``.
+   and - optionally - ``trash``.
 
 Objects in Pithos can be:
 
- * Moved to trash and then deleted.
- * Shared with specific permissions.
- * Made public (shared with non-Pithos users).
- * Restored from previous versions.
+* Moved to trash and then deleted.
+* Shared with specific permissions.
+* Made public (shared with non-Pithos users).
+* Restored from previous versions.
 
 Some of these functions are performed by the client software and some by the
 Pithos server.

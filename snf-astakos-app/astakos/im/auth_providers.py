@@ -83,7 +83,7 @@ class AuthProvider(object):
         ('signup_title', '{title}'),
         ('profile_title', '{title}'),
         ('method_details', '{account_prompt}: {identifier}'),
-        ('primary_login_prompt', 'Login using '),
+        ('primary_login_prompt', 'Login using {account_prompt}'),
         ('required', '{title} is required. You can assign it '
                      'from your profile page'),
         ('login_prompt', ''),
@@ -126,8 +126,24 @@ class AuthProvider(object):
         'switch': True,
         'add_groups': [],
         'creation_groups': [],
+        'mirror_groups': False,  # Currently used only by LDAP
         'required': False,
+        'autoverify': False,
         'automoderate': not astakos_settings.MODERATION_ENABLED
+    }
+
+    # Mapping of provider's attributes to attributes of AstakosUser.
+    # The second element of the tuple dictates whether the attribute can be
+    # changed by the user or is automatically set by the provider in every
+    # login.
+    # Identifier is used to get the unique user identifier of the third
+    # party provider!
+    user_attr_map = {
+        # 'user field': ('provider field', 'mutable by user')
+        'identifier': ('uuid', False),
+        'email': ('email', True),
+        'first_name': ('first_name', True),
+        'last_name': ('last_name', True),
     }
 
     policies = {}
@@ -164,8 +180,6 @@ class AuthProvider(object):
 
         # initialize policies
         self.module_policies = copy.copy(self.default_policies)
-        self.module_policies['automoderate'] = not \
-            astakos_settings.MODERATION_ENABLED
         for policy, value in self.policies.iteritems():
             setting_key = "%s_POLICY" % policy.upper()
             if self.has_setting(setting_key):
@@ -319,7 +333,7 @@ class AuthProvider(object):
                     tpl = smart_unicode(msg)
                     self.message_tpls_compiled[key] = tpl.format(**params)
                     params.update(self.message_tpls_compiled)
-                except KeyError, e:
+                except KeyError:
                     continue
         else:
             params.update(self.message_tpls_compiled)
@@ -405,6 +419,31 @@ class AuthProvider(object):
         return AuthProviderPolicyProfile.objects.for_user(self.user,
                                                           self.module)
 
+    def get_user_attr_map(self):
+        """Get the mapping of provider to user attributes."""
+        attr_map = self.user_attr_map
+        settings_key = "USER_ATTR_MAP"
+        settings_default = self.get_setting(settings_key, attr_map)
+        attr_map.update(settings_default)
+        return attr_map
+
+    def get_provider_forced_attributes(self):
+        """List of attributes that are automatically set by the provider."""
+        attr_map = self.get_user_attr_map()
+        return [attr
+                for attr, (provider_attr, mutable) in attr_map.items()
+                if not mutable]
+
+    def get_provider_info_attributes(self):
+        """List of providers attributes to be stored in Astakos DB.
+
+        Get list of provider's attributes that will be stored in Astakos DB
+        in the 'info_data' field.
+
+        """
+        return self.get_setting("PROVIDER_ATTRS", [])
+
+
     def get_policy(self, policy):
         module_default = self.module_policies.get(policy)
         settings_key = '%s_POLICY' % policy.upper()
@@ -430,11 +469,11 @@ class AuthProvider(object):
             msg_key = 'AUTH_PROVIDER_%s' % msg.upper()
             try:
                 tpl = getattr(astakos_messages, msg_key)
-            except AttributeError, e:
+            except AttributeError:
                 try:
                     msg_key = msg.upper()
                     tpl = getattr(astakos_messages, msg_key)
-                except AttributeError, e:
+                except AttributeError:
                     tpl = ''
 
         in_settings = self.get_setting(msg)
@@ -562,13 +601,13 @@ class AuthProvider(object):
 class LocalAuthProvider(AuthProvider):
     module = 'local'
 
-    login_view = 'login'
+    login_view = 'astakos.im.views.target.local.login'
     remote_authenticate = False
     username_key = 'user_email'
 
     messages = {
         'title': _('Classic'),
-        'login_prompt': _('Classic login (username/password)'),
+        'login_prompt': _('Classic login'),
         'login_success': _('Logged in successfully.'),
         'method_details': 'Username: {username}',
         'logout_success_extra': ' '
@@ -618,6 +657,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     messages = {
         'title': _('Academic'),
+        'login_title': _('ACADEMIC LOGIN'),
         'method_details': '{account_prompt}: {provider_info_eppn}',
         'login_description': _('If you are a student, professor or researcher'
                                ' you can login using your academic account.'),
@@ -664,12 +704,47 @@ class LinkedInAuthProvider(AuthProvider):
     }
 
 
+class LDAPAuthProvider(AuthProvider):
+    module = 'ldap'
+    login_view = 'astakos.im.views.target.ldap.login'
+    # TODO: orise poio tha einai to username!
+    username_key = 'user_identifier'
+
+    policies = {
+        'switch': False
+    }
+
+    user_attr_map = {
+        'identifier': ('objectGUID', False),
+        'email': ('mail', True),
+        'first_name': ('givenName', True),
+        'last_name': ('sn', True),
+    }
+
+    @property
+    def urls(self):
+        urls = super(LDAPAuthProvider, self).urls
+        urls['add'] = reverse('astakos.im.views.target.ldap.add')
+        return urls
+
+    messages = {
+        'title': _('Enterprise'),
+        'login_description': _('Login using your enteprise username/password'),
+        'login_prompt': _('Enterprise login'),
+        'add_prompt': _('Allows you to login using your Enterprise '
+                        'account'),
+        'login_success': _('Logged in successfully.'),
+        'method_details': 'Identifier: {username}',
+        'logout_success_extra': ' '
+    }
+
+
 # Utility method
 def get_provider(module, user_obj=None, identifier=None, **params):
     """
     Return a provider instance from the auth providers registry.
     """
-    if not module in PROVIDERS:
+    if module not in PROVIDERS:
         raise InvalidProvider('Invalid auth provider "%s"' % module)
 
     return PROVIDERS.get(module)(user_obj, identifier, **params)

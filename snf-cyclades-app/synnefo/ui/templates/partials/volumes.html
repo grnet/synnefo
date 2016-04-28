@@ -29,6 +29,7 @@
       <div class="outer">
         <div data-rv-class="model.vm.status|vm_status_cls">
           <div class="model-logo vm-icon medium2 state1"
+            data-rv-class-logo-ghost="model.vm.is_ghost"
             data-rv-style="model.vm.status|vm_style"></div>
           <h3 class="title" data-rv-text="model.vm.name|truncate 40"></h3>
           <h5 class="subtitle">
@@ -51,9 +52,11 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <img class="logo" data-rv-src="model.status|model_icon" />
+        <img class="logo" data-rv-class-logo-ghost="model.is_ghost" data-rv-src="model.status|model_icon" />
+        <img class="logo-shared" data-rv-show="model.sharing" data-rv-src="model.sharing|shared_icon"/>
         <div class="volume-size">
-            <span data-rv-text="model.size|size_display"></span>
+            <span data-rv-text="model.size|size_display"
+                data-rv-hide="model.is_ghost"></span>
         </div>
         <div class="entry inline" data-rv-class-connected="model.device_id">
             <div data-rv-show="model" 
@@ -61,16 +64,18 @@
             </div>
             <div class="project-name-cont" 
                 data-rv-on-click="view.show_reassign_view"
-                data-rv-class="model.is_root|check_can_reassign",
-            data-rv-show="model.tenant_id">
-                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+                data-rv-class="model.sharing|check_can_reassign"
+                data-rv-class-disabled="model.shared_to_me">
+                <span class="project-name" data-rv-show="model.tenant_id" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+                <span class="project-name" data-rv-hide="model.tenant_id">[Unknown project]</span>
             </div>
-            <div data-rv-if="model.vm" class="vms nested-model-list proxy inline">
-                <div class="vm-view-cont">
+            <div data-rv-if="model._vm_id" class="vms nested-model-list proxy inline">
+                <div class="vm-view-cont" data-rv-class="model._vm_id|clear_junk" >
                     <div data-rv-show="model.vm" data-rv-model-view="model|VolumeVmView"></div>
                 </div>
             </div>
-            <div class="toggler-wrap clearfix">
+            <div class="vm-placeholder" data-rv-hide="model.vm"></div>
+            <div class="toggler-wrap clearfix" data-rv-hide="model.is_ghost">
                 <div class="cont-toggler desc">
                     <span class="label">info</span>
                 </div>
@@ -114,6 +119,32 @@
            data-rv-on-click="view.show_snapshot_create_overlay">
           <a>Snapshot</a>
         </div>
+        <div class="action-container attach warn" 
+           data-rv-class-isactive="model.can_attach"
+           data-rv-class-selected="model.actions.attach|intEq 1"
+           data-rv-on-click="view.show_attach_overlay">
+          <a>Attach</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.show_attach_overlay">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_attach_confirm">X</span>
+          </div>
+        </div>
+
+        <div class="action-container detach warn" 
+           data-rv-class-isactive="model.can_detach"
+           data-rv-class-selected="model.actions.detach|intEq 1"
+           data-rv-on-click="view.set_detach_confirm">
+          <a>Detach</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.detach">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_detach_confirm">X</span>
+          </div>
+        </div>
+
         <div class="action-container remove warn" 
            data-rv-class-isactive="model.can_remove"
            data-rv-class-selected="model.actions.remove|intEq 1"
@@ -129,3 +160,23 @@
       </div>
   </div>
 </div>
+
+<div id="volume-type-select-collection-tpl" class="hidden">
+  <div class="collection fixed-ips-list">
+    <div class="empty-list hidden">No volume types available.</div>
+    <div class="items-list clearfix"></div>
+  </div>
+</div>
+
+<div id="volume-type-select-model-tpl" class="hidden">
+  <div class="select-item clearfix vm">
+    <div class="checkbox">
+      <input type="radio" data-rv-data-id="model.id" />
+    </div>
+    <div class="name">
+      <span class="" data-rv-text="model.name"></span>
+      <p class="info" data-rv-text="model.description"></p>
+    </div>
+  </div>
+</div>
+

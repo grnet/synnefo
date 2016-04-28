@@ -100,22 +100,26 @@ class Command(SynnefoCommand):
         if size is None:
             raise CommandError("Please specify the size of the volume")
 
-        if server_id is None:
-            raise CommandError("Please specify the server to attach the"
-                               " volume.")
+        if server_id:
+            vm = common.get_resource("server", server_id, for_update=True)
+            if project_id is None:
+                project_id = vm.project
 
-        vm = common.get_resource("server", server_id, for_update=True)
-
-        if user_id is None:
+        if user_id is None and server_id is None:
+            raise CommandError("Please specify the id of a user or a server")
+        elif user_id is None and server_id is not None:
             user_id = vm.userid
 
         if volume_type_id is not None:
             vtype = common.get_resource("volume-type", volume_type_id)
-        else:
+        elif server_id:
             vtype = vm.flavor.volume_type
+        else:
+            raise CommandError("Please specify the id of the volume type")
 
-        if project_id is None:
-            project_id = vm.project
+        # At this point, user_id, vtype must have been provided or extracted by
+        # the server. The project_id is optional and will default to the user's
+        # project.
 
         source_image_id = source_volume_id = source_snapshot_id = None
         source = options.get("source")
@@ -139,8 +143,8 @@ class Command(SynnefoCommand):
                                 source_image_id=source_image_id,
                                 source_snapshot_id=source_snapshot_id,
                                 source_volume_id=source_volume_id,
-                                volume_type_id=vtype.id,
-                                metadata={}, project=project_id)
+                                volume_type_id=vtype.id, metadata={},
+                                project_id=project_id)
 
         self.stdout.write("Created volume '%s' in DB:\n" % volume.id)
 

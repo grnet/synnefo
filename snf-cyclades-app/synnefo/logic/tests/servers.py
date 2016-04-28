@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,7 +101,16 @@ class ServerCreationTest(TransactionTestCase):
         }
         with mocked_quotaholder():
             with override_settings(settings, **osettings):
-                vm = servers.create(**req)
+                with patch(
+                    'synnefo.logic.backend_allocator.update_backends_disk_templates'
+                ) as update_disk_templates_mock:
+                    # Check that between the `get_available_backends` call
+                    # and the `update_backend_disk_templates` call
+                    # the backend doesn't change.
+                    update_disk_templates_mock.return_value = [backend]
+                    vm = servers.create(**req)
+
+        update_disk_templates_mock.assert_called_once_with([backend], ext_flavor)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",
@@ -316,8 +325,9 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project)
+            servers.reassign(vm, another_project, False)
             self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertNotEqual(vol.project, another_project)
 
@@ -327,7 +337,9 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project)
+            servers.reassign(vm, another_project, True)
             self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, True)
             vol = vm.volumes.get(id=volume.id)
             self.assertEqual(vol.project, another_project)
+            self.assertEqual(vol.shared_to_project, True)

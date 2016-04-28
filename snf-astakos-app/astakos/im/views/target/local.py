@@ -24,13 +24,14 @@ from django.core.urlresolvers import reverse
 
 import django.contrib.auth.views as django_auth_views
 
-from astakos.im.util import prepare_response, get_query
+from astakos.im.util import prepare_response, get_query, get_context
 from astakos.im.models import PendingThirdPartyUser
 from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
     ExtendedSetPasswordForm
 from astakos.im import settings
 import astakos.im.messages as astakos_messages
 from astakos.im import auth_providers as auth
+from astakos.im.views.util import render_response
 from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
     signed_terms_required, requires_auth_provider, login_required
 
@@ -39,6 +40,8 @@ from ratelimit.decorators import ratelimit
 retries = settings.RATELIMIT_RETRIES_ALLOWED - 1
 rate = str(retries) + '/m'
 
+LOCAL_PROVIDER = auth.get_provider('local')
+
 
 @requires_auth_provider('local')
 @require_http_methods(["GET", "POST"])
@@ -46,12 +49,28 @@ rate = str(retries) + '/m'
 @requires_anonymous
 @cookie_fix
 @ratelimit(field='username', method='POST', rate=rate)
-def login(request, on_failure='im/login.html'):
+def login(request, template_name="im/login.html", on_failure='im/login.html',
+          extra_context=None):
     """
     on_failure: the template name to render on login failure
     """
     if request.method == 'GET':
-        return HttpResponseRedirect(reverse('login'))
+        extra_context = extra_context or {}
+
+        third_party_token = request.GET.get('key', False)
+        if third_party_token:
+            messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
+        if request.user.is_authenticated():
+            return HttpResponseRedirect(reverse('landing'))
+
+        extra_context["primary_provider"] = LOCAL_PROVIDER
+
+        return render_response(
+            template_name,
+            login_form=LoginForm(request=request),
+            context_instance=get_context(request, extra_context)
+        )
 
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST,
@@ -70,7 +89,8 @@ def login(request, on_failure='im/login.html'):
             {'login_form': form,
              'next': next,
              'key': third_party_token},
-            context_instance=RequestContext(request))
+            context_instance=get_context(request,
+                                         primary_provider=LOCAL_PROVIDER))
 
     # get the user from the cache
     user = form.user_cache

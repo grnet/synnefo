@@ -46,6 +46,7 @@ from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
 from astakos.im import settings
 from astakos.im import auth
+from astakos.im.auth_backends import LDAPBackend
 
 import astakos.im.messages as astakos_messages
 
@@ -63,6 +64,8 @@ DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
 
+READ_ONLY_FIELD_MSG = ("This value is provided by your authentication provider"
+                       " and cannot be changed.")
 
 class LocalUserCreationForm(UserCreationForm):
     """
@@ -173,6 +176,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         'provided to login previously. '
     )
 
+    ro_fields = []
+
     class Meta:
         model = AstakosUser
         fields = ['email', 'first_name', 'last_name', 'has_signed_terms']
@@ -207,6 +212,14 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
             self.fields['has_signed_terms'].label = \
                 mark_safe("I agree with %s" % terms_link_html)
 
+        auth_provider = auth_providers.get_provider(self.provider)
+        user_attr_map = auth_provider.get_user_attr_map()
+        for field in ['email', 'first_name', 'last_name']:
+            if not user_attr_map[field][1]:
+                self.ro_fields.append(field)
+                self.fields[field].widget.attrs['readonly'] = True
+                self.fields[field].help_text = _(READ_ONLY_FIELD_MSG)
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -219,6 +232,16 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
             raise forms.ValidationError(mark_safe(
                 _(astakos_messages.EMAIL_USED) + ' ' + extra_message))
         return email
+
+    def clean_first_name(self):
+        if 'first_name' in self.ro_fields:
+            return self.initial['first_name']
+        return self.cleaned_data['first_name']
+
+    def clean_last_name(self):
+        if 'last_name' in self.ro_fields:
+            return self.initial['last_name']
+        return self.cleaned_data['last_name']
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
@@ -325,6 +348,55 @@ class LoginForm(AuthenticationForm):
         return self.cleaned_data
 
 
+class LDAPLoginForm(LoginForm):
+    """Login form for LDAP Authentication Provider.
+
+    * Inherits from 'LoginForm' in order to inherit recaptcha handling.
+    * Overrides username to be an arbitraty string rather than an email.
+    * Overrides clean method
+
+    """
+    username = forms.CharField(label=_('Identifier'))
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username:
+            try:
+                user = AstakosUser.objects.get_by_identifier(username)
+                if not user.has_auth_provider('ldap'):
+                    provider = auth_providers.get_provider('ldap', user)
+                    msg = provider.get_login_disabled_msg
+                    raise forms.ValidationError(mark_safe(msg))
+            except AstakosUser.DoesNotExist:
+                pass
+
+        # Set user cache to None, so that methods of 'AuthenticationForm'
+        # work
+        self.user_cache = None
+
+        if username and password:
+            self.ldap_user_cache = LDAPBackend().authenticate(username=username,
+                                                              password=password)
+            if self.ldap_user_cache is None:
+                if self.request:
+                    if not self.request.session.test_cookie_worked():
+                        raise
+                raise forms.ValidationError(
+                    self.error_messages['invalid_login'])
+        self.check_for_test_cookie()
+        return self.cleaned_data
+
+    def get_ldap_user_id(self):
+        if self.ldap_user_cache:
+            return self.ldap_user_cache.id
+        return None
+
+    def get_ldap_user(self):
+        return self.ldap_user_cache
+
+
 class ProfileForm(forms.ModelForm):
     """
     Subclass of ``ModelForm`` for permiting user to edit his/her profile.
@@ -337,6 +409,7 @@ class ProfileForm(forms.ModelForm):
     email = EmailField(label='E-mail address',
                        help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
+    ro_fields = ['email']
 
     class Meta:
         model = AstakosUser
@@ -346,13 +419,27 @@ class ProfileForm(forms.ModelForm):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email',)
         if instance and instance.id:
-            for field in ro_fields:
+            if not instance.can_change_first_name():
+                self.ro_fields.append('first_name')
+            if not instance.can_change_last_name():
+                self.ro_fields.append('last_name')
+            for field in self.ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
+                self.fields[field].help_text = _(READ_ONLY_FIELD_MSG)
 
     def clean_email(self):
         return self.instance.email
+
+    def clean_first_name(self):
+        if 'first_name' in self.ro_fields:
+            return self.initial['first_name']
+        return self.cleaned_data['first_name']
+
+    def clean_last_name(self):
+        if 'last_name' in self.ro_fields:
+            return self.initial['last_name']
+        return self.cleaned_data['last_name']
 
     def save(self, commit=True, **kwargs):
         user = super(ProfileForm, self).save(commit=False, **kwargs)
@@ -784,6 +871,11 @@ class ProjectApplicationForm(forms.ModelForm):
         cleaned_data = super(ProjectApplicationForm, self).clean()
         return cleaned_data
 
+    def value_or_inf(self, value):
+        if value == 'inf' or value == 'Unlimited':
+            return units.PRACTICALLY_INFINITE
+        return value
+
     @property
     def resource_policies(self):
         policies = []
@@ -834,8 +926,7 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 is_project_limit = name.endswith('_p_uplimit')
                 suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
-                if value == 'inf' or value == 'Unlimited':
-                    value = units.PRACTICALLY_INFINITE
+                value = self.value_or_inf(value)
                 uplimit = value
                 prefix, _suffix = name.split(suffix)
 
@@ -846,14 +937,16 @@ class ProjectApplicationForm(forms.ModelForm):
                                                 resource.name)
 
                 if is_project_limit:
-                    member_limit = data.get(prefix + '_m_uplimit')
+                    _key = prefix + '_m_uplimit'
+                    member_limit = self.value_or_inf(data.get(_key))
                     try:
                         pvalue = int(value)
                         mvalue = int(member_limit)
                     except:
                         raise forms.ValidationError("Invalid format")
                 else:
-                    project_limit = data.get(prefix + '_p_uplimit')
+                    _key = prefix + '_p_uplimit'
+                    project_limit = self.value_or_inf(data.get(_key))
                     try:
                         mvalue = int(value)
                         pvalue = int(project_limit)

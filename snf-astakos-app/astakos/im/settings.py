@@ -238,10 +238,6 @@ COMPONENTS_META = getattr(settings, 'ASTAKOS_COMPONENTS_META', {})
 # A way to extend the resources presentation metadata
 RESOURCES_META = getattr(settings, 'ASTAKOS_RESOURCES_META', {})
 
-# Do not require email verification for new users
-SKIP_EMAIL_VERIFICATION = getattr(settings,
-                                  'ASTAKOS_SKIP_EMAIL_VERIFICATION', False)
-
 # Kamaki download url. Displayed in api access view
 API_CLIENT_URL = getattr(settings, 'ASTAKOS_API_CLIENT_URL',
                          'https://pypi.python.org/pypi/kamaki')
@@ -283,3 +279,5 @@ PROJECT_MEMBERS_LIMIT_CHOICES = getattr(
 ADMIN_API_PERMITTED_GROUPS = getattr(settings,
                                      'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',
                                      ['admin-api'])
+
+SHOW_SIGNUP = getattr(settings, 'ASTAKOS_SHOW_SIGNUP', True)

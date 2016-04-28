@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ class Command(SynnefoCommand):
             'owner_uuid': userid,
             'owner_name': usercache.get_name(userid),
             'project': server.project,
+            'shared_to_project': server.shared_to_project,
             'created': utils.format_date(server.created),
             'updated': utils.format_date(server.updated),
             'image': image,

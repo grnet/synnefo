@@ -19,40 +19,40 @@ import django_filters
 
 from synnefo.db.models import IPAddress
 
-from synnefo_admin.admin.queries_common import (query, model_filter,
+from synnefo_admin.admin.queries_common import (process_queries, model_filter,
                                                 get_model_field)
 
 
 @model_filter
 def filter_ip(queryset, queries):
-    q = query("ip", queries)
+    q = process_queries("ip", queries)
     return queryset.filter(q)
 
 
 @model_filter
 def filter_user(queryset, queries):
-    q = query("user", queries)
+    q = process_queries("user", queries)
     ids = get_model_field("user", q, 'uuid')
     return queryset.filter(userid__in=ids)
 
 
 @model_filter
 def filter_vm(queryset, queries):
-    q = query("vm", queries)
+    q = process_queries("vm", queries)
     ids = get_model_field("vm", q, 'id')
     return queryset.filter(nic__machine__id__in=ids)
 
 
 @model_filter
 def filter_network(queryset, queries):
-    q = query("network", queries)
+    q = process_queries("network", queries)
     ids = get_model_field("network", q, 'id')
     return queryset.filter(network__id__in=ids)
 
 
 @model_filter
 def filter_project(queryset, queries):
-    q = query("project", queries)
+    q = process_queries("project", queries)
     ids = get_model_field("project", q, 'uuid')
     return queryset.filter(project__in=ids)
 

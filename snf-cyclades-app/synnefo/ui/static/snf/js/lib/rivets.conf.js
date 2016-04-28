@@ -33,7 +33,7 @@ _.extend(rivets.formatters, {
 
   prefix: function(value) {
     var prefix = _.rest(_.toArray(arguments), 1).join(" ");
-    return prefix + value.toString();
+    return prefix + (value && value.toString());
   },
   
   ip_type: function(value) {
@@ -92,6 +92,10 @@ _.extend(rivets.formatters, {
           value = msg;
       }
       return value;
+  },
+
+  negate: function(value) {
+      return !value;
   }
 
 });

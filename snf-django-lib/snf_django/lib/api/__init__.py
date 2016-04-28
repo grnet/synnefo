@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -106,7 +106,9 @@ def api_method(http_method=None, token_required=True, user_required=True,
                                             retry=2,
                                             logger=logger)
                     user_info = astakos.authenticate()
-                    request.user_uniq = user_info["access"]["user"]["id"]
+                    _user_access = user_info["access"]["user"]
+                    request.user_uniq = _user_access["id"]
+                    request.user_projects = _user_access.get("projects", None)
                     request.user = user_info
 
                 # Get the response object

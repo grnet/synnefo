@@ -26,7 +26,7 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
-from synnefo import volume
+from synnefo import volume as volume_actions
 from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
 
@@ -152,6 +152,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     new_operstate = None
     new_flavor = None
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
+    deferred_jobs = []
 
     if status == rapi.JOB_STATUS_SUCCESS:
         if state_for_success is not None:
@@ -178,7 +179,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             # the diff between the DB and Ganeti disks. This is required in
             # order to update quotas for disks that changed, but not from this
             # job!
-            disk_changes = update_vm_disks(vm, disks, etime)
+            disk_changes, deferred_jobs = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
 
     vm_deleted = False
@@ -227,26 +228,31 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     vm.save()
 
+    # Before exiting, do any deferred jobs that are left.
+    for (job, args, kwargs) in deferred_jobs:
+        job(*args, **kwargs)
 
-def find_new_flavor(vm, cpu=None, ram=None):
-    """Find VM's new flavor based on the new CPU and RAM"""
-    if cpu is None and ram is None:
-        return None
+
+def find_new_flavor(vm, cpu=None, ram=None, disk=None):
+    """Find VM's new flavor based on the new CPU, RAM and disk size"""
 
     old_flavor = vm.flavor
     ram = ram if ram is not None else old_flavor.ram
     cpu = cpu if cpu is not None else old_flavor.cpu
-    if cpu == old_flavor.cpu and ram == old_flavor.ram:
+    disk = disk if disk is not None else old_flavor.disk
+
+    if (cpu == old_flavor.cpu and ram == old_flavor.ram and
+       disk == old_flavor.disk):
         return None
 
     try:
         new_flavor = Flavor.objects.get(
-            cpu=cpu, ram=ram, disk=old_flavor.disk,
+            cpu=cpu, ram=ram, disk=disk,
             volume_type_id=old_flavor.volume_type_id)
     except Flavor.DoesNotExist:
         raise Exception("There is no flavor to match the instance specs!"
                         " Instance: %s CPU: %s RAM %s: Disk: %s VolumeType: %s"
-                        % (vm.backend_vm_id, cpu, ram, old_flavor.disk,
+                        % (vm.backend_vm_id, cpu, ram, disk,
                            old_flavor.volume_type_id))
     log.info("Flavor of VM '%s' changed from '%s' to '%s'", vm,
              old_flavor.name, new_flavor.name)
@@ -483,6 +489,7 @@ def update_vm_disks(vm, disks, etime=None):
     skip_db_stale = False
 
     changes = []
+    deferred_jobs = []
 
     # Disks that exist in Ganeti but not in DB
     for disk_name in (gnt_keys - db_keys):
@@ -501,16 +508,27 @@ def update_vm_disks(vm, disks, etime=None):
     # Disks that exist in DB but not in Ganeti
     for disk_name in (db_keys - gnt_keys):
         db_disk = db_disks[disk_name]
-        if db_disk.status != "DELETING" and skip_db_stale:
+
+        if db_disk.status not in ("DELETING", "DETACHING") and skip_db_stale:
             continue
-        if disk_is_stale(vm, disk):
+        if disk_is_detached(vm, db_disk):
+            # This function must always run before `disk_is_stale`.
+            log.debug("Marking disk '%s' as available", db_disk)
+            db_disk.status = "AVAILABLE"
+            db_disk.machine = None
+            db_disk.save()
+            changes.append(("modify", db_disk, {"status": "AVAILABLE"}))
+        elif disk_is_stale(vm, db_disk):
             log.debug("Removing stale disk '%s'", db_disk)
             db_disk.status = "DELETED"
             db_disk.deleted = True
             db_disk.save()
             changes.append(("remove", db_disk, {}))
         else:
-            log.info("disk '%s' is still being created" % db_disk)
+            log.info("disk '%s' is still being %s" %
+                     (db_disk, "created" if db_disk.status == "CREATING" else
+                      "detached")
+                     )
 
     # Disks that exist both in DB and in Ganeti
     for disk_name in (db_keys & gnt_keys):
@@ -524,11 +542,27 @@ def update_vm_disks(vm, disks, etime=None):
             if db_disk.status == "CREATING":
                 # Disk has been created
                 changes.append(("add", db_disk, {}))
+            if db_disk.status == "DELETING" and vm.helper is True:
+                # Detached disk has been attached to a helper server in order
+                # to be deleted.
+                fn = volume_actions.volumes.delete_volume_from_helper
+                args = (db_disk, vm)
+                deferred_jobs.append((fn, args, {}))
+
             # Update the disk in DB with the values from Ganeti disk
             [setattr(db_disk, f, gnt_disk[f]) for f in DISK_FIELDS]
+
+            # Fix the flavor of the instance if root disk has changed
+            if (db_disk.index == 0 and db_disk.size != vm.flavor.disk):
+                try:
+                    new_flavor = find_new_flavor(vm, disk=db_disk.size)
+                    if new_flavor is not None:
+                        vm.flavor = new_flavor
+                except:
+                    pass
             db_disk.save()
 
-    return changes
+    return changes, deferred_jobs
 
 
 def disks_are_equal(db_disk, gnt_disk):
@@ -610,7 +644,8 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
     if state != OBJECT_UNAVAILABLE:
         log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
                   state)
-        volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
+        volume_actions.util.update_snapshot_state(snapshot_id, user_id,
+                                                  state=state)
 
 
 @transaction.commit_on_success
@@ -818,15 +853,15 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     kw['disk_template'] = volumes[0].volume_type.template
     disks = []
-    for vol in volumes:
-        disk = {"name": vol.backend_volume_uuid,
-                "size": vol.size * 1024}
-        provider = vol.volume_type.provider
+    for volume in volumes:
+        disk = {"name": volume.backend_volume_uuid,
+                "size": volume.size * 1024}
+        provider = volume.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
             if provider in settings.GANETI_CLONE_PROVIDERS:
-                disk["origin"] = vol.origin
-                disk["origin_size"] = vol.origin_size
+                disk["origin"] = volume.origin
+                disk["origin_size"] = volume.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:
@@ -974,8 +1009,17 @@ def job_is_still_running(vm, job_id=None):
             raise e
 
 
+def disk_is_detached(vm, disk):
+    """Check if a disk is detached from the Ganeti backend."""
+    if (disk.status == "DETACHING" and
+            volume_actions.util.is_volume_type_detachable(disk.volume_type)):
+        if not job_is_still_running(vm, job_id=disk.backendjobid):
+            return True
+    return False
+
+
 def disk_is_stale(vm, disk, timeout=60):
-    """Check if a disk is stale or exists in the Ganeti backend."""
+    """Check if a disk is stale or if it exists in the Ganeti backend."""
     # First check the state of the disk
     if disk.status == "CREATING":
         if datetime.now() < disk.created + timedelta(seconds=timeout):
@@ -989,6 +1033,9 @@ def disk_is_stale(vm, disk, timeout=60):
             vm_info = get_instance_info(vm)
             if disk.backend_volume_uuid in vm_info["disk.names"]:
                 return False
+    elif disk.status == "AVAILABLE":
+        return False
+
     return True
 
 
@@ -1224,6 +1271,23 @@ def set_firewall_profile(vm, profile, nic):
     return None
 
 
+def add_attach_params(volume, disk):
+    """Add attach params for detachable volumes
+
+    Detachable volumes may exist only in the database and use the provider
+    scripts to implement the attach and detach functionality. In this case, we
+    will need to provide the necessary context to these scripts via the disk
+    parameters.
+
+    For the attach action, we must inform the provider if the volume data have
+    been initialized or not. This is shown if the backendjobid is set or not.
+    """
+    if volume.backendjobid:
+        disk["reuse_data"] = "True"
+    else:
+        disk["reuse_data"] = "False"
+
+
 def attach_volume(vm, volume, depends=[]):
     log.debug("Attaching volume %s to vm %s", volume, vm)
 
@@ -1236,12 +1300,14 @@ def attach_volume(vm, volume, depends=[]):
 
     if volume.origin is not None:
         disk["origin"] = volume.origin
-        disk["origin_size"] = volume.origin_size
 
     extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                 .get(disk_provider)
     if extra_disk_params is not None:
         disk.update(extra_disk_params)
+
+    if volume_actions.util.is_volume_type_detachable(volume.volume_type):
+        add_attach_params(volume, disk)
 
     kwargs = {
         "instance": vm.backend_vm_id,
@@ -1264,20 +1330,32 @@ def attach_volume(vm, volume, depends=[]):
         return client.ModifyInstance(**kwargs)
 
 
-def detach_volume(vm, volume, depends=[]):
-    log.debug("Removing volume %s from vm %s", volume, vm)
+def remove_volume(vm, volume, depends=[], keep_data=False):
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("remove", volume.backend_volume_uuid, {})],
         "depends": depends,
     }
+
     if vm.backend.use_hotplug():
         kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
+    if keep_data:
+        kwargs["keep_disks"] = True
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(**kwargs)
+
+
+def delete_volume(vm, volume, depends=[]):
+    log.debug("Removing volume %s from vm %s", volume, vm)
+    return remove_volume(vm, volume, depends)
+
+
+def detach_volume(vm, volume, depends=[]):
+    log.debug("Detaching volume %s from vm %s", volume, vm)
+    return remove_volume(vm, volume, depends, keep_data=True)
 
 
 def snapshot_instance(vm, volume, snapshot_name, snapshot_id):

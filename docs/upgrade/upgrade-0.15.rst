@@ -163,12 +163,12 @@ The upgrade to v0.15 consists in the following steps:
 
 .. note::
 
-   Make sure `snf-webproject' has the same version with snf-common
+   Make sure 'snf-webproject' has the same version as 'snf-common'.
 
 .. note::
 
-    Installing the packages will cause services to start. Make sure you bring
-    them down again (at least ``gunicorn``, ``snf-dispatcher``)
+   Installing the packages will cause services to start. Make sure you bring
+   them down again (at least ``gunicorn``, ``snf-dispatcher``).
 
 2.2 Sync and migrate the database
 ---------------------------------

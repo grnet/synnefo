@@ -201,12 +201,14 @@ SpawnServerTestCase
 * Request from Cyclades service a VNC console to our server. In order to verify
   that the returned connection is indeed a VNC one, snf-burnin implements the
   first basic steps of the RFB protocol:
+
     * Step 1. Send the ProtocolVersion message (par. 6.1.1)
     * Step 2. Check that only VNC Authentication is supported (par 6.1.2)
     * Step 3. Request VNC Authentication (par 6.1.2)
     * Step 4. Receive Challenge (par 6.2.2)
     * Step 5. DES-Encrypt challenge, using the password as key (par 6.2.2)
     * Step 6. Check that the SecurityResult is correct (par 6.1.3)
+
 * Request from Cyclades the server's details and check that our server's has
   been assigned with an IPv4 address.
 * Check that our server has been assigned with an IPv6 address. This test can be

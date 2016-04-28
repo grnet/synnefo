@@ -550,7 +550,7 @@ X-Auth-Token
 Alice requests a specific resource from a cloud service e.g.: Pithos. In the
 request she supplies the `X-Auth-Token` to identify whether she is eligible to
 perform the specific task. The service contacts Astakos through its
-``/account/v1.0/authenticate`` api call (see :ref:`authenticate-api-label`)
+``/account/v1.0/authenticate`` api call
 providing the specific ``X-Auth-Token``. Astakos checkes whether the token
 belongs to an active user and it has not expired and returns a dictionary
 containing user related information. Finally the service uses the ``uniq``
@@ -605,11 +605,11 @@ user information by the cookie identified by ``ASTAKOS_COOKIE_NAME`` setting
 (set during the login procedure).
 
 Finally, backend systems having acquired a token can use the
-:ref:`authenticate-api-label` API call from a private network or through HTTPS.
+'authenticate-api-label' API call from a private network or through HTTPS.
 
 
 File/Object Storage Service (Pithos+)
-====================================
+=====================================
 
 Pithos+ is the Synnefo component that implements a storage service and exposes
 the associated OpenStack REST APIs with custom extensions.
@@ -1101,39 +1101,35 @@ Allocation based on custom allocator
 In order to determine which ganeti cluster is best for allocating a
 virtual machine, the allocator uses two methods:
 
-    - `filter_backends`
-    - `allocate`
+- `filter_backends`
+- `allocate`
 
 The `filter_backends` method is used to filter the backends that the allocator
 shouldn't even consider. It takes two arguements:
 
-    1. A list of the available backends. A backend is available
-    if it is not drained or offline. Each backend is a django object
-    and is an instance of the `Backend` model.
+1. A list of the available backends. A backend is available if it is not drained
+   or offline. Each backend is a django object and an instance of the `Backend`
+   model.
 
-    2. A map with 3 keys:
-        - `ram`: The size of the memory we want to allocate
-        on the backend.
-        - `disk`: The size of the disk we want to allocate
-        on the backend.
-        - `cpu`: The size of the CPU we want to allocate
-        on the backend.
+2. A map with 3 keys:
+
+   - `ram`: The size of the memory we want to allocate on the backend.
+   - `disk`: The size of the disk we want to allocate on the backend.
+   - `cpu`: The size of the CPU we want to allocate on the backend.
 
 
 The `allocate` method returns the backend that will be used to allocate the virtual
 machine. It takes two arguements:
 
-    1. A list of the available backends. A backend is available
-    if it is not drained or offline. Each backend is a django object
-    and is an instance of the `Backend` model.
+1. A list of the available backends. A backend is available if it is not
+   drained or offline. Each backend is a django object and is an instance of
+   the `Backend` model.
 
-    2. A map with 3 keys:
-        - `ram`: The size of the memory we want to allocate
-        on the backend.
-        - `disk`: The size of the disk we want to allocate
-        on the backend.
-        - `cpu`: The size of the CPU we want to allocate
-        on the backend.
+2. A map with 3 keys:
+
+    - `ram`: The size of the memory we want to allocate on the backend.
+    - `disk`: The size of the disk we want to allocate on the backend.
+    - `cpu`: The size of the CPU we want to allocate on the backend.
 
 So the administrator can create his own allocation algorithm by creating a class
 that inherits the `AllocatorBase` located at `synnefo.logic.allocators.base`,
@@ -2481,79 +2477,79 @@ best fits your needs.
 In order to overwrite one or more email-templates you need to place your
 modified <email-file>.txt files respecting the following structure:
 
-  **/etc/synnefo/templates/**
-      **im/**
-          | activation_email.txt
-          | email.txt
-          | invitation.txt
-          | switch_accounts_email.txt
-          | welcome_email.txt
-          **projects/**
-              | project_approval_notification.txt
-              | project_denial_notification.txt
-              | project_membership_change_notification.txt
-              | project_membership_enroll_notification.txt
-              | project_membership_leave_request_notification.txt
-              | project_membership_request_notification.txt
-              | project_suspension_notification.txt
-              | project_termination_notification.txt
-      **registration/**
-          | email_change_email.txt
-          | password_email.txt
+  | **/etc/synnefo/templates/**
+  |     **im/**
+  |           activation_email.txt
+  |           email.txt
+  |           invitation.txt
+  |           switch_accounts_email.txt
+  |           welcome_email.txt
+  |         **projects/**
+  |               project_approval_notification.txt
+  |               project_denial_notification.txt
+  |               project_membership_change_notification.txt
+  |               project_membership_enroll_notification.txt
+  |               project_membership_leave_request_notification.txt
+  |               project_membership_request_notification.txt
+  |               project_suspension_notification.txt
+  |               project_termination_notification.txt
+  |     **registration/**
+  |           email_change_email.txt
+  |           password_email.txt
 
 Feel free to omit any of the above files you do not wish to overwrite.
 
-Below is a list of all emails sent by Synnefo to users along with a short
+Below is a list of all the emails sent by Synnefo to users along with a short
 description and a link to their content:
 
 * ``snf-astakos-app/astakos/im/templates/im/email.txt``
   Base email template. Contains a contact email and a “thank you” message.
-  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to
   user that prompts  him/her to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/invitation.txt`` Email sent to an
   invited user. He/she has to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/invitation.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email
   sent to user upon his/her request to associate this email address with a
   shibboleth account. He/she has to click on a link provided to activate the
-  association. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
+  association. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to
   inform the user that his/ her account has been activated. Extends “email.txt”
-  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt``
   Email sent to user when he/she has requested new email address assignment. The
   user has to click on a link provided to validate this action. Extends
-  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email
   sent for resetting password purpose. The user has to click on a link provided
-  to validate this action. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
+  to validate this action. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt``
   Informs  the project owner that his/her project has been approved. Extends
-  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt``
   Informs the project owner that his/her  project application has been denied
-  explaining the reasons. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
+  explaining the reasons. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt``
   An email is sent to a user containing information about his project membership
   (whether he has been accepted, rejected or removed). Extends “email.txt” (`Link
-  <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
+  <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt``
   Informs a user that he/she  has been enrolled to a project. Extends
-  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt``
   An email is sent to the project owner to make him aware of a  user having
-  requested to leave his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
+  requested to leave his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt``
   An email is sent to the project owner to make him/her aware of a user having
-  requested to join  his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
+  requested to join  his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been suspended. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
+  having been suspended. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`__)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been terminated. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
+  having been terminated. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`__)
 
 .. warning:: Django templates language:
 
@@ -3063,7 +3059,7 @@ Changelog, NEWS
 ===============
 
 
-* v0.17rc1 :ref:`Changelog <Changelog-0.17rc1>`, :ref:`NEWS <NEWS-0.17rc1>`
+* v0.17 :ref:`Changelog <Changelog-0.17>`, :ref:`NEWS <NEWS-0.17>`
 * v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`
 * v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`

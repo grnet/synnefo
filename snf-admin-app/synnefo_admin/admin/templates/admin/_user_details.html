@@ -12,7 +12,6 @@
             <span class="label">{{ user.email }}</span>
         </span>
     </h4>
-
     <div class="object-details-content">
         <ul class="nav nav-tabs">
             <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
@@ -28,7 +27,16 @@
                     <dt>ID</dt><dd>{{ user.id }}</dd>
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
-                    <dt>Email</dt><dd>{{ user.email }}</dd>
+                    <dt>E-mail</dt><dd>{{ user.email }}</dd>
+                    {% if user.accepted_email and user.email != user.accepted_email %}
+                        <dt>Initially accepted e-mail</dt><dd>{{ user.accepted_email }}</dd>
+                    {% endif %}
+                    {% if user.email_change_is_pending %}
+                        <dt>E-mail pending verification</dt>
+                        <dd>{{ user.emailchanges.all.0.new_email_address }}
+                        <dt>E-mail change requested at</dt>
+                        <dd>{{ user.emailchanges.all.0.requested_at }}
+                    {% endif %}
                     <dt>Status</dt><dd>{{ user.status_display|upper }}</dd>
                     <dt>Groups</dt><dd>{{ user|get_groups }}</dd>
                 </dl>
@@ -60,7 +68,6 @@
                         {% for auth in user.auth_providers.all %}
                             <dd>{{ auth.module }} : {{ auth.last_login_at|default:"-"}}</dd>
                         {% endfor %}
-
                 </dl>
             </div>
             <div class="tab-pane" id="auth{{ user.uuid }}">

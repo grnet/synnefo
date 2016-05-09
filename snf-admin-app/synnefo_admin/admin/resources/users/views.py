@@ -116,6 +116,14 @@ class UserJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+
+        if inst.email_change_is_pending():
+            extra_dict['pending_email'] = {
+                'display_name': "E-mail pending verification",
+                'value': inst.emailchanges.all()[0].new_email_address,
+                'visible': True,
+            }
+
         extra_dict['status'] = {
             'display_name': "Status",
             'value': inst.status_display,

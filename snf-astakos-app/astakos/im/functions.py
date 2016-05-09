@@ -1245,7 +1245,7 @@ def _get_owned_projects(user_ids):
     return _partition_by(lambda p: p.owner_id, ps)
 
 
-def suspend_users_projects(users, request_user=None, reason=None):
+def suspend_users_projects(users, request_user=None, reason=None, fix=True):
     affected_users = []
     user_ids = [user.id for user in users]
     if not user_ids:
@@ -1260,16 +1260,19 @@ def suspend_users_projects(users, request_user=None, reason=None):
         base_project = base_projects_d[user.base_project_id]
         if base_project.state == Project.NORMAL:
             try:
-                suspend(user.base_project_id,
-                        request_user=request_user, reason=reason)
+                if fix:
+                    suspend(user.base_project_id,
+                            request_user=request_user, reason=reason)
                 is_affected = True
             except ProjectError:
                 pass
         memberships = memberships_d.get(user.id, [])
         for membership in memberships:
             try:
-                suspend_membership(membership.id, request_user=request_user,
-                                   reason=reason)
+                if fix:
+                    suspend_membership(
+                        membership.id, request_user=request_user,
+                        reason=reason)
                 is_affected = True
             except ProjectError:
                 pass
@@ -1277,7 +1280,9 @@ def suspend_users_projects(users, request_user=None, reason=None):
         owned_projects = owned_projects_d.get(user.id, [])
         for project in owned_projects:
             try:
-                suspend(project.id, request_user=request_user, reason=reason)
+                if fix:
+                    suspend(
+                        project.id, request_user=request_user, reason=reason)
                 is_affected = True
             except ProjectError:
                 pass

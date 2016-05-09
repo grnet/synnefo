@@ -40,6 +40,10 @@ class Command(SynnefoCommand):
                     action="store_true",
                     default=False,
                     help="Perform action on all users"),
+        make_option('--fix',
+                    action="store_true",
+                    default=False,
+                    help="Apply actions"),
     )
 
     def get_user(self, query, userid):
@@ -59,18 +63,19 @@ class Command(SynnefoCommand):
                                 "or a valid user UUID"))
 
     def handle(self, *args, **options):
+        fix = options["fix"]
         all_users = options["all_users"]
         if not (all_users ^ bool(args)):
             raise CommandError("Need to specify either a userid "
                                "or option --all-users.")
         userid = None if all_users else args[0]
         if options["suspend_deactivated"]:
-            self.suspend_projects(userid)
+            self.suspend_projects(userid, fix)
         else:
             self.stderr.write("No action specified.\n")
 
     @transaction.commit_on_success
-    def suspend_projects(self, userid):
+    def suspend_projects(self, userid, fix):
         count = 0
         deactivated = AstakosUser.objects.filter(
             is_active=False, deactivated_at__isnull=False).select_for_update()
@@ -80,12 +85,13 @@ class Command(SynnefoCommand):
             users = [self.get_user(deactivated, userid)]
 
         affected_users = functions.suspend_users_projects(
-            users, reason=SUSPENSION_REASON)
+            users, reason=SUSPENSION_REASON, fix=fix)
         if affected_users:
+            verb = "Suspended" if fix else "Would suspend"
             self.stderr.write(
-                "Suspended projects/memberships for %s "
-                "deactivated users:\n" % len(affected_users))
+                "%s projects/memberships for %s "
+                "deactivated users:\n" % (verb, len(affected_users)))
             for user in affected_users:
-                self.stderr.write("%s\n" % user)
+                self.stderr.write("%s (%s)\n" % (user.email, user.uuid))
         else:
             self.stderr.write("No users affected.\n")

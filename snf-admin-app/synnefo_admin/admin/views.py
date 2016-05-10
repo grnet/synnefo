@@ -308,9 +308,9 @@ def admin_actions(request):
 
     target = objs['target']
     op = objs['op']
-    ids = objs['ids']
-    if type(ids) is not list:
-        ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
+    items = json.loads(objs['ids'])
+    ids = [item['id'] for item in items]
+
 
     try:
         mod = get_view_module_or_404(target)
@@ -318,7 +318,8 @@ def admin_actions(request):
         status = 404
         response['result'] = "You have requested an unknown operation."
 
-    for id in ids:
+    for item in items:
+        id = item['id']
         try:
             mod.do_action(request, op, id)
         except faults.BadRequest as e:

@@ -33,6 +33,14 @@ Cyclades
   enforce dangerous resources. There is now no default list of resources to
   check; the administrator must provide one.
 
+Admin
+-----
+
+* Add mechanism to generate css files on packaging
+* Improve the displayed data in the tables
+* Display more information regarding the enabled authentication providers
+* Display pending modifications of projects
+
 
 .. _Changelog-0.17:
 

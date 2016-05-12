@@ -1,3 +1,9 @@
+synnefo (0.17-2~wheezy) wheezy; urgency=low
+
+  * Fix missing ':' in dispatcher's init script
+
+ -- Nikos Skalkotos <skalkoto@grnet.gr>  Thu, 12 May 2016 12:07:29 +0300
+
 synnefo (0.17-1~wheezy) wheezy; urgency=low
 
   * New upstream version
@@ -193,6 +199,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

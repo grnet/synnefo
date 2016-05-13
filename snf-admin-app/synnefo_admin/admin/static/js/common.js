@@ -8,10 +8,15 @@ snf = {
 			var url = $actionBtn.attr('data-url');
 			var actionName = $actionBtn.find('span').text();
 			var logID = 'action-'+countAction;
+			var ids = $actionBtn.attr('data-ids').slice(1,-1).split(',');
+			ids.forEach(function(item, i, ids) {
+				ids[i] = '{"id": '+ '"'+ item+'"}';
+			});
+			var idsString = "["+ids.toString()+"]"
 			var data = {
 				op: $actionBtn.attr('data-op'),
 				target: $actionBtn.attr('data-target'),
-				ids: $actionBtn.attr('data-ids')
+				ids: idsString
 			}
 			var contactAction = (data.op === 'contact' ? true : false);
 

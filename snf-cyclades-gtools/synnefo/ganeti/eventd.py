@@ -23,11 +23,24 @@ A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
 """
 
+import sys
+import os
+import json
+import logging
+import pyinotify
+import daemon
+import daemon.pidlockfile
+import daemon.runner
+from lockfile import LockTimeout
+from signal import signal, SIGINT, SIGTERM
+import setproctitle
+
+from synnefo import settings
+from synnefo.lib.amqp import AMQPClient
+
 OLD_GANETI_PATH = "/usr/share/ganeti"
 NEW_GANETI_PATH = "/etc/ganeti/share"
 
-import sys
-import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 # Since Ganeti 2.7, debian package ships the majority of the python code in
@@ -45,30 +58,16 @@ else:
 sys.path.insert(0, GANETI_PATH)
 
 try:
-    import ganeti  # NOQA
+    import ganeti  # noqa
 except ImportError:
     raise Exception("Cannot import ganeti module. Please check if installed"
                     " under %s for 2.8 or under %s for 2.10 or later." %
                     (OLD_GANETI_PATH, NEW_GANETI_PATH))
 
-import json
-import logging
-import pyinotify
-import daemon
-import daemon.pidlockfile
-import daemon.runner
-from lockfile import LockTimeout
-from signal import signal, SIGINT, SIGTERM
-import setproctitle
-
 from ganeti import utils, jqueue, constants, serializer, pathutils, cli, \
-    netutils
-from ganeti import errors as ganeti_errors
-from ganeti.ssconf import SimpleStore
-
-
-from synnefo import settings
-from synnefo.lib.amqp import AMQPClient
+    netutils  # noqa
+from ganeti import errors as ganeti_errors  # noqa
+from ganeti.ssconf import SimpleStore  # noqa
 
 
 def get_time_from_status(op, job):

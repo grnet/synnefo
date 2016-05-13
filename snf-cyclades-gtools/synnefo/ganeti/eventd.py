@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -61,7 +61,8 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils, jqueue, constants, serializer, pathutils, cli
+from ganeti import utils, jqueue, constants, serializer, pathutils, cli, \
+    netutils
 from ganeti import errors as ganeti_errors
 from ganeti.ssconf import SimpleStore
 
@@ -187,6 +188,22 @@ def get_field(from_, field):
         None
 
 
+def get_ganeti_master():
+    """Get the Ganeti Master
+
+    @returns: The domain of Ganeti Master
+    """
+    return SimpleStore().GetMasterNode()
+
+
+def get_ganeti_node():
+    """Get the Ganeti node this service is running on
+
+    @returns: The domain of this node
+    """
+    return netutils.GetHostname().GetFqdn()
+
+
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger, cluster_name):
         pyinotify.ProcessEvent.__init__(self)
@@ -197,10 +214,21 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25,
                                  max_retries=0, logger=logger)
 
-        handler_logger.info("Attempting to connect to RabbitMQ hosts")
+        logger.info("Attempting to connect to RabbitMQ hosts")
 
         self.client.connect()
-        handler_logger.info("Connected succesfully")
+        logger.info("Connected successfully")
+
+        self.ganeti_master = get_ganeti_master()
+        logger.debug("Ganeti Master Node: %s", self.ganeti_master)
+
+        self.ganeti_node = get_ganeti_node()
+        logger.debug("Current Ganeti Node: %s", self.ganeti_node)
+
+        # Check if this is the master node
+        logger.info("Checking if this is Ganeti Master of %s cluster: %s",
+                    self.cluster_name,
+                    "YES" if self.ganeti_master == self.ganeti_node else "NO")
 
         self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
@@ -269,11 +297,33 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 # so that the job can be retried if needed.
                 msg["job_fields"] = op.Serialize()["input"]
 
+            # Check if this is the master node. Only the master node should
+            # deliver messages to RabbitMQ.
+            current_master = get_ganeti_master()
+            if self.ganeti_master != current_master:
+                self.logger.warning("Ganeti Master changed! New Master: %s",
+                                    current_master)
+
+                if self.ganeti_node == current_master:
+                    self.logger.info("This node became Ganeti Master.")
+                else:
+                    self.logger.info("This node is not Ganeti Master.")
+
+                self.ganeti_master = current_master
+
             msg = json.dumps(msg)
+
+            if self.ganeti_node != self.ganeti_master:
+                self.logger.debug(
+                    "Ignoring msg for job: %s: %s. Reason: Not Master",
+                    job_id, op_id)
+                continue
 
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
-            # Send the message to RabbitMQ
+            # Send the message to RabbitMQ. Since the master node test and the
+            # message delivery isn't atomic, race conditions may occur. We can
+            # live with that.
             self.client.basic_publish(settings.EXCHANGE_GANETI,
                                       routekey,
                                       msg)

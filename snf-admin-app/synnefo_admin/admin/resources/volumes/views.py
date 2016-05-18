@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
 from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import Volume, VirtualMachine
 from astakos.im.models import AstakosUser, Project
 
@@ -27,6 +27,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.resources.users.utils import get_user_or_404
+from synnefo_admin.admin.resources.volumes.utils import get_volume_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
@@ -165,13 +166,14 @@ class VolumeJSONView(AdminJSONView):
 JSON_CLASS = VolumeJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified volume."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        volume = Volume.objects.get(id=id)
+        volume = get_volume_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':

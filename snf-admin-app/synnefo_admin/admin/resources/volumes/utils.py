@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
-
 from django.core.exceptions import ObjectDoesNotExist
 
 from synnefo.db.models import Volume
@@ -25,9 +23,11 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_volume_or_404(query):
+def get_volume_or_404(query, for_update=False):
+    volume_obj = Volume.objects.select_for_update if for_update\
+        else Volume.objects
     try:
-        return Volume.objects.get(pk=int(query))
+        return volume_obj.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No Volume was found that matches this query: %s\n" % query)

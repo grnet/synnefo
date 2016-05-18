@@ -198,7 +198,7 @@ def do_action(request, op, id):
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        project = get_project_or_404(id)
+        project = get_project_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':

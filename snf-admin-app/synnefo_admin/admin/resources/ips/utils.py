@@ -25,9 +25,11 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_ip_or_404(query):
+def get_ip_or_404(query, for_update=False):
+    ip_object = IPAddress.objects.select_for_update() if for_update\
+            else IPAddress.objects
     try:
-        return IPAddress.objects.get(address=query)
+        return ip_object.get(address=query)
     except ObjectDoesNotExist:
         pass
     except MultipleObjectsReturned:
@@ -35,7 +37,7 @@ def get_ip_or_404(query):
                            entries for this address: %s""" % query)
 
     try:
-        return IPAddress.objects.get(pk=int(query))
+        return ip_object.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         # Check the IPAddressLog and inform the user that the IP existed at
         # sometime.

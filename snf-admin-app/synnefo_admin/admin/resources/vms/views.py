@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from collections import OrderedDict
 import time
 
@@ -21,6 +20,7 @@ import time
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
                                IPAddress)
 from astakos.im.models import AstakosUser, Project
@@ -145,13 +145,14 @@ class VMJSONView(AdminJSONView):
 JSON_CLASS = VMJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        vm = get_vm_or_404(id)
+        vm = get_vm_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reboot':

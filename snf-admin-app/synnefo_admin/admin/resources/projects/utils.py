@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 
 from astakos.im.models import Project
@@ -36,16 +37,10 @@ def get_actual_owner(inst):
 def get_project_or_404(query, for_update=False):
     project_obj = Project.objects.select_for_update() if for_update\
         else Project.objects
-    # Get by UUID
     try:
-        return project_obj.get(uuid=query)
+        return project_obj.get(Q(id=int(query)) if query.isdigit()
+                               else Q(uuid=query))
     except ObjectDoesNotExist:
-        pass
-
-    # Get by ID
-    try:
-        return project_obj.get(id=query)
-    except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No Project was found that matches this query: %s\n" % query)
 

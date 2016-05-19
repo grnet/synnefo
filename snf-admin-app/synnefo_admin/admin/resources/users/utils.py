@@ -13,8 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import Group
 
@@ -41,26 +40,12 @@ def get_user_or_404(query, for_update=False):
 
     The query can either be a user email, UUID or ID.
     """
-    objects = AstakosUser.objects
-    if for_update:
-        objects = objects.select_for_update()
-
-    # Get by UUID
+    usr_obj = AstakosUser.objects.select_for_update() if for_update\
+        else AstakosUser.objects
+    q = Q(id=int(query)) if query.isdigit() else Q(uuid=query) | Q(email=query)
     try:
-        return objects.get(uuid=query)
+        return usr_obj.get(q)
     except ObjectDoesNotExist:
-        pass
-
-    # Get by Email
-    try:
-        return objects.get(email=query)
-    except ObjectDoesNotExist:
-        pass
-
-    # Get by ID
-    try:
-        return objects.get(id=int(query))
-    except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No User was found that matches this query: %s\n" % query)
 

@@ -23,8 +23,9 @@ DEFAULT_EXCEPTION_REPORTER_FILTER = "synnefo.webproject.exception_filter.Synnefo
 HIDDEN_SETTINGS = 'SECRET|PASSWORD|PROFANITIES_LIST|SIGNATURE|AMQP_HOSTS|'\
                   'PRIVATE_KEY|DB_CONNECTION|TOKEN'
 HIDDEN_COOKIES = ['password', '_pithos2_a', 'token', 'sessionid', 'shibstate',
-                  'shibsession', 'CSRF_COOKIE']
-HIDDEN_HEADERS = ['HTTP_X_AUTH_TOKEN', 'HTTP_COOKIE']
+                  'shibsession', 'CSRF_COOKIE', 'csrftoken']
+HIDDEN_HEADERS = ['HTTP_X_AUTH_TOKEN', 'HTTP_COOKIE', 'X-Auth-Token', 'Cookie']
+HIDDEN_STACKVARS = '__ALL__'
 # Mail size limit for unhandled exception
 MAIL_MAX_LEN = 100 * 1024  # (100KB)
 

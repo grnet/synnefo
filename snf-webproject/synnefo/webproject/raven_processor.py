@@ -92,3 +92,23 @@ class SynnefoFilterProcessor(Processor):
             # here all vars are already transformed (serialized) to strings
             frame['vars'] = cleanse(frame['vars'], HIDDEN_STACKVARS,
                                     case=False)
+
+
+class DispatcherFilterProcessor(Processor):
+    """
+    Filter out Synnefo sensitive values
+    """
+
+    def is_active(self):
+        # possibly we could deactivate this with a setting
+        return True
+
+
+    def filter_stacktrace(self, stacktrace):
+        if not self.is_active():
+            return
+
+        for frame in stacktrace.get('frames', []):
+            if 'vars' not in frame:
+                continue
+            frame['vars'] = cleanse(frame['vars'], '__ALL__', case=False)

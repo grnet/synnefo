@@ -8,7 +8,7 @@
 		<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
 	</div>
 	<div class="rt">
-		<form action="{% url email_change %}" method="post"
+		<form action="{% url request_email_change %}" method="post"
 		    class="innerlabels">{% csrf_token %}
 		
 		    {% include "im/form_render.html" %}

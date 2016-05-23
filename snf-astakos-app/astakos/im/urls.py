@@ -120,7 +120,7 @@ urlpatterns = patterns(
 if settings.EMAILCHANGE_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
-        url(r'^email_change/?$', 'change_email', {}, name='email_change'),
+        url(r'^email_change/?$', 'request_change_email', {}, name='request_email_change'),
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$',
             'change_email', {},
             name='email_change_confirm'))

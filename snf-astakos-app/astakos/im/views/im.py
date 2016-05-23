@@ -732,50 +732,15 @@ def approval_terms(request, term_id=None,
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @transaction.commit_on_success
-def change_email(request, activation_key=None,
+def request_change_email(request,
                  email_template_name='registration/email_change_email.txt',
                  form_template_name='registration/email_change_form.html',
-                 confirm_template_name='registration/email_change_done.html',
                  extra_context=None):
+
     extra_context = extra_context or {}
 
     if not settings.EMAILCHANGE_ENABLED:
         raise PermissionDenied
-
-    if activation_key:
-        try:
-            try:
-                email_change = EmailChange.objects.get(
-                    activation_key=activation_key)
-            except EmailChange.DoesNotExist:
-                logger.error("[change-email] Invalid or used activation "
-                             "code, %s", activation_key)
-                raise Http404
-
-            if (
-                request.user.is_authenticated() and
-                request.user == email_change.user or not
-                request.user.is_authenticated()
-            ):
-                user = EmailChange.objects.change_email(activation_key)
-                msg = _(astakos_messages.EMAIL_CHANGED)
-                messages.success(request, msg)
-                transaction.commit()
-                return HttpResponseRedirect(reverse('edit_profile'))
-            else:
-                logger.error("[change-email] Access from invalid user, %s %s",
-                             email_change.user, request.user.log_display)
-                raise PermissionDenied
-        except ValueError, e:
-            messages.error(request, e)
-            transaction.rollback()
-            return HttpResponseRedirect(reverse('index'))
-
-        return render_response(confirm_template_name,
-                               modified_user=user if 'user' in locals()
-                               else None,
-                               context_instance=get_context(request,
-                                                            extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
@@ -807,6 +772,52 @@ def change_email(request, activation_key=None,
         form=form,
         context_instance=get_context(request, extra_context)
     )
+
+
+@require_http_methods(["GET"])
+@cookie_fix
+@transaction.commit_on_success
+def change_email(request, activation_key=None,
+                 confirm_template_name='registration/email_change_done.html',
+                 extra_context=None):
+    extra_context = extra_context or {}
+
+    if not activation_key:
+        return HttpResponseNotFound()
+
+    try:
+        try:
+            email_change = EmailChange.objects.get(
+                activation_key=activation_key)
+        except EmailChange.DoesNotExist:
+            logger.error("[change-email] Invalid or used activation "
+                         "code, %s", activation_key)
+            raise Http404
+
+        if (
+            request.user.is_authenticated() and
+            request.user == email_change.user or not
+            request.user.is_authenticated()
+        ):
+            user = EmailChange.objects.change_email(activation_key)
+            msg = _(astakos_messages.EMAIL_CHANGED)
+            messages.success(request, msg)
+            transaction.commit()
+            return HttpResponseRedirect(reverse('edit_profile'))
+        else:
+            logger.error("[change-email] Access from invalid user, %s %s",
+                         email_change.user, request.user.log_display)
+            raise PermissionDenied
+    except ValueError, e:
+        messages.error(request, e)
+        transaction.rollback()
+        return HttpResponseRedirect(reverse('index'))
+
+    return render_response(confirm_template_name,
+                           modified_user=user if 'user' in locals()
+                           else None,
+                           context_instance=get_context(request,
+                                                        extra_context))
 
 
 @cookie_fix

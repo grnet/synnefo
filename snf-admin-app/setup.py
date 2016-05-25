@@ -145,17 +145,20 @@ def compile_sass():
     from distutils.spawn import find_executable
 
     css_dir = os.path.join(".", "synnefo_admin", "admin", "static")
+    css_dir = os.path.abspath(css_dir)
 
     if not find_executable("gem"):
         raise Exception("gem not found, please install ruby and gem")
 
+    os.environ["PATH"] += ":/usr/local/bin"
     if not find_executable("compass"):
         print "Install compass"
         ret = subprocess.call(["gem", "install", "compass"])
         if ret == 1:
             raise Exception("gem install failed")
 
-    compass_cmd = ["compass", "compile", css_dir, "-e"]
+    compass_bin = find_executable("compass")
+    compass_cmd = [compass_bin, "compile", css_dir, "-e"]
 
     ret = subprocess.call(compass_cmd + ["production"])
 

@@ -752,7 +752,6 @@ def request_change_email(request,
         change = request.user.emailchanges.get()
         if change.activation_key_expired():
             change.delete()
-            transaction.commit()
             return HttpResponseRedirect(reverse('email_change'))
 
     form = EmailChangeForm(request.POST or None)
@@ -766,7 +765,6 @@ def request_change_email(request,
             )
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)
-            transaction.commit()
             return HttpResponseRedirect(reverse('edit_profile'))
         except ValidationError:
             pass
@@ -811,7 +809,6 @@ def change_email(request, activation_key=None,
             user = EmailChange.objects.change_email(activation_key)
             msg = _(astakos_messages.EMAIL_CHANGED)
             messages.success(request, msg)
-            transaction.commit()
             return HttpResponseRedirect(reverse('edit_profile'))
         else:
             logger.error("[change-email] Access from invalid user, %s %s",

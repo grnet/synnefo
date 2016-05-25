@@ -1106,7 +1106,6 @@ class Invitation(models.Model):
 
 class EmailChangeManager(models.Manager):
 
-    @transaction.commit_on_success
     def change_email(self, activation_key):
         """
         Validate an activation key and change the corresponding

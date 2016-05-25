@@ -15,7 +15,6 @@
 import re
 import synnefo.util.date as date_util
 
-from random import random
 from datetime import datetime
 
 from django import forms
@@ -26,7 +25,6 @@ from django.core.mail import send_mail, get_connection
 from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
-from django.utils.encoding import smart_str
 from astakos.im import transaction
 from django.core import validators
 
@@ -40,7 +38,7 @@ from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import submit_application, \
     accept_membership_project_checks, ProjectError
-from astakos.im.user_utils import send_change_email
+from astakos.im.user_utils import change_user_email
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
@@ -51,7 +49,6 @@ from astakos.im.auth_backends import LDAPBackend
 import astakos.im.messages as astakos_messages
 
 import logging
-import hashlib
 import recaptcha.client.captcha as captcha
 import re
 
@@ -551,20 +548,8 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, request,
-             email_template_name='registration/email_change_email.txt',
-             commit=True, **kwargs):
-        ec = super(EmailChangeForm, self).save(commit=False, **kwargs)
-        ec.user = request.user
-        # delete pending email changes
-        request.user.emailchanges.all().delete()
-
-        activation_key = hashlib.sha1(
-            str(random()) + smart_str(ec.new_email_address))
-        ec.activation_key = activation_key.hexdigest()
-        if commit:
-            ec.save(**kwargs)
-        send_change_email(ec, request, email_template_name=email_template_name)
+    def save(self):
+        raise NotImplementedError
 
 
 class SignApprovalTermsForm(forms.ModelForm):
@@ -1350,7 +1335,10 @@ class ExtendedProfileForm(ProfileForm):
 
     def save(self, request, *args, **kwargs):
         if 'email' in self.save_extra_forms:
-            self.email_change_form.save(request, *args, **kwargs)
+            change_user_email(
+                self.instance,
+                self.email_change_form.cleaned_data['new_email_address']
+            )
             self.email_changed = True
         if 'password' in self.save_extra_forms:
             self.password_change_form.save(*args, **kwargs)

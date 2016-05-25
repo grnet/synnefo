@@ -26,7 +26,7 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.views.decorators.http import require_http_methods
 from django.utils import simplejson as json
 from django.template import RequestContext
@@ -46,7 +46,7 @@ from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
 from astakos.im.user_utils import send_feedback, logout as auth_logout, \
-    invite as invite_func
+    invite as invite_func, send_change_email, change_user_email
 from astakos.im import settings
 from astakos.im import presentation
 from astakos.im import auth_providers as auth
@@ -757,11 +757,20 @@ def request_change_email(request,
 
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        ec = form.save(request, email_template_name, request)
-        msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
-        messages.success(request, msg)
-        transaction.commit()
-        return HttpResponseRedirect(reverse('edit_profile'))
+        new_email = request.POST['new_email_address']
+        try:
+            change_user_email(
+                user=request.user,
+                new_email=new_email,
+                email_template_name=email_template_name
+            )
+            msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
+            messages.success(request, msg)
+            transaction.commit()
+            return HttpResponseRedirect(reverse('edit_profile'))
+        except ValidationError:
+            pass
+
 
     if request.user.email_change_is_pending():
         messages.warning(request,

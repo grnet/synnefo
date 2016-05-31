@@ -19,7 +19,7 @@ from importlib import import_module
 
 from django.views.generic.simple import direct_to_template
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.serializers.json import DjangoJSONEncoder
@@ -346,6 +346,10 @@ def admin_actions(request):
             response['result'] = """
                 You have requested an action that cannot apply to a target.
                 """
+            response['error_ids'].append(id)
+        except ValidationError, e:
+            status = 400
+            response['result'] = ', '.join(e.messages)
             response['error_ids'].append(id)
         except Exception as e:
             logging.exception("Uncaught exception")

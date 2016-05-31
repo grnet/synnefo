@@ -199,7 +199,7 @@ JSON_CLASS = ProjectJSONView
 
 @has_permission_or_403(cached_actions)
 @transaction.commit_on_success
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified user."""
     if op == "contact":
         user = get_user_or_404(id)

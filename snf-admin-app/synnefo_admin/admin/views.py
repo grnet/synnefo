@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -320,8 +320,10 @@ def admin_actions(request):
 
     for item in items:
         id = item['id']
+        data = item.get('data')
+
         try:
-            mod.do_action(request, op, id)
+            mod.do_action(request, op, id, data)
         except faults.BadRequest as e:
             status = 400
             response['result'] = e.message

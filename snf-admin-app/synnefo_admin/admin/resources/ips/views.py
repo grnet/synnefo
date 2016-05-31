@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -155,7 +155,7 @@ JSON_CLASS = IPJSONView
 
 @transaction.commit_on_success
 @has_permission_or_403(cached_actions)
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified ip."""
     if op == "contact":
         user = get_user_or_404(id)

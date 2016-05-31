@@ -84,7 +84,7 @@ def generate_actions():
     actions['contact'] = UserAction(name='Send e-mail', f=send_admin_email,)
 
     actions['modify_email'] = UserAction(name='Change e-mail',
-                                         f=change_user_email,karma='bad',
+                                         f=change_user_email, karma='bad',
                                          caution_level='dangerous',)
 
     update_actions_rbac(actions)

@@ -819,8 +819,7 @@ $(document).ready(function() {
 			}
 		}
 
-		else if(modalType === "modify-email") {
-			console.log('%c modaltype modify email')
+		else if(modalType === "modify_email") {
 			uniqueProp = 'id';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);

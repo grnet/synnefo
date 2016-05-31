@@ -9,42 +9,45 @@
             </div>
             <div class="modal-body">
                 {% if op == "contact" %}
-                <div class="form-sender form-area">
-                    <label>From:</label>
-                    <input type="text" name="sender" class="sender"
-                    form="contactForm" value="{{mail.sender}}" />
-                    <a data-error="empty-sender" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the sender address of the e&#8209mail."></a>
-                    <a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a>
-                </div>
-                </br>
-                <div class="form-subject form-area">
-                    <label>Subject:</label>
-                    <input type="text" name="subject" class="subject"
-                    form="contactForm" value="{{mail.subject}}" />
-                    <a data-error="empty-subject" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the subject of the e&#8209mail."></a>
-                </div>
-                <div class="form-body form-area">
-                    <label>Body:</label>
-                    <textarea name="text" form="contactForm" class="email-content body">{{ mail.body }}</textarea>
-                    <a data-error="empty-body"  data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the body of the e-mail."></a>
-                    <div class="extra-info">
-                        <a href="" class="snf-info instructions-icon" data-container="#{{action.target}}-{{ op }}" data-toggle="popover" data-html="true" data-placement="right" data-content="
-                        <h2>Legend</h2>
-                        <dl class='dl-horizontal'>
-                            {% for name, attr in mail.legend.items %}
-                                <dt>{{ name }}: </dt><dd>{{ attr }}</dt>
-                                {% endfor %}
-                        </dl>"></a>
-                        <!-- place here the msg for duplicates -->
+                    <div class="form-sender form-area">
+                        <label>From:</label>
+                        <input type="text" name="sender" class="sender"
+                        form="contactForm" value="{{mail.sender}}" />
+                        <a data-error="empty-sender" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the sender address of the e&#8209mail."></a>
+                        <a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a>
                     </div>
-                </div>
+                    </br>
+                    <div class="form-subject form-area">
+                        <label>Subject:</label>
+                        <input type="text" name="subject" class="subject"
+                        form="contactForm" value="{{mail.subject}}" />
+                        <a data-error="empty-subject" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the subject of the e&#8209mail."></a>
+                    </div>
+                    <div class="form-body form-area">
+                        <label>Body:</label>
+                        <textarea name="text" form="contactForm" class="email-content body">{{ mail.body }}</textarea>
+                        <a data-error="empty-body"  data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the body of the e-mail."></a>
+                        <div class="extra-info">
+                            <a href="" class="snf-info instructions-icon" data-container="#{{action.target}}-{{ op }}" data-toggle="popover" data-html="true" data-placement="right" data-content="
+                            <h2>Legend</h2>
+                            <dl class='dl-horizontal'>
+                                {% for name, attr in mail.legend.items %}
+                                    <dt>{{ name }}: </dt><dd>{{ attr }}</dt>
+                                    {% endfor %}
+                            </dl>"></a>
+                            <!-- place here the msg for duplicates -->
+                        </div>
+                    </div>
+                {% endif %}
                 {# If we are in a details view, then the number of items is just one, so we can get rid of the plural #}
                 <div class="summary">
-                    <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> to the following <em class="num elem"></em> user{% if view_type == 'list' %}s{% endif %}:
-                {% else %}
-                <div class="summary">
-                    <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
-                {% endif %}
+                    <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> 
+                    {% if op == "contact" %}
+                        to 
+                    {% elif op == "modify_email" %}
+                        for
+                    {% endif %}
+                    the following <em class="num elem"></em> {{ action.target }}{% if view_type == 'list' %}s{% endif %}:
                         <a data-error="no-selected" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" data-content="There are no selected items to complete this action." rel="tooltip"></a>
                     </p>
                     {% if view_type == "list" %}

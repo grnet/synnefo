@@ -25,6 +25,7 @@ from fnmatch import fnmatchcase
 from distutils.util import convert_path
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+os.chdir(HERE)
 
 from synnefo_admin.version import __version__
 

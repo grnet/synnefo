@@ -133,8 +133,11 @@ $(document).ready(function() {
 	function drawModalSingleItem(modalID, itemName, itemID) {
 		var $summary = $(modalID).find('.modal-body .summary');
 		var $actionBtn = $(modalID).find('.apply-action');
-		var html = _.template(snf.modals.html.singleItemInfo);
-
+    var tpl = snf.modals.html.singleItemInfo;
+    if (modalID == '#user-modify_email') {
+      tpl = snf.modals.html.singleItemInfoWithEmailInput;
+    }
+		var html = _.template(tpl);
 		$actionBtn.attr('data-ids','['+itemID+']');
 		$summary.append(html({name: itemName, id: itemID}));
 	};

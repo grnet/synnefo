@@ -179,6 +179,7 @@ snf = {
 		},
 		html: {
 			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
+			singleItemInfoWithEmailInput: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dt>New e-mail:</dt><dd><input placeholder="new e-mail"></dd><dl>',
 			removeLogLine: '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
 			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
 			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
@@ -192,7 +193,7 @@ snf = {
 			warningDuplicates: '<p class="warning-duplicate">Duplicate accounts have been detected.</p>',
 			commonRow:  '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="item-name"><%= itemName %></td><td class="item-id"><%= itemID %></td><td class="owner-name"><%= ownerName %></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= ownerEmail %></div></td></tr>',
 			contactRow: '<tr <% if(showAssociations) { %> title="related with: <%= associations %>" <% } %> data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= email %></div></td></tr>',
-			modifyEmailRow: '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="item-id"><%= itemID %></td><td class="email"><div class="wrap"><%= email %></div></td><td class="wrap td-with-input"><input placeholder="new e-mail"><a class="remove" title="Remove item from selection">X</a></td></tr>', 
+			modifyEmailRow: '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="email"><div class="wrap"><%= email %></div></td><td class="wrap td-with-input"><input placeholder="new e-mail"><a class="remove" title="Remove item from selection">X</a></td></tr>',
 
 		}
 	},

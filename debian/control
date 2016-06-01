@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
 Build-Depends: debhelper (>= 8), python-all (>= 2.5), ruby, ruby-dev
 Standards-Version: 3.9.2
-XS-Python-Version: >= 2.6
+X-Python-Version: >= 2.7
 Homepage: http://www.synnefo.org
 Vcs-Browser: https://github.com/grnet/synnefo
 
@@ -20,7 +20,6 @@ Package: snf-common
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, python-setuptools
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
 Description: Synnefo common package
  This package contains common functionality, used by all other Synnefo
  components
@@ -32,14 +31,12 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-branding (= ${binary:Version}),
   python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
 
 Package: snf-branding
 Architecture: all
 Depends: ${python:Depends}
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Branding package for user interface and message customization.
 
 Package: snf-cyclades-app
@@ -54,7 +51,6 @@ Depends: ${misc:Depends}, ${python:Depends},
 Provides: ${python:Provides}
 Replaces: snf-network
 Recommends: snf-vncauthproxy (> 1.5)
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Compute/Network/Image package
  This package provides the Synnefo Compute, Network and Image functionality.
  It installs multiple Django apps to provide the above services.
@@ -65,7 +61,6 @@ Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-network,
   snf-common (= ${binary:Version})
 Provides: ${python:Provides}
 Suggests: collectd
-XB-Python-Version: ${python:Versions}
 Description: Synnefo tools to interact with Ganeti
  This package contains the supplementary tools that allow Ganeti to
  interact with Synnefo. It should be installed on all Ganeti nodes.
@@ -86,7 +81,6 @@ Depends: ${misc:Depends}, ${python:Depends},
   python-django-eztables (= 0.3.3-1~snf~0.2)
 Provides: ${python:Provides}
 Recommends: snf-webproject
-XB-Python-Version: ${python:Versions}
 Description: Admin Dashboard package
  Admin is the Synnefo componenent that provides to trusted users with:
   * The ability to manage and view various different Synnefo entities such as
@@ -104,7 +98,6 @@ Provides: ${python:Provides}
 Conflicts: snf-quotaholder-app
 Replaces: snf-quotaholder-app
 Recommends: snf-webproject
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Identity management package
  This package provides the Synnefo Identity management functionality.
  It is a Django app that handles users and groups for all the other
@@ -119,7 +112,6 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-pithos-backend (= ${binary:Version}),
 Recommends: snf-webproject
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
 Description: Synnefo File/Object Storage package
  This package provides the Synnefo File/Object Storage functionality.
  It is a Django app for the frontend of the Storage service. The
@@ -132,7 +124,6 @@ Depends: ${misc:Depends}, ${python:Depends}, snf-common ( = ${binary:Version}),
 Replaces: snf-pithos-lib
 Provides: ${python:Provides}
 Recommends: python-ceph
-XB-Python-Version: ${python:Versions}
 Description: Synnefo File/Object Storage backend library
  This package handles the low level management for the Synnefo
  File/Object Storage service. This means handling of the DB, object
@@ -143,7 +134,6 @@ Package: snf-tools
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, kamaki (>= 0.12.3)
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
 Description: Synnefo generic additional tools (burnin)
  This package contains additional tools that supplement a Synnefo
  installation. Currently, this package contains only the burnin tool.
@@ -155,7 +145,6 @@ Depends: ${misc:Depends}, ${python:Depends},
 Provides: ${python:Provides}
 Recommends: snf-webproject
 Suggests: gunicorn, collectd, python-gevent (>=0.13)
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Stats
  Synnefo Stats
 
@@ -164,7 +153,6 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 Recommends: python-simplejson
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Astakos Client
  Python client for Astakos, the Synnefo identity management service.
 
@@ -174,14 +162,12 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), python-astakosclient (= ${binary:Version})
 Provides: ${python:Provides}
 Recommends: snf-webproject
-XB-Python-Version: ${python:Versions}
 Description: Synnefo Django library
  Synnefo Django library
 
 Package: snf-deploy
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, fabric (>=1.3), bind9utils
-XB-Python-Version: ${python:Versions}
 Description: Auto deploy tool for Synnefo.
  * Creates virtual cluster
  * Installs all related software components to the cluster in order to have a

@@ -32,6 +32,11 @@ Cyclades
 * Command `enforce-resources-cyclades` now provides an option to "soft"
   enforce dangerous resources. There is now no default list of resources to
   check; the administrator must provide one.
+* Make dispatcher use DISPATCHER_LOGGING_SETUP from synnefo settings to setup
+  its logging. Remove previous settings.
+* Add a raven processor to filter sensitive information sent to Sentry using
+  the Sentry logging handler.
+* Imporove SynnefoExceptionReporterFilter to better cleanse request body.
 
 Admin
 -----

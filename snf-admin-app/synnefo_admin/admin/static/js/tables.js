@@ -713,6 +713,10 @@ $(document).ready(function() {
 			var validForm = snf.modals.validateContactForm($modal);
 			noError = noError && validForm;
 		}
+		if($modal.attr('data-type') === 'modify_email') {
+			var validForm = snf.modals.validateModifyEmailForm($modal);
+			noError = noError && validForm;
+		}
 		if(!noError) {
 			e.preventDefault();
 			e.stopPropagation();

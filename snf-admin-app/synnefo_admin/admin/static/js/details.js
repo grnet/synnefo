@@ -160,6 +160,10 @@ $(document).ready(function() {
 		if($modal.attr('data-type') === 'contact') {
 			noError = snf.modals.validateContactForm($modal);
 		}
+		if($modal.attr('data-type') === 'modify_email') {
+			var validForm = snf.modals.validateModifyEmailForm($modal);
+			noError = noError && validForm;
+		}
 		if(!noError) {
 			e.preventDefault();
 			e.stopPropagation();

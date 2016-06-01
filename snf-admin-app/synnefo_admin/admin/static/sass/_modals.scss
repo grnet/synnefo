@@ -73,7 +73,6 @@ p.progress-area {
 			border-color: $gray-dark;
 		}
 	}
-
 }
 
 .modal {
@@ -249,5 +248,15 @@ p.progress-area {
                 text-decoration: none;
             }
         }
+        .new-email {
+            &+.error-sign {
+                right: -25px;
+                top: 10px;
+            }
+        }
+
+    }
+    .info-list dd {
+        position: relative;
     }
 }

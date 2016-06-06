@@ -159,6 +159,8 @@ def cleanse_request(req, hidden_cookies, hidden):
                 subst = CLEANSED_SUBSTITUTE
                 reason = "Unhandled content type '%s'" % content_type
                 cleansed_post = QueryDict("%s (reason: %s)" % (subst, reason))
+        else:
+            cleansed_post = post
         setattr(req_copy, 'POST', cleansed_post)
 
     cookies = getattr(req, 'COOKIES').copy()

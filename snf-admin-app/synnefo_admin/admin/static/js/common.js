@@ -1,22 +1,21 @@
 snf = {
 	filters: {},
 	modals: {
-		performAction: function(modal, notificationArea, warningMsg, itemsCount, countAction) {
+
+
+		performAction: function(modal, notificationArea, warningMsg, itemsData, itemsCount, countAction) {
 			var $modal = $(modal);
 			var $notificationArea = $(notificationArea);
 			var $actionBtn = $modal.find('.apply-action')
 			var url = $actionBtn.attr('data-url');
 			var actionName = $actionBtn.find('span').text();
 			var logID = 'action-'+countAction;
-			var ids = $actionBtn.attr('data-ids').slice(1,-1).split(',');
-			ids.forEach(function(item, i, ids) {
-				ids[i] = '{"id": '+ '"'+ item+'"}';
-			});
-			var idsString = "["+ids.toString()+"]"
+			var ids = JSON.stringify(itemsData);
+
 			var data = {
 				op: $actionBtn.attr('data-op'),
 				target: $actionBtn.attr('data-target'),
-				ids: idsString
+				ids: ids
 			}
 			var contactAction = (data.op === 'contact' ? true : false);
 
@@ -195,8 +194,8 @@ snf = {
 			});
 		},
 		html: {
-			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
-			singleItemInfoWithEmailInput: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dt>New e-mail:</dt><dd><input placeholder="new e-mail" class="new-email"><a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a></dd><dl>',
+			singleItemInfo: '<dl class="dl-horizontal info-list" data-itemid=<%= id %>><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
+			singleItemInfoWithEmailInput: '<dl class="dl-horizontal info-list" data-itemid=<%= id %>><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dt>New e-mail:</dt><dd><input placeholder="new e-mail" class="new-email" data-key="new_email"><a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a></dd><dl>',
 			removeLogLine: '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
 			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
 			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
@@ -210,7 +209,7 @@ snf = {
 			warningDuplicates: '<p class="warning-duplicate">Duplicate accounts have been detected.</p>',
 			commonRow:  '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="item-name"><%= itemName %></td><td class="item-id"><%= itemID %></td><td class="owner-name"><%= ownerName %></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= ownerEmail %></div></td></tr>',
 			contactRow: '<tr <% if(showAssociations) { %> title="related with: <%= associations %>" <% } %> data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= email %></div></td></tr>',
-			modifyEmailRow: '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="item-id"><%= itemID %></td><td class="email"><div class="wrap"><%= email %></div></td><td class="wrap td-with-input"><input placeholder="new e-mail" class="new-email"><a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a><a class="remove" title="Remove item from selection">X</a></td></tr>',
+			modifyEmailRow: '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="item-id"><%= itemID %></td><td class="email"><div class="wrap"><%= email %></div></td><td class="wrap td-with-input"><input placeholder="new e-mail" class="new-email" data-key="new_email"><a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a><a class="remove" title="Remove item from selection">X</a></td></tr>',
 
 		}
 	},

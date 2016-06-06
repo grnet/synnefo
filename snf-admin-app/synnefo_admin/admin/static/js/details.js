@@ -143,6 +143,23 @@ $(document).ready(function() {
 	};
 
 
+	function collectActionData(modal) {
+		var $list = $(modal).find('.info-list');
+		var actionData = [];
+		var hasInputs = $list.find('dd input').length > 0;
+		var itemData = {};
+		itemData['id'] = $list.attr('data-itemid');
+		if(hasInputs) {
+			itemData['data'] = {};
+			var key = $list.find('dd input').attr('data-key');
+			var value = $list.find('dd input').val();
+			itemData['data'][key] = value;
+		}
+
+			actionData.push(itemData)
+		return actionData;
+	};
+
 	$('.modal').find('.cancel').click(function() {
 		$modal =$(this).closest('.modal');
 		snf.modals.resetInputs($modal);
@@ -169,7 +186,7 @@ $(document).ready(function() {
 			e.stopPropagation();
 		}
 		else {
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, 0, countAction);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, collectActionData($modal), 0, countAction);
 			snf.modals.resetInputs($modal);
 			snf.modals.resetErrors($modal);
 			resetItemInfo($modal);

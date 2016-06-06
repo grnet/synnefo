@@ -1,6 +1,6 @@
 $(document).ready(function() {
 
-		var $actionbar = $('.actionbar');
+	var $actionbar = $('.actionbar');
 
 	if($actionbar.length > 0) {
         sticker();
@@ -682,6 +682,27 @@ $(document).ready(function() {
 		$modal.find('.toggle-more').find('span').text('Show all');
 	};
 
+	function collectActionData(modal) {
+		var $table = $(modal).find('.table-selected');
+		var actionData = [];
+		var hasInputs = $table.find('tr:first input').length > 0;
+		var itemData = {};
+		if(hasInputs) {
+			itemData['data'] = {};
+		}
+		$table.find('tr').each(function() {
+			itemData['id'] = $(this).attr('data-itemid');
+			if(hasInputs) {
+				$(this).find('input').each(function() {
+					var key = $(this).attr('data-key');
+					itemData['data'][key] = $(this).val();
+				})
+			}
+			actionData.push(itemData)
+		});
+		return actionData;
+	};
+
 	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
@@ -705,6 +726,7 @@ $(document).ready(function() {
 		var $modal = $(this).closest('.modal');
 		var noError = true;
 		var itemsNum = $modal.find('tbody tr').length;
+		var itemsData;
 		if(selected.items.length === 0) {
 			snf.modals.showError($modal, 'no-selected');
 			noError = false;
@@ -723,7 +745,8 @@ $(document).ready(function() {
 		}
 		else {
 			$('[data-toggle="popover"]').popover('hide');
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, itemsNum, countAction);
+			itemsData = collectActionData($modal);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, itemsData, itemsNum, countAction);
 			snf.modals.resetErrors($modal);
 			snf.modals.resetInputs($modal);
 			removeWarningDupl($modal);

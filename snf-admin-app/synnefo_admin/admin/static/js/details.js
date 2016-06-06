@@ -151,7 +151,7 @@ $(document).ready(function() {
 		itemData['id'] = $list.attr('data-itemid');
 		if(hasInputs) {
 			itemData['data'] = {};
-			var key = $list.find('dd input').attr('data-key');
+			var key = $list.find('dd input').attr('name');
 			var value = $list.find('dd input').val();
 			itemData['data'][key] = value;
 		}

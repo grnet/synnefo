@@ -694,7 +694,7 @@ $(document).ready(function() {
 			itemData['id'] = $(this).attr('data-itemid');
 			if(hasInputs) {
 				$(this).find('input').each(function() {
-					var key = $(this).attr('data-key');
+					var key = $(this).attr('name');
 					itemData['data'][key] = $(this).val();
 				})
 			}

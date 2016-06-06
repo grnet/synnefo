@@ -127,7 +127,7 @@ $(document).ready(function() {
 
 	function resetItemInfo(modal) {
 		var $modal = $(modal);
-		$modal.find('.summary .info-list').remove();
+		$modal.find('.summary dl').remove();
 	}
 
 	function drawModalSingleItem(modalID, itemName, itemID) {

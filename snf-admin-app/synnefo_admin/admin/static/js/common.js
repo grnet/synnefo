@@ -132,7 +132,7 @@ snf = {
 
             var chunks = email.split(" ");
             if (chunks.length == 1) {
-		        return (reg.test(email) || lt_gt_reg.test(email))
+		        return (reg.test(email) || lt_gt_reg.test(email));
             } else {
                 chunk = chunks[chunks.length - 1];
                 return lt_gt_reg.test(chunk);
@@ -203,12 +203,14 @@ snf = {
 			'<dl class="dl-horizontal info-list" data-itemid=<%= id %>> \
 				<dt>Name:</dt><dd><%= name %></dd> \
 				<dt>ID:</dt><dd><%= id %></dd> \
+			</dl> \
+			<dl class="dl-horizontal info-list with-inputs"> \
 				<dt>New e-mail:</dt> \
 				<dd> \
-					<input placeholder="new e-mail" class="new-email" name="new_email" \
+					<input placeholder="new e-mail" class="new-email" name="new_email"> \
 					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
 				</dd> \
-			<dl>',
+			</dl>',
 			removeLogLine:
 			'<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
 			notifyPending:

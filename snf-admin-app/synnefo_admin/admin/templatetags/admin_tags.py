@@ -477,16 +477,6 @@ def show_more_exception_message(assoc):
 
 
 @register.simple_tag
-def min_prefix():
-    """
-    Return minified files folder for production environment
-    """
-    if settings.DEBUG == False:
-        return 'min-'
-    else:
-        return ''
-
-@register.simple_tag
 def flatten_dict_to_dl(d, default_if_empty='-'):
     """
     Recursively takes a self-nested dict and returns an HTML definition list --

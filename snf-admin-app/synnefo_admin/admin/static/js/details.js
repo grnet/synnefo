@@ -131,15 +131,31 @@ $(document).ready(function() {
 	}
 
 	function drawModalSingleItem(modalID, itemName, itemID) {
+		var tpl;
+		var html;
 		var $summary = $(modalID).find('.modal-body .summary');
 		var $actionBtn = $(modalID).find('.apply-action');
-    var tpl = snf.modals.html.singleItemInfo;
-    if (modalID == '#user-modify_email') {
-      tpl = snf.modals.html.singleItemInfoWithEmailInput;
-    }
-		var html = _.template(tpl);
+		// cannot use JSON.parse because data-keys inlude single quotes
+		var inputsNames = $actionBtn.attr('data-keys').slice(1, -1).replace(/ /g,'').split(',');
+		inputsNames = inputsNames.map(function(item) {
+			return item.slice(1, -1); // remove extra quotes
+		});
+		if (modalID == '#user-modify_email') {
+			tpl = snf.modals.html.singleItemInfoWithEmailInput;
+			html = _.template(tpl,
+				{
+					name: itemName,
+					id: itemID,
+					inputName: inputsNames[0] // modify_email has only 1 input
+				}
+			);
+		}
+		else{
+			tpl = snf.modals.html.singleItemInfo;
+			html = _.template(tpl, {name: itemName, id: itemID});
+		}
 		$actionBtn.attr('data-ids','['+itemID+']');
-		$summary.append(html({name: itemName, id: itemID}));
+		$summary.append(html);
 	};
 
 

@@ -308,7 +308,7 @@ def admin_actions(request):
 
     target = objs['target']
     op = objs['op']
-    items = json.loads(objs['ids'])
+    items = json.loads(objs['items'])
     ids = [item['id'] for item in items]
 
 

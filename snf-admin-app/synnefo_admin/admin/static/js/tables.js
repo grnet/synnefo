@@ -686,19 +686,18 @@ $(document).ready(function() {
 		var $table = $(modal).find('.table-selected');
 		var actionData = [];
 		var hasInputs = $table.find('tr:first input').length > 0;
-		var itemData = {};
-		if(hasInputs) {
-			itemData['data'] = {};
-		}
+
 		$table.find('tr').each(function() {
+			var itemData = {};
 			itemData['id'] = $(this).attr('data-itemid');
 			if(hasInputs) {
+				itemData['data'] = {};
 				$(this).find('input').each(function() {
 					var key = $(this).attr('name');
 					itemData['data'][key] = $(this).val();
-				})
+				});
 			}
-			actionData.push(itemData)
+			actionData.push(itemData);
 		});
 		return actionData;
 	};
@@ -802,6 +801,12 @@ $(document).ready(function() {
 		var idsArray = [];
 		var warningMsg = snf.modals.html.warningDuplicates;
 		var warningInserted = false;
+		// cannot use JSON.parse because data-keys inlude single quotes
+		var inputsNames = $actionBtn.attr('data-keys').slice(1, -1).replace(/ /g,'').split(',');
+		inputsNames = inputsNames.map(function(item) {
+			return item.slice(1, -1); // remove extra quotes
+		});
+
 		// association tracks for each user the related resource
 		// use to contact by selecting the resource of the user, not the user himself
 		var associations = {};
@@ -856,7 +861,8 @@ $(document).ready(function() {
 						itemID: selected.items[i].contact_id,
 						fullName: selected.items[i].contact_name,
 						email: selected.items[i].contact_email,
-						hidden: (i > maxVisible)
+						hidden: (i > maxVisible),
+						inputName: inputsNames[0] // modify_email has only 1 input
 					}
 				);
 				htmlRows += currentRow;

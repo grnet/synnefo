@@ -1,8 +1,6 @@
 snf = {
 	filters: {},
 	modals: {
-
-
 		performAction: function(modal, notificationArea, warningMsg, itemsData, itemsCount, countAction) {
 			var $modal = $(modal);
 			var $notificationArea = $(notificationArea);
@@ -10,12 +8,12 @@ snf = {
 			var url = $actionBtn.attr('data-url');
 			var actionName = $actionBtn.find('span').text();
 			var logID = 'action-'+countAction;
-			var ids = JSON.stringify(itemsData);
+			var items = JSON.stringify(itemsData);
 
 			var data = {
 				op: $actionBtn.attr('data-op'),
 				target: $actionBtn.attr('data-target'),
-				ids: ids
+				items: items
 			}
 			var contactAction = (data.op === 'contact' ? true : false);
 
@@ -207,7 +205,7 @@ snf = {
 			<dl class="dl-horizontal info-list with-inputs"> \
 				<dt>New e-mail:</dt> \
 				<dd> \
-					<input placeholder="new e-mail" class="new-email" name="new_email"> \
+					<input placeholder="new e-mail" class="new-email" name=<%= inputName %>> \
 					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
 				</dd> \
 			</dl>',
@@ -288,7 +286,7 @@ snf = {
 					<div class="wrap"><%= email %></div> \
 				</td> \
 				<td class="wrap td-with-input"> \
-					<input placeholder="new e-mail" class="new-email" name="new_email"> \
+					<input placeholder="new e-mail" class="new-email" name=<%= inputName %>> \
 					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
 					<a class="remove" title="Remove item from selection">X</a></td></tr>',
 

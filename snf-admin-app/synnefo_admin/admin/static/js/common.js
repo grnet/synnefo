@@ -176,7 +176,7 @@ snf = {
     },
     validateModifyEmailForm: function(modal) {
 			var $modal = $(modal);
-		  $modal.find('.new-email').each(function(i, el){
+		  $modal.find('.js-email').each(function(i, el){
         snf.modals.toggleEmailErrorSign($(el));
       });
       return $modal.find('.error-sign:visible').length >0 ? false: true ;
@@ -205,7 +205,7 @@ snf = {
 			<dl class="dl-horizontal info-list with-inputs"> \
 				<dt>New e-mail:</dt> \
 				<dd> \
-					<input placeholder="new e-mail" class="new-email" name=<%= inputName %>> \
+					<input placeholder="new e-mail" class="new-email js-email" name=<%= inputName %>> \
 					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
 				</dd> \
 			</dl>',
@@ -286,7 +286,7 @@ snf = {
 					<div class="wrap"><%= email %></div> \
 				</td> \
 				<td class="wrap td-with-input"> \
-					<input placeholder="new e-mail" class="new-email" name=<%= inputName %>> \
+					<input placeholder="new e-mail" class="new-email js-email" name=<%= inputName %>> \
 					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
 					<a class="remove" title="Remove item from selection">X</a></td></tr>',
 
@@ -462,7 +462,7 @@ $(document).ready(function(){
     });
 });
 
-$('.modal').on('focusout', '.new-email', function(e){
+$('.modal').on('focusout', '.js-email', function(e){
   var el = $(this);
   snf.modals.toggleEmailErrorSign(el);
 });

@@ -1170,7 +1170,7 @@ class Astakos(base.Component):
     def initialize(self):
         return [
             "snf-manage syncdb --noinput",
-            "snf-manage migrate im --delete-ghost-migrations",
+            "snf-manage migrate im",
             "snf-manage migrate quotaholder_app",
             "snf-manage migrate oa2",
             "snf-manage loaddata groups",
@@ -1272,7 +1272,7 @@ class CMS(base.Component):
     def initialize(self):
         return [
             "snf-manage syncdb",
-            "snf-manage migrate --delete-ghost-migrations",
+            "snf-manage migrate",
             "snf-manage loaddata /tmp/sites.json",
             "snf-manage loaddata /tmp/page.json",
             "snf-manage createsuperuser --username=admin \
@@ -1611,7 +1611,7 @@ snf-manage helper-servers-sync --flavor %s --user %s --password %s --image %s
     def initialize(self):
         return [
             "snf-manage syncdb",
-            "snf-manage migrate --delete-ghost-migrations",
+            "snf-manage migrate",
             "snf-manage pool-create --type=mac-prefix \
               --base=aa:00:0 --size=65536",
             "snf-manage pool-create --type=bridge --base=prv --size=20",

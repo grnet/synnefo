@@ -51,7 +51,7 @@ INSTALL_REQUIRES = [
     'snf-common',
     'django-tables2',
     'recaptcha-client>=1.0.5',
-    'django-ratelimit==0.1',
+    'django-ratelimit',
     'requests',
     'snf-django-lib',
     'snf-branding',

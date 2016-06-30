@@ -40,7 +40,6 @@ INSTALL_REQUIRES = [
     'simplejson>=2.1.1',
     'python-dateutil>=1.4.1',
     'IPy>=0.70',
-    'South>=0.7.3',
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',

@@ -25,7 +25,6 @@ INSTALLED_APPS = (
     #'django.contrib.sessions',
     'django.contrib.sites',
     #'django.contrib.messages',
-    'south',
     'synnefo.webproject'
 )
 INSTALLED_APPS = extend_list_from_entry_point(INSTALLED_APPS, 'synnefo', \

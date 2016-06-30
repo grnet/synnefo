@@ -45,7 +45,6 @@ CLASSIFIERS = [
 # Package requirements
 INSTALL_REQUIRES = [
     'Django>=1.7, <1.8',
-    'South>=0.7.3',
     'httplib2>=0.6.0',
     'python-dateutil>=1.4.1',
     'snf-common',

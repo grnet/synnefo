@@ -940,7 +940,7 @@ class Apache(base.Component):
         return [
             "a2enmod ssl", "a2enmod rewrite", "a2dissite 000-default",
             "a2enmod headers",
-            "a2enmod proxy_http", "a2dismod autoindex",
+            "a2enmod proxy_http", "a2dismod -f autoindex",
             ]
 
     def _configure(self):

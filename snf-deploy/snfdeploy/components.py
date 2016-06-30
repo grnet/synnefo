@@ -362,7 +362,6 @@ class APT(base.Component):
 
     def _configure(self):
         return [
-            ("/etc/apt/sources.list.d/debian.backports.wheezy.list", {}, {}),
             ("/etc/apt/sources.list.d/archipelago.wheezy.list", {}, {}),
             ("/etc/apt/sources.list.d/synnefo.wheezy.list", {}, {}),
             ("/etc/apt/sources.list.d/ceph.list", {}, {}),

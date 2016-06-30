@@ -1358,8 +1358,7 @@ class ProjectApplication(models.Model):
                               related_name='chained_apps',
                               db_column='chain')
     name = models.CharField(max_length=MAX_NAME_LENGTH, null=True)
-    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True,
-                               verify_exists=False)
+    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True)
@@ -1702,8 +1701,7 @@ class Project(models.Model):
         db_index=True)
     realname = models.CharField(max_length=ProjectApplication.MAX_NAME_LENGTH)
     homepage = models.URLField(
-        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH,
-        verify_exists=False)
+        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH)
     description = models.TextField(blank=True)
     end_date = models.DateTimeField()
     member_join_policy = models.IntegerField()

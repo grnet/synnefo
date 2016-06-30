@@ -131,7 +131,7 @@ EOF
   modprobe -v vhost-net
   modprobe -v drbd
 
-  apt-get install -t wheezy-backports qemu-kvm
+  apt-get install qemu-kvm
 
   apt-get install snf-image
 

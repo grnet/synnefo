@@ -940,7 +940,7 @@ class Apache(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "a2enmod ssl", "a2enmod rewrite", "a2dissite default",
+            "a2enmod ssl", "a2enmod rewrite", "a2dissite 000-default",
             "a2enmod headers",
             "a2enmod proxy_http", "a2dismod autoindex",
             ]

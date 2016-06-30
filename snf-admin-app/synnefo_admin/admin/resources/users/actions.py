@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ from astakos.im import user_logic as users
 
 from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
+from astakos.im.user_utils import change_user_email
 
 
 class UserAction(AdminAction):
@@ -80,7 +81,12 @@ def generate_actions():
         name='Resend verification', f=users.send_verification_mail,
         karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_admin_email,)
+    actions['contact'] = UserAction(name='Send e&#8209;mail', f=send_admin_email,)
+
+    actions['modify_email'] = UserAction(name='Change e&#8209;mail',
+                                         f=change_user_email, karma='bad',
+                                         caution_level='warning',
+                                         data_keys=['new_email'],)
 
     update_actions_rbac(actions)
 

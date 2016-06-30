@@ -127,18 +127,54 @@ $(document).ready(function() {
 
 	function resetItemInfo(modal) {
 		var $modal = $(modal);
-		$modal.find('.summary .info-list').remove();
+		$modal.find('.summary dl').remove();
 	}
 
 	function drawModalSingleItem(modalID, itemName, itemID) {
+		var tpl;
+		var html;
 		var $summary = $(modalID).find('.modal-body .summary');
 		var $actionBtn = $(modalID).find('.apply-action');
-		var html = _.template(snf.modals.html.singleItemInfo);
-
+		// cannot use JSON.parse because data-keys inlude single quotes
+		var inputsNames = $actionBtn.attr('data-keys').slice(1, -1).replace(/ /g,'').split(',');
+		inputsNames = inputsNames.map(function(item) {
+			return item.slice(1, -1); // remove extra quotes
+		});
+		if (modalID == '#user-modify_email') {
+			tpl = snf.modals.html.singleItemInfoWithEmailInput;
+			html = _.template(tpl,
+				{
+					name: itemName,
+					id: itemID,
+					inputName: inputsNames[0] // modify_email has only 1 input
+				}
+			);
+		}
+		else{
+			tpl = snf.modals.html.singleItemInfo;
+			html = _.template(tpl, {name: itemName, id: itemID});
+		}
 		$actionBtn.attr('data-ids','['+itemID+']');
-		$summary.append(html({name: itemName, id: itemID}));
+		$summary.append(html);
 	};
 
+
+	function collectActionData(modal) {
+		var $list = $(modal).find('.info-list');
+		var actionData = [];
+		var hasInputs = $list.find('dd input').length > 0;
+		var itemData = {};
+		itemData['id'] = $list.attr('data-itemid');
+		if(hasInputs) {
+			itemData['data'] = {};
+			var key = $list.find('dd input').attr('name');
+			var value = $list.find('dd input').val();
+			itemData['data'][key] = value;
+		}
+
+			actionData.push(itemData)
+		return actionData;
+	};
 
 	$('.modal').find('.cancel').click(function() {
 		$modal =$(this).closest('.modal');
@@ -157,12 +193,16 @@ $(document).ready(function() {
 		if($modal.attr('data-type') === 'contact') {
 			noError = snf.modals.validateContactForm($modal);
 		}
+		if($modal.attr('data-type') === 'modify_email') {
+			var validForm = snf.modals.validateModifyEmailForm($modal);
+			noError = noError && validForm;
+		}
 		if(!noError) {
 			e.preventDefault();
 			e.stopPropagation();
 		}
 		else {
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, 0, countAction);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, collectActionData($modal), 0, countAction);
 			snf.modals.resetInputs($modal);
 			snf.modals.resetErrors($modal);
 			resetItemInfo($modal);

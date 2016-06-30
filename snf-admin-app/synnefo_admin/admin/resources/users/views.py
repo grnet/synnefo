@@ -116,6 +116,14 @@ class UserJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+
+        if inst.email_change_is_pending():
+            extra_dict['pending_email'] = {
+                'display_name': "E-mail pending verification",
+                'value': inst.emailchanges.all()[0].new_email_address,
+                'visible': True,
+            }
+
         extra_dict['status'] = {
             'display_name': "Status",
             'value': inst.status_display,
@@ -163,7 +171,7 @@ JSON_CLASS = UserJSONView
 
 @has_permission_or_403(cached_actions)
 @transaction.commit_on_success
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified user."""
     user = get_user_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
@@ -172,6 +180,9 @@ def do_action(request, op, id):
         actions[op].apply(user, 'Rejected by the admin')
     elif op == 'contact':
         actions[op].apply(user, request)
+    elif op == 'modify_email':
+        if isinstance(data, dict):
+            actions[op].apply(user, data.get('new_email'))
     else:
         actions[op].apply(user)
 

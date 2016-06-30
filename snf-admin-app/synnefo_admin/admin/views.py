@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ from importlib import import_module
 
 from django.views.generic.simple import direct_to_template
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.serializers.json import DjangoJSONEncoder
@@ -308,9 +308,9 @@ def admin_actions(request):
 
     target = objs['target']
     op = objs['op']
-    ids = objs['ids']
-    if type(ids) is not list:
-        ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
+    items = json.loads(objs['items'])
+    ids = [item['id'] for item in items]
+
 
     try:
         mod = get_view_module_or_404(target)
@@ -318,9 +318,12 @@ def admin_actions(request):
         status = 404
         response['result'] = "You have requested an unknown operation."
 
-    for id in ids:
+    for item in items:
+        id = item['id']
+        data = item.get('data')
+
         try:
-            mod.do_action(request, op, id)
+            mod.do_action(request, op, id, data)
         except faults.BadRequest as e:
             status = 400
             response['result'] = e.message
@@ -346,6 +349,10 @@ def admin_actions(request):
             response['result'] = """
                 You have requested an action that cannot apply to a target.
                 """
+            response['error_ids'].append(id)
+        except ValidationError, e:
+            status = 400
+            response['result'] = ', '.join(e.messages)
             response['error_ids'].append(id)
         except Exception as e:
             logging.exception("Uncaught exception")

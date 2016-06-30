@@ -62,7 +62,7 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRES = {
     'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8',
                    'setproctitle>=1.0.1'],
-    'SSH_KEYS': ['pycrypto==2.1.0'],
+    'SSH_KEYS': ['pycrypto>=2.1.0'],
 }
 
 TESTS_REQUIRES = [

@@ -41,7 +41,7 @@ from kamaki.clients.utils import https
 from kamaki.clients import ClientError
 import filelocker
 
-DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
+DEFAULT_CONFIG_FILE = "ci_jessie.conf"
 # Is our terminal a colorful one?
 USE_COLORS = True
 # Ignore SSL verification
@@ -471,7 +471,7 @@ class SynnefoCI(object):
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install -q=2 curl --yes --force-yes
-        echo -e "{0}" >> /etc/apt/sources.list.d/synnefo.wheezy.list
+        echo -e "{0}" >> /etc/apt/sources.list.d/synnefo.jessie.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         """.format(self.config.get('Global', 'apt_repo'))
@@ -480,8 +480,8 @@ class SynnefoCI(object):
         cmd = """
         apt-get install -q=2 --force-yes apt-transport-https
         curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-        echo 'deb https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
-        echo 'deb-src https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
+        echo 'deb https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
+        echo 'deb-src https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
         apt-get update
         apt-get install -q=2 --force-yes nodejs ruby ruby-dev
         """

@@ -45,6 +45,10 @@ Admin
 * Improve the displayed data in the tables
 * Display more information regarding the enabled authentication providers
 * Display pending modifications of projects
+* Add the action 'modify user e-mail' in the Admin interface
+* Display data related with the modification of users' e-mails like 'e-mail
+  pending verification', 'e-mail change requested at', 'initially accepted
+  e-mail'
 
 
 .. _Changelog-0.17:

@@ -27,14 +27,14 @@
                     <dt>ID</dt><dd>{{ user.id }}</dd>
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
-                    <dt>E-mail</dt><dd>{{ user.email }}</dd>
+                    <dt>E&#8209;mail</dt><dd>{{ user.email }}</dd>
                     {% if user.accepted_email and user.email != user.accepted_email %}
-                        <dt>Initially accepted e-mail</dt><dd>{{ user.accepted_email }}</dd>
+                        <dt>Initially accepted e&#8209;mail</dt><dd>{{ user.accepted_email }}</dd>
                     {% endif %}
                     {% if user.email_change_is_pending %}
-                        <dt>E-mail pending verification</dt>
+                        <dt>E&#8209;mail pending verification</dt>
                         <dd>{{ user.emailchanges.all.0.new_email_address }}
-                        <dt>E-mail change requested at</dt>
+                        <dt>E&#8209;mail change requested at</dt>
                         <dd>{{ user.emailchanges.all.0.requested_at }}
                     {% endif %}
                     <dt>Status</dt><dd>{{ user.status_display|upper }}</dd>

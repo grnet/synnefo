@@ -417,7 +417,7 @@ def show_auth_providers(user, category):
 @register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
-    if action.name == "Send e-mail" and action.target != 'user':
+    if action.name == "Send e&#8209;mail" and action.target != 'user':
         return False
     return action.can_apply(item)
 

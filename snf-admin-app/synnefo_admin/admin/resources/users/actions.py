@@ -81,9 +81,9 @@ def generate_actions():
         name='Resend verification', f=users.send_verification_mail,
         karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_admin_email,)
+    actions['contact'] = UserAction(name='Send e&#8209;mail', f=send_admin_email,)
 
-    actions['modify_email'] = UserAction(name='Change e-mail',
+    actions['modify_email'] = UserAction(name='Change e&#8209;mail',
                                          f=change_user_email, karma='bad',
                                          caution_level='dangerous',)
 

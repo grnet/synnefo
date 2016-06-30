@@ -38,7 +38,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
-    'Django>=1.4, <1.5',
+    'Django>=1.7, <1.8',
     'snf-django-lib',
     'pycrypto>=2.1.0',
 ]

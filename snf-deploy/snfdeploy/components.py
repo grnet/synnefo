@@ -948,8 +948,8 @@ class Apache(base.Component):
     def _configure(self):
         r1 = {"domain": self.node.domain}
         return [
-            ("/etc/apache2/sites-available/synnefo", r1, {}),
-            ("/etc/apache2/sites-available/synnefo-ssl", r1, {}),
+            ("/etc/apache2/sites-available/synnefo.conf", r1, {}),
+            ("/etc/apache2/sites-available/synnefo-ssl.conf", r1, {}),
             ("/root/firefox_cert_override.py", {}, {})
             ]
 

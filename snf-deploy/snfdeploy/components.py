@@ -1714,7 +1714,7 @@ class VNC(base.Component):
 class Admin(base.Component):
     REQUIRED_PACKAGES = [
         "ruby-full",
-        "rubygems1.8",
+        "rubygems-integration",
         "python-django-eztables",
         "python-astakosclient",
         "snf-astakos-app",

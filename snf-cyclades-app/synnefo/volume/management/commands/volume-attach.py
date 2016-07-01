@@ -19,6 +19,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management.utils import parse_bool
 from synnefo.volume import volumes
 from synnefo.management import common
+from synnefo.db import transaction
 
 HELP_MSG = """Attach an existing volume to a server."""
 
@@ -42,6 +43,7 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete."),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

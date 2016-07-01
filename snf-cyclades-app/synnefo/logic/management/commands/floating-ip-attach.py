@@ -20,6 +20,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import servers
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
@@ -34,6 +35,7 @@ class Command(SynnefoCommand):
             help='The server id the floating-ip will be attached to'),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args or len(args) > 1:

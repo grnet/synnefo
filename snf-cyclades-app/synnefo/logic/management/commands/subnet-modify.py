@@ -21,6 +21,7 @@ from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 
 from synnefo.logic import subnets
+from synnefo.db import transaction
 
 HELP_MSG = """
 
@@ -37,6 +38,7 @@ class Command(SynnefoCommand):
                     help="The new subnet name."),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:

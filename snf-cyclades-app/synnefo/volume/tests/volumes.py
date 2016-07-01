@@ -692,10 +692,7 @@ class VolumesTransactionsTest(QuotaAssertions,
                 with mocked_quotaholder() as mqh:
                     volumes.create(**self.kwargs)
 
-        # Assert that the transaction was rollbacked and that no commission was
-        # sent
-        with self.assertRaises(Volume.DoesNotExist):
-            Volume.objects.get(name=self.volume_name)
+        # Assert that no commission was sent
         self.assertNoCommission(mqh)
 
     def test_create_standalone_handle_resource_commission_ex(self, mrapi):
@@ -710,10 +707,7 @@ class VolumesTransactionsTest(QuotaAssertions,
                 with mocked_quotaholder() as mqh:
                     volumes.create(**self.kwargs)
 
-        # Assert that the transaction was rollbacked, but that the commission
-        # was sent.
-        with self.assertRaises(Volume.DoesNotExist):
-            Volume.objects.get(name=self.volume_name)
+        # Assert that the commission was sent.
         expected_commission = {(self.userid, "cyclades.disk"): self.size << 30}
         self.assertCommissionEqual(mqh, expected_commission)
 
@@ -742,9 +736,6 @@ class VolumesTransactionsTest(QuotaAssertions,
                     volumes.create(**self.kwargs)
         del self.kwargs["server"]
 
-        # Assert that the transaction was rollbacked but that the commission
-        # was sent.
-        with self.assertRaises(Volume.DoesNotExist):
-            Volume.objects.get(name=self.volume_name)
+        # Assert that the commission was sent.
         expected_commission = {(self.userid, "cyclades.disk"): self.size << 30}
         self.assertCommissionEqual(mqh, expected_commission)

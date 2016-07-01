@@ -19,6 +19,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 from synnefo.management import common
 #from snf_django.management.utils import parse_bool
 from synnefo.volume import snapshots
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
@@ -39,6 +40,7 @@ class Command(SynnefoCommand):
             help="Display description of the snapshot"),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:

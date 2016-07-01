@@ -19,6 +19,7 @@ from snf_django.management.commands import RemoveCommand
 from snf_django.lib.api import faults
 from synnefo.logic import networks
 from synnefo.management import common
+from synnefo.db import transaction
 
 
 class Command(RemoveCommand):
@@ -26,6 +27,7 @@ class Command(RemoveCommand):
     args = "<network_id> [<network_id> ...]"
     help = "Remove a network from the Database, and Ganeti"
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

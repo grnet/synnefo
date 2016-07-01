@@ -15,7 +15,6 @@
 
 import logging
 
-from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.db.models import Volume, VolumeMetadata, VirtualMachine
@@ -42,7 +41,6 @@ def get_vm(vm_id):
         raise faults.BadRequest("Virtual machine '%s' does not exist" % vm_id)
 
 
-@transaction.commit_on_success
 def create(user_id, size, server=None, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
@@ -324,7 +322,6 @@ def delete_volume_from_helper(volume, helper_vm):
              volume.id, helper_vm.id, volume.backendjobid)
 
 
-@transaction.commit_on_success
 def delete(volume):
     """Delete a Volume.
 
@@ -365,7 +362,6 @@ def delete(volume):
     return volume
 
 
-@transaction.commit_on_success
 def detach(volume_id):
     """Detach a Volume"""
     volume = get_volume(volume_id)
@@ -380,7 +376,6 @@ def detach(volume_id):
     return volume
 
 
-@transaction.commit_on_success
 def update(volume, name=None, description=None, delete_on_termination=None):
     if name is not None:
         utils.check_name_length(name, Volume.NAME_LENGTH,
@@ -398,7 +393,6 @@ def update(volume, name=None, description=None, delete_on_termination=None):
     return volume
 
 
-@transaction.commit_on_success
 def reassign_volume(volume, project, shared_to_project):
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %

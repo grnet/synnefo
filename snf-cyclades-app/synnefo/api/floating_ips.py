@@ -74,6 +74,7 @@ def floating_ip_demux(request, floating_ip_id):
 
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
+@transaction.commit_on_success
 def floating_ip_action_demux(request, floating_ip_id):
     userid = request.user_uniq
     req = utils.get_json_body(request)
@@ -269,7 +270,6 @@ def list_floating_ip_pools(request):
     return HttpResponse(data, status=200)
 
 
-@transaction.commit_on_success
 def reassign(request, floating_ip, args):
     if request.user_uniq != floating_ip.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"

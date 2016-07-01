@@ -25,7 +25,6 @@ from synnefo.util import units
 log = logging.getLogger(__name__)
 
 
-@transaction.commit_on_success
 def create(user_id, volume, name, description, metadata, force=False):
     """Create a snapshot from a given volume
 
@@ -137,7 +136,6 @@ def generate_mapfile_name(volume):
                                volume.snapshot_counter)
 
 
-@transaction.commit_on_success
 def delete(snapshot):
     """Delete a snapshot.
 

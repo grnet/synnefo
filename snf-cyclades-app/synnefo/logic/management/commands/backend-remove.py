@@ -35,6 +35,7 @@ class Command(SynnefoCommand):
     args = "<backend_id>"
     help = HELP_MSG
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         write = self.stdout.write
         if len(args) < 1:
@@ -67,7 +68,6 @@ class Command(SynnefoCommand):
             write("Successfully issued jobs to remove all networks.\n")
 
 
-@transaction.commit_on_success
 def delete_backend(backend):
     # Get X-Lock
     backend = Backend.objects.select_for_update().get(id=backend.id)

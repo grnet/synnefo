@@ -20,6 +20,7 @@ from snf_django.management.utils import parse_bool
 from synnefo.management.common import convert_api_faults
 from synnefo.management import pprint, common
 from synnefo.volume import volumes
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
@@ -45,6 +46,7 @@ class Command(SynnefoCommand):
                  " the volume is attached will be deleted"),
     )
 
+    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:

@@ -600,6 +600,7 @@ def update_server_name(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -1341,6 +1342,7 @@ def get_volume_info(request, server_id, volume_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     user_id = request.user_uniq
@@ -1368,6 +1370,7 @@ def attach_volume(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def detach_volume(request, server_id, volume_id):
     log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
               request.user_uniq, server_id, volume_id)

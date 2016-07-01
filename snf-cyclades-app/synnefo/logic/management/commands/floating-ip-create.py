@@ -20,6 +20,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import ips
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
@@ -43,6 +44,7 @@ class Command(SynnefoCommand):
             help="Unique identifier of the project of the floating IP"),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:

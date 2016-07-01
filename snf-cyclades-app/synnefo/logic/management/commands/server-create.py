@@ -22,6 +22,7 @@ from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
 
 from synnefo.logic import servers
+from synnefo.db import transaction
 
 HELP_MSG = """
 
@@ -81,6 +82,7 @@ class Command(SynnefoCommand):
 
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:

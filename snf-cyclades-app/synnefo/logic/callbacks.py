@@ -66,6 +66,7 @@ def instance_from_msg(func):
 
     """
     @handle_message_delivery
+    @transaction.commit_on_success
     @wraps(func)
     def wrapper(msg):
         try:
@@ -90,6 +91,7 @@ def network_from_msg(func):
 
     """
     @handle_message_delivery
+    @transaction.commit_on_success
     @wraps(func)
     def wrapper(msg):
         try:

@@ -88,6 +88,7 @@ def get_volume_attachments(volume):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
+@transaction.commit_on_success
 def create_volume(request):
     """Create a new Volume."""
 
@@ -191,6 +192,7 @@ def list_volumes(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
+@transaction.commit_on_success
 def delete_volume(request, volume_id):
     log.debug("User: %s, Volume: %s Action: delete_volume",
               request.user_uniq, volume_id)
@@ -214,6 +216,7 @@ def get_volume(request, volume_id):
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
+@transaction.commit_on_success
 def update_volume(request, volume_id):
     req = utils.get_json_body(request)
     log.debug("User: %s, Volume: %s Action: update_volume, Request: %s",
@@ -388,6 +391,7 @@ def snapshot_to_dict(snapshot, detail=True):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
+@transaction.commit_on_success
 def create_snapshot(request):
     """Create a new Snapshot."""
     util.assert_snapshots_enabled(request)
@@ -450,6 +454,7 @@ def list_snapshots(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
+@transaction.commit_on_success
 def delete_snapshot(request, snapshot_id):
     util.assert_snapshots_enabled(request)
     log.debug("User: %s, Snapshot: %s Action: delete",

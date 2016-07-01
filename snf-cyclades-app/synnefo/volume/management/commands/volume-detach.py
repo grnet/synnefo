@@ -21,6 +21,7 @@ from synnefo.volume import volumes
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
+from synnefo.db import transaction
 
 
 HELP_MSG = "Detach a volume from a server"
@@ -61,6 +62,7 @@ class Command(SynnefoCommand):
             raise CommandError("Unaccepted input value. Please choose yes/no"
                                " (y/n).")
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

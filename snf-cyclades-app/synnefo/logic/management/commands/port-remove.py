@@ -20,6 +20,7 @@ from synnefo.logic import servers
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import RemoveCommand
+from synnefo.db import transaction
 
 
 class Command(RemoveCommand):
@@ -36,6 +37,7 @@ class Command(RemoveCommand):
             help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

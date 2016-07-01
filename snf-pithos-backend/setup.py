@@ -37,8 +37,8 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'snf-common',
-    'SQLAlchemy>=0.6.3, <=0.7.8',
-    'alembic>=0.3.4, <0.4',
+    'SQLAlchemy>=0.9, <1.0',
+    'alembic>=0.6, <0.7',
     'objpool>=0.3',
     'archipelago'
 ]

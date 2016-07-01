@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.core.urlresolvers import reverse
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from django.http import HttpResponseNotAllowed
 from django.utils.encoding import smart_str, iri_to_uri
 from django.views.decorators.csrf import csrf_exempt

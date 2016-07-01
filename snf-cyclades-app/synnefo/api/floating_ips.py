@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 from synnefo.db import transaction
 from django.conf import settings
 from django.http import HttpResponse

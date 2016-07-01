@@ -1168,10 +1168,7 @@ class Astakos(base.Component):
     @base.run_cmds
     def initialize(self):
         return [
-            "snf-manage syncdb --noinput",
-            "snf-manage migrate im",
-            "snf-manage migrate quotaholder_app",
-            "snf-manage migrate oa2",
+            "snf-manage migrate",
             "snf-manage loaddata groups",
             "snf-manage loaddata projectlock",
             ] + self._astakos_oa2() + self._astakos_register_components()
@@ -1270,7 +1267,6 @@ class CMS(base.Component):
     @base.run_cmds
     def initialize(self):
         return [
-            "snf-manage syncdb",
             "snf-manage migrate",
             "snf-manage loaddata /tmp/sites.json",
             "snf-manage loaddata /tmp/page.json",
@@ -1609,7 +1605,6 @@ snf-manage helper-servers-sync --flavor %s --user %s --password %s --image %s
     @base.run_cmds
     def initialize(self):
         return [
-            "snf-manage syncdb",
             "snf-manage migrate",
             "snf-manage pool-create --type=mac-prefix \
               --base=aa:00:0 --size=65536",

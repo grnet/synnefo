@@ -20,7 +20,7 @@ from socket import getfqdn
 from random import choice
 from django import dispatch
 from synnefo.db import transaction
-from django.utils import simplejson as json
+import json
 
 from snf_django.lib.api import faults
 from django.conf import settings

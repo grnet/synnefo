@@ -17,7 +17,7 @@ from pithos.api.test import PithosAPITest
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
+import json
 
 
 class ListSharing(PithosAPITest):

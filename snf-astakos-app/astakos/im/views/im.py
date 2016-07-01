@@ -28,7 +28,7 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.views.decorators.http import require_http_methods
-from django.utils import simplejson as json
+import json
 from django.template import RequestContext
 
 from synnefo_branding import utils as branding

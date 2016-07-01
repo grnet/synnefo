@@ -26,7 +26,7 @@ import time
 import httplib
 import logging
 import fabric.api as fabric
-import simplejson as json
+import json
 import subprocess
 import tempfile
 import urlparse

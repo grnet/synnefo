@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import simplejson as json
+import json
 from synnefo.db import transaction
 from snf_django.lib.api import faults
 from synnefo.plankton.backend import PlanktonBackend, OBJECT_ERROR

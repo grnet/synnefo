@@ -3,7 +3,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 import sys
 from optparse import OptionParser
 from synnefo.lib.services import fill_endpoints, filter_public
-from django.utils import simplejson as json
+import json
 
 
 astakos_services = {

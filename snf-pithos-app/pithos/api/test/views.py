@@ -27,7 +27,7 @@ from synnefo.lib import join_urls
 #from mock import patch
 from urllib import quote, unquote
 
-import django.utils.simplejson as json
+import json
 
 import re
 import datetime

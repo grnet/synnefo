@@ -21,7 +21,7 @@ from dateutil.parser import parse as date_parse
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils

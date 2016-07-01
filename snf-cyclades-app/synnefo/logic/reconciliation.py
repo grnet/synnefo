@@ -43,7 +43,7 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
-import simplejson as json
+import json
 from datetime import datetime, timedelta
 
 from synnefo.db import transaction

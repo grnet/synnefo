@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template import loader
 from django.http import HttpResponse
 from django.utils.translation import get_language
-from django.utils import simplejson as json
+import json
 from synnefo_branding.utils import render_to_string
 from django.core.urlresolvers import reverse
 from django.template import RequestContext

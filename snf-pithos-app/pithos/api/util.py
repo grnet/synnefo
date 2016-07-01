@@ -21,7 +21,7 @@ from urlparse import urlunsplit, urlsplit, parse_qsl
 from django.http import (HttpResponse, Http404, HttpResponseRedirect,
                          HttpResponseNotAllowed)
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_unicode, smart_str
 smart_unicode_ = partial(smart_unicode, strings_only=True)

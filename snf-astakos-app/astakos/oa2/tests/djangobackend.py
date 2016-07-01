@@ -25,7 +25,7 @@ from django.test import TransactionTestCase as TestCase
 from django.test import Client as TestClient
 
 from django.core.urlresolvers import reverse
-from django.utils import simplejson as json
+import json
 from django.utils.encoding import smart_str, iri_to_uri
 
 from astakos.oa2 import settings

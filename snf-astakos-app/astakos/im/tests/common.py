@@ -27,7 +27,7 @@ from django.test import TestCase
 from django.core import mail
 from django.http import SimpleCookie, HttpRequest, QueryDict
 from django.utils.importlib import import_module
-from django.utils import simplejson as json
+import json
 
 from astakos.im.activation_backends import *
 from astakos.im.views.target.shibboleth import Tokens as ShibbolethTokens

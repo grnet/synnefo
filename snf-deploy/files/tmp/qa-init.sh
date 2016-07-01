@@ -69,7 +69,6 @@ apt-get install -y \
         python-pyinotify \
         python-pyparsing \
         python-setuptools \
-        python-simplejson \
         python-sphinx \
         python-yaml \
         qemu-utils \

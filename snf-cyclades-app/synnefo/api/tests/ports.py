@@ -15,7 +15,7 @@
 
 from django.conf import settings
 from snf_django.utils.testing import BaseAPITest, override_settings
-from django.utils import simplejson as json
+import json
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.utils import simplejson as json
+import json
 from django.test import TestCase
 from snf_django.utils.testing import astakos_user
 from synnefo.cyclades_settings import cyclades_services

@@ -21,7 +21,7 @@ from wsgiref.handlers import format_date_time
 
 from django.http import HttpResponse
 from django.utils import cache
-from django.utils import simplejson as json
+import json
 from django.template.loader import render_to_string
 from django.views.decorators import csrf
 

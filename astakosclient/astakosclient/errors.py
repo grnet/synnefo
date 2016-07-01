@@ -47,7 +47,7 @@ class BadValue(AstakosClientException):
 
 
 class InvalidResponse(AstakosClientException):
-    """Return simplejson parse Exception as AstakosClient one"""
+    """Return json parse Exception as AstakosClient one"""
 
 
 class BadRequest(AstakosClientException):

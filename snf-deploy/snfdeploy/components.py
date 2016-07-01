@@ -15,7 +15,7 @@
 
 import re
 import datetime
-import simplejson
+import json
 import copy
 import os
 from snfdeploy import base
@@ -2037,7 +2037,7 @@ class GanetiDev(base.Component):
             "CLUSTER_NAME": self.cluster.name,
             "VG": self.cluster.vg,
             "CLUSTER_NETDEV": self.cluster.netdev,
-            "NODES": simplejson.dumps(sample_nodes),
+            "NODES": json.dumps(sample_nodes),
             "DOMAIN": self.cluster.domain,
             "COMMON_BRIDGE": config.common_bridge
             }

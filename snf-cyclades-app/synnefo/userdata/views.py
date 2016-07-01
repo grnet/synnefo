@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django import http
-from django.utils import simplejson as json
+import json
 from django.conf import settings
 
 from synnefo.userdata import rest

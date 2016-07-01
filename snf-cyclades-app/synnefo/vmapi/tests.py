@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.test import TestCase
-from django.utils import simplejson as json
+import json
 
 from synnefo.lib import join_urls
 from synnefo.vmapi import settings

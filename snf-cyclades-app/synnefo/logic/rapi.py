@@ -27,7 +27,7 @@
 
 import requests
 import logging
-import simplejson
+import json
 import time
 
 GANETI_RAPI_PORT = 5080
@@ -164,7 +164,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   """
   USER_AGENT = "Ganeti RAPI Client"
-  _json_encoder = simplejson.JSONEncoder(sort_keys=True)
+  _json_encoder = json.JSONEncoder(sort_keys=True)
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
                username=None, password=None, logger=logging):
@@ -238,7 +238,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
     http_code = r.status_code
     if r.content is not None:
-        response_content = simplejson.loads(r.content)
+        response_content = json.loads(r.content)
     else:
         response_content = None
 

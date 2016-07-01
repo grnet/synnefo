@@ -18,7 +18,7 @@ from django.conf.urls import patterns
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 
 from snf_django.lib import api
 from synnefo.api import util

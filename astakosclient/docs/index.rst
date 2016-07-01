@@ -249,7 +249,7 @@ Exceptions and Errors
 
 *exception* **InvalidResponse**
     This exception is raised whenever the server's response is not valid json
-    (cannot be parsed by simplejson library).
+    (cannot be parsed by json library).
 
 *exception* **BadRequest**
     Raised in case of a Bad Request, with status 400.

@@ -18,7 +18,7 @@ from django import http
 from django.test import TransactionTestCase
 from django.conf import settings
 from django.test.client import Client
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from django.core.validators import MaxLengthValidator
 

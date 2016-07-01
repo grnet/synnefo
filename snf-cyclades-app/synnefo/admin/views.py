@@ -15,7 +15,7 @@
 
 import logging
 from django import http
-from django.utils import simplejson as json
+import json
 from django.conf import settings
 from snf_django.lib import api
 from snf_django.lib.api import faults

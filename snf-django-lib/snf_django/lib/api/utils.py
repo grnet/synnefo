@@ -15,7 +15,7 @@
 
 import datetime
 from dateutil.parser import parse as date_parse
-from django.utils import simplejson as json
+import json
 
 from django.conf import settings
 from snf_django.lib.api import faults

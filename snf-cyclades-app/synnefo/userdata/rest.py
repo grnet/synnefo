@@ -17,7 +17,7 @@
 import logging
 
 from django import http
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 

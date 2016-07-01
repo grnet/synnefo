@@ -15,7 +15,7 @@
 
 from logging import getLogger
 
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 
 from synnefo.lib import join_urls

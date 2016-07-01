@@ -19,7 +19,7 @@ from django.conf.urls import patterns
 from synnefo.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 
 from snf_django.lib import api

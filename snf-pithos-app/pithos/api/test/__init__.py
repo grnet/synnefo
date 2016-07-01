@@ -37,7 +37,7 @@ from django.utils.http import urlencode
 from django.utils.encoding import smart_unicode
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 
-import django.utils.simplejson as json
+import json
 
 
 import sys

@@ -39,10 +39,6 @@ INSTALL_REQUIRES = [
     "objpool>=0.3",
 ]
 
-EXTRAS_REQUIRES = {
-    'SimpleJSON': ['simplejson'],
-}
-
 setup(
     name='astakosclient',
     version=VERSION,
@@ -61,7 +57,6 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
-    extras_require=EXTRAS_REQUIRES,
     tests_require=['mock'],
 
     entry_points={},

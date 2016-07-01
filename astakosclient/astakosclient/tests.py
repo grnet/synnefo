@@ -26,7 +26,7 @@ import re
 import sys
 
 try:
-    import simplejson as json
+    import json
 except ImportError:
     import json
 

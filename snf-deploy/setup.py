@@ -37,7 +37,6 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'argparse',
-    'simplejson',
     'ipaddr',
     'fabric>=1.3',
 ]

@@ -31,7 +31,7 @@ from pithos.api.test.util import (md5_hash, merkle, strnextling,
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
+import json
 
 import random
 import re

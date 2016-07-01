@@ -28,7 +28,7 @@ from Crypto.Cipher import AES
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.db.models import Q
 from django.core.cache import cache
 

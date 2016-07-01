@@ -18,7 +18,7 @@ from time import time, mktime
 import datetime
 
 from django.http import HttpResponse
-from django.utils import simplejson as json
+import json
 from django.template.loader import render_to_string
 
 from astakos.im.models import AstakosUser, Component

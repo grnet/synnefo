@@ -19,7 +19,7 @@ from astakos.im.views import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
-from django.utils import simplejson as json
+import json
 
 GLOBAL_MESSAGES = settings.GLOBAL_MESSAGES
 SIGNUP_MESSAGES = settings.SIGNUP_MESSAGES

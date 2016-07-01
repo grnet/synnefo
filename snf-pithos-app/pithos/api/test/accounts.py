@@ -26,7 +26,7 @@ from synnefo.lib import join_urls
 import time as _time
 import datetime
 
-import django.utils.simplejson as json
+import json
 
 
 class AccountHead(PithosAPITest):

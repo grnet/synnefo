@@ -90,14 +90,14 @@ class TestUserUtils(TestCase):
         self.assertEqual(len(mail.outbox), 4)
         verify_sent_email(email_dict, mail.outbox[3])
 
-    @patch('astakos.im.user_utils.send_change_email')
-    def test_change_user_email(self, send_change_email_mock):
+    @patch('astakos.im.user_utils.send_change_email_to_new')
+    def test_change_user_email(self, send_change_email_to_new_mock):
         """
         The `change_user_email` method should check if the email
         provided is valid. If it is invalid it should raise a
         `ValidationError` exception. Otherwise it should create
         an `EmailChange` instance on the database and call
-        `send_change_email` with the email template provided.
+        `send_change_email_to_new` with the email template provided.
         """
         user = get_local_user('something@something.com')
 
@@ -107,23 +107,23 @@ class TestUserUtils(TestCase):
         with self.assertRaises(ValidationError):
             change_user_email(user, new_email)
 
-        # valid `new_email`, default `email_template_name`
+        # valid `new_email`, default `email_to_new_template_name`
         new_email = 'something@somethingelse.com'
-        default_template = 'registration/email_change_email.txt'
+        default_to_new_template = 'registration/email_change_email_new_email.txt'
 
         change_user_email(user, new_email)
 
         email_change = EmailChange.objects.get(new_email_address=new_email)
-        send_change_email_mock.assert_called_once_with(email_change, default_template)
+        send_change_email_to_new_mock.assert_called_once_with(email_change, default_to_new_template)
         self.assertTrue(user.email_change_is_pending())
         self.assertEqual(user.emailchanges.count(), 1)
 
-        # valid mail, different `email_template_name`
-        template = 'mytemplate/template.txt'
-        change_user_email(user, new_email, email_template_name=template)
+        # valid mail, different `email_to_new_template_name`
+        to_new_template = 'mytemplate/template.txt'
+        change_user_email(user, new_email, email_to_new_template_name=to_new_template)
 
         email_change = EmailChange.objects.get(new_email_address=new_email)
-        send_change_email_mock.assert_called_with(email_change, template)
+        send_change_email_to_new_mock.assert_called_with(email_change, to_new_template)
 
         # the previous email change was deleted
         self.assertEqual(user.emailchanges.count(), 1)

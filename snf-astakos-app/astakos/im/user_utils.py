@@ -206,7 +206,7 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
 
 
 def change_user_email(user, new_email,
-                 email_template_name='registration/email_change_email.txt'):
+                 email_to_new_template_name='registration/email_change_email_new_email.txt'):
 
     validate_email(new_email)
 
@@ -224,13 +224,13 @@ def change_user_email(user, new_email,
         activation_key=activation_key
     )
 
-    send_change_email(email_change, email_template_name)
+    send_change_email_to_new(email_change, email_to_new_template_name)
 
     return email_change
 
 
-def send_change_email(ec, email_template_name=(
-                      'registration/email_change_email.txt')):
+def send_change_email_to_new(ec, email_template_name=(
+                      'registration/email_change_email_new_email.txt')):
     url = ec.get_url()
     url = urlparse.urljoin(settings.BASE_URL, url)
     c = {'url': url,

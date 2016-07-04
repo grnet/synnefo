@@ -46,7 +46,7 @@ from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
 from astakos.im.user_utils import send_feedback, logout as auth_logout, \
-    invite as invite_func, send_change_email, change_user_email
+    invite as invite_func, change_user_email
 from astakos.im import settings
 from astakos.im import presentation
 from astakos.im import auth_providers as auth
@@ -733,7 +733,7 @@ def approval_terms(request, term_id=None,
 @cookie_fix
 @transaction.commit_on_success
 def request_change_email(request,
-                 email_template_name='registration/email_change_email.txt',
+                 email_to_new_template_name='registration/email_change_email_new_email.txt',
                  form_template_name='registration/email_change_form.html',
                  extra_context=None):
 
@@ -761,7 +761,7 @@ def request_change_email(request,
             change_user_email(
                 user=request.user,
                 new_email=new_email,
-                email_template_name=email_template_name
+                email_to_new_template_name=email_to_new_template_name,
             )
             msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
             messages.success(request, msg)

@@ -808,7 +808,7 @@ class UserActionsTests(TestCase):
         self.assertTrue(user.email_change_is_pending())
 
         # link was sent
-        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 1)
         self.assertEqual(len(get_mailbox('kpap@gmail.com')), 1)
 
         # proper email change
@@ -816,7 +816,7 @@ class UserActionsTests(TestCase):
         r = self.client.post(ui_url('email_change'), data, follow=True)
         self.assertRedirects(r, ui_url('profile'))
         self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
-        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 2)
         self.assertEqual(len(get_mailbox('kpap@yahoo.com')), 1)
 
     def test_change_email(self):

@@ -25,6 +25,8 @@ Astakos
   projects, and project memberships. Reactivation unsuspends them.
 * Add command `user-check`. It supports suspending projects for previously
   deactivated users.
+* Send an informative email to the user's current email address when they
+  request to change their email.
 
 Cyclades
 --------

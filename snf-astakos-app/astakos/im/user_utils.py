@@ -206,7 +206,8 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
 
 
 def change_user_email(user, new_email,
-                 email_to_new_template_name='registration/email_change_email_new_email.txt'):
+                 email_to_new_template_name='registration/email_change_email_new_email.txt',
+                 email_to_old_template_name='registration/email_change_email_old_email.txt'):
 
     validate_email(new_email)
 
@@ -225,6 +226,7 @@ def change_user_email(user, new_email,
     )
 
     send_change_email_to_new(email_change, email_to_new_template_name)
+    send_change_email_to_old(email_change, email_to_old_template_name)
 
     return email_change
 
@@ -243,3 +245,12 @@ def send_change_email_to_new(ec, email_template_name=(
               [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s'
     logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
+
+def send_change_email_to_old(email_change,
+        email_template_name='registration/email_change_email_old_email.txt'):
+
+    message = render_to_string(email_template_name, {'ec': email_change})
+    from_email = settings.SERVER_EMAIL
+
+    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
+        from_email, [email_change.user.email], connection=get_connection())

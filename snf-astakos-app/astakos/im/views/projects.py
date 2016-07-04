@@ -48,8 +48,8 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     ProjectForbidden
 from astakos.im import settings
 from astakos.im.util import redirect_back
-from astakos.im.views.util import render_response, _create_object, \
-    _update_object, _resources_catalog, ExceptionHandler, \
+from astakos.im.views.util import render_response, \
+    _resources_catalog, ExceptionHandler, \
     get_user_projects_table, handle_valid_members_form, redirect_to_next
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
     valid_astakos_user_required, login_required

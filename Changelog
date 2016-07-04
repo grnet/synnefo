@@ -39,6 +39,8 @@ Cyclades
 * Add a raven processor to filter sensitive information sent to Sentry using
   the Sentry logging handler.
 * Imporove SynnefoExceptionReporterFilter to better cleanse request body.
+* Make eventd detect Ganeti Master failovers and allow having multiple eventd
+  instances running in the Ganeti cluster.
 
 Admin
 -----

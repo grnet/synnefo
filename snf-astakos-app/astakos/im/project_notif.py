@@ -41,7 +41,7 @@ def membership_change_notify(project, user, action):
             [user.email],
             MEM_CHANGE_NOTIF['subject'] % project.__dict__,
             template=MEM_CHANGE_NOTIF['template'],
-            dictionary={'object': project, 'action': action})
+            dictionary={'object': project, 'action': action, 'user': user})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)
@@ -54,7 +54,7 @@ def membership_enroll_notify(project, user):
             [user.email],
             MEM_ENROLL_NOTIF['subject'] % project.__dict__,
             template=MEM_ENROLL_NOTIF['template'],
-            dictionary={'object': project})
+            dictionary={'object': project, 'user': user})
         notification.send()
     except NotificationError, e:
         logger.error(e.message)

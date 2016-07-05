@@ -29,6 +29,7 @@ import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 
+import django
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 from django.conf import settings
 
@@ -571,6 +572,8 @@ def main():
         log.debug("gevent imported. Reinitializing gevent")
         import gevent
         gevent.reinit()
+
+    django.setup()
 
     # Catch every exception, make sure it gets logged properly
     try:

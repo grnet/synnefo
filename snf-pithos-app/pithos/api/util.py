@@ -18,7 +18,7 @@ from datetime import datetime
 from urllib import quote, unquote, urlencode
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from django.http import (HttpResponse, Http404, HttpResponseRedirect,
+from django.http import (StreamingHttpResponse, Http404, HttpResponseRedirect,
                          HttpResponseNotAllowed)
 from django.template.loader import render_to_string
 import json
@@ -900,7 +900,8 @@ class ObjectWrapper(object):
 
 
 def object_data_response(request, sizes, hashmaps, meta, public=False):
-    """Get the HttpResponse object for replying with the object's data."""
+    """Get the StreamingHttpResponse object for replying with the object's
+       data."""
 
     # Range handling.
     size = sum(sizes)
@@ -936,7 +937,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = ''
     wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps,
                             boundary, meta)
-    response = HttpResponse(wrapper, status=ret)
+    response = StreamingHttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None),

@@ -70,8 +70,8 @@ check_ganeti_master() {
 }
 
 do_start() {
-	# Ensure the directory containing the pidfile exists
-	# and has the right permissions
+    # Ensure the directory containing the pidfile exists
+    # and has the right permissions
     # Return
     #   0 if daemon has been started
     #   1 if daemon was already running
@@ -79,22 +79,26 @@ do_start() {
     #   3 if daemon is not configured to start
     force_start=$1
     check_config
-    [ $force_start -eq 0 ] && check_ganeti_master
-	if "$SNF_EVENTD_ENABLE"; then
-            if [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
-              return 1
-            else
-              SNF_USER=${SNF_USER:-root}
-              start-stop-daemon --start --chuid $SNF_USER --exec $DAEMON --pidfile $PIDFILE -- $DAEMON_OPTS || return 2
-              sleep 1
-              if [ ! -s $PIDFILE ] || ! kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
+    # There is no need to check if this is the master any more. The eventd
+    # daemon should run in all master candidates, since it will automatically
+    # detect ganeti master failovers. It does not harm if it runs in other
+    # nodes either.
+    # [ $force_start -eq 0 ] && check_ganeti_master
+    if "$SNF_EVENTD_ENABLE"; then
+        if [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
+            return 1
+        else
+            SNF_USER=${SNF_USER:-root}
+            start-stop-daemon --start --chuid $SNF_USER --exec $DAEMON --pidfile $PIDFILE -- $DAEMON_OPTS || return 2
+            sleep 1
+            if [ ! -s $PIDFILE ] || ! kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
                 log_warning_msg "$NAME daemon failed to start"
                 return 2
-              fi
             fi
+        fi
     else
-	  log_warning_msg "$NAME not enabled in $DAEMON_DEFAULTS_FILE, not starting."
-      return 3
+        log_warning_msg "$NAME not enabled in $DAEMON_DEFAULTS_FILE, not starting."
+        return 3
     fi
 }
 
@@ -111,54 +115,52 @@ do_stop() {
 
 
 case "$1" in
-  start)
-    log_daemon_msg "Starting $DESCRIPTION" "$NAME"
-    do_start 0
-    case "$?" in
-      0|3) log_end_msg 0 ;;
-      1) log_progress_msg "Apparently already running" && log_end_msg 0;;
-      2) log_end_msg 1 ;;
-    esac
-    ;;
-  force-start)
-    log_daemon_msg "Starting $DESCRIPTION" "$NAME"
-    do_start 1
-    case "$?" in
-      0|3) log_end_msg 0 ;;
-      1) log_progress_msg "Apparently already running" && log_end_msg 0;;
-      2) log_end_msg 1 ;;
-    esac
-    ;;
-  stop)
-    log_daemon_msg "Stoping $DESCRIPTION" "$NAME"
-    do_stop
-    case "$?" in
-      0|1) log_end_msg 0 ;;
-      2) log_end_msg 1 ;;
-    esac
-	;;
-  status)
-	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
-	;;
-  restart|force-reload)
-    log_daemon_msg "Restarting $DESCRIPTION" "$NAME"
-    do_stop
-    case "$?" in
-      0|1)
+    start)
+        log_daemon_msg "Starting $DESCRIPTION" "$NAME"
         do_start 0
         case "$?" in
-          0) log_end_msg 0 ;;
-          *) log_end_msg 1 ;;  # Old process stil running or failed to start
+            0|3) log_end_msg 0 ;;
+            1) log_progress_msg "Apparently already running" && log_end_msg 0;;
+            2) log_end_msg 1 ;;
         esac
         ;;
-      *)
-        # Failed to stop
-        log_end_msg 1
+    force-start)
+        log_daemon_msg "Starting $DESCRIPTION" "$NAME"
+        do_start 1
+        case "$?" in
+            0|3) log_end_msg 0 ;;
+            1) log_progress_msg "Apparently already running" && log_end_msg 0;;
+            2) log_end_msg 1 ;;
+        esac
         ;;
-    esac
-	;;
-  *)
-	echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|status|restart|force-reload}" >&2
-	exit 3
-    ;;
+    stop)
+        log_daemon_msg "Stoping $DESCRIPTION" "$NAME"
+        do_stop
+        case "$?" in
+            0|1) log_end_msg 0 ;;
+            2) log_end_msg 1 ;;
+        esac
+        ;;
+    status)
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+        ;;
+    restart|force-reload)
+        log_daemon_msg "Restarting $DESCRIPTION" "$NAME"
+        do_stop
+        case "$?" in
+            0|1)
+                do_start 0
+                case "$?" in
+                    0) log_end_msg 0 ;;
+                    *) log_end_msg 1 ;;  # Old process still running or failed to start
+                esac
+                ;;
+            *) log_end_msg 1 # Failed to stop
+                ;;
+        esac
+        ;;
+    *)
+        echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|status|restart|force-reload}" >&2
+        exit 3
+        ;;
 esac

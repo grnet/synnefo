@@ -146,3 +146,30 @@ def project_notify(project, action):
         ).send()
     except NotificationError, e:
         logger.error(e.message)
+
+
+APPLICATION_APPROVED_NOTIF = {
+    'subject': _(messages.EMAIL_ADMIN_APPLICATION_APPROVED),
+    'template': 'im/application_approved_admin_email.txt',
+}
+
+
+def application_approved_admins_notify(application, previous_state):
+    recipients = []
+    for name, mail in list(settings.PROJECT_NOTIFICATIONS_RECIPIENTS):
+        recipients.append(mail)
+
+    try:
+        notification = build_notification(
+            SENDER,
+            recipients,
+            APPLICATION_APPROVED_NOTIF['subject'].format(application.chain.name),
+            template=APPLICATION_APPROVED_NOTIF['template'],
+            dictionary={
+                'application': application,
+                'previous_state': previous_state
+            }
+        )
+        notification.send()
+    except NotificationError, e:
+        logger.error(e.message)

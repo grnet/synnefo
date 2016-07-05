@@ -993,6 +993,7 @@ def approve_application(application_id, project_id=None, request_user=None,
     application = get_application(application_id)
     check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=ADMIN_LEVEL)
+    previous_state = project.state_display()
 
     if not application.can_approve():
         m = _(astakos_messages.APPLICATION_CANNOT_APPROVE %
@@ -1014,6 +1015,8 @@ def approve_application(application_id, project_id=None, request_user=None,
     quotas.qh_sync_project(project)
     if QUOTA_POLICY:
         QUOTA_POLICY.check_state_projects([project], 'MODIFY')
+
+    project_notif.application_approved_admins_notify(application, previous_state)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
     return project

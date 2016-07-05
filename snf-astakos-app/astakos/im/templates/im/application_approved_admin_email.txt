@@ -1,0 +1,26 @@
+{% extends "im/email.txt" %}
+{% load filters %}
+
+{% block content %}
+The following application for a(n) {{ previous_state }} project has been approved by {{ application.response_actor }}:
+
+Id:                             {{ application.id }}
+Project:                        {{ application.chain.uuid }}
+Applicant:                      {{ application.applicant }}
+Issue date:                     {{ application.issue_date|date:"d/m/Y" }}
+
+Name:                           {{ application.name|default_if_none:"[no change]" }}
+Owner:                          {{ application.owner|default_if_none:"[no change]" }}
+Start date:                     {% if application.start_date %}{{ application.start_date|date:"d/m/Y" }}{% else %}[no change]{% endif %}
+End date:                       {% if application.end_date %}{{ application.end_date|date:"d/m/Y" }}{% else %}[no change]{% endif %}
+Member Join Policy:             {{ application.member_join_policy_display|default_if_none:"[no change]" }}
+Member Leave Policy:            {{ application.member_leave_policy_display|default_if_none:"[no change]" }}
+Max members:                    {{ application.limit_on_members_number|format_inf }}
+Quota limits:
+    {% for rp in application.projectresourcegrant_set.all %}
+        {{ rp }}
+    {% empty %}
+        [no change]
+    {% endfor %}
+
+{% endblock content %}

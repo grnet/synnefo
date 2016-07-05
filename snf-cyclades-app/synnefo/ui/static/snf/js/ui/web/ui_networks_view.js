@@ -1194,6 +1194,12 @@
       },
 
       initialize: function(options) {
+        var no_select_ipv6 = false;
+        var forced_networks = synnefo.config.forced_server_networks || [];
+        if (forced_networks.indexOf("SNF:ANY_PUBLIC_IPV6") > -1) {
+          no_select_ipv6 = true;
+        }
+
         this.project = options.project;
         this.quotas = this.project.quotas.get('cyclades.private_network');
         options = options || {};
@@ -1209,7 +1215,10 @@
         this.non_floating_public = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.networks,
           collectionFilter: function(m) {
-            return m.get('is_public') && !m.get('is_floating')
+            var cidr = m.get('cidr') || '';
+            return m.get('is_public') && 
+                   !m.get('is_floating') && 
+                   !(no_select_ipv6 && cidr.indexOf(":") > -1);
         }});
         this.public_networks.add(this.non_floating_public.models);
 

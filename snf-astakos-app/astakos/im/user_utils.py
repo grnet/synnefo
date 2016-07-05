@@ -240,7 +240,7 @@ def send_change_email_to_new(ec, email_template_name=(
          'ec': ec}
     message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
-    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
+    send_mail(_(astakos_messages.EMAIL_CHANGE_NEW_EMAIL_SUBJECT), message,
               from_email,
               [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s'
@@ -252,5 +252,5 @@ def send_change_email_to_old(email_change,
     message = render_to_string(email_template_name, {'ec': email_change})
     from_email = settings.SERVER_EMAIL
 
-    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
+    send_mail(_(astakos_messages.EMAIL_CHANGE_OLD_EMAIL_SUBJECT), message,
         from_email, [email_change.user.email], connection=get_connection())

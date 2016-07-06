@@ -54,6 +54,10 @@ Admin
   pending verification', 'e-mail change requested at', 'initially accepted
   e-mail'
 
+Pithos
+------
+
+* Optimize object latest listing query
 
 .. _Changelog-0.17:
 

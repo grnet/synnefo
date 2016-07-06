@@ -14,13 +14,13 @@
       {% block object.modification_status %}
       {% if last_app|is_pending_app %}
       {% if applicant_mode or admin_mode %}
-          - <a href="{% url project_app project.uuid last_app.pk %}">PENDING MODIFICATION</a>
+          - <a href="{% url 'project_app' project.uuid last_app.pk %}">PENDING MODIFICATION</a>
       {% else %}
           - PENDING MODIFICATION
       {% endif %}
       {% endif %}
       {% if last_app|is_denied_app %}
-          - <a href="{% url project_app project.uuid last_app.pk %}">DENIED MODIFICATION</a>
+          - <a href="{% url 'project_app' project.uuid last_app.pk %}">DENIED MODIFICATION</a>
       {% endif %}
       {% endblock %}
       {% endif %}
@@ -148,7 +148,7 @@
     <h3>
       {% if owner_mode %}
           {% if project.is_alive %}
-           <a href="{% url project_members project.uuid %}">MEMBERS </a>
+           <a href="{% url 'project_members' project.uuid %}">MEMBERS </a>
           {% else %}
           MEMBERS
           {% endif %}
@@ -176,7 +176,7 @@
       </dd>
        {% if owner_mode %}
           {% if object.is_alive %}
-      <dt><a href="{% url project_approved_members project.uuid %}" title="view approved members">Approved members</a></dt>
+      <dt><a href="{% url 'project_approved_members' project.uuid %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
         <span class="faint">
           {% if remaining_memberships_count != None %}
@@ -188,7 +188,7 @@
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>
-      <dt><a href="{% url project_pending_members project.uuid %}" title="view pending members">Members pending approval</a></dt>
+      <dt><a href="{% url 'project_pending_members' project.uuid %}" title="view pending members">Members pending approval</a></dt>
       <dd>{{ pending_members_count }}</dd>
         {% if not object.is_deactivated %}
     </dl>    
@@ -206,7 +206,7 @@
 {% endblock inner_project %}  
   <div class="full-dotted">
     <p>
-      {% block bottom_link %}<a href="{% url project_list %}">&lt; Back to Projects</a>{% endblock bottom_link %}
+      {% block bottom_link %}<a href="{% url 'project_list' %}">&lt; Back to Projects</a>{% endblock bottom_link %}
     </p>
   </div>
 </div>

@@ -9,7 +9,7 @@
 {% if owner_mode or admin_mode %}
 {% if object.can_modify %}
 <div class="msg-wrap inline">
-  <a class="" href="{% url project_modify project_uuid=object.uuid %}">MODIFY</a> 
+  <a class="" href="{% url 'project_modify' project_uuid=object.uuid %}">MODIFY</a> 
 </div>
 {% endif %}
 {% endif %}

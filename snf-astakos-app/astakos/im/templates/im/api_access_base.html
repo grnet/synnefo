@@ -4,7 +4,7 @@
 {% block headjs %}
 	{{ block.super }}	 
     <script>
-      var CHANGE_TOKEN_URL = '{% url update_token %}';
+      var CHANGE_TOKEN_URL = '{% url 'update_token' %}';
     </script>	
 {% endblock %}	
 
@@ -143,7 +143,7 @@ under your home directory (~/.kamakirc) and Kamaki will be able to
 access {{ BRANDING_SERVICE_NAME }} automatically without the need of extra
 manual configuration.</p>
 
-<a href="{% url api_access_config %}" class="submit">Download your .kamakirc</a> 
+<a href="{% url 'api_access_config' %}" class="submit">Download your .kamakirc</a> 
         </div>
         {% endblock %}
     </div>

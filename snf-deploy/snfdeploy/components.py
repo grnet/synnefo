@@ -2011,7 +2011,7 @@ class Client(base.Component):
     alias = constants.CLIENT
 
     def required_components(self):
-        return [HW, SSH, DNS, APT, Kamaki, Burnin, Firefox]
+        return [HW, SSH, DNS, APT, Kamaki, Burnin]
 
 
 class GanetiDev(base.Component):
@@ -2075,24 +2075,3 @@ class Router(base.Component):
     REQUIRED_PACKAGES = [
         "iptables"
         ]
-
-
-class Firefox(base.Component):
-    REQUIRED_PACKAGES = [
-        "iceweasel",
-        "libnss3-tools",
-        ]
-
-    @update_admin
-    def admin_pre(self):
-        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
-        self.put("/tmp/cacert.pem", "/tmp/Synnefo_Root_CA.crt")
-
-    @base.run_cmds
-    def initialize(self):
-        return [
-            "echo 12345678 > /tmp/iceweasel_db_pass",
-            "certutil -N -d /etc/iceweasel/profile/ -f /tmp/iceweasel_db_pass",
-            "certutil -A -n synnefo -t TCu -d /etc/iceweasel/profile/ \
-              -i /tmp/Synnefo_Root_CA.crt",
-            ]

@@ -382,7 +382,6 @@ class LDAPLoginForm(LoginForm):
                         raise
                 raise forms.ValidationError(
                     self.error_messages['invalid_login'])
-        self.check_for_test_cookie()
         return self.cleaned_data
 
     def get_ldap_user_id(self):

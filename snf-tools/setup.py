@@ -14,9 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import distribute_setup
-distribute_setup.use_setuptools()
-
 import os
 
 # from distutils.util import convert_path

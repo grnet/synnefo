@@ -1,4 +1,4 @@
-include distribute_setup.py README.md
+include README.md
 global-include */templates/* */static/*
 global-exclude */.DS_Store
 include astakos/settings.d/*

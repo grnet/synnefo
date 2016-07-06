@@ -1,2 +1,2 @@
-include distribute_setup.py README.md
+include README.md
 recursive-include synnefo_branding/static *

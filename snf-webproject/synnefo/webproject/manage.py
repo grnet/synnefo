@@ -223,13 +223,6 @@ class SynnefoManagementUtility(ManagementUtility):
         except IndexError:
             subcommand = 'help'  # Display help if no arguments were given.
 
-        # Encode stdout. This check is required because of the way python
-        # checks if something is tty:
-        # https://bugzilla.redhat.com/show_bug.cgi?id=841152
-        if subcommand not in ['test'] and 'shell' not in subcommand:
-            sys.stdout = EncodedStream(sys.stdout)
-            sys.stderr = EncodedStream(sys.stderr)
-
         if subcommand == 'help':
             if len(args) > 2:
                 self.fetch_command(args[2]).print_help(self.prog_name, args[2])
@@ -291,28 +284,6 @@ def configure_logging():
         logging.basicConfig()
         log = logging.getLogger()
         log.warning("SNF_MANAGE_LOGGING_SETUP setting missing.")
-
-
-class EncodedStream(object):
-    def __init__(self, stream):
-        try:
-            std_encoding = stream.encoding
-        except AttributeError:
-            std_encoding = None
-        self.encoding = std_encoding or locale.getpreferredencoding()
-        self.original_stream = stream
-
-    def write(self, string):
-        if isinstance(string, unicode):
-            string = string.encode(self.encoding, errors="replace")
-        try:
-            self.original_stream.write(string)
-        except IOError as e:
-            if e.errno != errno.EPIPE:
-                raise
-
-    def __getattr__(self, name):
-        return getattr(self.original_stream, name)
 
 
 def main():

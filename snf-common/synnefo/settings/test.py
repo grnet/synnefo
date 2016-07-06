@@ -15,7 +15,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': '/tmp/synnefo_test_db.sqlite',
-        'TEST_NAME': '/tmp/synnefo_test_db.sqlite',
+        'TEST': {
+            'NAME': '/tmp/synnefo_test_db.sqlite',
+        },
     }
 }
 
@@ -25,7 +27,6 @@ LOGGING_SETUP['handlers']['console']['level'] = \
 LOGIN_URL = 'http://host:port/'
 
 
-SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
 SNF_TEST_USE_POSTGRES = bool(int(os.environ.get('SNF_TEST_USE_POSTGRES',
                                                 True)))
 SNF_TEST_PITHOS_UPDATE_MD5 = bool(int(os.environ.get(
@@ -44,7 +45,9 @@ if SNF_TEST_USE_POSTGRES:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': NAME,
-        'TEST_NAME': os.environ.get('SNF_TEST_DB_TEST_NAME', TEST_NAME),
+        'TEST': {
+            'NAME': os.environ.get('SNF_TEST_DB_TEST_NAME', TEST_NAME),
+        },
         'USER': os.environ.get('SNF_TEST_DB_USER', 'postgres'),
         'HOST': os.environ.get('SNF_TEST_DB_HOST', '127.0.0.1'),
         'PORT': os.environ.get('SNF_TEST_DB_PORT', '5432'),

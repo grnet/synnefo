@@ -93,7 +93,10 @@ def prepare_db_connection():
     """Build pithos backend connection string from django default database"""
 
     db = settings.DATABASES['default']
-    name = db.get('TEST_NAME', TEST_DATABASE_PREFIX + db['NAME'])
+    try:
+        name = db['TEST']['NAME']
+    except KeyError:
+        name = TEST_DATABASE_PREFIX + db['NAME']
 
     if (pithos_settings.BACKEND_DB_MODULE == 'pithos.backends.lib.sqlalchemy'):
         if db['ENGINE'] == 'django.db.backends.sqlite3':

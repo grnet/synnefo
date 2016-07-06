@@ -166,7 +166,7 @@ class TestUserUtils(TestCase):
         send_change_email_to_old(email_change)
         render_to_string_mock.assert_called_once_with(default_template, {'ec': email_change})
         send_mail_mock.assert_called_once_with(
-            _(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT),
+            _(astakos_messages.EMAIL_CHANGE_OLD_EMAIL_SUBJECT),
             message,
             astakos_settings.SERVER_EMAIL,
             [email_change.user.email],

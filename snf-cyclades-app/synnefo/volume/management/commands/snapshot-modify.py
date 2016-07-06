@@ -23,6 +23,8 @@ from snf_django.management.commands import SynnefoCommand
 class Command(SynnefoCommand):
     args = "<Snapshot ID>"
     help = "Modify a snapshot"
+    umask = 0o007
+
     option_list = SynnefoCommand.option_list + (
         make_option(
             "--user",

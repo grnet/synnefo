@@ -23,6 +23,8 @@ from snf_django.management.commands import RemoveCommand
 class Command(RemoveCommand):
     args = "<Snapshot ID> [<Snapshot ID> ...]"
     help = "Remove a snapshot"
+    umask = 0o007
+
     option_list = RemoveCommand.option_list + (
         make_option(
             "--user",

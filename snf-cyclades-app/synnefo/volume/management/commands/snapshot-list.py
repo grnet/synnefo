@@ -23,6 +23,8 @@ from synnefo.plankton.backend import PlanktonBackend
 
 class Command(SynnefoCommand):
     help = "List snapshots."
+    umask = 0o007
+
     option_list = SynnefoCommand.option_list + (
         make_option(
             '--user',

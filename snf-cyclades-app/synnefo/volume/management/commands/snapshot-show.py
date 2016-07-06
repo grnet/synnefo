@@ -24,6 +24,8 @@ from snf_django.management import utils
 class Command(SynnefoCommand):
     args = "<snapshot_id>"
     help = "Display available information about a snapshot"
+    umask = 0o007
+
 
     @common.convert_api_faults
     def handle(self, *args, **options):

@@ -25,6 +25,7 @@ from snf_django.management import utils
 class Command(SynnefoCommand):
     args = "<image_id>"
     help = "Display available information about an image"
+    umask = 0o007
 
     @common.convert_api_faults
     def handle(self, *args, **options):

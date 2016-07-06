@@ -246,21 +246,7 @@ class SynnefoManagementUtility(ManagementUtility):
             parser.print_lax_help()
             sys.stdout.write(self.main_help_text() + '\n')
         else:
-            sub_command = self.fetch_command(subcommand)
-            # NOTE: This is an ugly workaround to bypass the problem with
-            # the required permissions for the named pipes that Pithos backend
-            # is creating in order to communicate with XSEG.
-            if subcommand == 'test' or\
-               subcommand.startswith('image-') or\
-               subcommand.startswith('snapshot-') or\
-               subcommand.startswith('file-'):
-                # Set common umask for known commands
-                os.umask(0o007)
-            # Allow command to define a custom umask
-            cmd_umask = getattr(sub_command, 'umask', None)
-            if cmd_umask is not None:
-                os.umask(cmd_umask)
-            sub_command.run_from_argv(self.argv)
+            self.fetch_command(subcommand).run_from_argv(self.argv)
 
     def main_help_text(self):
         """

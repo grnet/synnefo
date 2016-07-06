@@ -89,6 +89,7 @@ class SynnefoCommand(BaseCommand):
                  "csv [comma-separated output]"),
     )
 
+    umask = None
     stdout = SynnefoOutputWrapper()
     stderr = SynnefoOutputWrapper()
 
@@ -109,6 +110,9 @@ class SynnefoCommand(BaseCommand):
         using user's preferred encoding.
 
         """
+        if self.umask is not None:
+            os.umask(self.umask)
+
         curr_time = datetime.datetime.now()
         curr_time = datetime.datetime.strftime(curr_time, "%y%m%d%H%M%S")
         command = argv[1]

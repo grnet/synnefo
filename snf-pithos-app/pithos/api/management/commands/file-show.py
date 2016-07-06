@@ -26,6 +26,7 @@ from pithos.api.util import get_backend, update_public_meta, is_uuid
 class Command(SynnefoCommand):
     args = "<account> <container> <object> or <object uuid>"
     help = """Show file information"""
+    umask = 0o007
 
     option_list = SynnefoCommand.option_list + (
         make_option("--obj-version", dest="obj_version",

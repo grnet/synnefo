@@ -24,6 +24,7 @@ from synnefo.volume import snapshots
 class Command(SynnefoCommand):
     args = "<volume ID>"
     help = "Create a snapshot from the specified volume"
+    umask = 0o007
 
     option_list = SynnefoCommand.option_list + (
         make_option(

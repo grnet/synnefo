@@ -976,6 +976,12 @@ class Gunicorn(base.Component):
             ]
 
     @base.run_cmds
+    def prepare(self):
+        return [
+            "mkdir -p /etc/synnefo",
+        ]
+
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",

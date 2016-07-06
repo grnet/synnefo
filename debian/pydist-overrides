@@ -1,6 +1,5 @@
 Django python-django
 httplib2 python-httplib2
-south python-django-south
 ganeti ganeti2
 daemon python-daemon
 prctl python-prctl

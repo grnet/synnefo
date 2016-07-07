@@ -166,7 +166,7 @@ def get_uuid_displayname_catalogs(request, user_call=True):
         if not isinstance(displaynames, list):
             raise faults.BadRequest("Invalid displaynames: %s" % displaynames)
         for item in displaynames:
-            if not isinstance(item, str):
+            if not isinstance(item, basestring):
                 raise faults.BadRequest("Items in 'displaynames' must be "
                                         "strings")
         if displaynames is None and user_call:

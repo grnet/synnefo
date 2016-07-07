@@ -585,9 +585,7 @@ def logout(request, template='registration/logged_out.html',
         email = request.user.email
         auth_logout(request)
     else:
-        response['Location'] = reverse('index')
-        response.status_code = 302
-        return response
+        return HttpResponseRedirect(reverse('index'))
 
     next = restrict_next(
         request.GET.get('next'),
@@ -595,11 +593,9 @@ def logout(request, template='registration/logged_out.html',
     )
 
     if next:
-        response['Location'] = next
-        response.status_code = 302
+        return HttpResponseRedirect(next)
     elif settings.LOGOUT_NEXT:
-        response['Location'] = settings.LOGOUT_NEXT
-        response.status_code = 302
+        return HttpResponseRedirect(settings.LOGOUT_NEXT)
     else:
         last_provider = request.COOKIES.get(
             'astakos_last_login_method', 'local')
@@ -614,9 +610,7 @@ def logout(request, template='registration/logged_out.html',
         if extra:
             message += "<br />" + extra
         messages.success(request, message)
-        response['Location'] = reverse('index')
-        response.status_code = 302
-    return response
+        return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET", "POST"])

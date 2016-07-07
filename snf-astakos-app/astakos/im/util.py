@@ -20,7 +20,7 @@ import urllib
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
@@ -200,7 +200,6 @@ def prepare_response(request, user, next='', renew=False):
             params = '?' + urlencode({'next': next})
         next = reverse('edit_profile') + params
 
-    response = HttpResponse()
 
     # authenticate before login
     user = authenticate(email=user.email, auth_token=user.auth_token)
@@ -210,9 +209,7 @@ def prepare_response(request, user, next='', renew=False):
     if not next:
         next = settings.LOGIN_SUCCESS_URL
 
-    response['Location'] = iri_to_uri(next)
-    response.status_code = 302
-    return response
+    return HttpResponseRedirect(iri_to_uri(next))
 
 
 def reserved_email(email):

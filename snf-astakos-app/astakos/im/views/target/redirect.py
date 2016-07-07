@@ -18,7 +18,8 @@ from django.utils.translation import ugettext as _
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import (
-    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden)
+    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden,
+    HttpResponseRedirect)
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 
@@ -76,9 +77,7 @@ def login(request):
             params = {'next': next}
             parts[3] = urlencode(params)
             url = urlunsplit(parts)
-            response['Location'] = url
-            response.status_code = 302
-            return response
+            return HttpResponseRedirect(url)
         renew = request.GET.get('renew', None)
         if renew == '':
             request.user.renew_token(
@@ -102,9 +101,7 @@ def login(request):
             'token': request.user.auth_token
         })
         url = urlunsplit(parts)
-        response['Location'] = url
-        response.status_code = 302
-        return response
+        return HttpResponseRedirect(url)
     else:
         # redirect to login with next the request path
 
@@ -122,6 +119,4 @@ def login(request):
         params = {'next': next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)
-        response['Location'] = url
-        response.status_code = 302
-        return response
+        return HttpResponseRedirect(url)

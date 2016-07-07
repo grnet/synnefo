@@ -78,8 +78,7 @@ def cookie_fix(func):
         cookie = CookieHandler(request)
         if not cookie.is_valid:
             # redirect to request path to set/delete the cookie
-            response = HttpResponse(status=302)
-            response['Location'] = request.get_full_path()
+            response = HttpResponseRedirect(request.get_full_path())
             cookie.fix(response)
             return response
 

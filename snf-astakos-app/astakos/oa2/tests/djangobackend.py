@@ -21,7 +21,7 @@ import datetime
 
 from collections import namedtuple
 
-from django.test import TransactionTestCase as TestCase
+from django.test import TestCase
 from django.test import Client as TestClient
 
 from django.core.urlresolvers import reverse

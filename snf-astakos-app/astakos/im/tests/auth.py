@@ -458,13 +458,13 @@ class TestLocal(TestCase):
 
         credentials = {'username': 'γιού τι έφ', 'password': 'password'}
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertFalse('recaptcha_challenge_field' in fields)
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertFalse('recaptcha_challenge_field' in fields)
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertTrue('recaptcha_challenge_field' in fields)
 
     def test_no_moderation(self):

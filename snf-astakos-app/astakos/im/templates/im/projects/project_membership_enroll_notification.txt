@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-You have been enrolled in project {{object.name}}.
+Dear {{ user.realname }},
+
+You have been enrolled in project {{ object.name }}.
 {% endblock content %}

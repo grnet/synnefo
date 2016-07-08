@@ -33,7 +33,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from django.db.models import Q
 from django.core.urlresolvers import reverse
-from django.utils.http import int_to_base36
+from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
@@ -764,7 +764,7 @@ class AstakosUser(User):
     def get_password_reset_url(self, token_generator=default_token_generator):
         return reverse('astakos.im.views.target.local.password_reset_confirm',
                        urlconf="synnefo.webproject.urls",
-                       kwargs={'uidb36': int_to_base36(self.id),
+                       kwargs={'uidb64': urlsafe_base64_encode(str(self.id)),
                                'token': token_generator.make_token(self)})
 
     def get_inactive_message(self, provider_module, identifier=None):

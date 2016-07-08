@@ -39,6 +39,11 @@ import astakos.im.messages as astakos_messages
 logger = logging.getLogger(__name__)
 
 
+class WebloginHttpResponseRedirect(HttpResponseRedirect):
+
+    allowed_schemes = HttpResponseRedirect.allowed_schemes + list(settings.REDIRECT_ALLOWED_SCHEMES)
+
+
 class UTC(tzinfo):
     def utcoffset(self, dt):
         return timedelta(0)

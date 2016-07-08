@@ -19,6 +19,7 @@ from django.test import TestCase
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
 from mock import patch
+import functools
 
 
 class MurphysLaw(Exception):
@@ -123,6 +124,7 @@ def override_settings(settings, **kwargs):
 
 def with_settings(settings, prefix='', **override):
     def wrapper(func):
+        @functools.wraps(func)
         def inner(*args, **kwargs):
             with override_settings(settings, prefix=prefix, **override):
                 ret = func(*args, **kwargs)

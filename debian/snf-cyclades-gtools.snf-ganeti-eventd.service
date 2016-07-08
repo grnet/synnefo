@@ -1,0 +1,11 @@
+[Unit]
+Description=Synnefo Ganeti eventd daemon
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+Environment=SNF_EVENTD_OPTS=
+EnvironmentFile=-/etc/default/snf-ganeti-eventd
+ExecStart=/usr/sbin/snf-ganeti-eventd --pid-file /var/run/snf-ganeti-eventd.pid
+PIDFile=/var/run/snf-ganeti-eventd.pid
+

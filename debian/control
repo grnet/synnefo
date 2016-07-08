@@ -2,8 +2,9 @@ Source: synnefo
 Section: python
 Priority: optional
 Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
-Build-Depends: debhelper (>= 8), python-all (>= 2.5), ruby, ruby-dev
-Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 8), python-all (>= 2.5), ruby, ruby-dev,
+ dh-systemd (>=1.5), dh-python
+Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: http://www.synnefo.org
 Vcs-Browser: https://github.com/grnet/synnefo

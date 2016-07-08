@@ -1176,6 +1176,7 @@ class Astakos(base.Component):
             "snf-manage migrate quotaholder_app",
             "snf-manage migrate oa2",
             "snf-manage loaddata groups",
+            "snf-manage loaddata projectlock",
             ] + self._astakos_oa2() + self._astakos_register_components()
 
     def _astakos_oa2(self):

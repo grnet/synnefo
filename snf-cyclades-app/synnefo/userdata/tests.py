@@ -15,7 +15,7 @@
 #
 
 from django import http
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
 import json
@@ -62,7 +62,7 @@ class AaiClient(Client):
                 return super(AaiClient, self).request(**request)
 
 
-class TestRestViews(TransactionTestCase):
+class TestRestViews(TestCase):
 
     fixtures = ['users']
 

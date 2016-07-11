@@ -1123,7 +1123,7 @@ def os_get_vnc_console(request, vm, args):
 
     log.info("User %s got VNC console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('console')
@@ -1161,7 +1161,7 @@ def get_console(request, vm, args):
 
     log.info("User %s got console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('changePassword')

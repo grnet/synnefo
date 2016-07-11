@@ -219,7 +219,7 @@ def stats_component(request, component):
     else:
         status = 404
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)
 
 
 @admin_user_required
@@ -239,7 +239,7 @@ def stats_component_details(request, component):
     else:
         status = 404
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)
 
 
 @admin_user_required
@@ -369,4 +369,4 @@ def admin_actions(request):
             mod.wait_action(request, op, id)
 
     return HttpResponse(json.dumps(response, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)

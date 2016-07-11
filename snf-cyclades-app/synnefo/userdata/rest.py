@@ -147,7 +147,8 @@ class JSONRestView(View):
             yield self.instance_to_dict(i, exclude_fields)
 
     def json_response(self, data):
-        return http.HttpResponse(json.dumps(data), mimetype="application/json")
+        return http.HttpResponse(json.dumps(data),
+                                 content_type="application/json")
 
 
 class ResourceView(JSONRestView):

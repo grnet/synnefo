@@ -1003,7 +1003,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         mimetype = 'application/javascript'
         data = '%s(%s)' % (callback, data)
 
-    return HttpResponse(content=data, mimetype=mimetype)
+    return HttpResponse(content=data, content_type=mimetype)
 
 
 class MenuItem(dict):
@@ -1059,4 +1059,4 @@ def get_services(request):
         mimetype = 'application/javascript'
         data = '%s(%s)' % (callback, data)
 
-    return HttpResponse(content=data, mimetype=mimetype)
+    return HttpResponse(content=data, content_type=mimetype)

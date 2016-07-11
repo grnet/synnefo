@@ -412,7 +412,8 @@ def machines_connect(request):
         }
 
         rdp_file_data = render_to_string("synnefo-windows.rdp", rdp_context)
-        response = HttpResponse(rdp_file_data, mimetype='application/x-rdp')
+        response = HttpResponse(rdp_file_data,
+                                content_type='application/x-rdp')
 
         # proper filename, use server id and ip address
         filename = "%d-%s.rdp" % (int(server_id), hostname)
@@ -480,6 +481,6 @@ def machines_connect(request):
         }
         response = \
             HttpResponse(json.dumps(response_object),
-                         mimetype='application/json')  # no windows, no rdp
+                         content_type='application/json')  # no windows, no rdp
 
     return response

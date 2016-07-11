@@ -150,12 +150,38 @@ class PithosTestSuiteRunner(NoseTestSuiteRunner):
 
 
 class PithosTestClient(Client):
-    def _get_path(self, parsed):
-        # If there are parameters, add them
-        if parsed[3]:
-            return unquote(parsed[2] + ";" + parsed[3])
-        else:
-            return unquote(parsed[2])
+    def generic(self, method, path, data='',
+                content_type='application/octet-stream', secure=False,
+                **extra):
+        """Constructs an arbitrary HTTP request."""
+        from django.utils.encoding import force_bytes
+        import six
+        parsed = urlparse(path)
+        data = force_bytes(data, settings.DEFAULT_CHARSET)
+        r = {
+            'PATH_INFO': self._get_path(parsed),
+            'REQUEST_METHOD': str(method),
+            'SERVER_PORT': str('443') if secure else str('80'),
+            'wsgi.url_scheme': str('https') if secure else str('http'),
+        }
+        # Original django function used the check 'if data:'. But this is not
+        # enough as it does not take into account zero-length payloads
+        if data is not None:
+            r.update({
+                'CONTENT_LENGTH': len(data),
+                'CONTENT_TYPE': str(content_type),
+                'wsgi.input': FakePayload(data),
+            })
+        r.update(extra)
+        # If QUERY_STRING is absent or empty, we want to extract it from the URL.
+        if not r.get('QUERY_STRING'):
+            query_string = force_bytes(parsed[4])
+            # WSGI requires latin-1 encoded strings. See get_path_info().
+            if six.PY3:
+                query_string = query_string.decode('iso-8859-1')
+            r['QUERY_STRING'] = query_string
+        return self.request(**r)
+
 
     def copy(self, path, data={}, content_type=MULTIPART_CONTENT,
              follow=False, **extra):

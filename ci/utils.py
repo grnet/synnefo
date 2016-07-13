@@ -1032,7 +1032,7 @@ class SynnefoCI(object):
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
-                python-dev python-all python-pip --yes --force-yes
+                python-dev python-all python-pip dh-systemd --yes --force-yes
         pip install -U devflow
         """
         _run(cmd, False)

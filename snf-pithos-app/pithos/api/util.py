@@ -22,7 +22,7 @@ from django.http import (StreamingHttpResponse, Http404, HttpResponseRedirect,
                          HttpResponseNotAllowed)
 from django.template.loader import render_to_string
 import json
-from django.utils.http import http_date, parse_etags
+from django.utils.http import http_date, parse_etags, urlunquote, urlquote
 from django.utils.encoding import smart_unicode, smart_str
 smart_unicode_ = partial(smart_unicode, strings_only=True)
 smart_str_ = partial(smart_str, strings_only=True)
@@ -155,17 +155,18 @@ def put_account_headers(response, meta, groups, policy):
         response['X-Account-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
-        response[smart_str_(k)] = smart_str_(meta[k])
+        response[urlquote(smart_str_(k))] = smart_str_(meta[k])
     if 'until_timestamp' in meta:
         response['X-Account-Until-Timestamp'] = http_date(
             int(meta['until_timestamp']))
     for k, v in groups.iteritems():
         k = smart_str_(k)
         k = format_header_key('X-Account-Group-' + k)
+        k = urlquote(k)
         v = smart_str_(','.join(v))
         response[k] = v
     for k, v in policy.iteritems():
-        response[smart_str_(format_header_key('X-Account-Policy-' + k))] = \
+        response[urlquote(smart_str_(format_header_key('X-Account-Policy-' + k)))] = \
             smart_str_(v)
 
 
@@ -185,7 +186,7 @@ def put_container_headers(request, response, meta, policy):
         response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
-        response[smart_str_(k)] = smart_str_(meta[k])
+        response[urlquote(smart_str_(k))] = smart_str_(meta[k])
     l = [smart_str_(x) for x in meta['object_meta']
          if x.startswith('X-Object-Meta-')]
     response['X-Container-Object-Meta'] = ','.join([x[14:] for x in l])
@@ -195,7 +196,7 @@ def put_container_headers(request, response, meta, policy):
         response['X-Container-Until-Timestamp'] = http_date(
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
-        response[smart_str_(format_header_key('X-Container-Policy-' + k))] = \
+        response[urlquote(smart_str_(format_header_key('X-Container-Policy-' + k)))] = \
             smart_str_(v)
 
 
@@ -239,17 +240,17 @@ def put_object_headers(response, meta, restricted=False, token=None,
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
-            response[smart_str_(k)] = smart_str_(meta[k])
+            response[urlquote(smart_str_(k))] = smart_str_(meta[k])
         for k in (
             'Content-Encoding', 'Content-Disposition', 'X-Object-Manifest',
             'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Allowed-To',
                 'X-Object-Public'):
             if k in meta:
-                response[k] = smart_str_(meta[k])
+                response[urlquote(k)] = smart_str_(meta[k])
     else:
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
-                response[k] = smart_str_(meta[k])
+                response[urlquote(k)] = smart_str_(meta[k])
     if include_content_disposition:
         user_defined = 'Content-Disposition' in response
         valid_disposition_type = disposition_type in ('inline', 'attachment')
@@ -1044,6 +1045,10 @@ def update_request_headers(request):
     for k, v in meta.iteritems():
         try:
             k.decode('ascii')
+            # NOTE: The following decoding ensures that all non-ASCII
+            # characters in header values are URL-encoded, as expected by
+            # the pithos API, although this is not strictly required by the
+            # HTTP/1.1 RFC.
             v.decode('ascii')
             if '%' in k or '%' in v:
                 del(request.META[k])
@@ -1060,7 +1065,7 @@ def update_response_headers(request, response):
         if (k.startswith('X-Account-') or k.startswith('X-Container-') or
                 k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
-            response[quote(k)] = quote(v, safe='/=,:@; "')
+            response[k] = quote(v, safe='/=,:@; "')
 
 
 def api_method(http_method=None, token_required=True, user_required=True,

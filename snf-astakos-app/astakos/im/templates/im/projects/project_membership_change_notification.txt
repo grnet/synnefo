@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your project membership ({{object.name}}) has been {{action}}.
+Dear {{ user.realname }},
+
+Your project membership ({{ object.name }}) has been {{ action }}.
 {% endblock content %}

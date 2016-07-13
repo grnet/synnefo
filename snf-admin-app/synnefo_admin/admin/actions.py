@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@ class AdminAction(object):
         caution_level:  Indication of how much careful the user should be:
                         Accepted values: none, warning, dangerous.
         description:    A short text that describes an action
+        data_keys:      A list with the extra data dict keys required for the
+                        action
 
     Methods:
         f:              The function that will trigger once an action is
@@ -43,7 +45,8 @@ class AdminAction(object):
     """
 
     def __init__(self, name, target, f, c=None, allowed_groups='admin',
-                 karma='neutral', caution_level='none', description=''):
+                 karma='neutral', caution_level='none', description='',
+                 data_keys=[]):
         """Initialize the AdminAction class."""
         self.name = name
         self.description = description
@@ -52,6 +55,7 @@ class AdminAction(object):
         self.caution_level = caution_level
         self.allowed_groups = allowed_groups
         self.f = f
+        self.data_keys = data_keys
         if c:
             self.check = c
 

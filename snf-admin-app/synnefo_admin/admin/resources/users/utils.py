@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,8 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import Group
 
@@ -36,27 +35,24 @@ def get_groups():
     return [(group['name'], '') for group in groups]
 
 
-def get_user_or_404(query):
+def get_user_or_404(query, for_update=False):
     """Get AstakosUser from query.
 
     The query can either be a user email, UUID or ID.
     """
-    # Get by UUID
-    try:
-        return AstakosUser.objects.get(uuid=query)
-    except ObjectDoesNotExist:
-        pass
+    usr_obj = AstakosUser.objects.select_for_update() if for_update\
+        else AstakosUser.objects
 
-    # Get by Email
-    try:
-        return AstakosUser.objects.get(email=query)
-    except ObjectDoesNotExist:
-        pass
+    if isinstance(query, basestring):
+        q = Q(id=int(query)) if query.isdigit() else Q(uuid=query) | Q(email=query)
+    elif isinstance(query, int) or isinstance(query, long):
+        q = Q(id=int(query))
+    else:
+        raise TypeError("Unexpected type of query")
 
-    # Get by ID
     try:
-        return AstakosUser.objects.get(id=int(query))
-    except (ObjectDoesNotExist, ValueError):
+        return usr_obj.get(q)
+    except ObjectDoesNotExist:
         raise AdminHttp404(
             "No User was found that matches this query: %s\n" % query)
 

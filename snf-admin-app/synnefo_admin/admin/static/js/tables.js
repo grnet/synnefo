@@ -1,6 +1,6 @@
 $(document).ready(function() {
 
-		var $actionbar = $('.actionbar');
+	var $actionbar = $('.actionbar');
 
 	if($actionbar.length > 0) {
         sticker();
@@ -635,7 +635,7 @@ $(document).ready(function() {
 	};
 
 	/* Checks how many rows are selected and adjusts the classes and
-	the text of the select-qll btn */
+	the text of the select-all btn */
 	function updateToggleAllSelect() {
 		var $togglePageItems = $('#select-page');
 		var $label = $togglePageItems.find('span')
@@ -647,17 +647,14 @@ $(document).ready(function() {
 				return allSelected;
 			});
 			if($togglePageItems.hasClass('select') && allSelected) {
-				$togglePageItems.addClass('deselect').removeClass('select');
-				$label.text('Deselect Page')
+				$togglePageItems.addClass('deselect state-b').removeClass('select');
 			}
 			else if($togglePageItems.hasClass('deselect') && !allSelected) {
-				$togglePageItems.addClass('select').removeClass('deselect');
-				$label.text('Select Page')
+				$togglePageItems.addClass('select').removeClass('deselect state-b');
 			}
 		}
 		else {
-			$togglePageItems.addClass('select').removeClass('deselect')
-			$label.text('Select Page')
+			$togglePageItems.addClass('select').removeClass('deselect state-b')
 		}
 	};
 
@@ -685,6 +682,26 @@ $(document).ready(function() {
 		$modal.find('.toggle-more').find('span').text('Show all');
 	};
 
+	function collectActionData(modal) {
+		var $table = $(modal).find('.table-selected');
+		var actionData = [];
+		var hasInputs = $table.find('tr:first input').length > 0;
+
+		$table.find('tr').each(function() {
+			var itemData = {};
+			itemData['id'] = $(this).attr('data-itemid');
+			if(hasInputs) {
+				itemData['data'] = {};
+				$(this).find('input').each(function() {
+					var key = $(this).attr('name');
+					itemData['data'][key] = $(this).val();
+				});
+			}
+			actionData.push(itemData);
+		});
+		return actionData;
+	};
+
 	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
@@ -708,6 +725,7 @@ $(document).ready(function() {
 		var $modal = $(this).closest('.modal');
 		var noError = true;
 		var itemsNum = $modal.find('tbody tr').length;
+		var itemsData;
 		if(selected.items.length === 0) {
 			snf.modals.showError($modal, 'no-selected');
 			noError = false;
@@ -716,13 +734,18 @@ $(document).ready(function() {
 			var validForm = snf.modals.validateContactForm($modal);
 			noError = noError && validForm;
 		}
+		if($modal.attr('data-type') === 'modify_email') {
+			var validForm = snf.modals.validateModifyEmailForm($modal);
+			noError = noError && validForm;
+		}
 		if(!noError) {
 			e.preventDefault();
 			e.stopPropagation();
 		}
 		else {
 			$('[data-toggle="popover"]').popover('hide');
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, itemsNum, countAction);
+			itemsData = collectActionData($modal);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, itemsData, itemsNum, countAction);
 			snf.modals.resetErrors($modal);
 			snf.modals.resetInputs($modal);
 			removeWarningDupl($modal);
@@ -778,6 +801,14 @@ $(document).ready(function() {
 		var idsArray = [];
 		var warningMsg = snf.modals.html.warningDuplicates;
 		var warningInserted = false;
+		// cannot use JSON.parse because data-keys inlude single quotes
+		var inputsNames = $actionBtn.attr('data-keys').slice(1, -1).replace(/ /g,'').split(',');
+		inputsNames = inputsNames.map(function(item) {
+			return item.slice(1, -1); // remove extra quotes
+		});
+
+		// association tracks for each user the related resource
+		// use to contact by selecting the resource of the user, not the user himself
 		var associations = {};
 		var $btn = $(modalID).find('.toggle-more');
 		$tableBody.empty();
@@ -785,11 +816,15 @@ $(document).ready(function() {
 			uniqueProp = 'contact_id';
 			for(var i=0; i<rowsNum; i++) {
 				var currContactID = selected.items[i][uniqueProp];
+
+				// if there is no record of the current user, keep it and keep and the corresponding resource
 				if(associations[currContactID] === undefined) {
 					associations[currContactID] = [selected.items[i]['item_name']];
 				}
+				// if the user is already kept (selected other resource that he owns)
+				// keep and the other resource
 				else {
-					selected.items[i]['notFirst'] = true; // not the first item with the current contact_id
+					selected.items[i]['notFirst'] = true;
 					associations[currContactID].push(selected.items[i]['item_name']);
 				}
 				if(!warningInserted && selected.items[i]['notFirst']) {
@@ -800,9 +835,37 @@ $(document).ready(function() {
 			for(var i=0; i<rowsNum; i++) {
 				if (!selected.items[i]['notFirst']) {
 					idsArray.push(selected.items[i][uniqueProp]);
-					currentRow = _.template(snf.modals.html.contactRow, {itemID: selected.items[i].contact_id, showAssociations: (itemType !== 'user'), associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '), fullName: selected.items[i].contact_name, email: selected.items[i].contact_email, hidden: (i >maxVisible)})
+					currentRow = _.template(
+						snf.modals.html.contactRow,
+						{
+							itemID: selected.items[i].contact_id,
+							showAssociations: (itemType !== 'user'),
+							associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '),
+							fullName: selected.items[i].contact_name,
+							email: selected.items[i].contact_email,
+							hidden: (i > maxVisible)
+						}
+					);
 					htmlRows += currentRow;
 				}
+			}
+		}
+
+		else if(modalType === "modify_email") {
+			uniqueProp = 'id';
+			for(var i=0; i<rowsNum; i++) {
+				idsArray.push(selected.items[i][uniqueProp]);
+				currentRow = _.template(
+					snf.modals.html.modifyEmailRow,
+					{
+						itemID: selected.items[i].contact_id,
+						fullName: selected.items[i].contact_name,
+						email: selected.items[i].contact_email,
+						hidden: (i > maxVisible),
+						inputName: inputsNames[0] // modify_email has only 1 input
+					}
+				);
+				htmlRows += currentRow;
 			}
 		}
 
@@ -810,7 +873,16 @@ $(document).ready(function() {
 			uniqueProp = 'id';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
-				currentRow = _.template(snf.modals.html.commonRow, {itemID: selected.items[i].id, itemName: selected.items[i].item_name, ownerEmail: selected.items[i].contact_email, ownerName: selected.items[i].contact_name, hidden: (i >=maxVisible)})
+				currentRow = _.template(
+					snf.modals.html.commonRow,
+					{
+						itemID: selected.items[i].id,
+						itemName: selected.items[i].item_name,
+						ownerEmail: selected.items[i].contact_email,
+						ownerName: selected.items[i].contact_name,
+						hidden: (i >= maxVisible)
+					}
+				);
 				htmlRows += currentRow;
 			}
 		}
@@ -847,19 +919,12 @@ $(document).ready(function() {
 
 	$('.toggle-selected').click(function (e) {
 		e.preventDefault();
-		var $label = $(this).find('.text');
-		var label1 = 'Show selected';
-		var label2 = 'Hide selected';
 		$(this).toggleClass('open');
 		if($(this).hasClass('open')) {
-			$('#table-items-selected_wrapper').slideDown('slow', function() {
-				$label.text(label2);
-			});
+			$('#table-items-selected_wrapper').stop().slideDown('slow');
 		}
 		else {
-			$('#table-items-selected_wrapper').slideUp('slow', function() {
-				$label.text(label1);
-			});
+			$('#table-items-selected_wrapper').stop().slideUp('slow');
 		}
 	});
 });

@@ -483,7 +483,7 @@ class SynnefoCI(object):
         echo 'deb https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
         echo 'deb-src https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
         apt-get update
-        apt-get install -q=2 --force-yes nodejs
+        apt-get install -q=2 --force-yes nodejs ruby ruby-dev
         """
         _run(cmd, False)
 
@@ -1155,6 +1155,21 @@ class SynnefoCI(object):
         sed -i 's/^password =.*/password = {0}/' /etc/snf-deploy/nodes.conf
         """.format(fabric.env.password)
         _run(cmd, False)
+
+        wildcard_dns = self.get_config(
+                'Deployment', 'wildcard_dns', False, '').strip()
+        if wildcard_dns:
+            address = self.temp_config.get(str(self.build_id), 'server_ip')
+            domain = "{0}.{1}".format(address, wildcard_dns)
+            self.logger.debug("Setting domain to {0}".format(domain))
+            cmd = """
+            sed -i 's/^domain.*=.*/domain = {0}/' /etc/snf-deploy/nodes.conf
+            """.format(domain)
+            _run(cmd, False)
+            cmd = """
+            sed -i 's/^domain.*=.*/domain = {0}/' /etc/snf-deploy/ganeti.conf
+            """.format(domain)
+            _run(cmd, False)
 
         self.logger.debug("Run snf-deploy")
         cmd = """

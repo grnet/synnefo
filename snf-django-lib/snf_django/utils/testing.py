@@ -19,6 +19,7 @@ from django.test import TestCase
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
 from mock import patch
+import functools
 
 
 class MurphysLaw(Exception):
@@ -123,6 +124,10 @@ def override_settings(settings, **kwargs):
 
 def with_settings(settings, prefix='', **override):
     def wrapper(func):
+        # The use of wraps is required here. Without it, the name of a "test_"
+        # function that gets decorated by "with_settings" would become "inner"
+        # and nose would not detect it as a test function.
+        @functools.wraps(func)
         def inner(*args, **kwargs):
             with override_settings(settings, prefix=prefix, **override):
                 ret = func(*args, **kwargs)

@@ -182,3 +182,5 @@ class InfiniteChoiceField(forms.ChoiceField):
             value = int(str(value))
         except (ValueError, TypeError):
             raise forms.ValidationError(self.error_messages['invalid'])
+
+validate_email = EmailValidator()

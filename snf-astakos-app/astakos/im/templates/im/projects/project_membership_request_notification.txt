@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-User {{user}} requests to join project {{object.name}}.
-{% endblock content %}
+Dear {{ object.owner.realname }},
+
+User {{ user }} requests to join project {{ object.name }}.
+{% endblock %}

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1106,7 +1106,6 @@ class Invitation(models.Model):
 
 class EmailChangeManager(models.Manager):
 
-    @transaction.commit_on_success
     def change_email(self, activation_key):
         """
         Validate an activation key and change the corresponding
@@ -1979,7 +1978,8 @@ class ProjectLogManager(models.Manager):
     def last_deactivations(self, projects):
         logs = self.filter(
             project__in=projects,
-            to_state__in=Project.DEACTIVATED_STATES).order_by("-date")
+            to_state__in=Project.DEACTIVATED_STATES
+        ).order_by("project", "-date")
         return first_of_group(lambda l: l.project_id, logs)
 
 
@@ -2077,8 +2077,14 @@ class ProjectMembership(models.Model):
 
     ACTUALLY_ACCEPTED = set([ACCEPTED, LEAVE_REQUESTED])
 
+    DEACTIVATED_STATES = {USER_SUSPENDED, REMOVED}
+
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
+    OVERQUOTA_OK = 'OK'
+    overquota_state = models.CharField(max_length=255, default=OVERQUOTA_OK)
+    overquota_state_date = models.DateTimeField(auto_now_add=True)
+    overquota_date = models.DateTimeField(default=None, null=True)
 
     initialized = models.BooleanField(default=False)
     objects = ProjectMembershipManager()
@@ -2155,6 +2161,8 @@ class ProjectMembership(models.Model):
         "remove": lambda m: m.state in m.ACCEPTED_STATES,
         "reject": lambda m: m.state == m.REQUESTED,
         "cancel": lambda m: m.state == m.REQUESTED,
+        "suspend": lambda m: m.state in m.ACTUALLY_ACCEPTED,
+        "unsuspend": lambda m: m.state == m.USER_SUSPENDED,
     }
 
     ACTION_STATES = {
@@ -2167,6 +2175,8 @@ class ProjectMembership(models.Model):
         "remove":        REMOVED,
         "reject":        REJECTED,
         "cancel":        CANCELLED,
+        "suspend":       USER_SUSPENDED,
+        "unsuspend":     ACCEPTED,
     }
 
     def check_action(self, action):

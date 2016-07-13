@@ -1,14 +1,16 @@
 {% extends "im/email.txt" %}
 
-
 {% block content %}
 Dear {{ user.realname }},
 
-We received a request for associating the specific email address with a shibboleth account for {{ BRANDING_COMPANY_NAME }}'s {{ BRANDING_SERVICE_NAME }} service.
+We received a request for associating the specific email address with a
+shibboleth account for {{ BRANDING_COMPANY_NAME }}'s {{ BRANDING_SERVICE_NAME }} service.
 However this email is already associated with another local account.
-In order to switch the existing account to a shibboleth one, use the link: {{ url }}
-Otherwise, just ignore this email.
 
+In order to switch the existing account to a shibboleth one, use the link:
+{{ url }}
+
+Otherwise, just ignore this email.
 {% endblock %}
 
 {% block note %} {% endblock%}

@@ -1,19 +1,19 @@
 {% extends "im/email.txt" %}
-  
+
 {% block content %}
 Dear {{ user.realname }},
 
-After your request a new account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} service has been created.
+After your request a new account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} service has been
+created.
 
-To proceed with your account activation we require you to verify the email 
+To proceed with your account activation we require you to verify the e-mail
 address you provided during the signup process.
 
-Please click the link below to complete verification: 
-
+Please click the link below to complete verification:
 {{ url }}
 
-If you did not sign up for this account you can ignore this email and the 
-account will be deleted. 
+If you did not sign up for this account you can ignore this e-mail and the
+account will be deleted.
 {% endblock %}
 
 {% block note %} {% endblock%}

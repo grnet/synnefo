@@ -3,10 +3,11 @@
 <div class="object-anchor" id="{{ type }}-area"></div>
 <div class="object-details info-block well {{ rowcls }}">
 {% if association.items|length > 0 and type != 'ip_log' %}
-<a href="#" class="show-hide-all line-btn">
+<a href="#" class="js-show-hide-all line-btn btn-r txt">
     <span class="snf-font-arrow-up"></span>
     <span class="snf-font-arrow-down"></span>
-    <span class="txt">Collapse All </span>
+    <span class="txt-open">Collapse all </span>
+    <span class="txt-close">Expand all </span>
     <em>({{ association.items|length }})</em>
 
 </a>

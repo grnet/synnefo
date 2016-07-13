@@ -5,6 +5,25 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.18rc1:
+
+v0.18rc1
+========
+
+Released: UNKNOWN
+
+The Synnefo 0.18 release brings significant bug fixes across Synnefo.
+
+The most notable changes are:
+
+* Improved project management and quota policy enforcement
+* Performance optimizations of Pithos object listing queries
+* Support for modifying user e-mails from the Admin Panel
+* Various Admin panel enhancements
+* Support for multiple eventd instances and automatic ganeti master failover
+  detection
+* Support for Sentry
+
 .. _NEWS-0.17:
 
 v0.17

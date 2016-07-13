@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -97,6 +97,7 @@ class Command(ListCommand):
         "description": ("description", "Project Description"),
         "end_date": ("end_date", "Project Termination Date"),
         "creation_date": ("creation_date", "Project Creation Date"),
+        "deactivation_date": ("deactivated_at", "Deactivation Date"),
     }
 
     fields = ["id", "name", "owner", "status", "pending_app"]

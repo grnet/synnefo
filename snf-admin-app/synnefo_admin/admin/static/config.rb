@@ -4,10 +4,11 @@
 http_path = "/"
 sass_dir = "sass"
 images_dir = "images"
-javascripts_dir = "javascripts"
+css_dir = "css"
+# javascripts_dir = "js"
 
 # You can select your preferred output style here (can be overridden via the command line):
-output_style = :nested
+# output_style = :nested
 
 # To enable relative paths to assets via compass helper functions. Uncomment:
 # relative_assets = true
@@ -22,13 +23,11 @@ output_style = :nested
 # and then run:
 # sass-convert -R --from scss --to sass sass scss && rm -rf sass && mv scss sass
 if environment == :development
-    css_dir = "css"
     line_comments = true
     output_style = :nested
 end
 
 if environment == :production
-    css_dir = "min-css"
     line_comments = false
     output_style = :compressed
 end 

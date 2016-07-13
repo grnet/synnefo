@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -281,3 +281,5 @@ ADMIN_API_PERMITTED_GROUPS = getattr(settings,
                                      ['admin-api'])
 
 SHOW_SIGNUP = getattr(settings, 'ASTAKOS_SHOW_SIGNUP', True)
+
+QUOTA_POLICY_MODULE = getattr(settings, 'QUOTA_POLICY_MODULE', None)

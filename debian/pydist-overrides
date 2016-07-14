@@ -17,3 +17,9 @@ py-rrdtool python-rrdtool
 django-tables2 python-django-tables2
 django-eztables python-django-eztables
 archipelago archipelago
+puka python-puka
+objpool python-objpool
+lockfile python-lockfile
+progress python-progress
+python-daemon python-daemon
+astakosclient python-astakosclient

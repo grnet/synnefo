@@ -28,7 +28,7 @@ from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
 from snf_django.utils.line_logging import NewlineStreamHandler
 
-import distutils
+from distutils.util import strtobool
 
 USER_EMAIL_FIELD = "user.email"
 LOGGER_EXCLUDE_COMMANDS = "-list$|-show$"
@@ -547,7 +547,7 @@ class RemoveCommand(SynnefoCommand):
         self.stdout.write("Are you sure you want to delete %s %s?"
                           " [Y/N] " % (resource, ids))
         try:
-            answer = distutils.util.strtobool(raw_input())
+            answer = strtobool(raw_input())
             if answer != 1:
                 raise CommandError("Aborting deletion")
         except ValueError:

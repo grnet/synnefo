@@ -23,3 +23,4 @@ from synnefo.app_settings.default.reconciliation import *
 from synnefo.app_settings.default.tests import *
 from synnefo.app_settings.default.cloudbar import *
 from synnefo.app_settings.default.dispatcher import *
+from synnefo.app_settings.default.vmapi import *

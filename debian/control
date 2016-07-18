@@ -77,7 +77,7 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
   python-astakosclient (= ${binary:Version}), django-filter (>= 0.5.3),
-  python-django-eztables (= 0.3.3-1~snf~0.2)
+  python-snf-django-eztables
 Provides: ${python:Provides}
 Recommends: snf-webproject
 Description: Admin Dashboard package

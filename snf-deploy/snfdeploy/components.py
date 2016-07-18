@@ -1715,7 +1715,7 @@ class Admin(base.Component):
     REQUIRED_PACKAGES = [
         "ruby-full",
         "rubygems-integration",
-        "python-django-eztables",
+        "python-snf-django-eztables",
         "python-astakosclient",
         "snf-astakos-app",
         "snf-cyclades-app",

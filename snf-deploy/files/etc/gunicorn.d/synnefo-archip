@@ -1,5 +1,5 @@
 CONFIG = {
- 'mode': 'django',
+ 'mode': 'wsgi',
  'environment': {
    'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
  },
@@ -14,5 +14,6 @@ CONFIG = {
    # '--worker-class=sync',
    '--log-level=debug',
    '--log-file=/var/log/synnefo/gunicorn.log',
+   'synnefo.webproject.wsgi',
  ),
 }

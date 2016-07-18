@@ -23,7 +23,7 @@ from pithos.api.test.util import strnextling, get_random_data, get_random_name
 from synnefo.lib import join_urls
 
 import json
-from django.http import urlencode
+from django.utils.http import urlencode
 
 from xml.dom import minidom
 from urllib import quote

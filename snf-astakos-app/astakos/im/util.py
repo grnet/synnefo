@@ -20,7 +20,7 @@ import urllib
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest, urlencode
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
@@ -28,6 +28,7 @@ from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.encoding import iri_to_uri
 from django.utils.translation import ugettext as _
+from django.utils.http import urlencode
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.user_utils import login

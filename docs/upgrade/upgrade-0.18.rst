@@ -12,7 +12,7 @@ The upgrade to v0.18 consists of the following steps:
 
       # service gunicorn stop
 
-#. Upgrade Synnefo on all nodes to the latest version (0.18rc1)
+#. Upgrade Synnefo on all nodes to the latest version (0.18)
 
    .. code-block:: console
 

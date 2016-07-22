@@ -1,12 +1,18 @@
-Upgrade to Synnefo v0.18rc1
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Upgrade to Synnefo v0.18
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Upgrade Steps
 =============
 
-The upgrade to v0.18rc1 consists of the following steps:
+The upgrade to v0.18 consists of the following steps:
 
-#. Upgrade Synnefo on all nodes to the latest version (0.18rc1)
+#. Stop gunicorn in all nodes
+
+   .. code-block:: console
+
+      # service gunicorn stop
+
+#. Upgrade Synnefo on all nodes to the latest version (0.18)
 
    .. code-block:: console
 
@@ -28,3 +34,8 @@ The upgrade to v0.18rc1 consists of the following steps:
 
       astakos.host$ snf-manage user-check --all-users --suspend-deactivated --fix
 
+#. Start gunicorn
+
+  .. code-block:: console
+
+     # service gunicorn start

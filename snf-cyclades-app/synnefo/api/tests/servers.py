@@ -31,7 +31,7 @@ from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.http import HttpRequest
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.api.util import VMPasswordCache
+from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.api import servers
 
 from mock import patch, Mock
@@ -356,8 +356,6 @@ class ServerCreateAPITest(ComputeAPITest):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
 
-        vm_password_cache = VMPasswordCache()
-
         mrapi().CreateInstance.return_value = 12
         with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
@@ -373,7 +371,7 @@ class ServerCreateAPITest(ComputeAPITest):
                          u"Meta in the \u2601")
         self.assertTrue('adminPass' in api_server)
 
-        password = vm_password_cache.get(str(api_server['id']))
+        password = VM_PASSWORD_CACHE.get(str(api_server['id']))
         self.assertEqual(password, api_server['adminPass'])
 
         db_vm = VirtualMachine.objects.get(userid='test_user')
@@ -420,7 +418,7 @@ class ServerCreateAPITest(ComputeAPITest):
         # 200(OK) status code and return a JSON dict containing
         # the password
         password = 'mysecretcombination'
-        VMPasswordCache().set(**{str(vm.pk): password})
+        VM_PASSWORD_CACHE.set(str(vm.pk), password)
 
         response = self.myget('servers/' + str(vm.pk) + '/password', vm.userid)
 
@@ -435,8 +433,8 @@ class ServerCreateAPITest(ComputeAPITest):
         # 204(No Content) status code and return a JSON dict containing
         vm = mfactory.VirtualMachineFactory()
         password = 'mysecretcombination'
-        memory_cache = VMPasswordCache()
-        memory_cache.set(**{str(vm.pk): password})
+        memory_cache = VM_PASSWORD_CACHE
+        memory_cache.set(str(vm.pk), password)
 
         response = self.mydelete('servers/' + str(vm.pk) + '/password', vm.userid)
 

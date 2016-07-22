@@ -30,7 +30,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 import json
 from django.db.models import Q
-from django.core.cache import cache
+from django.core.cache import caches
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
@@ -38,9 +38,9 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
 from synnefo.plankton.backend import PlanktonBackend
-from synnefo.webproject.memory_cache import MemoryCache
 
-from synnefo.cyclades_settings import cyclades_services, BASE_HOST
+from synnefo.cyclades_settings import cyclades_services, BASE_HOST,\
+    PUBLIC_STATS_CACHE_NAME, VM_PASSWORD_CACHE_NAME
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
@@ -498,36 +498,37 @@ def start_action(vm, action, jobId):
     vm.backendlogmsg = None
     vm.save()
 
-class PublicStatsCache(MemoryCache):
-    POPULATE_INTERVAL = getattr(
-        settings,
-        'PUBLIC_STATS_CACHE_POPULATE_INTERVAL',
-        60
-    )
 
-    def populate(self):
-        spawned_servers = VirtualMachine.objects.exclude(operstate="ERROR")
-        active_servers = VirtualMachine.objects.exclude(
-            operstate__in=["DELETED", "ERROR"]
-        )
-        spawned_networks = Network.objects.exclude(state__in=["ERROR", "PENDING"])
 
-        self.set(
-            spawned_servers=len(spawned_servers),
-            active_servers=len(active_servers),
-            spawned_networks=len(spawned_networks)
-        )
+STATS_CACHE_VALUES = {
+    'spawned_servers':
+    lambda: len(VirtualMachine.objects.exclude(operstate="ERROR")),
+    'active_servers':
+    lambda: len(
+        VirtualMachine.objects.exclude(operstate__in=["DELETED", "ERROR"])),
+    'spawned_networks':
+    lambda: len(Network.objects.exclude(state__in=["ERROR", "PENDING"])),
+}
 
-class VMPasswordCache(MemoryCache):
-    TIMEOUT = None
+def get_or_set_cache(cache, key, func):
+    value = cache.get(key)
+    if value is None:
+        value = func()
+        cache.set(key, value)
+    return value
 
-    def populate(self):
-        """No need to initialize the cache. If the password doesn't exist in
-        the cache, `None` will be returned.
 
-        """
-        pass
+public_stats_cache = caches[PUBLIC_STATS_CACHE_NAME]
 
+
+def get_cached_public_stats():
+    results = {}
+    for key, func in STATS_CACHE_VALUES.iteritems():
+        results[key] = get_or_set_cache(public_stats_cache, key, func)
+    return results
+
+
+VM_PASSWORD_CACHE = caches[VM_PASSWORD_CACHE_NAME]
 
 
 def can_create_flavor(flavor, user):

@@ -15,7 +15,7 @@
 
 from time import time
 
-from django.core.cache import cache
+from django.core.cache import caches
 from django.conf import settings
 
 
@@ -27,7 +27,8 @@ class MemoryCache(object):
     user_prefix = 'user'
     internal_prefix = 'internal'
 
-    def __init__(self):
+    def __init__(self, name):
+        self.cache = caches[name]
         self.prefix = self.__class__.__name__
         self.user_prefix_full = self.prefix + '_' + self.user_prefix + '_'
         self.internal_prefix_full = self.prefix + '_' + self.internal_prefix + '_'
@@ -44,7 +45,7 @@ class MemoryCache(object):
         otherwise return `False`.
 
         """
-        last_populate = cache.get(self.to_internal_key('LAST_POPULATE'))
+        last_populate = self.cache.get(self.to_internal_key('LAST_POPULATE'))
         now = time()
 
         if not last_populate or last_populate + self.POPULATE_INTERVAL < now:
@@ -68,7 +69,7 @@ class MemoryCache(object):
         """
         self.check_for_populate()
 
-        return cache.get(self.to_user_key(key))
+        return self.cache.get(self.to_user_key(key))
 
     def set(self, **kwargs):
         """Set all the key-value pairs provided in
@@ -78,7 +79,7 @@ class MemoryCache(object):
 
         """
         for key in kwargs.iterkeys():
-            cache.set(self.to_user_key(key), kwargs[key], self.TIMEOUT)
+            self.cache.set(self.to_user_key(key), kwargs[key], self.TIMEOUT)
 
     def set_internal(self, **kwargs):
         """Set all the key-value pairs provided in
@@ -86,7 +87,7 @@ class MemoryCache(object):
 
         """
         for key in kwargs.iterkeys():
-            cache.set(self.to_internal_key(key), kwargs[key])
+            self.cache.set(self.to_internal_key(key), kwargs[key])
 
     def increment(self, key, inc=1):
         """If `time_to_populate` returns `True` do nothing.
@@ -97,7 +98,7 @@ class MemoryCache(object):
         if self.time_to_populate():
             return
 
-        cache.incr(self.to_user_key(key), inc)
+        self.cache.incr(self.to_user_key(key), inc)
 
     def decrement(self, key, dec=1):
         """If `time_to_populate` returns `True` do nothing.
@@ -108,11 +109,11 @@ class MemoryCache(object):
         if self.time_to_populate():
             return
 
-        cache.decr(self.to_user_key(key), dec)
+        self.cache.decr(self.to_user_key(key), dec)
 
     def delete(self, key):
         """Delete the user key provided"""
-        cache.delete(self.to_user_key(key))
+        self.cache.delete(self.to_user_key(key))
 
     def populate(self):
         """The implementation of this method is required from all

@@ -24,7 +24,7 @@ class StatsTest(TestCase):
         self.stats = stats
 
     def test_get_public_stats_from_cache(self):
-        def get_mock(self, key):
+        def get_mock(key):
             if key == 'active_servers':
                 return 1
             if key == 'spawned_servers':
@@ -34,7 +34,7 @@ class StatsTest(TestCase):
 
             return -1
 
-        with patch('synnefo.api.util.PublicStatsCache.get', get_mock):
+        with patch('synnefo.api.util.public_stats_cache.get', get_mock):
             cached_stats = self.stats.get_public_stats_from_cache()
 
         self.assertEqual(cached_stats['active_servers'], 1)

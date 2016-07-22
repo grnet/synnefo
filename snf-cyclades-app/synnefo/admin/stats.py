@@ -24,7 +24,7 @@ from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
 from synnefo.plankton.backend import PlanktonBackend
-from synnefo.api.util import PublicStatsCache
+from synnefo.api.util import get_cached_public_stats
 from synnefo.db.models import (VirtualMachine, Network, Backend, VolumeType,
                                pooled_rapi_client, Flavor)
 
@@ -268,19 +268,7 @@ def get_public_stats():
     return statistics
 
 def get_public_stats_from_cache():
-    memory_cache = PublicStatsCache()
-
-    spawned_servers = memory_cache.get('spawned_servers')
-    active_servers = memory_cache.get('active_servers')
-    spawned_networks = memory_cache.get('spawned_networks')
-
-    public_stats = {
-        'spawned_servers': spawned_servers,
-        'active_servers': active_servers,
-        'spawned_networks': spawned_networks
-    }
-
-    return public_stats
+    return get_cached_public_stats()
 
 
 if __name__ == "__main__":

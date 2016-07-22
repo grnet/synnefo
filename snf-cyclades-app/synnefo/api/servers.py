@@ -26,10 +26,11 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
-from synnefo.api.util import VMPasswordCache
+from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
+from synnefo import cyclades_settings
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -56,9 +57,6 @@ VOLUME_SOURCE_TYPES = [
     "volume",
     "blank"
 ]
-
-VM_PASSWORD_CACHE = VMPasswordCache()
-
 
 def demux(request):
     if request.method == 'GET':
@@ -460,7 +458,7 @@ def create_server(request):
 def set_password_in_cache(server_id, password):
     server_id = str(server_id)
 
-    VM_PASSWORD_CACHE.set(**{server_id: password})
+    VM_PASSWORD_CACHE.set(server_id, password)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

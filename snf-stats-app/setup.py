@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,13 +17,13 @@
 import os
 
 from setuptools import setup, find_packages
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from synnefo_stats.version import __version__
+VERSION_FILE = os.path.join(HERE, 'synnefo_stats', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_FILE), "__version__")
 SHORT_DESCRIPTION = 'Synnefo graphic statistics component'
 
 PACKAGES_ROOT = '.'

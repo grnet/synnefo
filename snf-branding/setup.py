@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,13 +20,13 @@ import sys
 from setuptools import setup, find_packages
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from synnefo_branding.version import __version__
+VERSION_PY = os.path.join(HERE, 'synnefo_branding', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('VERSION', VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'Branding components for Synnefo'
 
 PACKAGES_ROOT = '.'

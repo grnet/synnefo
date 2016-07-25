@@ -20,14 +20,15 @@ import sys
 from setuptools import setup, find_packages
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+VERSION_PY = os.path.join('synnefo_admin', 'version.py')
+
 os.chdir(HERE)
 
-from synnefo_admin.version import __version__
-
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source("VERSION", VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'Synnefo Admin component'
 
 PACKAGES_ROOT = '.'

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,15 +19,13 @@ import sys
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-# Add astakosclient to sys.path and load version module
-sys.path.insert(0, "astakosclient")
-from version import __version__
+VERSION_PY = os.path.join(HERE, 'astakosclient', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('VERSION', VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'A client for the astakos authentication service.'
 
 PACKAGES_ROOT = '.'

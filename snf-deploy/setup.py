@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,14 +18,13 @@ import os
 import sys
 
 from setuptools import setup, find_packages
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+from imp import load_source
 
-# Add snfdeploy to sys.path and load version module
-sys.path.insert(0, "snfdeploy")
-from version import __version__
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+VERSION_PY = os.path.join(HERE, 'snfdeploy', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_PY), "__version__")
 SHORT_DESCRIPTION = 'Deployment tool for synnefo from scratch'
 
 PACKAGES_ROOT = '.'

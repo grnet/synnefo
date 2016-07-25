@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,15 +20,14 @@ import sys
 
 from fnmatch import fnmatchcase
 from distutils.util import convert_path
-
 from setuptools import setup, find_packages
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from astakos.version import __version__
+VERSION_PY = os.path.join(HERE, 'astakos', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'Synnefo Identity Management component'
 
 PACKAGES_ROOT = '.'

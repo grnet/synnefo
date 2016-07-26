@@ -25,7 +25,6 @@ from imp import load_source
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'synnefo', 'versions', 'ganeti.py')
 
-
 setup(
     name="snf-cyclades-gtools",
     version=getattr(load_source('VERSION', VERSION_PY), '__version__'),

@@ -56,11 +56,11 @@ def compile_sass():
     css_dir = os.path.join(".", "synnefo_admin", "admin", "static")
     css_dir = os.path.abspath(css_dir)
 
-    if not find_executable("gem"):
-        raise Exception("gem not found, please install ruby and gem")
-
     os.environ["PATH"] += ":/usr/local/bin"
     if not find_executable("compass"):
+        if not find_executable("gem"):
+            raise Exception("gem not found, please install ruby and gem")
+
         print "Install compass"
         ret = subprocess.call(["gem", "install", "compass"])
         if ret == 1:

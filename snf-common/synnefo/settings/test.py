@@ -1,5 +1,4 @@
 import os
-os.environ['SYNNEFO_SETTINGS_DIR'] = '/etc/synnefo-test-settings'
 
 os.umask(0o007)
 

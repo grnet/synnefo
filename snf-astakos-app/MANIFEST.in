@@ -2,5 +2,5 @@ include README.md
 recursive-include astakos/im/templates *
 recursive-include astakos/im/static *
 recursive-include astakos/im/fixtures *
-recursive-include astakos/test *
+recursive-include test *
 prune docs

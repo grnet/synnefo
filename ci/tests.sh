@@ -48,7 +48,7 @@ runAstakosclientTests () {
 }
 
 createSnfManageTest () {
-    TEST="$SNF_MANAGE test $* --traceback --noinput --settings=synnefo.settings.test"
+    TEST="$SNF_MANAGE test $* --verbosity=2 --traceback --noinput --settings=synnefo.settings.test"
 }
 
 createNoseTest () {

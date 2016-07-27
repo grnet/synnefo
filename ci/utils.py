@@ -1185,7 +1185,12 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install -U funcsigs mock==1.1.2 factory_boy==2.4.1 nose coverage
+        pip install -U pip setuptools
+        """
+        _run(cmd, False)
+
+        cmd = """
+        pip install -U mock factory_boy==2.4.1 django-nose==1.4.3 coverage
         """
         _run(cmd, False)
 

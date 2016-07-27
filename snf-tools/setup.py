@@ -29,9 +29,6 @@ VERSION_FILE = os.path.join(HERE, 'synnefo_tools', 'version.py')
 VERSION = getattr(load_source('version', VERSION_FILE), "__version__")
 SHORT_DESCRIPTION = 'Integration testing tool for a running Synnefo deployment'
 
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
-
 # Package meta
 CLASSIFIERS = []
 
@@ -56,8 +53,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 

@@ -32,9 +32,6 @@ VERSION_PY = os.path.join(HERE, 'pithos', 'backends', 'version.py')
 VERSION = getattr(load_source('version', VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'Backend library for the File/Object Storage component'
 
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
-
 # Package meta
 CLASSIFIERS = []
 
@@ -67,8 +64,7 @@ setup(
     maintainer_email='synnefo-devel@googlegroups.com',
 
     namespace_packages=['pithos'],
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 

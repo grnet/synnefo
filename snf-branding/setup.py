@@ -32,9 +32,6 @@ VERSION_PY = os.path.join(HERE, 'synnefo_branding', 'version.py')
 VERSION = getattr(load_source('VERSION', VERSION_PY), '__version__')
 SHORT_DESCRIPTION = 'Branding components for Synnefo'
 
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
-
 # Package meta
 CLASSIFIERS = []
 
@@ -55,8 +52,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 

@@ -1,3 +1,3 @@
 recursive-include pithos *.json *.html *.json *.xml *.txt
 
-include distribute_setup.py README.md
+include README.md

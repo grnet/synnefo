@@ -1,4 +1,7 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,14 +20,14 @@
 import os
 
 from setuptools import setup
+from imp import load_source
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from synnefo.versions.ganeti import __version__
+VERSION_PY = os.path.join(HERE, 'synnefo', 'versions', 'ganeti.py')
 
 setup(
     name="snf-cyclades-gtools",
-    version=__version__,
+    version=getattr(load_source('VERSION', VERSION_PY), '__version__'),
     description="Synnefo tools for interaction with Ganeti",
 
     url="http://www.synnefo.org/",

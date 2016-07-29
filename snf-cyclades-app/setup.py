@@ -17,13 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import sys
+"""Packaging module for snf-cyclades-app"""
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
-from setuptools import setup, find_packages
+import os
+
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'synnefo', 'versions', 'app.py')
@@ -61,9 +60,9 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRES = {
-        'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8',
-                       'setproctitle>=1.0.1'],
-        'SSH_KEYS': ['pycrypto==2.1.0'],
+    'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8',
+                   'setproctitle>=1.0.1'],
+    'SSH_KEYS': ['pycrypto==2.1.0'],
 }
 
 TESTS_REQUIRES = [
@@ -95,16 +94,16 @@ setup(
     dependency_links=['http://www.synnefo.org/packages/pypi'],
 
     entry_points={
-     'console_scripts': [
-         'snf-dispatcher = synnefo.logic.dispatcher:main',
-         ],
-     'synnefo': [
-         'default_settings = synnefo.app_settings.default',
-         'web_apps = synnefo.app_settings:synnefo_web_apps',
-         'web_middleware = synnefo.app_settings:synnefo_web_middleware',
-         'web_context_processors = synnefo.app_settings:synnefo_web_context_processors',
-         'urls = synnefo.app_settings.urls:urlpatterns',
-         'web_static = synnefo.app_settings:synnefo_static_files',
-         ]
-      },
+        'console_scripts': [
+            'snf-dispatcher = synnefo.logic.dispatcher:main',
+        ],
+        'synnefo': [
+            'default_settings = synnefo.app_settings.default',
+            'web_apps = synnefo.app_settings:synnefo_web_apps',
+            'web_middleware = synnefo.app_settings:synnefo_web_middleware',
+            'web_context_processors = synnefo.app_settings:synnefo_web_context_processors',
+            'urls = synnefo.app_settings.urls:urlpatterns',
+            'web_static = synnefo.app_settings:synnefo_static_files',
+        ]
+    },
 )

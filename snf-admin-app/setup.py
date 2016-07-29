@@ -17,13 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Packaging module for snf-admin-app"""
+
 import os
 import sys
 
-from setuptools import setup, find_packages
-from fnmatch import fnmatchcase
-from distutils.util import convert_path
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join('synnefo_admin', 'version.py')
@@ -46,10 +46,11 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
 ]
 
-trigger_build = ["sdist", "build", "develop", "install"]
+BUILD_TRIGGERING_COMMANDS = ["sdist", "build", "develop", "install"]
 
 
 def compile_sass():
+    """Compiles sass files to css"""
     import subprocess
     from distutils.spawn import find_executable
 
@@ -75,7 +76,7 @@ def compile_sass():
         raise Exception("compass compile failed")
 
 
-if any(x in sys.argv for x in trigger_build):
+if any(x in sys.argv for x in BUILD_TRIGGERING_COMMANDS):
     if os.environ.get('SNFADMIN_AUTO_COMPILE', True) not in \
             ['False', 'false', '0']:
         compile_sass()

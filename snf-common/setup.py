@@ -17,10 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Packaging module for snf-common"""
+
 import os
 
-from setuptools import setup, find_packages
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 

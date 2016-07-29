@@ -17,13 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import sys
+"""Packaging module for snf-pithos-backend"""
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
-from setuptools import setup, find_packages
+import os
+
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'pithos', 'backends', 'version.py')

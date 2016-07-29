@@ -17,10 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Packaging module for snf-stats-app"""
+
 import os
 
-from setuptools import setup, find_packages
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_FILE = os.path.join(HERE, 'synnefo_stats', 'version.py')
@@ -63,9 +65,9 @@ setup(
     dependency_links=['http://www.synnefo.org/packages/pypi'],
     entry_points={
         'synnefo': [
-             'default_settings = synnefo_stats.synnefo_settings',
-             'web_apps = synnefo_stats.synnefo_settings:installed_apps',
-             'urls = synnefo_stats.urls:urlpatterns',
+            'default_settings = synnefo_stats.synnefo_settings',
+            'web_apps = synnefo_stats.synnefo_settings:installed_apps',
+            'urls = synnefo_stats.urls:urlpatterns',
         ]
     }
 )

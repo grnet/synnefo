@@ -17,13 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import sys
+"""Packaging module for snf-webproject"""
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
-from setuptools import setup, find_packages
+import os
+
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'synnefo', 'versions', 'webproject.py')
@@ -37,8 +36,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-        'Django>=1.4, <1.5',
-        'snf-common',
+    'Django>=1.4, <1.5',
+    'snf-common',
 ]
 
 EXTRAS_REQUIRES = {
@@ -72,11 +71,11 @@ setup(
     dependency_links=['http://www.synnefo.org/packages/pypi'],
 
     entry_points={
-     'console_scripts': [
-         'snf-manage = synnefo.webproject.manage:main',
-         ],
-     'synnefo': [
-         'default_settings = synnefo.webproject.settings'
-         ]
-      },
+        'console_scripts': [
+            'snf-manage = synnefo.webproject.manage:main',
+        ],
+        'synnefo': [
+            'default_settings = synnefo.webproject.settings'
+        ]
+    },
 )

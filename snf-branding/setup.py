@@ -17,13 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import sys
+"""Packaging module for snf-branding"""
 
-from setuptools import setup, find_packages
-from fnmatch import fnmatchcase
-from distutils.util import convert_path
+import os
+
 from imp import load_source
+from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'synnefo_branding', 'version.py')
@@ -61,9 +60,9 @@ setup(
     dependency_links=['http://docs.dev.grnet.gr/pypi'],
     entry_points={
         'synnefo': [
-             'web_apps = synnefo_branding.synnefo_settings:installed_apps',
-             'web_context_processors = synnefo_branding.synnefo_settings:context_processors',
-             'web_static = synnefo_branding.synnefo_settings:static_files',
+            'web_apps = synnefo_branding.synnefo_settings:installed_apps',
+            'web_context_processors = synnefo_branding.synnefo_settings:context_processors',
+            'web_static = synnefo_branding.synnefo_settings:static_files',
         ]
     }
 )

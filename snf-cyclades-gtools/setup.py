@@ -17,10 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Packaging module for snf-cyclades-gtools"""
+
 import os
 
-from setuptools import setup
 from imp import load_source
+from setuptools import setup
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 VERSION_PY = os.path.join(HERE, 'synnefo', 'versions', 'ganeti.py')

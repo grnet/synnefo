@@ -336,7 +336,7 @@ def update_vm_nics(vm, nics, etime=None):
         db_nic = db_nics.get(nic_name)
         ganeti_nic = ganeti_nics.get(nic_name)
         if ganeti_nic is None:
-            if nic_is_stale(vm, nic):
+            if nic_is_stale(vm, db_nic):
                 log.debug("Removing stale NIC '%s'" % db_nic)
                 remove_nic_ips(db_nic)
                 db_nic.delete()

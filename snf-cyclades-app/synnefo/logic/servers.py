@@ -28,8 +28,8 @@ from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddressLog, Network,
-                               Image, pooled_rapi_client)
+                               VirtualMachineMetadata, IPAddressHistory,
+                               Network, Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -572,7 +572,8 @@ def associate_port_with_machine(port, machine):
     """Associate a Port with a VirtualMachine.
 
     Associate the port with the VirtualMachine and add an entry to the
-    IPAddressLog if the port has a public IPv4 address from a public network.
+    IPAddressHistory if the port has a public IPv4 address from a public
+    network.
 
     """
     if port.machine is not None:
@@ -580,10 +581,14 @@ def associate_port_with_machine(port, machine):
     if port.network.public:
         ipv4_address = port.ipv4_address
         if ipv4_address is not None:
-            ip_log = IPAddressLog.objects.create(server_id=machine.id,
-                                                 network_id=port.network_id,
-                                                 address=ipv4_address,
-                                                 active=True)
+            ip_log = IPAddressHistory.objects.create(
+                server_id=machine.id,
+                user_id=machine.userid,
+                network_id=port.network_id,
+                address=ipv4_address,
+                action=IPAddressHistory.ASSOCIATE,
+                action_reason="associate port %s" % port.id
+            )
             log.info("Created IP log entry %s", ip_log)
     port.machine = machine
     port.state = "BUILD"

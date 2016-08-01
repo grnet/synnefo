@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, IPAddress, IPAddressLog)
+                               Flavor, IPAddress, IPAddressHistory)
 from synnefo.logic import utils, ips
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -406,28 +406,17 @@ def terminate_active_ipaddress_log(nic, ip):
     """Update DB logging entry for this IP address."""
     if not ip.network.public or nic.machine is None:
         return
-    try:
-        ip_log, created = \
-            IPAddressLog.objects.get_or_create(server_id=nic.machine_id,
-                                               network_id=ip.network_id,
-                                               address=ip.address,
-                                               active=True)
-    except IPAddressLog.MultipleObjectsReturned:
-        logmsg = ("Multiple active log entries for IP %s, Network %s,"
-                  "Server %s. Cannot proceed!"
-                  % (ip.address, ip.network, nic.machine))
-        log.error(logmsg)
-        raise
 
-    if created:
-        logmsg = ("No log entry for IP %s, Network %s, Server %s. Created new"
-                  " but with wrong creation timestamp."
-                  % (ip.address, ip.network, nic.machine))
-        log.error(logmsg)
+    machine = nic.machine
+    ip_log = IPAddressHistory.objects.create(
+        server_id=machine.id,
+        user_id=machine.userid,
+        network_id=ip.network_id,
+        address=ip.address,
+        action=IPAddressHistory.DISASSOCIATE,
+        action_reason="remove ip from port %s" % nic.id
+    )
     log.info("Logging release of IP %s (log id: %s)" % (ip, ip_log.id))
-    ip_log.released_at = datetime.now()
-    ip_log.active = False
-    ip_log.save()
 
 
 def change_address_of_port(port, userid, old_address, new_address, version):
@@ -456,10 +445,14 @@ def change_address_of_port(port, userid, old_address, new_address, version):
         raise ValueError("Unknown version: %s" % version)
 
     # New address log
-    ip_log = IPAddressLog.objects.create(server_id=port.machine_id,
-                                         network_id=port.network_id,
-                                         address=new_address,
-                                         active=True)
+    ip_log = IPAddressHistory.objects.create(
+        server_id=port.machine_id,
+        network_id=port.network_id,
+        user_id=port.machine.userid,
+        address=new_address,
+        action=IPAddressHistory.ASSOCIATE,
+        action_reason="change address of port %s" % port.id
+    )
     log.info("Created IP log entry '%s' for address '%s' to server '%s'",
              ip_log.id, new_address, port.machine_id)
 

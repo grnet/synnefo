@@ -958,6 +958,32 @@ class IPAddressLog(models.Model):
                   self.allocated_at)
 
 
+class IPAddressHistory(models.Model):
+    ASSOCIATE = "associate"
+    DISASSOCIATE = "disassociate"
+
+    address = models.CharField("IP Address", max_length=64, null=False,
+                               db_index=True)
+    server_id = models.IntegerField("Server", null=False)
+    network_id = models.IntegerField("Network", null=False)
+    user_id = models.CharField("IP user", max_length=128, null=False,
+                              db_index=True)
+    action = models.CharField("Action", max_length=255, null=False)
+    action_date = models.DateTimeField("Datetime of IP action",
+                                       default=datetime.datetime.now)
+    action_reason = models.CharField("Action reason", max_length=1024,
+                                     default="")
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<Address: %s, Server: %s, Network: %s, User: %s,"\
+            " Date: %s Action: %s>"\
+            % (self.address, self.network_id, self.server_id, self.user_id,
+               self.action_date, self.action)
+
+
 class NetworkInterfaceManager(models.Manager):
     """Custom manager for :class:`NetworkInterface` model."""
 

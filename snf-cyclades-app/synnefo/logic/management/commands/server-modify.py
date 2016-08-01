@@ -142,7 +142,7 @@ class Command(SynnefoCommand):
                 server = servers.stop(server)
             elif action == "reboot_hard":
                 server = servers.reboot(server, reboot_type="HARD")
-            elif action == "reboot_stof":
+            elif action == "reboot_soft":
                 server = servers.reboot(server, reboot_type="SOFT")
             else:
                 raise CommandError("Unknown action.")

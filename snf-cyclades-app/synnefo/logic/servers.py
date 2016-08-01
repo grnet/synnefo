@@ -459,6 +459,28 @@ def rename(server, new_name):
     return server
 
 
+def change_owner(server, new_owner):
+    old_owner = server.userid
+    server.userid = new_owner
+    old_project = server.project
+    server.project = new_owner
+    server.save()
+    log.info("Changed the owner of server '%s' from '%s' to '%s'.",
+             server, old_owner, new_owner)
+    log.info("Changed the project of server '%s' from '%s' to '%s'.",
+             server, old_project, new_owner)
+    for vol in server.volumes.filter(
+            userid=old_owner).select_for_update():
+        vol.userid = new_owner
+        vol_old_project = vol.project
+        vol.project = new_owner
+        vol.save()
+        log.info("Changed the owner of volume '%s' from '%s' to '%s'.",
+                 vol, old_owner, new_owner)
+        log.info("Changed the project of volume '%s' from '%s' to '%s'.",
+                 vol, vol_old_project, new_owner)
+
+
 @transaction.commit_on_success
 def create_port(*args, **kwargs):
     vm = kwargs.get("machine", None)

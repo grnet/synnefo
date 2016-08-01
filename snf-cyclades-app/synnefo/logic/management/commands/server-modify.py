@@ -101,28 +101,14 @@ class Command(SynnefoCommand):
         if new_owner is not None:
             if "@" in new_owner:
                 raise CommandError("Invalid user UUID.")
-            old_owner = server.userid
-            server.userid = new_owner
-            old_project = server.project
-            server.project = new_owner
-            server.save()
-            msg = "Changed the owner of server '%s' from '%s' to '%s'.\n"
-            self.stdout.write(msg % (server, old_owner, new_owner))
-            msg = "Changed the project of server '%s' from '%s' to '%s'.\n"
-            self.stdout.write(msg % (server, old_project, new_owner))
-            for vol in server.volumes.filter(
-                    userid=old_owner).select_for_update():
-                vol.userid = new_owner
-                vol_old_project = vol.project
-                vol.project = new_owner
-                vol.save()
-                msg = "Changed the owner of volume '%s' from '%s' to '%s'.\n"
-                self.stdout.write(msg % (vol, old_owner, new_owner))
-                msg = "Changed the project of volume '%s' from '%s' to '%s'.\n"
-                self.stdout.write(msg % (vol, vol_old_project, new_owner))
-            self.stdout.write("WARNING: User quotas should be out of sync now,"
-                              " run `snf-manage reconcile-resources-cyclades'"
-                              " to review and update them.\n")
+            if new_owner == server.userid:
+                self.stdout.write("%s is already server owner.\n" % new_owner)
+            else:
+                servers.change_owner(server, new_owner)
+                self.stdout.write(
+                    "WARNING: User quotas should be out of sync now,"
+                    " run `snf-manage reconcile-resources-cyclades'"
+                    " to review and update them.\n")
 
         wait = parse_bool(options["wait"])
         new_flavor_id = options.get("flavor")

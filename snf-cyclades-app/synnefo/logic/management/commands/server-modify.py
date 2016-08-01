@@ -43,9 +43,10 @@ class Command(SynnefoCommand):
             dest='user',
             metavar='USER_UUID',
             help="Change ownership of server. Value must be a user UUID."
-                 " This also changes the ownership of all volumes attached"
-                 " to the server. Finally, it assigns both the volumes and"
-                 " the server to the system project of the destination user."),
+                 " This also changes the ownership of all volumes, NICs, and"
+                 " IPs attached to the server. Finally, it assigns the"
+                 " volumes, IPs, and the server to the system project of the"
+                 " destination user."),
         make_option(
             "--suspended",
             dest="suspended",

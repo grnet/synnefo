@@ -283,3 +283,17 @@ def reassign_floating_ip(floating_ip, project, shared_to_project):
         quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
                                            action_fields=action_fields)
     return floating_ip
+
+
+def change_ip_owner(ip, new_owner):
+    old_owner = ip.userid
+    old_project = ip.project
+    ip.userid = new_owner
+    if old_project is not None:
+        ip.project = new_owner
+    ip.save()
+    log.info("Changed the owner of IP '%s' from '%s' to '%s'.",
+             ip, old_owner, new_owner)
+    if old_project is not None:
+        log.info("Changed the project of IP '%s' from '%s' to '%s'.",
+                 ip, old_project, new_owner)

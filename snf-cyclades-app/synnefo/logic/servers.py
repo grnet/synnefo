@@ -29,7 +29,7 @@ from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressHistory,
-                               Network, Image, pooled_rapi_client)
+                               IPAddress, Network, Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -459,6 +459,11 @@ def rename(server, new_name):
     return server
 
 
+def show_owner_change(vmid, from_user, to_user):
+    return "[OWNER CHANGE vm: %s, from: %s, to: %s]" % (
+        vmid, from_user, to_user)
+
+
 def change_owner(server, new_owner):
     old_owner = server.userid
     server.userid = new_owner
@@ -479,6 +484,28 @@ def change_owner(server, new_owner):
                  vol, old_owner, new_owner)
         log.info("Changed the project of volume '%s' from '%s' to '%s'.",
                  vol, vol_old_project, new_owner)
+    for nic in server.nics.filter(userid=old_owner).select_for_update():
+        nic.userid = new_owner
+        nic.save()
+        log.info("Changed the owner of port '%s' from '%s' to '%s'.",
+                 nic.id, old_owner, new_owner)
+    for ip in IPAddress.objects.filter(nic__machine=server, userid=old_owner).\
+            select_for_update().select_related("nic"):
+        ips.change_ip_owner(ip, new_owner)
+        IPAddressHistory.objects.create(
+            server_id=server.id,
+            user_id=old_owner,
+            network_id=ip.nic.network_id,
+            address=ip.address,
+            action=IPAddressHistory.DISASSOCIATE,
+            action_reason=show_owner_change(server.id, old_owner, new_owner))
+        IPAddressHistory.objects.create(
+            server_id=server.id,
+            user_id=new_owner,
+            network_id=ip.nic.network_id,
+            address=ip.address,
+            action=IPAddressHistory.ASSOCIATE,
+            action_reason=show_owner_change(server.id, old_owner, new_owner))
 
 
 @transaction.commit_on_success

@@ -323,6 +323,8 @@ def update_vm_nics(vm, nics, etime=None):
     @rtype: List of dictionaries
 
     """
+    log.info("Updating nics %s for vm %s" % (nics, vm))
+
     try:
         ganeti_nics = parse_instance_nics(nics)
     except Network.InvalidBackendIdError as e:
@@ -422,6 +424,7 @@ def terminate_active_ipaddress_log(nic, ip):
                   " but with wrong creation timestamp."
                   % (ip.address, ip.network, nic.machine))
         log.error(logmsg)
+    log.info("Logging release of IP %s (log id: %s)" % (ip, ip_log.id))
     ip_log.released_at = datetime.now()
     ip_log.active = False
     ip_log.save()

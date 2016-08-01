@@ -562,7 +562,7 @@ def associate_port_with_machine(port, machine):
                                                  network_id=port.network_id,
                                                  address=ipv4_address,
                                                  active=True)
-            log.debug("Created IP log entry %s", ip_log)
+            log.info("Created IP log entry %s", ip_log)
     port.machine = machine
     port.state = "BUILD"
     port.device_owner = "vm"

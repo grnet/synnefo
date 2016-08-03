@@ -234,11 +234,11 @@ class SynnefoCI(object):
 
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
-            try:
-                self.kamaki_cloud = config.get("global", "default_cloud")
-            except AttributeError:
-                # Compatibility with kamaki version <=0.10
-                self.kamaki_cloud = config.get("global", "default_cloud")
+            self.kamaki_cloud = config.get("global", "default_cloud")
+
+        if not self.kamaki_cloud:
+            raise Exception("Unable to find 'default_cloud' in %s" %
+                            config.path)
 
         self.logger.info("Setup kamaki client, using cloud '%s'.." %
                          self.kamaki_cloud)

@@ -493,7 +493,7 @@ class SynnefoCI(object):
         apt-get install x2go-keyring --yes --force-yes
         apt-get update
         apt-get install x2goserver x2goserver-xsession \
-                iceweasel --yes --force-yes
+                firefox-esr --yes --force-yes
 
         # xterm published application
         echo '[Desktop Entry]' > /usr/share/applications/xterm.desktop

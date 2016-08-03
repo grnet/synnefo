@@ -168,7 +168,7 @@ X-forwarding:
    $ ssh <user>@<hostname> -YC
 
 where **<user>** is your username and **<hostname>** is the IP/hostname of your
-machine. Then, run ``iceweasel`` or ``chromium`` and in the address bar write:
+machine. Then, run ``firefox`` or ``chromium`` and in the address bar write:
 
 `https://astakos.synnefo.live/astakos/ui/login`
 

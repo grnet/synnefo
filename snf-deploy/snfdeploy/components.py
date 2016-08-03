@@ -2005,7 +2005,7 @@ class ExtStorage(base.Component):
 
 class Client(base.Component):
     REQUIRED_PACKAGES = [
-        "iceweasel"
+        "firefox-esr"
         ]
 
     alias = constants.CLIENT

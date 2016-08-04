@@ -41,6 +41,7 @@ Cyclades
 * Imporove SynnefoExceptionReporterFilter to better cleanse request body.
 * Make eventd detect Ganeti Master failovers and allow having multiple eventd
   instances running in the Ganeti cluster.
+* Fix flavor allow_create not enforced in server resize/change flavor
 
 Admin
 -----

@@ -1026,10 +1026,6 @@ def resize(request, vm, args):
     if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
     flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
-    if not util.can_create_flavor(flavor, request.user):
-        msg = ("It is not allowed to resize a server to flavor with id '%d',"
-               " see 'allow_create' flavor attribute")
-        raise faults.Forbidden(msg % flavor.id)
     servers.resize(vm, flavor=flavor)
 
     log.info("User %s resized VM %s to flavor %s",

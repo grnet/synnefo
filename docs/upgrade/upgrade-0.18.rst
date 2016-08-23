@@ -32,7 +32,7 @@ The upgrade to v0.18 consists of the following steps:
 
    .. code-block:: console
 
-      astakos.host$ snf-manage user-check --all-users --suspend-deactivated --fix
+      astakos.host$ snf-manage user-check --all-users --suspend-deactivated --noemail --fix
 
 #. Start gunicorn
 

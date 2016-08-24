@@ -1,14 +1,14 @@
 .. _install-guide-debian:
 
-Administrator's Installation Guide (on Debian Wheezy)
+Administrator's Installation Guide (on Debian Jessie)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the Administrator's installation guide on Debian Wheezy.
+This is the Administrator's installation guide on Debian Jessie.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
-with minimum configuration. It installs Synnefo from Debian packages, and
-assumes the nodes run Debian Wheezy. After successful installation, you will
-have the following services running:
+with minimum configuration. It installs Synnefo from Debian packages and assumes
+the nodes run Debian Jessie. After successful installation, you will have the
+following services running:
 
 * Identity Management (Astakos)
 * Object Storage Service (Pithos)
@@ -20,7 +20,6 @@ and a single unified Web UI to manage them all.
 
 If you just want to install the Object Storage Service (Pithos), follow the
 guide and just stop after the "Testing of Pithos" section.
-
 
 Installation of Synnefo / Introduction
 ======================================
@@ -45,8 +44,8 @@ repository to your system's repositories:
 .. code-block:: console
 
    $ sudo tee /etc/apt/sources.list.d/grnet.list <<EOF
-   deb http://apt.dev.grnet.gr wheezy/
-   deb-src http://apt.dev.grnet.gr wheezy/
+   deb http://apt.dev.grnet.gr jessie/
+   deb-src http://apt.dev.grnet.gr jessie/
    EOF
 
 and import the repository's GPG key:
@@ -69,18 +68,17 @@ an NFS server and serves the directory ``/srv/archip/`` to node2 (be sure to set
 no_root_squash flag). Node2 has this directory mounted under ``/srv/archip/``,
 too.
 
-Before starting the Synnefo installation, you will need basic third party
+Before starting the Synnefo installation, you will need basic third-party
 software to be installed and configured on the physical nodes. We will describe
 each node's general prerequisites separately. Any additional configuration,
 specific to a Synnefo service for each node, will be described at the service's
 section.
 
 Finally, it is required for Cyclades and Ganeti nodes to have synchronized
-system clocks (e.g. by running ntpd).
+system clocks (e.g. by running ``ntpd``).
 
 Node1
 -----
-
 
 General Synnefo dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,7 +161,6 @@ actual IPs. Now, restart the server to apply the changes:
 
    # /etc/init.d/postgresql restart
 
-
 Certificate Creation
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -171,15 +168,15 @@ Node1 will host Cyclades. Cyclades should communicate with the other Synnefo
 Services and users over a secure channel. In order for the connection to be
 trusted, the keys provided to Apache below should be signed with a certificate.
 This certificate should be added to all nodes. In case you don't have signed
-keys you can create a self-signed certificate and sign your keys with it. To
-do so on node1 run:
+keys you can create a self-signed certificate and sign your keys with it. To do
+so on node1 run:
 
 .. code-block:: console
 
-   # apt-get install openvpn ca-certificates
+   # apt-get install easy-rsa openvpn ca-certificates
    # mkdir /etc/openvpn/easy-rsa
-   # cp -ai /usr/share/doc/openvpn/examples/easy-rsa/2.0/ /etc/openvpn/easy-rsa
-   # cd /etc/openvpn/easy-rsa/2.0
+   # cp -R /usr/share/easy-rsa/* /etc/openvpn/easy-rsa
+   # cd /etc/openvpn/easy-rsa/
    # vim vars
 
 In vars you can set your own parameters such as KEY_COUNTRY.
@@ -196,14 +193,14 @@ Now you can create the certificate:
    # ./build-ca
 
 The previous will create a ``ca.crt`` file in the directory
-``/etc/openvpn/easy-rsa/2.0/keys``. Copy this file under
+``/etc/openvpn/easy-rsa/keys/``. Copy this file under
 ``/usr/local/share/ca-certificates/`` directory and run:
 
 .. code-block:: console
 
    # update-ca-certificates
 
-to update the records. You will have to do the following on node2 as well.
+to update the records. *You will have to do the following on node2 as well*.
 
 Now you can create the keys and sign them with the certificate:
 
@@ -212,14 +209,14 @@ Now you can create the keys and sign them with the certificate:
    # ./build-key-server node1.example.com
 
 This will create a ``01.pem`` and a ``node1.example.com.key`` files in the
-``/etc/openvpn/easy-rsa/2.0/keys`` directory. Copy these in ``/etc/ssl/certs/``
-and ``/etc/ssl/private/`` respectively and use them in the apache2
-configuration file below instead of the defaults.
+``/etc/openvpn/easy-rsa/keys/`` directory. Copy these in ``/etc/ssl/certs/`` and
+``/etc/ssl/private/`` respectively and use them in the apache2 configuration
+file below instead of the defaults.
 
 Apache2 setup
 ~~~~~~~~~~~~~
 
-Create the file ``/etc/apache2/sites-available/synnefo`` containing the
+Create the file ``/etc/apache2/sites-available/synnefo.conf`` containing the
 following:
 
 .. code-block:: console
@@ -233,8 +230,7 @@ following:
        RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
    </VirtualHost>
 
-
-Create the file ``/etc/apache2/sites-available/synnefo-ssl`` containing the
+Create the file ``/etc/apache2/sites-available/synnefo-ssl.conf`` containing the
 following:
 
 .. code-block:: console
@@ -270,8 +266,8 @@ following:
        RewriteRule ^(.*)$ - [F,L]
 
        SSLEngine on
-       SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-       SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+       SSLCertificateFile    /etc/ssl/certs/01.pem
+       SSLCertificateKeyFile /etc/ssl/private/node1.example.com.key
    </VirtualHost>
    </IfModule>
 
@@ -281,7 +277,7 @@ Now enable sites and modules by running:
 
    # a2enmod ssl
    # a2enmod rewrite
-   # a2dissite default
+   # a2dissite 000-default
    # a2ensite synnefo
    # a2ensite synnefo-ssl
    # a2enmod headers
@@ -300,7 +296,6 @@ Now enable sites and modules by running:
 
       # /etc/init.d/apache2 stop
 
-
 .. _rabbitmq-setup-h:
 
 Message Queue setup
@@ -317,7 +312,6 @@ exchanges:
 
 We do not need to initialize the exchanges. This will be done automatically,
 during the Cyclades setup.
-
 
 System user/group setup
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -345,7 +339,6 @@ ids 200 and 300 are available across all nodes.
    # addgroup --system --gid 300 archipelago
    # adduser --system --uid 300 --gid 300 --no-create-home \
        --gecos Archipelago archipelago
-
 
 NFS data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -438,7 +431,6 @@ Finally, start Archipelago:
 .. code-block:: console
 
    root@node1:~ # /etc/init.d/archipelago start
-
 
 DNS server setup
 ~~~~~~~~~~~~~~~~
@@ -543,7 +535,7 @@ of the purpose of this guide.
 Apache2 setup
 ~~~~~~~~~~~~~
 
-Create the file ``/etc/apache2/sites-available/synnefo`` containing the
+Create the file ``/etc/apache2/sites-available/synnefo.conf`` containing the
 following:
 
 .. code-block:: console
@@ -557,7 +549,7 @@ following:
        RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
    </VirtualHost>
 
-Create the file ``synnefo-ssl`` under ``/etc/apache2/sites-available/``
+Create the file ``synnefo-ssl.conf`` under ``/etc/apache2/sites-available/``
 containing the following:
 
 .. code-block:: console
@@ -588,8 +580,8 @@ containing the following:
        ProxyPassReverse / http://localhost:8080/
 
        SSLEngine on
-       SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-       SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+       SSLCertificateFile    /etc/ssl/certs/02.pem
+       SSLCertificateKeyFile /etc/ssl/private/node2.example.com.key
    </VirtualHost>
    </IfModule>
 
@@ -599,7 +591,7 @@ As in node1, enable sites and modules by running:
 
    # a2enmod ssl
    # a2enmod rewrite
-   # a2dissite default
+   # a2dissite 000-default
    # a2ensite synnefo
    # a2ensite synnefo-ssl
    # a2enmod headers
@@ -618,19 +610,19 @@ As in node1, enable sites and modules by running:
 
       # /etc/init.d/apache2 stop
 
-
 Acquire certificate
 ~~~~~~~~~~~~~~~~~~~
 
-Copy the certificate you created before on node1 (`ca.crt`) under the directory
+Copy the certificate you created before on node1 (``ca.crt``) under the directory
 ``/usr/local/share/ca-certificate`` and run:
 
 .. code-block:: console
 
    # update-ca-certificates
 
-to update the records.
-
+to update the records. You might want to do the same in node1 as well, i.e. copy
+``ca.crt`` that you created in node2 in ``/usr/local/share/ca-certificate`` and
+run ``root@node1:~ # update-ca-certificates``.
 
 Installation of Archipelago
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -692,7 +684,6 @@ Finally, start Archipelago:
 
    root@node2:~ # /etc/init.d/archipelago start
 
-
 DNS Setup
 ~~~~~~~~~
 
@@ -746,7 +737,6 @@ to make it a valid gunicorn configuration file:
    .. code-block:: console
 
       # /etc/init.d/gunicorn stop
-
 
 Conf Files
 ----------
@@ -830,9 +820,7 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf``:
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/ui/get_services'
-
    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/ui/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
@@ -856,15 +844,15 @@ notify administrators with a notice that a new account has just been verified.
 More specifically Astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS``
-  setting after each email verification if ``ASTAKOS_MODERATION`` setting is
-  ``True``. The email notifies administrators that an additional action is
-  required in order to activate the user.
+- An email to the people listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` setting
+  after each email verification if ``ASTAKOS_MODERATION`` setting is ``True``.
+  The email notifies administrators that an additional action is required in
+  order to activate the user.
 - A welcome email to the user email and a notification to
   ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` right after each account activation.
-- Feedback messages submitted from Astakos contact view and Astakos feedback
-  API endpoint are sent to contacts listed in
-  ``FEEDBACK_NOTIFICATIONS_RECIPIENTS`` setting.
+- Feedback messages submitted from Astakos contact view and Astakos feedback API
+  endpoint are sent to contacts listed in ``FEEDBACK_NOTIFICATIONS_RECIPIENTS``
+  setting.
 - Project application request notifications to people included in
   ``PROJECT_NOTIFICATIONS_RECIPIENTS`` setting.
 - Notifications after each project members action (join request, membership
@@ -902,16 +890,15 @@ Astakos, they are defined in a different configuration file than the one
 previously used to set Astakos specific settings.
 
 Refer to
-`Django documentation <https://docs.djangoproject.com/en/1.4/topics/email/>`_
+`Django documentation <https://docs.djangoproject.com/en/1.7/topics/email/>`_
 for additional information on available email settings.
 
 As referred in the previous section, based on the operation that triggers an
 email notification, the recipients list differs. For convenience (and backward
 compatibility), Astakos defines three service teams (administrators, managers
-and helpdesk) and send the above notifications to these teams in a
-preconfigured way (i.e. project notifications are sent to the members of the
-managers and helpdesk teams). These settings are located in
-``00-snf-common-admins.conf``:
+and helpdesk) and send the above notifications to these teams in a preconfigured
+way (i.e. project notifications are sent to the members of the managers and
+helpdesk teams). These settings are located in ``00-snf-common-admins.conf``:
 
 .. code-block:: python
 
@@ -928,7 +915,6 @@ file ``/etc/synnefo/99-local.conf`` including the following:
 
    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
    EMAIL_FILE_PATH = '/tmp/app-messages'
-
 
 Enable Pooling
 --------------
@@ -995,27 +981,18 @@ file that looks like this:
 Database Initialization
 -----------------------
 
-After configuration is done, we initialize the database by running:
+After configuration is done, we run the migrations needed for Astakos:
 
 .. code-block:: console
 
-   # snf-manage syncdb
+   # snf-manage migrate
 
-In this example we don't need to create a Django superuser, so we select
-``[no]`` to the question. After a successful sync, we run the migration needed
-for Astakos:
-
-.. code-block:: console
-
-   # snf-manage migrate im
-   # snf-manage migrate quotaholder_app
-   # snf-manage migrate oa2
-
-Then, we load the pre-defined user groups
+Then, we load the pre-defined user groups:
 
 .. code-block:: console
 
    # snf-manage loaddata groups
+   # snf-manage loaddata projectlock
 
 .. _services-reg-h:
 
@@ -1145,7 +1122,6 @@ Finally, we initialize the servers on node1:
 
 We have now finished the Astakos setup. Let's test it now.
 
-
 Testing of Astakos
 ==================
 
@@ -1186,7 +1162,6 @@ Astakos menu appears and you can see your profile, then you have successfully
 setup Astakos.
 
 Let's continue to install Pithos now.
-
 
 Installation of Pithos on node2
 ===============================
@@ -1261,7 +1236,6 @@ this options:
 
    PITHOS_OAUTH2_CLIENT_CREDENTIALS = ("pithos-view", "secret_passw0rd")
 
-
 The ``ASTAKOS_AUTH_URL`` option informs the Pithos app where Astakos is.
 The Astakos service is used for user management (authentication, quotas, etc.)
 
@@ -1328,7 +1302,6 @@ context. This means adding the following lines at the top of your
    from synnefo.lib.db.psyco_gevent import make_psycopg_green
    make_psycopg_green()
 
-
 .. _conf-pithos-gunicorn:
 
 Pithos gunicorn configuration
@@ -1355,7 +1328,7 @@ The file should look something like this:
 .. code-block:: console
 
    CONFIG = {
-     'mode': 'django',
+     'mode': 'wsgi',
      'environment': {
        'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
      },
@@ -1364,14 +1337,15 @@ The file should look something like this:
      'group': 'synnefo',
      'args': (
        '--bind=127.0.0.1:8080',
-       '--workers=4',
        '--worker-class=gevent',
+       '--workers=4',
        '--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py',
-       '--log-level=debug',
-       '--timeout=43200'
+       '--log-level=info',
+       '--log-file=/var/log/synnefo/gunicorn.log',
+       '--timeout=43200',
+       'synnefo.webproject.wsgi',
      ),
    }
-
 
 Stamp Database Revision
 -----------------------
@@ -1432,7 +1406,6 @@ If you would like to do more, such as:
 
 please continue with the rest of the guide.
 
-
 Kamaki
 ======
 
@@ -1475,7 +1448,7 @@ Ganeti
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the `ganeti documentation
-<http://docs.ganeti.org/ganeti/2.8/html>`_ for all the gory details. A
+<http://docs.ganeti.org/ganeti/2.10/html>`_ for all the gory details. A
 successful Ganeti installation concludes with a working 'GANETI-MASTER' and a
 number of 'GANETI-NODE's.
 
@@ -1498,7 +1471,7 @@ You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
    # apt-get install lvm2 vlan bridge-utils
 
 Ganeti requires FQDN. To properly configure your nodes please see `this
-<http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`__.
+<http://docs.ganeti.org/ganeti/2.10/html/install.html#hostname-issues>`__.
 
 Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
 ``ganeti.node1.example.com``. Add this IP to your DNS server configuration, as
@@ -1580,31 +1553,19 @@ Ganeti nodes:
 
    # apt-get install qemu-kvm
 
-.. warning::
-
-   The qemu that is shipped with Debian Wheezy (1.1.2+dfsg-6a+deb7u12) does not
-   support hotplugging. To support hotplugging of networks in VMs, it is
-   recommended to use the package from wheezy-backports
-   (1:2.1+dfsg-12+deb8u5a~bpo70+1) if you want to add networks and use them in
-   the VMs without having to reboot.
-
 It's time to install Ganeti. We recommend using our Ganeti package version:
+``2.10.7.1+grnet2+bpo2-1~jessie``.
 
-``2.10.7+snap1+b64v1+ext1+lockfix1+ifdown1+qmp1+bpo1-1~wheezy``
+Let's briefly explain the included patch set:
 
-Let's briefly explain each patch set:
-
-* snap extends snapshot support for the ext disk template (separate LU)
-* b64 saves networks' bitarrays in a more compact representation
-* ext
-
-  * allows arbitrary params to reach kvm command (i.e. cache overrides
-    disk_cache hvparam, heads and secs define the disk's geometry)
-
+* Snapshot support for the ext disk template (separate LU)
+* Networks' bit-arrays are saved in a more compact representation
+* ext allows arbitrary params to reach kvm command (i.e. cache overrides
+  disk_cache hvparam, heads and secs define the disk's geometry)
 * lockfix is a workaround for Issue #621
 * ifdown cleans up node's configuration upon instance migration/shutdown
-* qmp replace HMP with QMP commands during hotplug
-* bpo is a set of patches backported from later branches
+* Replace HMP with QMP commands during hotplug
+* A set of patches backported from later branches
 
   * Make name and UUID Disk attributes reach bdev (2.11)
   * IDiskParams fixes (2.11)
@@ -1620,12 +1581,11 @@ Let's briefly explain each patch set:
   * Support disk hotplug even with chroot or SM (2.13)
   * Some refactor wrt NICs at the HV level (2.12)
 
-
 To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti2 drbd8
+   # apt-get install snf-ganeti ganeti2 drbd-utils
 
 Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following:
@@ -1694,21 +1654,9 @@ its value to ``007``.
     edit the file ``/etc/default/snf-image``. Change ``# CURL="curl"`` to
     ``CURL="curl -k"`` on every node.
 
-.. warning::
-
-    If you are using qemu-kvm from wheezy-backports, note that the official
-    2.1.0 version has a ACPI regression bug (see `here
-    <https://lists.nongnu.org/archive/html/qemu-devel/2014-08/msg03536.html>`__).
-    This bug has reached the `Debian qemu-kvm 2.1+dfsg-2~bpo70+2 package
-    <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=759522>`__ found in
-    wheezy-backports and is triggered by snf-image. Until a newer package is
-    out, you can workaround it by editing the file ``/etc/default/snf-image``
-    and changing ``# KVM="kvm"`` to
-    ``KVM="qemu-system-x86_64 -enable-kvm -machine pc-i440fx-2.0,accel=kvm"`` on
-    every node.
-
 Configuration
 ~~~~~~~~~~~~~
+
 snf-image supports native access to Images stored on Pithos. This means that
 it can talk directly to the Pithos backend, without the need of providing a
 public URL. More details, are described in the next section.
@@ -1723,6 +1671,7 @@ Pithos.
 
 Testing
 ~~~~~~~
+
 You can test that snf-image is successfully installed by running on the
 'GANETI-MASTER' (in our case node1):
 
@@ -1757,7 +1706,7 @@ above Images to be stored:
 * On a remote host (accessible via public URL e.g: http://... or ftp://...)
 * On Pithos (accessible natively, not only by its public URL)
 
-For the purpose of this guide, we will use the Debian Wheezy Base Image found
+For the purpose of this guide, we will use the Debian Jessie Base Image found
 on the official snf-image Image directory (`snf-image directory
 <http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_). The
 image is of type ``diskdump``. We will store it in our new Pithos installation.
@@ -1768,7 +1717,7 @@ a) Download the Image:
 
    .. code-block:: console
 
-      $ wget https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump
+      $ wget https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump
 
 b) Upload the Image to your Pithos installation, either using the Pithos Web
    UI or the command line client `Kamaki
@@ -1778,7 +1727,7 @@ To upload the file using Kamaki to pithos default container, run:
 
 .. code-block:: console
 
-   # kamaki file upload debian_base-7.0-x86_64.diskdump
+   # kamaki file upload debian_base-8.0-x86_64.diskdump
 
 Once the Image is uploaded successfully, download the Image's metadata file
 from the official snf-image page. You will need it, for spawning a VM from
@@ -1795,9 +1744,9 @@ Spawning a VM from a Pithos Image, using Ganeti
 
 Now, it is time to test our installation so far. So, we have Astakos and
 Pithos installed, we have a working Ganeti installation, the snf-image
-definition installed on all VM-capable nodes, a Debian Wheezy Image on
+definition installed on all VM-capable nodes, a Debian Jessie Image on
 Pithos and Kamaki installed and configured. Make sure you also have the
-`metadata file <https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_
+`metadata file <https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta>`_
 for this image.
 
 To spawn a VM from a Pithos file, we need to know:
@@ -1825,9 +1774,9 @@ Then on the Pithos node run the following:
 
 .. code-block:: console
 
-   # snf-manage file-show <user uuid> pithos debian_base-7.0-x86_64.diskdump
+   # snf-manage file-show <user uuid> pithos debian_base-8.0-x86_64.diskdump
 
-Replace ``pithos`` and ``debian_base-7.0-x86_64.diskdump`` with the container
+Replace ``pithos`` and ``debian_base-8.0-x86_64.diskdump`` with the container
 and filename you used, when uploading the file. This will output the following
 info (among others): the name of the Pithos mapfile (``mapfile`` field) and the
 size of the image (``bytes`` field).
@@ -1877,7 +1826,6 @@ are sure everything works till this point.
 
 If everything works, you have successfully connected Ganeti with Pithos. Let's
 move on to networking now.
-
 
 Networking Setup Overview
 -------------------------
@@ -1929,7 +1877,7 @@ snf-network and information provided by Ganeti.
 
 .. code-block:: console
 
-   # apt-get install python-nfqueue=0.4+physindev-1~wheezy
+   # apt-get install python-nfqueue
    # apt-get install nfdhcpd
 
 Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
@@ -1982,7 +1930,6 @@ To setup the NAT server on node1, run:
 
 and append it to your ``/etc/rc.local``.
 
-
 Testing the Public Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2007,7 +1954,7 @@ Fetch the Debian Old Base image locally (in all nodes), by running:
 
 .. code-block:: console
 
-   # wget https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump -O /var/lib/snf-image/debian_base-7.0-x86_64.diskdump
+   # wget https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump -O /var/lib/snf-image/debian_base-8.0-x86_64.diskdump
 
 Also in all nodes, bring all ``br*`` interfaces up:
 
@@ -2021,7 +1968,7 @@ Finally, run on the GANETI-MASTER (node1):
 .. code-block:: console
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-8.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       testvm2
@@ -2060,14 +2007,14 @@ means that the instances will have a second NIC connected to the ``br2``.
    # gnt-network connect --nic-parameters mode=bridged,link=br2 test-net-prv-mac
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-8.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac \
                       -n node1.example.com testvm3
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-8.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac -n node2 \
@@ -2155,7 +2102,6 @@ More about Ganeti's RAPI users `here.
 
 You have now finished with all needed Prerequisites for Cyclades. Let's move on
 to the actual Cyclades installation.
-
 
 Installation of Cyclades on node1
 =================================
@@ -2263,7 +2209,11 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
 .. code-block:: console
 
-   VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
+   VMAPI_CACHE = {
+       "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
+       "LOCATION": "127.0.0.1:11211",
+       "KEY_PREFIX": "vmapi",
+   }
 
 Add a vncauthproxy user:
 
@@ -2286,7 +2236,6 @@ Configure the vncauthproxy settings in
        'ca_cert': None,
        'strict': False,
    }]
-
 
 Depending on your snf-vncauthproxy setup, you might want to tweak the above
 settings. Check the `documentation
@@ -2326,16 +2275,13 @@ Archipelago. Set the
 in the gunicorn configuration file located at
 ``/etc/gunicorn.d/synnefo``.
 
-
-
 Database Initialization
 -----------------------
 
-Once Cyclades is configured, we sync the database:
+Once Cyclades is configured, we do the DB migrations:
 
 .. code-block:: console
 
-   $ snf-manage syncdb
    $ snf-manage migrate
 
 and load the initial server flavors:
@@ -2613,8 +2559,8 @@ Installation of `Kamaki`
 
 You can install `Kamaki` anywhere you like, since it is a standalone client of
 the APIs and talks to the installation over `https`. For the purpose of this
-guide we will assume that we have downloaded the `Debian Wheezy Base Image
-<https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump>`_ and stored it under
+guide we will assume that we have downloaded the `Debian Jessie Base Image
+<https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump>`_ and stored it under
 node1's ``/srv/images`` directory. For that reason we will install `Kamaki` on
 node1, too. We do this by running:
 
@@ -2685,7 +2631,7 @@ Then, we upload the Image file to that container:
 
 .. code-block:: console
 
-   $ kamaki file upload /srv/images/debian_base-7.0-x86_64.diskdump /images
+   $ kamaki file upload /srv/images/debian_base-8.0-x86_64.diskdump /images
 
 The first is the local path and the second is the remote container on Pithos.
 Check if the file has been uploaded, by listing the container contents:
@@ -2700,13 +2646,13 @@ Register an existing Image file to Cyclades
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For the purposes of the following example, we assume that the user has uploaded
-a file in container ``pithos`` called ``debian_base-7.0-x86_64.diskdump``.
+a file in container ``pithos`` called ``debian_base-8.0-x86_64.diskdump``.
 Moreover, he should have the appropriate `metadata file
-<https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_.
+<https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta>`_.
 
 .. code-block:: console
 
-   $ wget https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta
+   $ wget https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta
 
 Once the Image file has been successfully uploaded on Pithos then we register
 it to Cyclades, by running:
@@ -2714,9 +2660,9 @@ it to Cyclades, by running:
 .. code-block:: console
 
    $ kamaki image register --name "Debian Base" \
-                           --location /images/debian_base-7.0-x86_64.diskdump \
+                           --location /images/debian_base-8.0-x86_64.diskdump \
                            --public \
-                           --metafile debian_base-7.0-x86_64.diskdump.meta
+                           --metafile debian_base-8.0-x86_64.diskdump.meta
 
 This command registers a Pithos file as an Image in Cyclades. This Image will
 be public (``--public``), so all users will be able to spawn VMs from it.
@@ -2742,7 +2688,6 @@ If everything was setup correctly, after a few minutes your new machine will go
 to state 'Running' and you will be able to use it. Click 'Console' to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
-
 
 Installation of Admin on node1
 ==============================

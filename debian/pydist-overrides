@@ -1,6 +1,5 @@
 Django python-django
 httplib2 python-httplib2
-south python-django-south
 ganeti ganeti2
 daemon python-daemon
 prctl python-prctl
@@ -16,5 +15,11 @@ snf-branding snf-branding
 snf-webproject snf-webproject
 py-rrdtool python-rrdtool
 django-tables2 python-django-tables2
-django-eztables python-django-eztables
+django-eztables python-snf-django-eztables
 archipelago archipelago
+puka python-puka
+objpool python-objpool
+lockfile python-lockfile
+progress python-progress
+python-daemon python-daemon
+astakosclient python-astakosclient

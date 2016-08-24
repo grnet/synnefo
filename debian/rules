@@ -28,7 +28,7 @@ PYTHON_PACKAGES = \
 	astakosclient
 
 %:
-	dh $@ --with python2
+	dh $@ --with python2 --with systemd
 
 
 override_dh_auto_install:

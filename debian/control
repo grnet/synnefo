@@ -2,8 +2,9 @@ Source: synnefo
 Section: python
 Priority: optional
 Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
-Build-Depends: debhelper (>= 8), python-all (>= 2.5), ruby, ruby-dev
-Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 8), python-all (>= 2.5), ruby, ruby-dev,
+ dh-systemd (>=1.5), dh-python
+Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: http://www.synnefo.org
 Vcs-Browser: https://github.com/grnet/synnefo
@@ -28,8 +29,7 @@ Package: snf-webproject
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}),
-  snf-branding (= ${binary:Version}),
-  python-django-south (>= 0.7.3)
+  snf-branding (= ${binary:Version})
 Provides: ${python:Provides}
 Description: Synnefo webproject package (common settings mechanism)
 
@@ -46,7 +46,6 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
-  python-django-south (>= 0.7.3),
   python-requests (>= 0.12.1)
 Provides: ${python:Provides}
 Replaces: snf-network
@@ -78,7 +77,7 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
   python-astakosclient (= ${binary:Version}), django-filter (>= 0.5.3),
-  python-django-eztables (= 0.3.3-1~snf~0.2)
+  python-snf-django-eztables
 Provides: ${python:Provides}
 Recommends: snf-webproject
 Description: Admin Dashboard package

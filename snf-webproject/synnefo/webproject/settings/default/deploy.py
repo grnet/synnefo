@@ -35,3 +35,6 @@ MAIL_MAX_LEN = 100 * 1024  # (100KB)
 #in a POST request to be lost. Due to the REST nature of most of the registered
 #Synnefo endpoints we prefer to disable this behaviour by default.
 APPEND_SLASH = False
+
+#Serve requests for the hosts/domains specified. A value of '*' matches anything.
+ALLOWED_HOSTS = ['*']

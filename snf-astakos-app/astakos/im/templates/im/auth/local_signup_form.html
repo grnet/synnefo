@@ -1,5 +1,5 @@
 <div class="form-stacked {% if is_open %}open{% endif %}">
-  <form action="{% url signup %}" method="post"
+  <form action="{% url 'signup' %}" method="post"
       class="innerlabels signup">{% csrf_token %}
 
       <input type="hidden" name="next" value="{{ next }}">
@@ -14,7 +14,7 @@
       <div class="form-row submit">
           <input type="submit" class="submit altcol" value="SUBMIT" />
           {% if third_party_token %}
-            <a href={%url index %} class="rt-link">CANCEL</a>
+            <a href={% url 'index' %} class="rt-link">CANCEL</a>
           {% endif %}
       </div>
   </form>

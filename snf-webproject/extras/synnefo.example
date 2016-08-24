@@ -1,5 +1,5 @@
 CONFIG = {
- 'mode': 'django',
+ 'mode': 'wsgi',
  'environment': {
    'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
  },
@@ -13,5 +13,6 @@ CONFIG = {
    '--log-level=info',
    '--timeout=43200',
    '--log-file=/var/log/synnefo/gunicorn.log',
+   'synnefo.webproject.wsgi',
  ),
 }

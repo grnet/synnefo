@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ from base64 import b64encode
 from copy import copy
 
 try:
-    import simplejson as json
+    import json
 except ImportError:
     import json
 
@@ -311,7 +311,7 @@ class AstakosClient(object):
             else:
                 return None
         except Exception as err:
-            msg = "Cannot parse response \"%r\" with simplejson: %s"
+            msg = "Cannot parse response \"%r\" with json: %s"
             self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(message=str(err), response=data)
 

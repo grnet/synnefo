@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 import datetime
 from dateutil.parser import parse as date_parse
-from django.utils import simplejson as json
+import json
 
 from django.conf import settings
 from snf_django.lib.api import faults

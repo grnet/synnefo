@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ from pithos.api.test import PithosAPITest
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
+import json
 
 
 class ListSharing(PithosAPITest):

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,10 @@
 
 from uuid import uuid4
 
-from django.core.cache import get_cache
+from django.core.cache import caches
 from django.core import signals
 
-from synnefo.vmapi.settings import CACHE_KEY_PREFIX, CACHE_BACKEND
+from synnefo.vmapi.settings import CACHE_KEY_PREFIX
 
 
 def get_uuid():
@@ -31,7 +31,7 @@ def get_key(*args):
     return "_".join(args)
 
 # initialize serverparams cache backend
-backend = get_cache(CACHE_BACKEND)
+backend = caches['vmapi']
 
 # Some caches -- pythont-memcached in particular -- need to do a cleanup at the
 # end of a request cycle. If the cache provides a close() method, wire it up

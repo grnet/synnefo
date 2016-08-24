@@ -1,295 +1,493 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+from django.db import models, migrations
 import datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
-
-class Migration(SchemaMigration):
-
-    def forwards(self, orm):
-        
-        # Adding model 'SynnefoUser'
-        db.create_table('db_synnefouser', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('credit', self.gf('django.db.models.fields.IntegerField')()),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-        ))
-        db.send_create_signal('db', ['SynnefoUser'])
-
-        # Adding model 'Image'
-        db.create_table('db_image', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('state', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'], null=True, blank=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('sourcevm', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.VirtualMachine'], null=True)),
-        ))
-        db.send_create_signal('db', ['Image'])
-
-        # Adding model 'ImageMetadata'
-        db.create_table('db_imagemetadata', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('meta_key', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('meta_value', self.gf('django.db.models.fields.CharField')(max_length=500)),
-            ('image', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.Image'])),
-        ))
-        db.send_create_signal('db', ['ImageMetadata'])
-
-        # Adding model 'Limit'
-        db.create_table('db_limit', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('value', self.gf('django.db.models.fields.IntegerField')()),
-        ))
-        db.send_create_signal('db', ['Limit'])
-
-        # Adding model 'Flavor'
-        db.create_table('db_flavor', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('cpu', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('ram', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('disk', self.gf('django.db.models.fields.IntegerField')(default=0)),
-        ))
-        db.send_create_signal('db', ['Flavor'])
-
-        # Adding unique constraint on 'Flavor', fields ['cpu', 'ram', 'disk']
-        db.create_unique('db_flavor', ['cpu', 'ram', 'disk'])
-
-        # Adding model 'FlavorCost'
-        db.create_table('db_flavorcost', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('cost_active', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('cost_inactive', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('effective_from', self.gf('django.db.models.fields.DateTimeField')()),
-            ('flavor', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.Flavor'])),
-        ))
-        db.send_create_signal('db', ['FlavorCost'])
-
-        # Adding model 'VirtualMachine'
-        db.create_table('db_virtualmachine', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('charged', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2011, 4, 12, 13, 36, 55, 200332))),
-            ('sourceimage', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.Image'])),
-            ('hostid', self.gf('django.db.models.fields.CharField')(max_length=100)),
-            ('ipfour', self.gf('django.db.models.fields.IPAddressField')(max_length=15)),
-            ('ipsix', self.gf('django.db.models.fields.CharField')(max_length=100)),
-            ('flavor', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.Flavor'])),
-            ('deleted', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-            ('suspended', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-            ('action', self.gf('django.db.models.fields.CharField')(max_length=30, null=True)),
-            ('operstate', self.gf('django.db.models.fields.CharField')(max_length=30, null=True)),
-            ('backendjobid', self.gf('django.db.models.fields.PositiveIntegerField')(null=True)),
-            ('backendopcode', self.gf('django.db.models.fields.CharField')(max_length=30, null=True)),
-            ('backendjobstatus', self.gf('django.db.models.fields.CharField')(max_length=30, null=True)),
-            ('backendlogmsg', self.gf('django.db.models.fields.TextField')(null=True)),
-        ))
-        db.send_create_signal('db', ['VirtualMachine'])
-
-        # Adding model 'VirtualMachineGroup'
-        db.create_table('db_virtualmachinegroup', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-        ))
-        db.send_create_signal('db', ['VirtualMachineGroup'])
-
-        # Adding M2M table for field machines on 'VirtualMachineGroup'
-        db.create_table('db_virtualmachinegroup_machines', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('virtualmachinegroup', models.ForeignKey(orm['db.virtualmachinegroup'], null=False)),
-            ('virtualmachine', models.ForeignKey(orm['db.virtualmachine'], null=False))
-        ))
-        db.create_unique('db_virtualmachinegroup_machines', ['virtualmachinegroup_id', 'virtualmachine_id'])
-
-        # Adding model 'VirtualMachineMetadata'
-        db.create_table('db_virtualmachinemetadata', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('meta_key', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('meta_value', self.gf('django.db.models.fields.CharField')(max_length=500)),
-            ('vm', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.VirtualMachine'])),
-        ))
-        db.send_create_signal('db', ['VirtualMachineMetadata'])
-
-        # Adding model 'Debit'
-        db.create_table('db_debit', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('when', self.gf('django.db.models.fields.DateTimeField')()),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'])),
-            ('vm', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.VirtualMachine'])),
-            ('description', self.gf('django.db.models.fields.TextField')()),
-        ))
-        db.send_create_signal('db', ['Debit'])
-
-        # Adding model 'Disk'
-        db.create_table('db_disk', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('updated', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('size', self.gf('django.db.models.fields.PositiveIntegerField')()),
-            ('vm', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.VirtualMachine'], null=True, blank=True)),
-            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['db.SynnefoUser'], null=True, blank=True)),
-        ))
-        db.send_create_signal('db', ['Disk'])
+import synnefo.db.fields
+import django.db.models.deletion
 
 
-    def backwards(self, orm):
-        
-        # Deleting model 'SynnefoUser'
-        db.delete_table('db_synnefouser')
+class Migration(migrations.Migration):
 
-        # Deleting model 'Image'
-        db.delete_table('db_image')
+    dependencies = [
+    ]
 
-        # Deleting model 'ImageMetadata'
-        db.delete_table('db_imagemetadata')
-
-        # Deleting model 'Limit'
-        db.delete_table('db_limit')
-
-        # Deleting model 'Flavor'
-        db.delete_table('db_flavor')
-
-        # Removing unique constraint on 'Flavor', fields ['cpu', 'ram', 'disk']
-        db.delete_unique('db_flavor', ['cpu', 'ram', 'disk'])
-
-        # Deleting model 'FlavorCost'
-        db.delete_table('db_flavorcost')
-
-        # Deleting model 'VirtualMachine'
-        db.delete_table('db_virtualmachine')
-
-        # Deleting model 'VirtualMachineGroup'
-        db.delete_table('db_virtualmachinegroup')
-
-        # Removing M2M table for field machines on 'VirtualMachineGroup'
-        db.delete_table('db_virtualmachinegroup_machines')
-
-        # Deleting model 'VirtualMachineMetadata'
-        db.delete_table('db_virtualmachinemetadata')
-
-        # Deleting model 'Debit'
-        db.delete_table('db_debit')
-
-        # Deleting model 'Disk'
-        db.delete_table('db_disk')
-
-
-    models = {
-        'db.debit': {
-            'Meta': {'object_name': 'Debit'},
-            'description': ('django.db.models.fields.TextField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
-            'vm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']"}),
-            'when': ('django.db.models.fields.DateTimeField', [], {})
-        },
-        'db.disk': {
-            'Meta': {'object_name': 'Disk'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True', 'blank': 'True'}),
-            'size': ('django.db.models.fields.PositiveIntegerField', [], {}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
-            'vm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']", 'null': 'True', 'blank': 'True'})
-        },
-        'db.flavor': {
-            'Meta': {'unique_together': "(('cpu', 'ram', 'disk'),)", 'object_name': 'Flavor'},
-            'cpu': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'disk': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'ram': ('django.db.models.fields.IntegerField', [], {'default': '0'})
-        },
-        'db.flavorcost': {
-            'Meta': {'object_name': 'FlavorCost'},
-            'cost_active': ('django.db.models.fields.PositiveIntegerField', [], {}),
-            'cost_inactive': ('django.db.models.fields.PositiveIntegerField', [], {}),
-            'effective_from': ('django.db.models.fields.DateTimeField', [], {}),
-            'flavor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Flavor']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
-        },
-        'db.image': {
-            'Meta': {'object_name': 'Image'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']", 'null': 'True', 'blank': 'True'}),
-            'sourcevm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']", 'null': 'True'}),
-            'state': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
-        },
-        'db.imagemetadata': {
-            'Meta': {'object_name': 'ImageMetadata'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'image': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Image']"}),
-            'meta_key': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'meta_value': ('django.db.models.fields.CharField', [], {'max_length': '500'})
-        },
-        'db.limit': {
-            'Meta': {'object_name': 'Limit'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
-            'value': ('django.db.models.fields.IntegerField', [], {})
-        },
-        'db.synnefouser': {
-            'Meta': {'object_name': 'SynnefoUser'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'credit': ('django.db.models.fields.IntegerField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
-        },
-        'db.virtualmachine': {
-            'Meta': {'object_name': 'VirtualMachine'},
-            'action': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
-            'backendjobid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
-            'backendjobstatus': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
-            'backendlogmsg': ('django.db.models.fields.TextField', [], {'null': 'True'}),
-            'backendopcode': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
-            'charged': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2011, 4, 12, 13, 36, 55, 200332)'}),
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'flavor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Flavor']"}),
-            'hostid': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'ipfour': ('django.db.models.fields.IPAddressField', [], {'max_length': '15'}),
-            'ipsix': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'operstate': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
-            'sourceimage': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Image']"}),
-            'suspended': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
-        },
-        'db.virtualmachinegroup': {
-            'Meta': {'object_name': 'VirtualMachineGroup'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'symmetrical': 'False'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.SynnefoUser']"}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
-        },
-        'db.virtualmachinemetadata': {
-            'Meta': {'object_name': 'VirtualMachineMetadata'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'meta_key': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'meta_value': ('django.db.models.fields.CharField', [], {'max_length': '500'}),
-            'vm': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.VirtualMachine']"})
-        }
-    }
-
-    complete_apps = ['db']
+    operations = [
+        migrations.CreateModel(
+            name='Backend',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('clustername', models.CharField(unique=True, max_length=128, verbose_name=b'Cluster Name')),
+                ('port', models.PositiveIntegerField(default=5080, verbose_name=b'Port')),
+                ('username', models.CharField(max_length=64, null=True, verbose_name=b'Username', blank=True)),
+                ('password_hash', models.CharField(max_length=128, null=True, verbose_name=b'Password', blank=True)),
+                ('hash', models.CharField(verbose_name=b'Hash', max_length=40, editable=False)),
+                ('index', models.PositiveIntegerField(default=0, unique=True, verbose_name=b'Index')),
+                ('drained', models.BooleanField(default=False, verbose_name=b'Drained')),
+                ('offline', models.BooleanField(default=False, verbose_name=b'Offline')),
+                ('hypervisor', models.CharField(default=b'kvm', max_length=32, verbose_name=b'Hypervisor')),
+                ('disk_templates', synnefo.db.fields.SeparatedValuesField(null=True, verbose_name=b'Disk Templates')),
+                ('updated', models.DateTimeField(auto_now_add=True)),
+                ('mfree', models.PositiveIntegerField(default=0, verbose_name=b'Free Memory')),
+                ('mtotal', models.PositiveIntegerField(default=0, verbose_name=b'Total Memory')),
+                ('dfree', models.PositiveIntegerField(default=0, verbose_name=b'Free Disk')),
+                ('dtotal', models.PositiveIntegerField(default=0, verbose_name=b'Total Disk')),
+                ('pinst_cnt', models.PositiveIntegerField(default=0, verbose_name=b'Primary Instances')),
+                ('ctotal', models.PositiveIntegerField(default=0, verbose_name=b'Total number of logical processors')),
+            ],
+            options={
+                'ordering': ['clustername'],
+                'verbose_name': 'Backend',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='BackendNetwork',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('deleted', models.BooleanField(default=False, verbose_name=b'Deleted')),
+                ('mac_prefix', models.CharField(max_length=32, verbose_name=b'MAC Prefix')),
+                ('operstate', models.CharField(default=b'PENDING', max_length=30, choices=[(b'PENDING', b'Pending'), (b'ACTIVE', b'Active'), (b'DELETED', b'Deleted'), (b'ERROR', b'Error')])),
+                ('backendjobid', models.PositiveIntegerField(null=True)),
+                ('backendopcode', models.CharField(max_length=30, null=True, choices=[(b'OP_NETWORK_ADD', b'Create Network'), (b'OP_NETWORK_CONNECT', b'Activate Network'), (b'OP_NETWORK_DISCONNECT', b'Deactivate Network'), (b'OP_NETWORK_REMOVE', b'Remove Network'), (b'OP_NETWORK_SET_PARAMS', b'Set Network Parameters'), (b'OP_NETWORK_QUERY_DATA', b'Query Network Data')])),
+                ('backendjobstatus', models.CharField(max_length=30, null=True, choices=[(b'queued', b'request queued'), (b'waiting', b'request waiting for locks'), (b'canceling', b'request being canceled'), (b'running', b'request running'), (b'canceled', b'request canceled'), (b'success', b'request completed successfully'), (b'error', b'request returned error')])),
+                ('backendlogmsg', models.TextField(null=True)),
+                ('backendtime', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
+                ('backend', models.ForeignKey(related_name='networks', on_delete=django.db.models.deletion.PROTECT, to='db.Backend')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='BridgePoolTable',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('available_map', models.TextField(default=b'')),
+                ('reserved_map', models.TextField(default=b'')),
+                ('size', models.IntegerField()),
+                ('base', models.CharField(max_length=32, null=True)),
+                ('offset', models.IntegerField(null=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Flavor',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('cpu', models.IntegerField(default=0, verbose_name=b'Number of CPUs')),
+                ('ram', models.IntegerField(default=0, verbose_name=b'RAM size in MiB')),
+                ('disk', models.IntegerField(default=0, verbose_name=b'Disk size in GiB')),
+                ('deleted', models.BooleanField(default=False, verbose_name=b'Deleted')),
+                ('allow_create', models.BooleanField(default=True)),
+            ],
+            options={
+                'verbose_name': 'Virtual machine flavor',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Image',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('uuid', models.CharField(max_length=128)),
+                ('version', models.IntegerField()),
+                ('owner', models.CharField(max_length=128)),
+                ('name', models.CharField(max_length=256)),
+                ('location', models.TextField()),
+                ('mapfile', models.CharField(max_length=256)),
+                ('is_public', models.BooleanField(default=False)),
+                ('is_snapshot', models.BooleanField(default=False)),
+                ('is_system', models.BooleanField(default=False)),
+                ('os', models.CharField(max_length=256)),
+                ('osfamily', models.CharField(max_length=256)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='IPAddress',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('userid', models.CharField(max_length=128, verbose_name=b'UUID of the owner', db_index=True)),
+                ('project', models.CharField(max_length=255, null=True, db_index=True)),
+                ('shared_to_project', models.BooleanField(default=False, verbose_name=b'Shared to project')),
+                ('address', models.CharField(max_length=64, verbose_name=b'IP Address')),
+                ('floating_ip', models.BooleanField(default=False, verbose_name=b'Floating IP')),
+                ('ipversion', models.IntegerField(verbose_name=b'IP Version')),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('deleted', models.BooleanField(default=False)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='IPAddressLog',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('address', models.CharField(max_length=64, verbose_name=b'IP Address', db_index=True)),
+                ('server_id', models.IntegerField(verbose_name=b'Server')),
+                ('network_id', models.IntegerField(verbose_name=b'Network')),
+                ('allocated_at', models.DateTimeField(auto_now_add=True, verbose_name=b'Datetime IP allocated to server')),
+                ('released_at', models.DateTimeField(null=True, verbose_name=b'Datetime IP released from server')),
+                ('active', models.BooleanField(default=True, verbose_name=b'Whether IP still allocated to server')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='IPPoolTable',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('available_map', models.TextField(default=b'')),
+                ('reserved_map', models.TextField(default=b'')),
+                ('size', models.IntegerField()),
+                ('base', models.CharField(max_length=32, null=True)),
+                ('offset', models.IntegerField(null=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='MacPrefixPoolTable',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('available_map', models.TextField(default=b'')),
+                ('reserved_map', models.TextField(default=b'')),
+                ('size', models.IntegerField()),
+                ('base', models.CharField(max_length=32, null=True)),
+                ('offset', models.IntegerField(null=True)),
+            ],
+            options={
+                'abstract': False,
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Network',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=128, verbose_name=b'Network Name')),
+                ('userid', models.CharField(max_length=128, null=True, verbose_name=b'User ID of the owner', db_index=True)),
+                ('project', models.CharField(max_length=255, null=True, db_index=True)),
+                ('shared_to_project', models.BooleanField(default=False, verbose_name=b'Shared to project')),
+                ('flavor', models.CharField(max_length=32, verbose_name=b'Flavor')),
+                ('mode', models.CharField(max_length=16, null=True, verbose_name=b'Network Mode')),
+                ('link', models.CharField(max_length=32, null=True, verbose_name=b'Network Link')),
+                ('mac_prefix', models.CharField(max_length=32, verbose_name=b'MAC Prefix')),
+                ('tags', models.CharField(max_length=128, null=True, verbose_name=b'Network Tags')),
+                ('public', models.BooleanField(default=False, db_index=True)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('deleted', models.BooleanField(default=False, db_index=True, verbose_name=b'Deleted')),
+                ('state', models.CharField(default=b'PENDING', max_length=32, choices=[(b'PENDING', b'Pending'), (b'ACTIVE', b'Active'), (b'DELETED', b'Deleted'), (b'ERROR', b'Error')])),
+                ('action', models.CharField(default=None, max_length=32, null=True, choices=[(b'CREATE', b'Create Network'), (b'DESTROY', b'Destroy Network'), (b'ADD', b'Add server to Network'), (b'REMOVE', b'Remove server from Network')])),
+                ('drained', models.BooleanField(default=False, verbose_name=b'Drained')),
+                ('floating_ip_pool', models.BooleanField(default=False, verbose_name=b'Floating IP Pool')),
+                ('external_router', models.BooleanField(default=False)),
+                ('subnet_ids', synnefo.db.fields.SeparatedValuesField(null=True, verbose_name=b'Subnet IDs')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='NetworkInterface',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(default=b'', max_length=128, null=True, verbose_name=b'NIC name')),
+                ('userid', models.CharField(max_length=128, verbose_name=b'UUID of the owner', db_index=True)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('index', models.IntegerField(null=True)),
+                ('mac', models.CharField(max_length=32, unique=True, null=True)),
+                ('firewall_profile', models.CharField(max_length=30, null=True, choices=[(b'ENABLED', b'Enabled'), (b'DISABLED', b'Disabled'), (b'PROTECTED', b'Protected')])),
+                ('state', models.CharField(default=b'ACTIVE', max_length=32, choices=[(b'ACTIVE', b'Active'), (b'BUILD', b'Building'), (b'ERROR', b'Error'), (b'DOWN', b'Down')])),
+                ('public', models.BooleanField(default=False)),
+                ('device_owner', models.CharField(max_length=128, null=True, verbose_name=b'Device owner')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='QuotaHolderSerial',
+            fields=[
+                ('serial', models.BigIntegerField(serialize=False, primary_key=True, db_index=True)),
+                ('pending', models.BooleanField(default=True, db_index=True)),
+                ('accept', models.BooleanField(default=False)),
+                ('resolved', models.BooleanField(default=False)),
+            ],
+            options={
+                'ordering': ['serial'],
+                'verbose_name': 'Quota Serial',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='SecurityGroup',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=128, verbose_name=b'group name')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Subnet',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('userid', models.CharField(max_length=128, null=True, verbose_name=b'User ID of the owner', db_index=True)),
+                ('public', models.BooleanField(default=False, db_index=True)),
+                ('name', models.CharField(default=b'', max_length=128, null=True, verbose_name=b'Subnet Name')),
+                ('ipversion', models.IntegerField(default=4, verbose_name=b'IP Version')),
+                ('cidr', models.CharField(max_length=64, verbose_name=b'Subnet')),
+                ('gateway', models.CharField(max_length=64, null=True, verbose_name=b'Gateway')),
+                ('dhcp', models.BooleanField(default=True, verbose_name=b'DHCP')),
+                ('deleted', models.BooleanField(default=False, db_index=True, verbose_name=b'Deleted')),
+                ('host_routes', synnefo.db.fields.SeparatedValuesField(null=True, verbose_name=b'Host Routes')),
+                ('dns_nameservers', synnefo.db.fields.SeparatedValuesField(null=True, verbose_name=b'DNS Nameservers')),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('network', models.ForeignKey(related_name='subnets', on_delete=django.db.models.deletion.PROTECT, to='db.Network')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='VirtualMachine',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=255, verbose_name=b'Virtual Machine Name')),
+                ('userid', models.CharField(max_length=100, verbose_name=b'User ID of the owner', db_index=True)),
+                ('project', models.CharField(max_length=255, null=True, db_index=True)),
+                ('shared_to_project', models.BooleanField(default=False, verbose_name=b'Shared to project')),
+                ('backend_hash', models.CharField(max_length=128, null=True, editable=False)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('imageid', models.CharField(max_length=100)),
+                ('image_version', models.IntegerField(null=True)),
+                ('hostid', models.CharField(max_length=100)),
+                ('deleted', models.BooleanField(default=False, db_index=True, verbose_name=b'Deleted')),
+                ('suspended', models.BooleanField(default=False, verbose_name=b'Administratively Suspended')),
+                ('helper', models.BooleanField(default=False)),
+                ('action', models.CharField(default=None, max_length=30, null=True, choices=[(b'CREATE', b'Create VM'), (b'START', b'Start VM'), (b'STOP', b'Shutdown VM'), (b'SUSPEND', b'Admin Suspend VM'), (b'REBOOT', b'Reboot VM'), (b'DESTROY', b'Destroy VM'), (b'RESIZE', b'Resize a VM'), (b'ADDFLOATINGIP', b'Add floating IP to VM'), (b'REMOVEFLOATINGIP', b'Add floating IP to VM')])),
+                ('operstate', models.CharField(default=b'BUILD', max_length=30, choices=[(b'BUILD', b'Queued for creation'), (b'ERROR', b'Creation failed'), (b'STOPPED', b'Stopped'), (b'STARTED', b'Started'), (b'DESTROYED', b'Destroyed'), (b'RESIZE', b'Resizing')])),
+                ('backendjobid', models.PositiveIntegerField(null=True)),
+                ('backendopcode', models.CharField(max_length=30, null=True, choices=[(b'OP_INSTANCE_CREATE', b'Create Instance'), (b'OP_INSTANCE_REMOVE', b'Remove Instance'), (b'OP_INSTANCE_STARTUP', b'Startup Instance'), (b'OP_INSTANCE_SHUTDOWN', b'Shutdown Instance'), (b'OP_INSTANCE_REBOOT', b'Reboot Instance'), (b'OP_INSTANCE_SET_PARAMS', b'Set Instance Parameters'), (b'OP_INSTANCE_QUERY_DATA', b'Query Instance Data'), (b'OP_INSTANCE_REINSTALL', b'Reinstall Instance'), (b'OP_INSTANCE_ACTIVATE_DISKS', b'Activate Disks'), (b'OP_INSTANCE_DEACTIVATE_DISKS', b'Deactivate Disks'), (b'OP_INSTANCE_REPLACE_DISKS', b'Replace Disks'), (b'OP_INSTANCE_MIGRATE', b'Migrate Instance'), (b'OP_INSTANCE_CONSOLE', b'Get Instance Console'), (b'OP_INSTANCE_RECREATE_DISKS', b'Recreate Disks'), (b'OP_INSTANCE_FAILOVER', b'Failover Instance')])),
+                ('backendjobstatus', models.CharField(max_length=30, null=True, choices=[(b'queued', b'request queued'), (b'waiting', b'request waiting for locks'), (b'canceling', b'request being canceled'), (b'running', b'request running'), (b'canceled', b'request canceled'), (b'success', b'request completed successfully'), (b'error', b'request returned error')])),
+                ('backendlogmsg', models.TextField(null=True)),
+                ('buildpercentage', models.IntegerField(default=0)),
+                ('backendtime', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
+                ('task', models.CharField(max_length=64, null=True)),
+                ('task_job_id', models.BigIntegerField(null=True)),
+                ('backend', models.ForeignKey(related_name='virtual_machines', on_delete=django.db.models.deletion.PROTECT, to='db.Backend', null=True)),
+                ('flavor', models.ForeignKey(to='db.Flavor', on_delete=django.db.models.deletion.PROTECT)),
+                ('serial', models.ForeignKey(related_name='virtual_machine', on_delete=django.db.models.deletion.SET_NULL, to='db.QuotaHolderSerial', null=True)),
+            ],
+            options={
+                'get_latest_by': 'created',
+                'verbose_name': 'Virtual machine instance',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='VirtualMachineDiagnostic',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('level', models.CharField(max_length=20, choices=[(b'ERROR', b'Error'), (b'WARNING', b'Warning'), (b'INFO', b'Info'), (b'DEBUG', b'Debug')])),
+                ('source', models.CharField(max_length=100)),
+                ('source_date', models.DateTimeField(null=True)),
+                ('message', models.CharField(max_length=255)),
+                ('details', models.TextField(null=True)),
+                ('machine', models.ForeignKey(related_name='diagnostics', to='db.VirtualMachine')),
+            ],
+            options={
+                'ordering': ['-created'],
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='VirtualMachineMetadata',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('meta_key', models.CharField(max_length=50)),
+                ('meta_value', models.CharField(max_length=500)),
+                ('vm', models.ForeignKey(related_name='metadata', to='db.VirtualMachine')),
+            ],
+            options={
+                'verbose_name': 'Key-value pair of metadata for a VM.',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='Volume',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=255, null=True, verbose_name=b'Name')),
+                ('description', models.CharField(max_length=255, null=True, verbose_name=b'Description')),
+                ('userid', models.CharField(max_length=100, verbose_name=b"Owner's UUID", db_index=True)),
+                ('project', models.CharField(max_length=255, null=True, db_index=True)),
+                ('shared_to_project', models.BooleanField(default=False, verbose_name=b'Shared to project')),
+                ('size', models.IntegerField(verbose_name=b'Volume size in GB')),
+                ('delete_on_termination', models.BooleanField(default=True, verbose_name=b'Delete on Server Termination')),
+                ('source', models.CharField(max_length=128, null=True)),
+                ('source_version', models.IntegerField(null=True)),
+                ('origin', models.CharField(max_length=128, null=True)),
+                ('deleted', models.BooleanField(default=False, db_index=True, verbose_name=b'Deleted')),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('updated', models.DateTimeField(auto_now=True)),
+                ('status', models.CharField(default=b'CREATING', max_length=64, verbose_name=b'Status', choices=[(b'CREATING', b'The volume is being created'), (b'AVAILABLE', b'The volume is ready to be attached to an instance'), (b'ATTACHING', b'The volume is attaching to an instance'), (b'DETACHING', b'The volume is detaching from an instance'), (b'IN_USE', b'The volume is attached to an instance'), (b'DELETING', b'The volume is being deleted'), (b'DELETED', b'The volume has been deleted'), (b'ERROR', b'An error has occured with the volume'), (b'ERROR_DELETING', b'There was an error deleting this volume'), (b'BACKING_UP', b'The volume is being backed up'), (b'RESTORING_BACKUP', b'A backup is being restored to the volume'), (b'ERROR_RESTORING', b'There was an error restoring a backup from the volume')])),
+                ('snapshot_counter', models.PositiveIntegerField(default=0)),
+                ('index', models.IntegerField(null=True, verbose_name=b'Index')),
+                ('backendjobid', models.PositiveIntegerField(null=True)),
+                ('legacy_backend_volume_uuid', models.CharField(max_length=128, null=True, verbose_name=b'Legacy volume UUID in backend')),
+                ('machine', models.ForeignKey(related_name='volumes', to='db.VirtualMachine', null=True)),
+                ('serial', models.ForeignKey(related_name='volume', on_delete=django.db.models.deletion.SET_NULL, to='db.QuotaHolderSerial', null=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='VolumeMetadata',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('key', models.CharField(max_length=64, verbose_name=b'Metadata Key')),
+                ('value', models.CharField(max_length=255, verbose_name=b'Metadata Value')),
+                ('volume', models.ForeignKey(related_name='metadata', to='db.Volume')),
+            ],
+            options={
+                'verbose_name': 'Key-Value pair of Volumes metadata',
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='VolumeType',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('name', models.CharField(max_length=255, verbose_name=b'Name')),
+                ('disk_template', models.CharField(max_length=32, verbose_name=b'Disk Template')),
+                ('deleted', models.BooleanField(default=False, verbose_name=b'Deleted')),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AlterUniqueTogether(
+            name='volumemetadata',
+            unique_together=set([('volume', 'key')]),
+        ),
+        migrations.AddField(
+            model_name='volume',
+            name='volume_type',
+            field=models.ForeignKey(related_name='volumes', on_delete=django.db.models.deletion.PROTECT, to='db.VolumeType'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='virtualmachinemetadata',
+            unique_together=set([('meta_key', 'vm')]),
+        ),
+        migrations.AddField(
+            model_name='networkinterface',
+            name='machine',
+            field=models.ForeignKey(related_name='nics', on_delete=django.db.models.deletion.PROTECT, to='db.VirtualMachine', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='networkinterface',
+            name='network',
+            field=models.ForeignKey(related_name='nics', on_delete=django.db.models.deletion.PROTECT, to='db.Network'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='networkinterface',
+            name='security_groups',
+            field=models.ManyToManyField(to='db.SecurityGroup', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='network',
+            name='machines',
+            field=models.ManyToManyField(to='db.VirtualMachine', through='db.NetworkInterface'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='network',
+            name='serial',
+            field=models.ForeignKey(related_name='network', on_delete=django.db.models.deletion.SET_NULL, to='db.QuotaHolderSerial', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='ippooltable',
+            name='subnet',
+            field=models.ForeignKey(related_name='ip_pools', on_delete=django.db.models.deletion.PROTECT, to='db.Subnet', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='ipaddress',
+            name='network',
+            field=models.ForeignKey(related_name='ips', on_delete=django.db.models.deletion.PROTECT, to='db.Network'),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='ipaddress',
+            name='nic',
+            field=models.ForeignKey(related_name='ips', on_delete=django.db.models.deletion.SET_NULL, to='db.NetworkInterface', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='ipaddress',
+            name='serial',
+            field=models.ForeignKey(related_name='ips', on_delete=django.db.models.deletion.SET_NULL, to='db.QuotaHolderSerial', null=True),
+            preserve_default=True,
+        ),
+        migrations.AddField(
+            model_name='ipaddress',
+            name='subnet',
+            field=models.ForeignKey(related_name='ips', on_delete=django.db.models.deletion.PROTECT, to='db.Subnet'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='ipaddress',
+            unique_together=set([('network', 'address', 'deleted')]),
+        ),
+        migrations.AlterUniqueTogether(
+            name='image',
+            unique_together=set([('uuid', 'version')]),
+        ),
+        migrations.AddField(
+            model_name='flavor',
+            name='volume_type',
+            field=models.ForeignKey(related_name='flavors', on_delete=django.db.models.deletion.PROTECT, to='db.VolumeType'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='flavor',
+            unique_together=set([('cpu', 'ram', 'disk', 'volume_type')]),
+        ),
+        migrations.AddField(
+            model_name='backendnetwork',
+            name='network',
+            field=models.ForeignKey(related_name='backend_networks', on_delete=django.db.models.deletion.PROTECT, to='db.Network'),
+            preserve_default=True,
+        ),
+        migrations.AlterUniqueTogether(
+            name='backendnetwork',
+            unique_together=set([('network', 'backend')]),
+        ),
+    ]

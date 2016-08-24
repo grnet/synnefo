@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ from wsgiref.handlers import format_date_time
 
 from django.http import HttpResponse
 from django.utils import cache
-from django.utils import simplejson as json
+import json
 from django.template.loader import render_to_string
 from django.views.decorators import csrf
 
@@ -201,18 +201,9 @@ def update_response_headers(request, response):
     if settings.DEBUG or getattr(settings, "TEST", False):
         response["Date"] = format_date_time(time())
 
-    if not response.has_header("Content-Length"):
-        _base_content_is_iter = getattr(response, '_base_content_is_iter',
-                                        None)
-        if (_base_content_is_iter is not None and not _base_content_is_iter):
-            response["Content-Length"] = len(response.content)
-        else:
-            if not (response.has_header('Content-Type') and
-                    response['Content-Type'].startswith(
-                        'multipart/byteranges')):
-                # save response content from been consumed if it is an iterator
-                response._container, data = itertools.tee(response._container)
-                response["Content-Length"] = len(str(data))
+    if not response.has_header("Content-Length") and \
+       isinstance(response, HttpResponse):
+        response["Content-Length"] = len(response.content)
 
     cache.add_never_cache_headers(response)
     # Fix Vary and Cache-Control Headers. Issue: #3448

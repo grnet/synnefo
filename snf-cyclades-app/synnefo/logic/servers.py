@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from socket import getfqdn
 from random import choice
 from django import dispatch
 from synnefo.db import transaction
-from django.utils import simplejson as json
+import json
 
 from snf_django.lib.api import faults
 from django.conf import settings

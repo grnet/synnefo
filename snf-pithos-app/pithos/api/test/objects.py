@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ from pithos.api.test.util import (md5_hash, merkle, strnextling,
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
+import json
 
 import random
 import re
@@ -313,7 +313,7 @@ class ObjectGet(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.get(url, HTTP_RANGE='bytes=0-499')
         self.assertEqual(r.status_code, 206)
-        data = r.content
+        data = "".join(r.streaming_content)
         self.assertEqual(data, odata[:500])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'], 'bytes 0-499/%s' % len(odata))
@@ -327,7 +327,7 @@ class ObjectGet(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.get(url, HTTP_RANGE='bytes=-500')
         self.assertEqual(r.status_code, 206)
-        self.assertEqual(r.content, odata[-500:])
+        self.assertEqual("".join(r.streaming_content), odata[-500:])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'],
                          'bytes %s-%s/%s' % (size - 500, size - 1, size))
@@ -342,7 +342,7 @@ class ObjectGet(PithosAPITest):
         offset = len(odata) - random.randint(1, 512)
         r = self.get(url, HTTP_RANGE='bytes=%s-' % offset)
         self.assertEqual(r.status_code, 206)
-        self.assertEqual(r.content, odata[offset:])
+        self.assertEqual("".join(r.streaming_content), odata[offset:])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'],
                          'bytes %s-%s/%s' % (offset, size - 1, size))
@@ -375,7 +375,7 @@ class ObjectGet(PithosAPITest):
         if m is None:
             self.fail('Invalid multiple range content type')
         boundary = m.groupdict()['boundary']
-        cparts = r.content.split('--%s' % boundary)[1:-1]
+        cparts = "".join(r.streaming_content).split('--%s' % boundary)[1:-1]
 
         # assert content parts length
         self.assertEqual(len(cparts), len(l))
@@ -435,7 +435,7 @@ class ObjectGet(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_get_if_match_star(self):
         cname = self.containers[0]
@@ -449,7 +449,7 @@ class ObjectGet(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_get_multiple_if_match(self):
         cname = self.containers[0]
@@ -471,7 +471,7 @@ class ObjectGet(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_if_match_precondition_failed(self):
         cname = self.containers[0]
@@ -546,7 +546,7 @@ class ObjectGet(PithosAPITest):
         for t in t1_formats:
             r = self.get(url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata + appended_data)
+            self.assertEqual("".join(r.streaming_content), odata + appended_data)
 
     def test_if_modified_since_invalid_date(self):
         cname = self.containers[0]
@@ -554,7 +554,7 @@ class ObjectGet(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.get(url, HTTP_IF_MODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_if_not_modified_since(self):
         cname = self.containers[0]
@@ -570,7 +570,7 @@ class ObjectGet(PithosAPITest):
         for t in t1_formats:
             r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
         # modify object
         _time.sleep(2)
@@ -615,7 +615,7 @@ class ObjectGet(PithosAPITest):
         for tf in t_formats:
             r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=tf)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
     def test_if_unmodified_since_precondition_failed(self):
         cname = self.containers[0]
@@ -698,7 +698,7 @@ class ObjectPut(PithosAPITest):
         # assert uploaded content
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
     def test_upload_limit_metadata(self):
         cname = self.container
@@ -739,7 +739,7 @@ class ObjectPut(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
     def test_upload_unprocessable_entity(self):
         cname = self.container
@@ -759,7 +759,7 @@ class ObjectPut(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
         self.assertTrue('ETag' in r)
         etag = r['ETag']
 
@@ -796,13 +796,13 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert its content
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
         # invalid manifestation
         invalid_manifestation = '%s/%s' % (cname, get_random_name())
         self.put(url, data='', HTTP_X_OBJECT_MANIFEST=invalid_manifestation)
         r = self.get(url)
-        self.assertEqual(r.content, '')
+        self.assertEqual("".join(r.streaming_content), '')
 
     def test_create_zero_length_object(self):
         cname = self.container
@@ -814,7 +814,7 @@ class ObjectPut(PithosAPITest):
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(int(r['Content-Length']), 0)
-        self.assertEqual(r.content, '')
+        self.assertEqual("".join(r.streaming_content), '')
 
         r = self.get('%s?hashmap=&format=json' % url)
         self.assertEqual(r.status_code, 200)
@@ -841,7 +841,7 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 201)
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
         # inconsistent size; too small
         d = json.loads(hashmap)
@@ -1855,7 +1855,7 @@ class ObjectPost(PithosAPITest):
         r = self.get(url)
 
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, updated_data)
+        self.assertEqual("".join(r.streaming_content), updated_data)
         self.assertEqual(etag, r['ETag'])
 
     def test_update_object_divided_by_blocksize(self):
@@ -1889,7 +1889,7 @@ class ObjectPost(PithosAPITest):
         r = self.get(url)
 
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, updated_data)
+        self.assertEqual("".join(r.streaming_content), updated_data)
         self.assertEqual(etag, r['ETag'])
 
     def test_update_object_invalid_content_length(self):
@@ -1960,7 +1960,7 @@ class ObjectPost(PithosAPITest):
         self.assertEqual(r.status_code, 204)
 
         r = self.get(url)
-        content = r.content
+        content = "".join(r.streaming_content)
         self.assertEqual(len(content), len(self.object_data) + length)
         self.assertEqual(content, self.object_data + data)
 
@@ -1988,7 +1988,7 @@ class ObjectPost(PithosAPITest):
 
         url = join_urls(self.pithos_path, self.user, self.container, src)
         r = self.get(url)
-        source_data = r.content
+        source_data = "".join(r.streaming_content)
         source_meta = self.get_object_info(self.container, src)
 
         # update zero length object
@@ -2002,7 +2002,7 @@ class ObjectPost(PithosAPITest):
         self.assertEqual(r.status_code, 204)
 
         r = self.get(url)
-        dest_data = r.content
+        dest_data = "".join(r.streaming_content)
         dest_meta = self.get_object_info(self.container, dest)
 
         self.assertEqual(source_data, dest_data)
@@ -2018,7 +2018,7 @@ class ObjectPost(PithosAPITest):
 
         url = join_urls(self.pithos_path, self.user, self.container, src)
         r = self.get(url)
-        source_data = r.content
+        source_data = "".join(r.streaming_content)
         source_length = len(source_data)
 
         # update zero length object
@@ -2038,7 +2038,7 @@ class ObjectPost(PithosAPITest):
         self.assertEqual(r.status_code, 204)
 
         r = self.get(url)
-        content = r.content
+        content = "".join(r.streaming_content)
         self.assertEqual(content, (initial_data[:offset] +
                                    source_data[:upto - offset + 1] +
                                    initial_data[upto + 1:]))
@@ -2101,7 +2101,7 @@ class ObjectPost(PithosAPITest):
 
         # check content
         r = self.get(url)
-        content = r.content
+        content = "".join(r.streaming_content)
         self.assertEqual(len(content), v[0][1])
         self.assertEqual(content, self.object_data)
         append((r['X-Object-Version'], len(content), content))
@@ -2125,7 +2125,7 @@ class ObjectPost(PithosAPITest):
 
         # check content
         r = self.get(url)
-        data = r.content
+        data = "".join(r.streaming_content)
         self.assertEqual(data, v[2][2])
         append((r['X-Object-Version'], len(data), data))
 
@@ -2166,7 +2166,7 @@ class ObjectPost(PithosAPITest):
 
         # check content
         r = self.get(url)
-        content = r.content
+        content = "".join(r.streaming_content)
         self.assertEqual(len(content), pre_length)
         self.assertEqual(content, self.object_data)
 
@@ -2186,7 +2186,7 @@ class ObjectPost(PithosAPITest):
 
         # check content
         r = self.get(url)
-        content = r.content
+        content = "".join(r.streaming_content)
         self.assertEqual(content, d2 + d3[-1])
 
     @skipIf(pithos_settings.BACKEND_DB_MODULE ==

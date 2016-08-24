@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
 from synnefo.db import transaction
-from django.utils import simplejson as json
+import json
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,

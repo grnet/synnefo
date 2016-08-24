@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,10 @@
 #
 
 from django import http
-from django.test import TransactionTestCase
+from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from django.core.validators import MaxLengthValidator
 
@@ -62,7 +62,7 @@ class AaiClient(Client):
                 return super(AaiClient, self).request(**request)
 
 
-class TestRestViews(TransactionTestCase):
+class TestRestViews(TestCase):
 
     fixtures = ['users']
 

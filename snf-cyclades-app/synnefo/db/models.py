@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -259,7 +259,7 @@ class VirtualMachineManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class VirtualMachine(models.Model):
@@ -527,7 +527,7 @@ class NetworkManager(models.Manager):
         if public:
             _filter |= models.Q(public=True)
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class Network(models.Model):
@@ -739,7 +739,7 @@ class SubnetManager(models.Manager):
 
         networks = Network.objects.for_user(userid, projects, public=public)
 
-        return self.get_query_set().filter(network__in=networks)
+        return self.get_queryset().filter(network__in=networks)
 
 
 class Subnet(models.Model):
@@ -878,7 +878,7 @@ class IPAddressManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class IPAddress(models.Model):
@@ -985,7 +985,7 @@ class NetworkInterfaceManager(models.Manager):
         _filter |= models.Q(network__in=networks)
         _filter |= models.Q(ips__in=ips)
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class NetworkInterface(models.Model):
@@ -1167,7 +1167,7 @@ class VirtualMachineDiagnosticManager(models.Manager):
         self.create_for_vm(vm, 'DEBUG', **kwargs)
 
     def since(self, vm, created_since, **kwargs):
-        return self.get_query_set().filter(vm=vm, created__gt=created_since,
+        return self.get_queryset().filter(vm=vm, created__gt=created_since,
                                            **kwargs)
 
 
@@ -1218,7 +1218,7 @@ class VolumeManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class Volume(models.Model):

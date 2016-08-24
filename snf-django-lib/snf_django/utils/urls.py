@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,13 +18,14 @@ from django.conf.urls import url, patterns
 from snf_django.lib.api.utils import prefix_pattern
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
+from django.views.generic.base import RedirectView
 
 
 def extend_path_with_slash(patterns_obj, path):
     if not path.endswith('/'):
         pattern = prefix_pattern(path, append_slash=False) + '$'
-        entry = url(pattern, 'redirect_to', {'url': path + '/'})
-        patterns_obj += patterns('django.views.generic.simple', entry)
+        entry = url(pattern, RedirectView.as_view(url=path + '/'))
+        patterns_obj += patterns('', entry)
 
 
 def extend_endpoint_with_slash(patterns_obj, filled_services, service_type,
@@ -52,22 +53,20 @@ def extend_with_root_redirects(patterns_obj, filled_services, service_type,
     root_url_entry = None
     if base_path and base_path != '/':
         # redirect slash to /<base_path>/
-        root_url_entry = url('^$', 'redirect_to',
-                             {'url': join_urls('/', base_path.rstrip('/'),
-                                               '/')})
+        joined_url = join_urls('/', base_path.rstrip('/'), '/') 
+        root_url_entry = url('^$', RedirectView.as_view(url=joined_url))
 
     base_path_pattern = prefix_pattern(base_path) + '$'
     base_path_pattern_no_slash = prefix_pattern(base_path).rstrip('/') + '$'
 
     # redirect /<base_path> and /<base_path>/ to service_path public endpoint
-    base_url_entry = url(base_path_pattern, 'redirect_to', {'url':
-                                                            service_path})
+    base_url_entry = url(base_path_pattern, RedirectView.as_view(url=service_path))
     base_url_entry_no_slash = url(base_path_pattern_no_slash,
-                                  'redirect_to', {'url': service_path})
+                                  RedirectView.as_view(url=service_path))
     # urls order matter. Setting base_url_entry first allows us to avoid
     # redirect loops when base_path is empty or `/`
-    patterns_obj += patterns('django.views.generic.simple',
+    patterns_obj += patterns('',
                              base_url_entry, base_url_entry_no_slash)
     if root_url_entry:
         # register root entry only for non root base_path deployments
-        patterns_obj += patterns('django.views.generic.simple', root_url_entry)
+        patterns_obj += patterns('', root_url_entry)

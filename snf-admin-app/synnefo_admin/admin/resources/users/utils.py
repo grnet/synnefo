@@ -42,7 +42,14 @@ def get_user_or_404(query, for_update=False):
     """
     usr_obj = AstakosUser.objects.select_for_update() if for_update\
         else AstakosUser.objects
-    q = Q(id=int(query)) if query.isdigit() else Q(uuid=query) | Q(email=query)
+
+    if isinstance(query, basestring):
+        q = Q(id=int(query)) if query.isdigit() else Q(uuid=query) | Q(email=query)
+    elif isinstance(query, int) or isinstance(query, long):
+        q = Q(id=int(query))
+    else:
+        raise TypeError("Unexpected type of query")
+
     try:
         return usr_obj.get(q)
     except ObjectDoesNotExist:

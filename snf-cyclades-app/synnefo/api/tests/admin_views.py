@@ -15,7 +15,7 @@
 
 from django.test import TestCase
 from django.http import HttpRequest
-from django.utils import simplejson
+import json
 from django.core.urlresolvers import resolve
 
 from synnefo.admin import views
@@ -34,7 +34,7 @@ class CycladesAdminViewsTest(TestCase):
             'b': 2,
             'c': 3
         }
-        json_data = simplejson.dumps(data)
+        json_data = json.dumps(data)
 
         get_stats_mock.return_value = data
 

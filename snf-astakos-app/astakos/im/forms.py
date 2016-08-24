@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@ import re
 import synnefo.util.date as date_util
 
 from datetime import datetime
+from collections import OrderedDict
 
 from django import forms
 from django.utils.translation import ugettext as _
@@ -101,14 +102,20 @@ class LocalUserCreationForm(UserCreationForm):
                                                         None))
 
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
-        self.fields.keyOrder = ['email', 'first_name', 'last_name',
-                                'password1', 'password2']
+
+        self.fields_list = ['email', 'first_name', 'last_name', 'password1',
+                            'password2']
 
         if settings.RECAPTCHA_ENABLED:
-            self.fields.keyOrder.extend(['recaptcha_challenge_field',
-                                         'recaptcha_response_field', ])
+            self.fields_list.extend(['recaptcha_challenge_field',
+                                     'recaptcha_response_field', ])
+
         if get_latest_terms():
-            self.fields.keyOrder.append('has_signed_terms')
+            self.fields_list.extend(['has_signed_terms',])
+
+
+        ofields = self.fields
+        self.fields = OrderedDict((n, ofields[n]) for n in self.fields_list)
 
         if 'has_signed_terms' in self.fields:
             # Overriding field label since we need to apply a link
@@ -288,10 +295,13 @@ class LoginForm(AuthenticationForm):
                 kwargs.pop(elem)
         super(LoginForm, self).__init__(*args, **kwargs)
 
-        self.fields.keyOrder = ['username', 'password']
+        self.fields_list = ['username', 'password']
         if was_limited and settings.RECAPTCHA_ENABLED:
-            self.fields.keyOrder.extend(['recaptcha_challenge_field',
-                                         'recaptcha_response_field', ])
+            self.fields_list.extend(['recaptcha_challenge_field',
+                                     'recaptcha_response_field', ])
+
+        ofields = self.fields
+        self.fields = OrderedDict((n, ofields[n]) for n in self.fields_list)
 
     def clean_username(self):
         return self.cleaned_data['username'].lower()
@@ -382,7 +392,6 @@ class LDAPLoginForm(LoginForm):
                         raise
                 raise forms.ValidationError(
                     self.error_messages['invalid_login'])
-        self.check_for_test_cookie()
         return self.cleaned_data
 
     def get_ldap_user_id(self):
@@ -1275,12 +1284,13 @@ class ExtendedProfileForm(ProfileForm):
         else:
             self.fields_list.remove('new_email_address')
             self.fields_list.remove('change_email')
-            del self.fields['change_email']
 
         self._init_extra_forms()
         self.save_extra_forms = []
         self.success_messages = []
-        self.fields.keyOrder = self.fields_list
+
+        ofields = self.fields
+        self.fields = OrderedDict((n, ofields[n]) for n in self.fields_list)
 
     def _init_extra_form_fields(self):
         if self.email_change:

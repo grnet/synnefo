@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ from snf_django.management import utils
 class Command(SynnefoCommand):
     args = "<snapshot_id>"
     help = "Display available information about a snapshot"
+    umask = 0o007
+
 
     @common.convert_api_faults
     def handle(self, *args, **options):

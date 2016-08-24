@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 import ipaddr
 from django.conf.urls import patterns
 from django.http import HttpResponse
-from django.utils import simplejson as json
+import json
 from synnefo.db import transaction
 from django.template.loader import render_to_string
 

@@ -6,6 +6,53 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.19:
+
+v0.19
+=========
+
+Released: UNRELEASED
+
+Synnefo-wide
+------------
+
+* Add support for Debian Jessie. This is the only platform targeted for this
+  release.
+* Migrate all components to newer version of Django (1.7) and update
+  dependencies versions.
+* Remove South in favor of native Django migrations.
+* Drop 'django' mode in gunicorn in favor of 'wsgi'.
+* Fix instances of select_for_update that occurred outside transactions.
+* Use a date-aware JSON session serializer instead of Pickle.
+* Change default logging setup to log Synnefo's log messages to a separate
+  logfile.
+
+Astakos
+-------
+
+Pithos
+------
+
+* Use new django class StreamingHttpResponse to stream responses.
+* Fix execution of backend tests.
+
+Cyclades
+--------
+
+* Adapt setting caches to the new django format. Introduce settings
+  PUBLIC_STATS_CACHE, VM_PASSWORD_CACHE, VMAPI_CACHE. Remove settings
+  PUBLIC_STATS_CACHE_POPULATE_INTERVAL, VMAPI_CACHE_BACKEND,
+  VMAPI_CACHE_KEY_PREFIX.
+
+Deploy
+------
+* Upgrade to target Debian Jessie.
+
+CI
+--
+* Target Debian Jessie as CI base platform.
+
+
 .. _Changelog-0.17next:
 
 v0.17next

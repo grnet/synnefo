@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,9 +20,10 @@ import urllib
 
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponseRedirect, urlencode
+from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.conf import settings as django_settings
+from django.utils.http import urlencode
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
@@ -85,7 +86,7 @@ def login(request):
     if request.GET.get('next', None):
         request.session['next_url'] = request.GET.get('next')
 
-    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
+    url = "%s?%s" % (authenticate_url, urlencode(params))
     return HttpResponseRedirect(url)
 
 

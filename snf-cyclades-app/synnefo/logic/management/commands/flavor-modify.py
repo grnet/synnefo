@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import get_resource
 from snf_django.management.utils import parse_bool
+from synnefo.db import transaction
 
 
 from logging import getLogger
@@ -47,6 +48,7 @@ class Command(SynnefoCommand):
             help="Set if users can create servers with this flavor"),
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")

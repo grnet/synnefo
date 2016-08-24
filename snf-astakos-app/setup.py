@@ -44,14 +44,13 @@ CLASSIFIERS = [
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.4, <1.5',
-    'South>=0.7.3',
+    'Django>=1.7, <1.8',
     'httplib2>=0.6.0',
     'python-dateutil>=1.4.1',
     'snf-common',
     'django-tables2',
     'recaptcha-client>=1.0.5',
-    'django-ratelimit==0.1',
+    'django-ratelimit',
     'requests',
     'snf-django-lib',
     'snf-branding',

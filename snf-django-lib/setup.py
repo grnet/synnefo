@@ -36,8 +36,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.4, <1.5',
-    'simplejson>=2.1.1',
+    'Django>=1.7, <1.8',
     'astakosclient',
     'snf-common',
     'python-dateutil>=1.4.1',

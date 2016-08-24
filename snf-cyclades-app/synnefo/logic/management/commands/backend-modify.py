@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Backend
 from snf_django.management.utils import parse_bool
 from synnefo.management import common
+from synnefo.db import transaction
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
@@ -62,6 +63,7 @@ class Command(SynnefoCommand):
                          " order to avoid delays"),
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a backend ID")

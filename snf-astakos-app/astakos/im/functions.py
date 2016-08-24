@@ -707,6 +707,8 @@ def get_date(date, key):
         return date
     try:
         return date_util.isoparse(date)
+    except TypeError:
+        raise ProjectBadRequest("Invalid %s" % key)
     except ValueError:
         raise ProjectBadRequest("Invalid %s" % key)
 

@@ -10,7 +10,7 @@
 If you would like to contact us for any reason, please feel free to 
 write <br>your message in the following form. Feedback and suggestions are<br>
 also highly appreciated.</p>
-<form action="{% url feedback %}" method="post"
+<form action="{% url 'feedback' %}" method="post"
     class="withlabels contactform">{% csrf_token %}
     
     {% with feedback_form as form %}

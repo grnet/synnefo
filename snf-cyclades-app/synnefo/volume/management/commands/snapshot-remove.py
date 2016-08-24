@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,11 +18,14 @@ from django.core.management.base import CommandError
 from synnefo.volume import snapshots, util
 from synnefo.management import common
 from snf_django.management.commands import RemoveCommand
+from synnefo.db import transaction
 
 
 class Command(RemoveCommand):
     args = "<Snapshot ID> [<Snapshot ID> ...]"
     help = "Remove a snapshot"
+    umask = 0o007
+
     option_list = RemoveCommand.option_list + (
         make_option(
             "--user",
@@ -31,6 +34,7 @@ class Command(RemoveCommand):
             help="UUID of the owner of the snapshot"),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

@@ -36,11 +36,9 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.4, <1.5',
-    'simplejson>=2.1.1',
+    'Django>=1.7, <1.8',
     'python-dateutil>=1.4.1',
     'IPy>=0.70',
-    'South>=0.7.3',
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',
@@ -62,7 +60,7 @@ INSTALL_REQUIRES = [
 EXTRAS_REQUIRES = {
     'DISPATCHER': ['puka', 'python-daemon==1.5.5', 'lockfile==0.8',
                    'setproctitle>=1.0.1'],
-    'SSH_KEYS': ['pycrypto==2.1.0'],
+    'SSH_KEYS': ['pycrypto>=2.1.0'],
 }
 
 TESTS_REQUIRES = [

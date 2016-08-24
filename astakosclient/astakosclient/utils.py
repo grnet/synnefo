@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException, BadValue
 
 try:
-    import simplejson as json
+    import json
 except ImportError:
     import json
 
@@ -83,11 +83,11 @@ def scheme_to_class(scheme, use_pool, pool_size):
 
 
 def parse_request(request, logger):
-    """Parse request with simplejson to convert it to string"""
+    """Parse request with json to convert it to string"""
     try:
         return json.dumps(request)
     except Exception as err:
-        msg = "Cannot parse request \"%s\" with simplejson: %s" \
+        msg = "Cannot parse request \"%s\" with json: %s" \
               % (request, str(err))
         logger.error(msg)
         raise BadValue(msg)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import time
 import httplib
 import logging
 import fabric.api as fabric
-import simplejson as json
+import json
 import subprocess
 import tempfile
 import urlparse
@@ -41,7 +41,7 @@ from kamaki.clients.utils import https
 from kamaki.clients import ClientError
 import filelocker
 
-DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
+DEFAULT_CONFIG_FILE = "ci_jessie.conf"
 # Is our terminal a colorful one?
 USE_COLORS = True
 # Ignore SSL verification
@@ -234,11 +234,11 @@ class SynnefoCI(object):
 
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
-            try:
-                self.kamaki_cloud = config.get("global", "default_cloud")
-            except AttributeError:
-                # Compatibility with kamaki version <=0.10
-                self.kamaki_cloud = config.get("global", "default_cloud")
+            self.kamaki_cloud = config.get("global", "default_cloud")
+
+        if not self.kamaki_cloud:
+            raise Exception("Unable to find 'default_cloud' in %s" %
+                            config.path)
 
         self.logger.info("Setup kamaki client, using cloud '%s'.." %
                          self.kamaki_cloud)
@@ -471,7 +471,7 @@ class SynnefoCI(object):
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install -q=2 curl --yes --force-yes
-        echo -e "{0}" >> /etc/apt/sources.list.d/synnefo.wheezy.list
+        echo -e "{0}" >> /etc/apt/sources.list.d/synnefo.jessie.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         """.format(self.config.get('Global', 'apt_repo'))
@@ -480,8 +480,8 @@ class SynnefoCI(object):
         cmd = """
         apt-get install -q=2 --force-yes apt-transport-https
         curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add -
-        echo 'deb https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
-        echo 'deb-src https://deb.nodesource.com/node_0.12 wheezy main' >> /etc/apt/sources.list.d/nodejs.list
+        echo 'deb https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
+        echo 'deb-src https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
         apt-get update
         apt-get install -q=2 --force-yes nodejs ruby ruby-dev
         """
@@ -493,7 +493,7 @@ class SynnefoCI(object):
         apt-get install x2go-keyring --yes --force-yes
         apt-get update
         apt-get install x2goserver x2goserver-xsession \
-                iceweasel --yes --force-yes
+                firefox-esr --yes --force-yes
 
         # xterm published application
         echo '[Desktop Entry]' > /usr/share/applications/xterm.desktop
@@ -1032,7 +1032,7 @@ class SynnefoCI(object):
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
-                python-dev python-all python-pip --yes --force-yes
+                python-dev python-all python-pip dh-systemd --yes --force-yes
         pip install -U devflow
         """
         _run(cmd, False)
@@ -1185,7 +1185,12 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install -U funcsigs mock==1.1.2 factory_boy==2.4.1 nose coverage
+        pip install -U pip setuptools
+        """
+        _run(cmd, False)
+
+        cmd = """
+        pip install -U mock factory_boy==2.4.1 django-nose==1.4.3 coverage
         """
         _run(cmd, False)
 

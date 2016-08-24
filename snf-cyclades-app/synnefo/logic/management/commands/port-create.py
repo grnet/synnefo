@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ from synnefo.management import common, pprint
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
 from synnefo.logic import servers
+from synnefo.db import transaction
 
 HELP_MSG = """Create a new port.
 
@@ -85,6 +86,7 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:

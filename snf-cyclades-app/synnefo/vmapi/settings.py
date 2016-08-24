@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,9 +16,11 @@
 from django.conf import settings
 from synnefo.cyclades_settings import BASE_URL, BASE_HOST, BASE_PATH
 
-CACHE_BACKEND = getattr(settings, 'VMAPI_CACHE_BACKEND',
-                        settings.CACHE_BACKEND)
-CACHE_KEY_PREFIX = getattr(settings, 'VMAPI_CACHE_KEY_PREFIX',
-                           'vmapi')
-RESET_PARAMS = getattr(settings, 'VMAPI_RESET_PARAMS', True)
+VMAPI_CACHE = settings.VMAPI_CACHE
+settings.CACHES['vmapi'] = VMAPI_CACHE
+
+CACHE_KEY_PREFIX = VMAPI_CACHE.get("KEY_PREFIX", "")
+
+
+RESET_PARAMS = settings.VMAPI_RESET_PARAMS
 BASE_HOST = getattr(settings, 'VMAPI_BASE_HOST', BASE_HOST)

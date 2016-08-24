@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django import http
-from django.utils import simplejson as json
+import json
 from django.conf import settings
 
 from synnefo.userdata import rest
@@ -80,7 +80,7 @@ def generate_key_pair(request):
     public = str("ssh-rsa %s" % base64.b64encode(str(public_data)))
 
     data = {'private': pem, 'public': public}
-    return http.HttpResponse(json.dumps(data), mimetype="application/json")
+    return http.HttpResponse(json.dumps(data), content_type="application/json")
 
 
 def download_private_key(request):
@@ -90,7 +90,7 @@ def download_private_key(request):
     data = request.POST.get("data")
     name = request.POST.get("name", "key")
 
-    response = http.HttpResponse(mimetype='application/x-pem-key')
+    response = http.HttpResponse(content_type='application/x-pem-key')
     response['Content-Disposition'] = 'attachment; filename=%s' % name
     response.write(data)
     return response

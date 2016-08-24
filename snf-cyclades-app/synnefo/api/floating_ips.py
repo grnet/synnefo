@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,11 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 from synnefo.db import transaction
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils import simplejson as json
+import json
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
@@ -74,6 +74,7 @@ def floating_ip_demux(request, floating_ip_id):
 
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
+@transaction.commit_on_success
 def floating_ip_action_demux(request, floating_ip_id):
     userid = request.user_uniq
     req = utils.get_json_body(request)
@@ -269,7 +270,6 @@ def list_floating_ip_pools(request):
     return HttpResponse(data, status=200)
 
 
-@transaction.commit_on_success
 def reassign(request, floating_ip, args):
     if request.user_uniq != floating_ip.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"

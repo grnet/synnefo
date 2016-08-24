@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,17 +19,18 @@ from django.conf.urls import patterns
 from synnefo.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
-from synnefo.api.util import VMPasswordCache
+from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
+from synnefo import cyclades_settings
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -56,9 +57,6 @@ VOLUME_SOURCE_TYPES = [
     "volume",
     "blank"
 ]
-
-VM_PASSWORD_CACHE = VMPasswordCache()
-
 
 def demux(request):
     if request.method == 'GET':
@@ -460,7 +458,7 @@ def create_server(request):
 def set_password_in_cache(server_id, password):
     server_id = str(server_id)
 
-    VM_PASSWORD_CACHE.set(**{server_id: password})
+    VM_PASSWORD_CACHE.set(server_id, password)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -602,6 +600,7 @@ def update_server_name(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -1123,7 +1122,7 @@ def os_get_vnc_console(request, vm, args):
 
     log.info("User %s got VNC console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('console')
@@ -1161,7 +1160,7 @@ def get_console(request, vm, args):
 
     log.info("User %s got console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('changePassword')
@@ -1343,6 +1342,7 @@ def get_volume_info(request, server_id, volume_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     user_id = request.user_uniq
@@ -1370,6 +1370,7 @@ def attach_volume(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def detach_volume(request, server_id, volume_id):
     log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
               request.user_uniq, server_id, volume_id)

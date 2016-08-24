@@ -1,4 +1,4 @@
-# Copyright (C) 2014 GRNET S.A.
+# Copyright (C) 2014-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,10 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pithos.backends.test.common import CommonMixin
-from pithos.backends.test.quota import TestQuotaMixin
-from pithos.backends.test.delete_by_uuid import TestDeleteByUUIDMixin
-from pithos.backends.test.snapshots import TestSnapshotsMixin
+from pithos.backends.test import common, quota, uuid_methods, snapshots
 
 from sqlalchemy import create_engine
 
@@ -24,8 +21,8 @@ import os
 import time
 
 
-class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
-                            TestQuotaMixin, TestSnapshotsMixin):
+class TestSQLAlchemyBackend(common.CommonMixin, uuid_methods.TestUUIDMixin,
+                            quota.TestQuotaMixin, snapshots.TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
     db_connection_str = \
         '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s'
@@ -62,8 +59,8 @@ class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
         c.connection.connection.set_isolation_level(1)
 
 
-class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin,
-                        TestSnapshotsMixin):
+class TestSQLiteBackend(common.CommonMixin, uuid_methods.TestUUIDMixin,
+                        quota.TestQuotaMixin, snapshots.TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlite'
     db_connection = location = '/tmp/test_pithos_backend.db'
     mapfile_prefix = 'snf_test_pithos_backend_sqlite_%s_' % \

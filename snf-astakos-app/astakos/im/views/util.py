@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,13 +19,10 @@ import astakos.im.messages as astakos_messages
 from astakos.im import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.xheaders import populate_xheaders
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template import RequestContext, loader as template_loader
 from django.utils.translation import ugettext as _
-from django.views.generic.create_update import apply_extra_context, \
-    get_model_and_form_class, lookup_object
 from astakos.im import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
@@ -68,113 +65,6 @@ def render_response(template, tab=None, status=200, context_instance=None,
     html = template_loader.render_to_string(
         template, kwargs, context_instance=context_instance)
     response = HttpResponse(html, status=status)
-    return response
-
-
-def _create_object(request, model=None, template_name=None,
-                   template_loader=template_loader, extra_context=None,
-                   post_save_redirect=None, login_required=False,
-                   context_processors=None, form_class=None, msg=None,
-                   summary_template_name=None):
-    """
-    Based of django.views.generic.create_update.create_object which displays a
-    summary page before creating the object.
-    """
-
-    if extra_context is None:
-        extra_context = {}
-    if login_required and not request.user.is_authenticated():
-        return redirect_to_login(request.path)
-
-    model, form_class = get_model_and_form_class(model, form_class)
-    extra_context['edit'] = 0
-    if request.method == 'POST':
-        form = form_class(request.POST, request.FILES)
-
-        if form.is_valid():
-            verify = request.GET.get('verify')
-            edit = request.GET.get('edit')
-            if verify == '1':
-                extra_context['show_form'] = False
-                extra_context['form_data'] = form.cleaned_data
-                template_name = summary_template_name
-            elif edit == '1':
-                extra_context['show_form'] = True
-            else:
-                new_object = form.save()
-                if not msg:
-                    msg = _(
-                        "The %(verbose_name)s was created successfully.")
-                msg = msg % model._meta.__dict__
-                messages.success(request, msg, fail_silently=True)
-                return redirect(post_save_redirect, new_object)
-    else:
-        form = form_class()
-
-    # Create the template, context, response
-    if not template_name:
-        template_name = "%s/%s_form.html" % \
-            (model._meta.app_label, model._meta.object_name.lower())
-    t = template_loader.get_template(template_name)
-    c = RequestContext(request, {
-        'form': form
-    }, context_processors)
-    apply_extra_context(extra_context, c)
-    return HttpResponse(t.render(c))
-
-
-def _update_object(request, model=None, object_id=None, slug=None,
-                   slug_field='slug', template_name=None,
-                   template_loader=template_loader, extra_context=None,
-                   post_save_redirect=None, login_required=False,
-                   context_processors=None, template_object_name='object',
-                   form_class=None, msg=None, summary_template_name=None):
-    """
-    Based of django.views.generic.create_update.update_object which displays a
-    summary page before updating the object.
-    """
-
-    if extra_context is None:
-        extra_context = {}
-    if login_required and not request.user.is_authenticated():
-        return redirect_to_login(request.path)
-
-    model, form_class = get_model_and_form_class(model, form_class)
-    obj = lookup_object(model, object_id, slug, slug_field)
-
-    if request.method == 'POST':
-        form = form_class(request.POST, request.FILES, instance=obj)
-        if form.is_valid():
-            verify = request.GET.get('verify')
-            edit = request.GET.get('edit')
-            if verify == '1':
-                extra_context['show_form'] = False
-                extra_context['form_data'] = form.cleaned_data
-                template_name = summary_template_name
-            elif edit == '1':
-                extra_context['show_form'] = True
-            else:
-                obj = form.save()
-                if not msg:
-                    msg = _("The %(verbose_name)s was created successfully.")
-                msg = msg % model._meta.__dict__
-                messages.success(request, msg, fail_silently=True)
-                return redirect(post_save_redirect, obj)
-    else:
-        form = form_class(instance=obj)
-
-    if not template_name:
-        template_name = "%s/%s_form.html" % \
-            (model._meta.app_label, model._meta.object_name.lower())
-    t = template_loader.get_template(template_name)
-    c = RequestContext(request, {
-        'form': form,
-        template_object_name: obj,
-    }, context_processors)
-    apply_extra_context(extra_context, c)
-    response = HttpResponse(t.render(c))
-    populate_xheaders(request, response, model,
-                      getattr(obj, obj._meta.pk.attname))
     return response
 
 

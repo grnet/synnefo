@@ -164,6 +164,8 @@ actual IPs. Now, restart the server to apply the changes:
    # /etc/init.d/postgresql restart
 
 
+.. _certificate-creation-h:
+
 Certificate Creation
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -203,7 +205,7 @@ The previous will create a ``ca.crt`` file in the directory
 
    # update-ca-certificates
 
-to update the records. You will have to do the following on node2 as well.
+to update the records.
 
 Now you can create the keys and sign them with the certificate:
 
@@ -215,6 +217,8 @@ This will create a ``01.pem`` and a ``node1.example.com.key`` files in the
 ``/etc/openvpn/easy-rsa/2.0/keys`` directory. Copy these in ``/etc/ssl/certs/``
 and ``/etc/ssl/private/`` respectively and use them in the apache2
 configuration file below instead of the defaults.
+
+.. note:: You will have to do the same on node2 as well.
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -270,8 +274,8 @@ following:
        RewriteRule ^(.*)$ - [F,L]
 
        SSLEngine on
-       SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-       SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+       SSLCertificateFile    /etc/ssl/certs/01.pem
+       SSLCertificateKeyFile /etc/ssl/private/node1.example.com.key
    </VirtualHost>
    </IfModule>
 
@@ -346,6 +350,7 @@ ids 200 and 300 are available across all nodes.
    # adduser --system --uid 300 --gid 300 --no-create-home \
        --gecos Archipelago archipelago
 
+.. note:: You will have to do the same on node2 as well.
 
 NFS data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -588,10 +593,15 @@ containing the following:
        ProxyPassReverse / http://localhost:8080/
 
        SSLEngine on
-       SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-       SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+       SSLCertificateFile    /etc/ssl/certs/02.pem
+       SSLCertificateKeyFile /etc/ssl/private/node2.example.com.key
    </VirtualHost>
    </IfModule>
+
+You should properly configure your certificates in node2 too. In case you don't
+have signed keys you can create a self-signed certificate and sign your keys
+with it. To do so follow the steps described in :ref:`Certificate creation
+<certificate-creation-h>`.
 
 As in node1, enable sites and modules by running:
 
@@ -821,9 +831,9 @@ components, if more than one are installed on the same machine.
       ASTAKOS_RECAPTCHA_USE_SSL = True
       ASTAKOS_RECAPTCHA_ENABLED = True
 
-    For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and
-    ``ASTAKOS_RECAPTCHA_PRIVATE_KEY`` go to
-    https://www.google.com/recaptcha/admin/create and create your own pair.
+   For the ``ASTAKOS_RECAPTCHA_PUBLIC_KEY`` and
+   ``ASTAKOS_RECAPTCHA_PRIVATE_KEY`` go to `Google
+   <https://www.google.com/recaptcha/admin/create>`_ and create your own pair.
 
 Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf``:
 
@@ -1131,7 +1141,7 @@ the following command:
 
 .. code-block:: console
 
-   # snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://node2.example.com/pithos/ui/view
+   # snf-manage oauth2-client-add pithos-view --secret=example_passw0rd --is-trusted --url https://node2.example.com/pithos/ui/view
 
 Servers Initialization
 ----------------------
@@ -1209,9 +1219,9 @@ This package includes the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
 
-For the Pithos UI to be accessible via the `/pithos/ui/` endpoint change the
-`UI_BASE_URL` setting in the `/etc/synnefo/20-snf-ui-settings.conf` file to
-`/pithos/ui/`.
+For the Pithos UI to be accessible via the ``/pithos/ui/`` endpoint change the
+``UI_BASE_URL`` setting in the ``/etc/synnefo/20-snf-ui-settings.conf`` file to
+``/pithos/ui/``.
 
 .. _conf-pithos-h:
 
@@ -1408,7 +1418,7 @@ Open your browser and go to the Astakos homepage:
 
 Login, and you will see your profile page. Now, click the "Pithos" link on the
 top black cloudbar. If everything was setup correctly, this will redirect you to
-``https://node2.example.com/pithos/ui`` and you will see the blue interface of
+``https://node2.example.com/pithos/ui`` and you will see the interface of
 the Pithos application. Click the orange "Upload" button and upload your first
 file. If the file gets uploaded successfully, then this is your first sign of a
 successful Pithos installation. Go ahead and experiment with the interface to
@@ -1476,14 +1486,14 @@ Ganeti
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the `ganeti documentation
 <http://docs.ganeti.org/ganeti/2.8/html>`_ for all the gory details. A
-successful Ganeti installation concludes with a working 'GANETI-MASTER' and a
-number of 'GANETI-NODE's.
+successful Ganeti installation concludes with a working `GANETI-MASTER` and a
+number of `GANETI-NODES`.
 
 The above Ganeti cluster can run on different physical machines than node1 and
 node2 and can scale independently, according to your needs.
 
-For the purpose of this guide, we will assume that the 'GANETI-MASTER' runs on
-node1 and is VM-capable. Also, node2 is a 'GANETI-NODE' and is Master-capable
+For the purpose of this guide, we will assume that the `GANETI-MASTER` runs on
+node1 and is VM-capable. Also, node2 is a `GANETI-NODE` and is Master-capable
 and VM-capable too.
 
 We highly recommend that you read the official Ganeti documentation, if you are
@@ -1501,7 +1511,7 @@ Ganeti requires FQDN. To properly configure your nodes please see `this
 <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`__.
 
 Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
-``ganeti.node1.example.com``. Add this IP to your DNS server configuration, as
+``ganeti-master.example.com``. Add this IP to your DNS server configuration, as
 explained above.
 
 Also, Ganeti will need a volume group with the same name e.g., ``ganeti``
@@ -1643,7 +1653,7 @@ Then run on node1:
                                    --vg-name=ganeti --nic-parameters link=br1 --default-iallocator hail \
                                    --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
                                    --specs-nic-count min=0,max=16 \
-                                   --master-netdev eth0 ganeti.node1.example.com
+                                   --master-netdev eth0 ganeti-master.example.com
 
    root@node1:~ # gnt-node add --no-ssh-key-check --master-capable=yes \
                                --vm-capable=yes node2.example.com
@@ -1653,7 +1663,7 @@ Then run on node1:
 ``br1`` will be the default interface for any newly created VMs.
 
 You can verify that the ganeti cluster is successfully setup, by running on the
-'GANETI-MASTER' (in our case node1):
+`GANETI-MASTER` (in our case node1):
 
 .. code-block:: console
 
@@ -1677,10 +1687,10 @@ installed on *all* VM-capable Ganeti nodes. This means we need `snf-image
 
    # apt-get install snf-image snf-pithos-backend python-psycopg2
 
-snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able
-to handle image files stored on Pithos. It also needs `python-psycopg2` to be
-able to access the Pithos database. This is why, we also install them on *all*
-VM-capable Ganeti nodes.
+snf-image also needs the ``snf-pithos-backend``, to be able to handle image
+files stored on Pithos. It also needs ``python-psycopg2`` to be able to access
+the Pithos database. This is why, we also install them on *all* VM-capable
+Ganeti nodes.
 
 You must set the the ``PITHCAT_UMASK`` setting of snf-image to ``007``. On the
 file ``/etc/default/snf-image`` uncomment or create the relevant setting and set
@@ -1724,7 +1734,7 @@ Pithos.
 Testing
 ~~~~~~~
 You can test that snf-image is successfully installed by running on the
-'GANETI-MASTER' (in our case node1):
+`GANETI-MASTER` (in our case node1):
 
 .. code-block:: console
 
@@ -1754,7 +1764,7 @@ above Images to be stored:
 
 * Under a local folder (usually an NFS mount, configurable as ``IMAGE_DIR``
   in :file:`/etc/default/snf-image`)
-* On a remote host (accessible via public URL e.g: http://... or ftp://...)
+* On a remote host (accessible via public URL e.g: ``http://...`` or ``ftp://...``)
 * On Pithos (accessible natively, not only by its public URL)
 
 For the purpose of this guide, we will use the Debian Wheezy Base Image found
@@ -1780,11 +1790,11 @@ To upload the file using Kamaki to pithos default container, run:
 
    # kamaki file upload debian_base-7.0-x86_64.diskdump
 
-Once the Image is uploaded successfully, download the Image's metadata file
-from the official snf-image page. You will need it, for spawning a VM from
-Ganeti, in the next section.
+Once the Image is uploaded successfully, download the Image's `metadata file
+<https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_. You will need
+it, for spawning a VM from Ganeti, in the next section.
 
-Of course, you can repeat the procedure to upload more Images, available from
+Of course, you can repeat the procedure to upload more images, available from
 the `official snf-image page
 <http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_.
 
@@ -1832,7 +1842,7 @@ and filename you used, when uploading the file. This will output the following
 info (among others): the name of the Pithos mapfile (``mapfile`` field) and the
 size of the image (``bytes`` field).
 
-Run on the 'GANETI-MASTER' (node1) command line:
+Run on the `GANETI-MASTER` (node1) command line:
 
 .. code-block:: console
 
@@ -1853,7 +1863,7 @@ In the above command:
 
 * ``img_properties``: taken from the metadata file. Used only the two mandatory
   properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
-  <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-properties>`_
+  <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-properties>`_.
 
 If the ``gnt-instance add`` command returns successfully, then run:
 
@@ -2016,7 +2026,7 @@ Also in all nodes, bring all ``br*`` interfaces up:
    # ifconfig br1 up
    # ifconfig br2 up
 
-Finally, run on the GANETI-MASTER (node1):
+Finally, run on the `GANETI-MASTER` (node1):
 
 .. code-block:: console
 
@@ -2070,8 +2080,8 @@ means that the instances will have a second NIC connected to the ``br2``.
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
-                      --net 1:ip=pool,network=test-net-prv-mac -n node2 \
-                      testvm4
+                      --net 1:ip=pool,network=test-net-prv-mac \
+                      -n node2.example.com testvm4
 
 Above, we create two instances with the first NIC connected to the internet and
 their second NIC connected to a MAC filtered private Network. Now, connect to
@@ -2175,7 +2185,7 @@ If all packages install successfully, then Cyclades are installed and we
 proceed with their configuration.
 
 Since version 0.13, Synnefo uses the VMAPI in order to prevent sensitive data
-needed by 'snf-image' to be stored in Ganeti configuration (e.g. VM password).
+needed by ``snf-image`` to be stored in Ganeti configuration (e.g. VM password).
 This is achieved by storing all sensitive information to a CACHE backend and
 exporting it via VMAPI. The cache entries are invalidated after the first
 request. Synnefo uses `memcached <http://memcached.org/>`_ as a
@@ -2356,7 +2366,7 @@ correctly.
 
 .. code-block:: console
 
-   $ snf-manage backend-add --clustername=ganeti.node1.example.com --user=cyclades --pass=example_rapi_passw0rd
+   $ snf-manage backend-add --clustername=ganeti-master.example.com --user=cyclades --pass=example_rapi_passw0rd
 
 You can see everything has been setup correctly by running:
 
@@ -2382,12 +2392,12 @@ modify the backend to reflect the Ganeti installation by running:
 
 .. code-block:: console
 
-   $ snf-manage backend-modify --clustername "ganeti.node1.example.com" \
+   $ snf-manage backend-modify --clustername "ganeti-master.example.com" \
                                --user=cyclades \
                                --pass=example_rapi_passw0rd \
                                1
 
-``clustername`` denotes the Ganeti-cluster's name. We provide the corresponding
+``clustername`` denotes the Ganeti cluster's name. We provide the corresponding
 domain that resolves to the master IP, than the IP itself, to ensure Cyclades
 can talk to Ganeti even after a Ganeti master-failover.
 
@@ -2580,14 +2590,14 @@ Cyclades Web UI
 ---------------
 
 First of all we need to test that our Cyclades Web UI works correctly. Open your
-browser and go to the Astakos home page. Login and then click 'Cyclades' on the
+browser and go to the Astakos home page. Login and then click `Cyclades` on the
 top cloud bar. This should redirect you to
 ``http://node1.example.com/cyclades/ui/`` and the Cyclades home page should
 appear. If not, please go back and find what went wrong. Do not proceed if you
 don't see the Cyclades home page.
 
-If the Cyclades home page appears, click on the orange button 'New machine'. The
-first step of the 'New machine wizard' will appear. This step shows all the
+If the Cyclades home page appears, click on the orange button `New machine`. The
+first step of the `New machine wizard` will appear. This step shows all the
 available Images from which you can spawn new VMs. The list should be currently
 empty, as we haven't registered any Images yet. Close the wizard and browse the
 interface (not many things to see yet). If everything seems to work, let's
@@ -2727,19 +2737,19 @@ Spawn a VM from the Cyclades Web UI
 If the registration completes successfully, go to the Cyclades Web UI from your
 browser at ``https://node1.example.com/cyclades/ui/``.
 
-Click on the 'New Machine' button and the first step of the wizard will appear.
-Click on 'My Images' (right after 'System' Images) on the left pane of the
+Click on the `New Machine` button and the first step of the wizard will appear.
+Click on `My Images` (right after `System Images`) on the left pane of the
 wizard. Your previously registered Image "Debian Base" should appear under
-'Available Images'. If not, something has gone wrong with the registration. Make
+`Available Images`. If not, something has gone wrong with the registration. Make
 sure you can see your Image file on the Pithos Web UI and ``$ kamaki image
 register`` returns successfully with all options and properties as shown above.
 
 If the Image appears on the list, select it and complete the wizard by selecting
-a flavor and a name for your VM. Then finish by clicking 'Create'. Make sure you
+a flavor and a name for your VM. Then finish by clicking `Create`. Make sure you
 write down your password, because you *WON'T* be able to retrieve it later.
 
 If everything was setup correctly, after a few minutes your new machine will go
-to state 'Running' and you will be able to use it. Click 'Console' to connect
+to state ``Running`` and you will be able to use it. Click `Console` to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
 
@@ -2758,8 +2768,8 @@ package by running on node1 the following command:
 
    # apt-get install snf-admin-app
 
-Once the package is installed, we must configure the ``ADMIN_BASE_URL``
-setting. This setting is located in the ``20-snf-admin-app-general.conf``
+Once the package is installed, we must configure the ``ADMIN_BASE_URL`` setting.
+This setting is located in the ``/etc/synnefo/20-snf-admin-app-general.conf``
 settings file. Uncomment it and assign the following URL to it:
 ``https://node1.example.com/admin``.
 

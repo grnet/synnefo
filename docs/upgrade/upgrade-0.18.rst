@@ -32,10 +32,25 @@ The upgrade to v0.18 consists of the following steps:
 
    .. code-block:: console
 
-      astakos.host$ snf-manage user-check --all-users --suspend-deactivated --fix
+      astakos.host$ snf-manage user-check --all-users --suspend-deactivated --noemail --fix
 
 #. Start gunicorn
 
   .. code-block:: console
 
      # service gunicorn start
+
+
+New configuration options
+=========================
+
+On the admin app, there is a new access control option regarding the new modify
+email action. The action setting is named 'modify_email'. The list of user
+groups defined in this have access on the modify email action.
+
+The following line (modified accordingly) should be added on 'ADMIN_RBAC'
+setting under the 'user' dictionary:
+
+.. code-block:: console
+
+   'modify_email': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],

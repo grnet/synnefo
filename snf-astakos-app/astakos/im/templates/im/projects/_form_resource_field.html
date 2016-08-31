@@ -13,7 +13,9 @@
 </legend>
 
 <div class="form-row resource-pair clearfix">
-<div class="form-row resource-col">
+{% with resource|add:'_p_uplimit' as field_key %}
+<div class="form-row resource-col {% if field_key in form.errors.resources %}strong-error with-errors{% endif %}">
+{% endwith %}
   <p class="clearfix">
     <label for="id_{{resource}}_p_uplimit_proxy" >
       Total
@@ -52,10 +54,18 @@
     <span class="info"><em>more info</em>
     <span>{{ rinfo.help_text_input_total }}</span></span>
     </p>
-  <p class="error-msg">Invalid format</p>
+    <p class="error-msg">
+      {% with resource|add:'_p_uplimit' as field_key %}
+      {% if field_key in form.errors.resources %}
+        {{ form.errors.resources|lookup:field_key }}
+      {% endif %}
+      {% endwith %}
+    </p>
   <p class="msg"></p>
 </div>
-<div class="form-row resource-col">
+{% with resource|add:'_m_uplimit' as field_key %}
+<div class="form-row resource-col {% if field_key in form.errors.resources %}strong-error with-errors{% endif %}">
+{% endwith %}
     <p class="clearfix">
     <label for="id_{{resource}}_m_uplimit_proxy" >
       Max per member {{rdata.pluralized_display_name}}
@@ -94,7 +104,13 @@
     <span class="info"><em>more info</em>
     <span>{{ rinfo.help_text_input_each }}</span></span>
   </p>
-  <p class="error-msg">Invalid format</p>
+    <p class="error-msg">
+      {% with resource|add:'_m_uplimit' as field_key %}
+      {% if field_key in form.errors.resources %}
+        {{ form.errors.resources|lookup:field_key }}
+      {% endif %}
+      {% endwith %}
+    </p>
   <p class="msg"></p>
 </div>
 </div>

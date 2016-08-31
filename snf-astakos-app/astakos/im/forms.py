@@ -953,8 +953,10 @@ class ProjectApplicationForm(forms.ModelForm):
                     project_limit = self.value_or_inf(data.get(_key))
                     try:
                         mvalue = int(value)
+                        if not project_limit.strip():
+                            raise forms.ValidationError("Total limit is required", params=dict(key=_key))
                         pvalue = int(project_limit)
-                    except:
+                    except ValueError:
                         raise forms.ValidationError("Invalid format", params=dict(key=_key))
 
                 if mvalue > pvalue:

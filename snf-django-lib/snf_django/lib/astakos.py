@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,35 +15,26 @@
 
 import logging
 
+from snf_django.lib.utils import get_client_ip, retrieve_user, get_token
 from astakosclient import AstakosClient
 from astakosclient.errors import (Unauthorized, NoUUID, NoUserName,
                                   AstakosClientException)
-
-
-def user_for_token(token, astakos_auth_url, logger=None):
-    if token is None:
-        return None
-    client = AstakosClient(token, astakos_auth_url,
-                           retry=2, use_pool=True, logger=logger)
-    try:
-        return client.authenticate()
-    except Unauthorized:
-        return None
 
 
 def get_user(request, astakos_auth_url, fallback_token=None, logger=None):
     request.user = None
     request.user_uniq = None
 
-    # Try to find token in a parameter or in a request header.
-    user = user_for_token(
-        request.GET.get('X-Auth-Token'), astakos_auth_url, logger)
-    if not user:
-        user = user_for_token(
-            request.META.get('HTTP_X_AUTH_TOKEN'), astakos_auth_url, logger)
-    if not user:
-        user = user_for_token(
-            fallback_token, astakos_auth_url, logger)
+    client_ip = get_client_ip(request)
+    token = get_token(request)
+    if not token:
+        if fallback_token:
+            token = fallback_token
+        else:
+            return None
+
+    user = retrieve_user(token, astakos_auth_url, logger=logger,
+                         client_ip=client_ip)
     if not user:
         return None
 

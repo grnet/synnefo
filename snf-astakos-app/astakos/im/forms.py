@@ -853,7 +853,17 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
-        policies = self.resource_policies
+        try:
+            policies = self.resource_policies
+        except forms.ValidationError, e:
+            if 'key' in e.params:
+                msg = e.message or e.messages
+                if e.messages and len(e.messages):
+                    msg = e.messages[0]
+                self._errors['resources'] = {e.params['key']: msg}
+                raise forms.ValidationError(_(astakos_messages.INVALID_RESOURCE_DATA))
+            raise e
+
         self.user = None
         if userid:
             try:
@@ -937,7 +947,7 @@ class ProjectApplicationForm(forms.ModelForm):
                         pvalue = int(value)
                         mvalue = int(member_limit)
                     except:
-                        raise forms.ValidationError("Invalid format")
+                        raise forms.ValidationError("Invalid format", params=dict(key=_key))
                 else:
                     _key = prefix + '_p_uplimit'
                     project_limit = self.value_or_inf(data.get(_key))
@@ -945,11 +955,11 @@ class ProjectApplicationForm(forms.ModelForm):
                         mvalue = int(value)
                         pvalue = int(project_limit)
                     except:
-                        raise forms.ValidationError("Invalid format")
+                        raise forms.ValidationError("Invalid format", params=dict(key=_key))
 
                 if mvalue > pvalue:
-                    msg = "%s per member limit exceeds total limit"
-                    raise forms.ValidationError(msg % resource.name)
+                    msg = "Per member limit exceeds total limit"
+                    raise forms.ValidationError(msg, params=dict(key=_key))
 
                 # keep only resource limits for selected resource groups
                 if data.get('is_selected_%s' % \

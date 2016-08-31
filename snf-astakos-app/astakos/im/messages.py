@@ -369,6 +369,7 @@ PROJECT_MEMBERSHIP_REQUEST_SUBJECT = \
     '%s project membership request (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = \
     '%s project membership leave request (%%(name)s)' % _SITENAME
+INVALID_RESOURCE_DATA = "Invalid resource data"
 
 
 messages = locals().keys()

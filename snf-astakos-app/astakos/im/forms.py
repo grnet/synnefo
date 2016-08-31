@@ -1098,7 +1098,7 @@ class ProjectApplicationForm(forms.ModelForm):
         user_uuid = self.user.uuid if is_new else owner_uuid
         try:
             object_owner = AstakosUser.objects.get(uuid=user_uuid)
-            data['owner'] = object_owner
+            data['owner'] = object_owner.uuid
         except AstakosUser.DoesNotExist:
             pass
 
@@ -1128,14 +1128,17 @@ class ProjectApplicationForm(forms.ModelForm):
             data['end_date'] = date_util.isoformat(data.get('end_date'))
 
         limit = data.get('limit_on_members_number', None)
-        if limit:
-            data['max_members'] = data.get('limit_on_members_number')
-        else:
-            data['max_members'] = units.PRACTICALLY_INFINITE
+        if is_new or instance.limit_on_members_number != limit:
+            if limit:
+                data['max_members'] = data.get('limit_on_members_number')
+            else:
+                data['max_members'] = units.PRACTICALLY_INFINITE
 
         data['request_user'] = self.user
-        if 'owner' in data:
-            data['owner'] = data['owner'].uuid
+        owner = data.get('owner', None)
+
+        if not is_new and instance.owner.uuid == owner:
+            del data['owner']
 
         return data
 

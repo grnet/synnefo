@@ -1140,6 +1140,12 @@ class ProjectApplicationForm(forms.ModelForm):
         if not is_new and instance.owner.uuid == owner:
             del data['owner']
 
+        from astakos.api.projects import MEMBERSHIP_POLICY_SHOW as POLICIES
+        for _key in ['join_policy', 'leave_policy']:
+            _mkey = 'member_%s' % _key
+            if _mkey in data:
+                data[_key] = POLICIES.get(int(data[_mkey]), None)
+
         return data
 
     def save(self, commit=True, **kwargs):

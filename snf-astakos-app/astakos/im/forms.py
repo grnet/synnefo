@@ -856,7 +856,7 @@ class ProjectApplicationForm(forms.ModelForm):
         try:
             policies = self.resource_policies
         except forms.ValidationError, e:
-            if 'key' in e.params:
+            if e.params and 'key' in e.params:
                 msg = e.message or e.messages
                 if e.messages and len(e.messages):
                     msg = e.messages[0]
@@ -953,7 +953,7 @@ class ProjectApplicationForm(forms.ModelForm):
                     project_limit = self.value_or_inf(data.get(_key))
                     try:
                         mvalue = int(value)
-                        if not project_limit.strip():
+                        if not project_limit:
                             raise forms.ValidationError("Total limit is required", params=dict(key=_key))
                         pvalue = int(project_limit)
                     except ValueError:

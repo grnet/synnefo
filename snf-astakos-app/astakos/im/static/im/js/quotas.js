@@ -362,14 +362,15 @@ $(document).ready(function() {
 	});
 	  
     // enforce uplimit updates
-	//$('.quotas-form .quota input[type="text"]').trigger("keyup");
+  //$('.quotas-form .quota input[type="text"]').trigger("keyup");
 
 
     $('.resource-col input').each(function() {
         if (!$(this).attr("name").indexOf("proxy")) { return }
-        if ($(this).hasClass("dehumanize")) {
+        if ($(this).hasClass("dehumanize") && $(this).closest(".form-row").hasClass("with-errors")) {
             var value = $(this).data("value");
             $(this).data("value", bytesToSize2(value) || 0);
+            $(this).val(bytesToSize2(value));
         }
     });
 
@@ -386,16 +387,18 @@ $(document).ready(function() {
             $(this).data("changed", false);
         }
         
+        var get_el = function(id) {
+            return $("input[name='"+name.replace(replace_str, id)+"']");
+        }
         var replace_str = "m_uplimit_proxy";
+        var other = get_el("p_uplimit_proxy");
         if (name.indexOf("p_uplimit_proxy") >= 0) {
             replace_str = "p_uplimit_proxy";
+            other = get_el("m_uplimit_proxy");
         }
 
         window.setTimeout((function() { 
             return function() {
-                var get_el = function(id) {
-                    return $("input[name='"+name.replace(replace_str, id)+"']");
-                }
 
                 var member_proxy_el = get_el("m_uplimit_proxy");
                 var member_value_el = get_el("m_uplimit");
@@ -421,6 +424,12 @@ $(document).ready(function() {
                     member_proxy_el.trigger("keyup");
                     member_proxy_el.data("changed-value", 
                                          project_proxy_el.val());
+                }
+
+                if (other.closest(".form-row").hasClass("with-errors")) {
+                  if (initial_value != value) {
+                    other.val(other.val()).trigger("keyup");
+                  }
                 }
 
         }})(replace_str), 0);

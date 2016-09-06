@@ -21,7 +21,7 @@ Cyclades
 Astakos
 -------
 
-* Add option to control weather to send e-mail to the user when suspending them
+* Add option to control whether to send e-mail to the user when suspending them
 
 v0.18rc2
 ========

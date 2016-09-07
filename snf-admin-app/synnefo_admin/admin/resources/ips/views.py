@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,12 +20,14 @@ from collections import OrderedDict
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import IPAddress, IPAddressLog
 from astakos.im.models import AstakosUser, Project
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
+from synnefo_admin.admin.resources.ips.utils import get_ip_or_404
 from synnefo_admin.admin.resources.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
@@ -49,12 +51,12 @@ templates = {
 
 class IPJSONView(AdminJSONView):
     model = IPAddress
-    fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
+    fields = ('pk', 'userid', 'address', 'floating_ip', 'created',)
     filters = IPFilterSet
 
     def format_data_row(self, row):
         row = list(row)
-        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
+        row[4] = row[4].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -120,7 +122,7 @@ class IPJSONView(AdminJSONView):
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -151,13 +153,14 @@ class IPJSONView(AdminJSONView):
 JSON_CLASS = IPJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified ip."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        ip = IPAddress.objects.get(id=id)
+        ip = get_ip_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
@@ -172,8 +175,8 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = IPFilterSet().filters.values()
-    context['columns'] = ["ID", "Address", "Floating",
-                          "Creation date", "User ID", ""]
+    context['columns'] = ["ID", "Owner UUID", "Address", "Floating",
+                          "Creation date", ""]
     context['item_type'] = 'ip'
 
     return context

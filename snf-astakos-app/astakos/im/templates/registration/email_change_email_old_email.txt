@@ -1,0 +1,13 @@
+{% extends "im/email.txt" %}
+
+{% block content %}
+Dear {{ ec.user.realname }},
+
+You recently requested to modify the e-mail that is used for your
+{{ BRANDING_SERVICE_NAME }} account from '{{ ec.user.email }}' to '{{ ec.new_email_address }}'.
+
+In case you are not aware of the e-mail change request please contact {{ support }}
+as soon as possible.
+{% endblock %}
+
+{% block note %}{% endblock%}

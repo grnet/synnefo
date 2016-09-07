@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,17 +76,27 @@ def sort_vms():
 
 
 def handle_stop_active(viol_id, resource, vms, diff, actions, remains,
-                       options=None):
+                       options=None, soft=False):
     vm_actions = actions["vm"]
-    vms = [vm for vm in vms if vm.operstate in ["STARTED", "BUILD", "ERROR"]]
     vms = sorted(vms, key=sort_vms(), reverse=True)
     for vm in vms:
         if diff < 1:
             break
-        diff -= CHANGE[resource](vm)
+        change = CHANGE[resource](vm)
+        if vm.operstate not in ["STARTED", "BUILD", "ERROR"]:
+            if soft:
+                diff -= change
+            continue
+        diff -= change
         if vm_actions.get(vm.id) is None:
             action = "REMOVE" if vm.operstate == "ERROR" else "SHUTDOWN"
             vm_actions[vm.id] = viol_id, vm.operstate, vm.backend_id, action
+
+
+def handle_stop_soft(viol_id, resource, vms, diff, actions, remains,
+                     options=None):
+    return handle_stop_active(viol_id, resource, vms, diff, actions, remains,
+                              options=options, soft=True)
 
 
 def has_extra_disks(volumes):
@@ -119,8 +129,9 @@ def handle_destroy(viol_id, resource, vms, diff, actions, remains,
 
 
 def volume_remove_action(viol_id, volume, machine=None):
-    backend_id = (machine.backend_id if machine is not None
-                  else volume.machine.backend_id)
+    if machine is None:
+        machine = volume.machine
+    backend_id = machine.backend_id if machine is not None else None
     return (viol_id, volume.status, backend_id, "REMOVE")
 
 
@@ -231,8 +242,14 @@ def sort_ips(vm_actions):
     return f
 
 
+def handle_floating_ip_soft(viol_id, resource, ips, diff, actions, remains,
+                            options=None):
+    return handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
+                              options=options, soft=True)
+
+
 def handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
-                       options=None):
+                       options=None, soft=False):
     vm_actions = actions.get("vm", {})
     ip_actions = actions["floating_ip"]
     ips = sorted(ips, key=sort_ips(vm_actions), reverse=True)
@@ -241,11 +258,14 @@ def handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
             break
         diff -= CHANGE[resource](ip)
         state = "USED" if ip.in_use() else "FREE"
+        if soft and state == "FREE":
+            continue
         if ip.nic and ip.nic.machine:
             backend_id = ip.nic.machine.backend_id
         else:
             backend_id = None
-        ip_actions[ip.id] = viol_id, state, backend_id, "REMOVE"
+        action = "DETACH" if soft else "REMOVE"
+        ip_actions[ip.id] = viol_id, state, backend_id, action
 
 
 def get_vms(users=None, projects=None):
@@ -357,7 +377,7 @@ def remove_volume(volume_id):
         objs = Volume.objects.select_for_update()
         volume = objs.get(id=volume_id)
         machine = volume.machine
-        if not machine.deleted and machine.task != "DESTROY":
+        if not machine or not machine.deleted and machine.task != "DESTROY":
             volumes_logic.delete(volume)
         return True
     except BaseException:
@@ -390,16 +410,25 @@ def wait_for_ip(ip_id):
         "Floating_ip %s: Waiting for port delete timed out." % ip_id)
 
 
+def delete_port(port_id):
+    try:
+        port = NetworkInterface.objects.select_for_update().get(id=port_id)
+        servers.delete_port(port)
+        if port.machine:
+            wait_server_job(port.machine)
+        return True
+    except BaseException:
+        raise
+
+
 def remove_ip(ip_id):
     try:
         ip = IPAddress.objects.select_for_update().get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
-            objs = NetworkInterface.objects.select_for_update()
-            port = objs.get(id=port_id)
-            servers.delete_port(port)
-            if port.machine:
-                wait_server_job(port.machine)
+            r = delete_port(port_id)
+            if not r:
+                return False
             ip = wait_for_ip(ip_id)
         logic_ips.delete_floating_ip(ip)
         return True
@@ -407,17 +436,31 @@ def remove_ip(ip_id):
         return False
 
 
+def detach_ip(ip_id):
+    try:
+        ip = IPAddress.objects.select_for_update().get(id=ip_id)
+        port_id = ip.nic_id
+        if port_id:
+            return delete_port(port_id)
+        return True
+    except BaseException:
+        raise
+
+
 def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False,
                                 options={}):
     log = []
+    ACTIONS = {"REMOVE": remove_ip,
+               "DETACH": detach_ip,
+               }
+
     for ip_id, (viol_id, state, backend_id, ip_action) in actions.iteritems():
         if not allow_operation(backend_id, opcount, maxops):
             continue
         data = ("floating_ip", ip_id, state, backend_id, ip_action, viol_id)
-        if ip_action == "REMOVE":
-            if fix:
-                r = remove_ip(ip_id)
-                data += ("DONE" if r else "FAILED",)
+        if fix:
+            r = ACTIONS[ip_action](ip_id)
+            data += ("DONE" if r else "FAILED",)
         log.append(data)
     return log
 
@@ -442,11 +485,16 @@ def perform_actions(actions, maxops=None, fix=False, options={}):
 # It is important to check resources in this order, especially
 # floating_ip after vm resources.
 RESOURCE_HANDLING = [
-    ("cyclades.cpu", handle_stop_active, "vm"),
-    ("cyclades.ram", handle_stop_active, "vm"),
-    ("cyclades.total_cpu", handle_destroy, "vm"),
-    ("cyclades.total_ram", handle_destroy, "vm"),
-    ("cyclades.vm", handle_destroy, "vm"),
-    ("cyclades.disk", handle_volume, "volume"),
-    ("cyclades.floating_ip", handle_floating_ip, "floating_ip"),
+    ("cyclades.cpu", False, handle_stop_active, "vm"),
+    ("cyclades.ram", False, handle_stop_active, "vm"),
+    ("cyclades.total_cpu", True, handle_stop_soft, "vm"),
+    ("cyclades.total_ram", True, handle_stop_soft, "vm"),
+    ("cyclades.vm", True, handle_stop_soft, "vm"),
+
+    ("cyclades.total_cpu", False, handle_destroy, "vm"),
+    ("cyclades.total_ram", False, handle_destroy, "vm"),
+    ("cyclades.vm", False, handle_destroy, "vm"),
+    ("cyclades.disk", False, handle_volume, "volume"),
+    ("cyclades.floating_ip", True, handle_floating_ip_soft, "floating_ip"),
+    ("cyclades.floating_ip", False, handle_floating_ip, "floating_ip"),
     ]

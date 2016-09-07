@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
 from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import Volume, VirtualMachine
 from astakos.im.models import AstakosUser, Project
 
@@ -27,6 +27,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.resources.users.utils import get_user_or_404
+from synnefo_admin.admin.resources.volumes.utils import get_volume_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
@@ -46,16 +47,17 @@ templates = {
 
 class VolumeJSONView(AdminJSONView):
     model = Volume
-    fields = ('id', 'name', 'status', 'size', 'volume_type__disk_template',
-              'machine__pk', 'created', 'updated')
+    fields = ('id', 'userid', 'name', 'status', 'size',
+              'volume_type__disk_template', 'machine__pk', 'created',
+              'updated')
     filters = VolumeFilterSet
 
     def format_data_row(self, row):
         row = list(row)
         if not row[1]:
             row[1] = "(not set)"
-        row[6] = row[6].strftime("%Y-%m-%d %H:%M")
         row[7] = row[7].strftime("%Y-%m-%d %H:%M")
+        row[8] = row[8].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -120,6 +122,16 @@ class VolumeJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "Owner",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['project_info'] = {
+            'display_name': "Project",
+            'value': get_project_details_href(inst),
+            'visible': True,
+        }
         extra_dict['description'] = {
             'display_name': "Description",
             'value': escape(inst.description) or "(not set)",
@@ -144,16 +156,6 @@ class VolumeJSONView(AdminJSONView):
             'value': inst.index,
             'visible': True,
         }
-        extra_dict['user_info'] = {
-            'display_name': "User",
-            'value': get_user_details_href(inst),
-            'visible': True,
-        }
-        extra_dict['project_info'] = {
-            'display_name': "Project",
-            'value': get_project_details_href(inst),
-            'visible': True,
-        }
         if inst.machine:
             extra_dict['vm_info'] = {
                 'display_name': "VM",
@@ -165,13 +167,14 @@ class VolumeJSONView(AdminJSONView):
 JSON_CLASS = VolumeJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified volume."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        volume = Volume.objects.get(id=id)
+        volume = get_volume_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
@@ -186,8 +189,9 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VolumeFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Status", "Size (GB)", "Disk template",
-                          "VM ID", "Created at", "Updated at", ""]
+    context['columns'] = ["ID", "Owner UUID", "Name", "Status", "Size (GB)",
+                          "Disk template", "VM ID", "Created at",
+                          "Updated at", ""]
     context['item_type'] = 'volume'
 
     return context

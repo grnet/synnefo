@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from fnmatch import fnmatchcase
 from distutils.util import convert_path
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+os.chdir(HERE)
 
 from synnefo_admin.version import __version__
 
@@ -136,6 +137,41 @@ def find_package_data(
                     continue
                 out.setdefault(package, []).append(prefix+name)
     return out
+
+trigger_build = ["sdist", "build", "develop", "install"]
+
+
+def compile_sass():
+    import subprocess
+    from distutils.spawn import find_executable
+
+    css_dir = os.path.join(".", "synnefo_admin", "admin", "static")
+    css_dir = os.path.abspath(css_dir)
+
+    if not find_executable("gem"):
+        raise Exception("gem not found, please install ruby and gem")
+
+    os.environ["PATH"] += ":/usr/local/bin"
+    if not find_executable("compass"):
+        print "Install compass"
+        ret = subprocess.call(["gem", "install", "compass"])
+        if ret == 1:
+            raise Exception("gem install failed")
+
+    environment = "development" if "develop" in sys.argv else "production"
+    compass_bin = find_executable("compass")
+    compass_cmd = [compass_bin, "compile", css_dir,
+                   "-e", environment, "--force"]
+    ret = subprocess.call(compass_cmd)
+    if ret == 1:
+        raise Exception("compass compile failed")
+
+
+if any(x in sys.argv for x in trigger_build):
+    if os.environ.get('SNFADMIN_AUTO_COMPILE', True) not in \
+            ['False', 'false', '0']:
+        compile_sass()
+
 
 setup(
     name='snf-admin-app',

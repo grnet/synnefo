@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@ from collections import OrderedDict
 from django import template
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import mark_safe
+from datetime import date
 import logging
 
 import django_filters
@@ -27,6 +29,8 @@ from snf_django.lib.api import faults
 from synnefo.api.util import get_image
 from synnefo.lib.dict import SnfOrderedDict
 from synnefo.db.models import Image
+
+from astakos.im.templatetags import filters as astakos_filters
 
 import synnefo_admin.admin.resources.projects.utils as project_utils
 import synnefo_admin.admin.resources.users.utils as user_utils
@@ -413,7 +417,7 @@ def show_auth_providers(user, category):
 @register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
-    if action.name == "Send e-mail" and action.target != 'user':
+    if action.name == "Send e&#8209;mail" and action.target != 'user':
         return False
     return action.can_apply(item)
 
@@ -473,11 +477,151 @@ def show_more_exception_message(assoc):
 
 
 @register.simple_tag
-def min_prefix():
+def flatten_dict_to_dl(d, default_if_empty='-'):
     """
-    Return minified files folder for production environment
+    Recursively takes a self-nested dict and returns an HTML definition list --
+    WITHOUT opening and closing <dl> tags.
+
+    The dict is assumed to be in the proper format. For example, if ``var``
+    contains: ``{
+        'foo1': 'bar1',
+        'foo2': {
+            'foo3': 'bar3',
+        }
+    }``,
+    then ``{{ var|flatten_dict_to_dl }}`` would return::
+        <dt>foo1</dt><dd>bar1</dd><dt>foo3</dt><dd>bar3</dd>
     """
-    if settings.DEBUG == False:
-        return 'min-'
-    else:
-        return ''
+    l = []
+    if isinstance(d, dict):
+        stack = d.items()
+        while stack:
+            k, v = stack.pop()
+            if isinstance(v, dict):
+                stack.extend(v.iteritems())
+            else:
+                a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v or default_if_empty)
+                l.append(a)
+    return mark_safe(''.join(reversed(l)))
+
+
+@register.filter
+def get_project_modifications(project):
+
+    """
+    Return a dictionary with a summary of a project's modifications as
+    requested by the user, concerning project details, policies and resources.
+    """
+    last_app = project.last_pending_modification()
+    if not last_app:
+        return
+    details = []
+    policies = []
+    resources = []
+
+    # details
+    if last_app.name is not None:
+        details.append({
+            'label': 'name',
+            'new': last_app.name,
+            'old': project.name,
+        })
+    if last_app.homepage is not None:
+        details.append({
+            'label': 'homepage',
+            'new': last_app.homepage,
+            'old': project.homepage,
+        })
+    if last_app.description is not None:
+        details.append({
+            'label': 'description',
+            'new': last_app.description,
+            'old': project.description,
+        })
+    if last_app.comments:
+        details.append({
+            'label': 'comments',
+            'new': mark_safe(last_app.comments),
+        })
+    if last_app.end_date is not None:
+        new_t = last_app.end_date
+        old_t = project.end_date
+        details.append({
+            'label': 'end date',
+            'new': new_t,
+            'old': old_t,
+            'diff': new_t - old_t,
+        })
+
+    # policies
+    if last_app.member_join_policy is not None:
+        policies.append({
+            'label': 'join policy',
+            'new': last_app.member_join_policy_display,
+            'old': project.member_join_policy_display,
+        })
+    if last_app.member_leave_policy is not None:
+        policies.append({
+            'label': 'join policy',
+            'new': last_app.member_leave_policy_display,
+            'old': project.member_leave_policy_display,
+        })
+    if last_app.limit_on_members_number is not None:
+        new_n = last_app.limit_on_members_number
+        old_n = project.limit_on_members_number
+        diff = new_n-old_n
+        if astakos_filters.inf_display(new_n) == 'Unlimited':
+            diff = 'Unlimited'
+        if astakos_filters.inf_display(old_n) == 'Unlimited':
+            diff = '- Unlimited'
+        policies.append({
+            'label': 'max members',
+            'new': astakos_filters.inf_display(new_n),
+            'old': astakos_filters.inf_display(old_n),
+            'diff': diff,
+        })
+
+    # resources
+    current_r = OrderedDict()
+    policies_list = project_utils.get_policies(project)
+    for p in policies_list:
+        r = p.resource
+        current_r[r.pluralized_display_name] = {
+            'limit': p.display_project_capacity(),
+            'member': p.display_member_capacity(),
+        }
+    for r in last_app.resource_set:
+        old_member = 0
+        old_project = 0
+        if r.resource.pluralized_display_name in current_r:
+            old_member = current_r[r.resource.pluralized_display_name]['member']
+            old_project = current_r[r.resource.pluralized_display_name]['limit']
+
+        resources.append({
+            'label': r.resource.pluralized_display_name,
+            'new_member': r.display_member_capacity(),
+            'old_member': old_member,
+            'diff_member': r.display_project_diff()[1] or '-',
+            'new_project': r.display_project_capacity(),
+            'old_project': old_project,
+            'diff_project': r.display_project_diff()[0] or '-',
+        })
+
+    return {
+        'details': details,
+        'policies': policies,
+        'resources': resources,
+    }
+
+
+@register.filter
+def diff_cls(d):
+    if d:
+        d = str(d)
+        cls = 'diff-positive'
+        if d.startswith("-"):
+            cls = 'diff-negative'
+        if d == '-':
+            cls = 'diff-zero'
+        return cls
+    return ''

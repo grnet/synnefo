@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,14 +26,25 @@ from snf_django.management.utils import pprint_table
 from collections import defaultdict
 
 
-DEFAULT_RESOURCES = ["cyclades.cpu",
-                     "cyclades.ram",
-                     "cyclades.floating_ip",
-                     ]
+SHUTDOWN_VM = "shutdown VM"
+DELETE_VM = "delete VM"
+DELETE_VOLUME = "delete volume"
+DETACH_IP = "detach IP"
+DELETE_IP = "delete IP"
+RESOURCES_HELP = [
+    ("cyclades.cpu", SHUTDOWN_VM, ""),
+    ("cyclades.ram", SHUTDOWN_VM, ""),
+    ("cyclades.vm", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.disk", DELETE_VOLUME, ""),
+    ("cyclades.total_cpu", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.total_ram", DELETE_VM, SHUTDOWN_VM),
+    ("cyclades.floating_ip", DELETE_IP, DETACH_IP),
+]
 
 DESTROY_RESOURCES = ["cyclades.vm",
                      "cyclades.total_cpu",
                      "cyclades.total_ram",
+                     "cyclades.floating_ip",
                      ]
 
 
@@ -56,8 +67,13 @@ class Command(SynnefoCommand):
                     help=("Exclude list of projects from resource enforcement")
                     ),
         make_option("--resources",
-                    help="Specify resources to check, default: %s" %
-                    ",".join(DEFAULT_RESOURCES)),
+                    help="Specify resources to check"),
+        make_option("--soft-resources",
+                    help="Specify resources to check for soft enforce"),
+        make_option("--list-resources",
+                    action="store_true",
+                    default=False,
+                    help="List available resources and respective actions"),
         make_option("--fix",
                     default=False,
                     action="store_true",
@@ -66,7 +82,7 @@ class Command(SynnefoCommand):
                     default=False,
                     action="store_true",
                     help=("Confirm actions that may permanently "
-                          "remove a vm")),
+                          "remove a VM, volume, or IP")),
         make_option("--shutdown-timeout",
                     help="Force vm shutdown after given seconds."),
         make_option("--remove-system-volumes",
@@ -82,6 +98,11 @@ class Command(SynnefoCommand):
                           "remove these volumes")),
     )
 
+    def help_resources(self, options):
+        headers = ("Name", "Enforce action", "Soft enforce action")
+        pprint_table(self.stdout, RESOURCES_HELP, headers,
+                     options["output_format"], title="Resources")
+
     def confirm(self):
         self.stdout.write("Confirm? [y/N] ")
         try:
@@ -92,31 +113,50 @@ class Command(SynnefoCommand):
             self.stderr.write("Aborted.\n")
             exit()
 
-    def get_handlers(self, resources):
-        def rem(v):
+    def get_handlers(self, resources, resources_soft):
+        def exists(v, from_soft=False):
+            origin = resources_soft if from_soft else resources
             try:
-                resources.remove(v)
+                origin.remove(v)
                 return True
-            except ValueError:
+            except KeyError:
                 return False
 
-        if resources is None:
-            resources = list(DEFAULT_RESOURCES)
-        else:
-            resources = resources.split(",")
+        def check_unknown_left(resource_set, soft=False):
+            if resource_set:
+                m = ("'%s' is not a supported resource for %senforce"
+                     % (resource_set.pop(), "soft " if soft else ""))
+                raise CommandError(m)
 
-        handlers = [h for h in enforce.RESOURCE_HANDLING if rem(h[0])]
-        if resources:
-            m = "No such resource '%s'" % resources[0]
-            raise CommandError(m)
+        resources = set([] if resources is None
+                        else resources.split(","))
+        resources_soft = set([] if resources_soft is None
+                             else resources_soft.split(","))
+        if not resources.isdisjoint(resources_soft):
+            raise CommandError("A resource shouldn't appear in both sets")
+
+        handlers = []
+        for handler in enforce.RESOURCE_HANDLING:
+            resource_name = handler[0]
+            is_soft = handler[1]
+            if exists(resource_name, is_soft):
+                handlers.append(handler)
+
+        check_unknown_left(resources)
+        check_unknown_left(resources_soft, soft=True)
         return handlers
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
         write = self.stderr.write
+        if options["list_resources"]:
+            self.help_resources(options)
+            exit()
+
         fix = options["fix"]
         force = options["force"]
-        handlers = self.get_handlers(options["resources"])
+        handlers = self.get_handlers(options["resources"],
+                                     options["soft_resources"])
         maxops = options["max_operations"]
         if maxops is not None:
             try:
@@ -167,11 +207,20 @@ class Command(SynnefoCommand):
 
         qh_project_holdings = sorted(qh_project_holdings.items())
         qh_holdings = sorted(qh_holdings.items())
-        resources = set(h[0] for h in handlers)
-        dangerous = bool(resources.difference(DEFAULT_RESOURCES))
-
-        self.stderr.write("Checking resources %s...\n" %
-                          ",".join(list(resources)))
+        resources = set(h[0] for h in handlers if not h[1])
+        dangerous = bool(resources.intersection(DESTROY_RESOURCES))
+        if resources:
+            self.stderr.write("Checking resources %s...\n" %
+                              ",".join(list(resources)))
+        resources_soft = set(h[0] for h in handlers if h[1])
+        if resources_soft:
+            self.stderr.write("Checking resources for soft enforce %s...\n" %
+                              ",".join(list(resources_soft)))
+        if not resources and not resources_soft:
+            self.stderr.write(
+                "No resources specified; use '--list-resources' "
+                "to list available resources.\n")
+            exit()
 
         hopts = {"cascade_remove": cascade_remove,
                  "remove_system_volumes": remove_system_volumes,
@@ -183,7 +232,7 @@ class Command(SynnefoCommand):
         remains = defaultdict(list)
 
         if users_to_check is None:
-            for resource, handle_resource, resource_type in handlers:
+            for resource, is_soft, handle_resource, resource_type in handlers:
                 if resource_type not in actions:
                     actions[resource_type] = OrderedDict()
                 actual_resources = enforce.get_actual_resources(
@@ -216,7 +265,7 @@ class Command(SynnefoCommand):
                         handle_resource(viol_id, resource, relevant_resources,
                                         diff, actions, remains, options=hopts)
 
-        for resource, handle_resource, resource_type in handlers:
+        for resource, is_soft, handle_resource, resource_type in handlers:
             if resource_type not in actions:
                 actions[resource_type] = OrderedDict()
             actual_resources = enforce.get_actual_resources(resource_type,
@@ -264,7 +313,7 @@ class Command(SynnefoCommand):
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
-                          "remove a vm or volume.\n")
+                          "remove a VM, volume, or IP.\n")
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"

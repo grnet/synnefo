@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,6 +89,7 @@ DEFAULT_ADMIN_RBAC = {
         'verify': [ADMIN_GROUP],
         'resend_verification': [ADMIN_GROUP],
         'contact': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
+        'modify_email': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
     }, 'vm': {
         'start': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
         'shutdown': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],

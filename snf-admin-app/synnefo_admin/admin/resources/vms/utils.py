@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -24,9 +23,11 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_vm_or_404(query):
+def get_vm_or_404(query, for_update=False):
+    vm_obj = VirtualMachine.objects.select_for_update() if for_update\
+        else VirtualMachine.objects
     try:
-        return VirtualMachine.objects.get(pk=int(query))
+        return vm_obj.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No VM was found that matches this query: %s\n" % query)
@@ -40,4 +41,4 @@ def get_flavor_info(vm):
 
 def get_user_details_href(vm):
     user = AstakosUser.objects.get(uuid=vm.userid)
-    return create_details_href('user', user.realname, user.email)
+    return create_details_href('user', user.realname, user.email, user.uuid)

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 from collections import OrderedDict
 import time
 
@@ -21,6 +20,7 @@ import time
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
                                IPAddress)
 from astakos.im.models import AstakosUser, Project
@@ -47,7 +47,7 @@ templates = {
 
 class VMJSONView(AdminJSONView):
     model = VirtualMachine
-    fields = ('pk', 'name', 'operstate', 'suspended',)
+    fields = ('pk', 'userid', 'name', 'operstate', 'suspended',)
     filters = VMFilterSet
 
     def get_extra_data(self, qs):
@@ -114,7 +114,7 @@ class VMJSONView(AdminJSONView):
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -145,13 +145,14 @@ class VMJSONView(AdminJSONView):
 JSON_CLASS = VMJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified user."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        vm = get_vm_or_404(id)
+        vm = get_vm_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reboot':
@@ -191,7 +192,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = VMFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "State", "Suspended", ""]
+    context['columns'] = ["ID", "Owner UUID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
 
     return context

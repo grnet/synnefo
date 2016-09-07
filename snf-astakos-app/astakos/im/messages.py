@@ -333,7 +333,7 @@ AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
 
 # Email subjects
 _SITENAME = branding_settings.SERVICE_NAME
-PLAIN_EMAIL_SUBJECT = 'New email from %s' % _SITENAME
+PLAIN_EMAIL_SUBJECT = 'New e-mail from %s' % _SITENAME
 INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
 GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
 FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME
@@ -341,8 +341,10 @@ VERIFICATION_EMAIL_SUBJECT = '%s account verification' % _SITENAME
 ACCOUNT_CREATION_SUBJECT = '%s account created (%%(user)s)' % _SITENAME
 HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
     '%s account activated (%%(user)s)' % _SITENAME
-EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s ' % _SITENAME
-PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s ' % _SITENAME
+EMAIL_CHANGE_NEW_EMAIL_SUBJECT = '%s e-mail change notification' % _SITENAME
+EMAIL_CHANGE_OLD_EMAIL_SUBJECT = '%s e-mail change notification' % _SITENAME
+EMAIL_ADMIN_APPLICATION_APPROVED = "%s project application approved ({0})" % _SITENAME
+PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % _SITENAME
 PROJECT_CREATION_SUBJECT = \
     '%s application for a new project created (%%s)' % _SITENAME
 PROJECT_MODIFICATION_SUBJECT = \

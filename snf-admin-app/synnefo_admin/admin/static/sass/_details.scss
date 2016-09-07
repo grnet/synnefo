@@ -226,7 +226,7 @@
     @extend .snf-user-full;
 }
 
-.show-hide-all {
+.line-btn {
     span.snf-font-arrow-up {
         @extend .snf-arrow-up;
         padding: 0;
@@ -234,5 +234,66 @@
     span.snf-font-arrow-down {
         @extend .snf-arrow-down;
         padding: 0;
+    }
+}
+
+.fade-area {
+    overflow: hidden;
+    &:not(.vis) {
+        display: none;
+    }
+
+    &.info-data {
+        padding: 0 20px;
+    }
+}
+
+.toggle-fade {
+    margin-left: 20px;
+    width: 116px;
+}
+
+.area-to-slide {
+    display: none;
+}
+
+/* Table with the pending modifications of projects */
+.modifications table {
+    table-layout: fixed;
+
+    td:not(.nowrap) {
+        word-wrap:break-word;
+    }
+
+    th:nth-child(2), th:nth-child(3)  {
+        width: 30%;
+    }
+    td.diff {
+        vertical-align: middle;
+        .label {
+            font-weight: bold;
+            height: 22px;
+            line-height: 18px;
+            display: inline-block;
+            width: 100%;
+        }
+    }
+    th.diff {
+        text-align: center;
+    }
+    .label-almost-white {
+        background-color: $label-almost-white-bg;
+        color: $label-grey-color;
+    }
+    .diff-positive {
+        color: $state-success-text;
+    }
+
+    .diff-negative {
+        color: $state-danger-text;
+    }
+
+    .diff-zero {
+        color: $state-info-text;
     }
 }

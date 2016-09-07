@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,11 +23,24 @@ A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
 """
 
+import sys
+import os
+import json
+import logging
+import pyinotify
+import daemon
+import daemon.pidlockfile
+import daemon.runner
+from lockfile import LockTimeout
+from signal import signal, SIGINT, SIGTERM
+import setproctitle
+
+from synnefo import settings
+from synnefo.lib.amqp import AMQPClient
+
 OLD_GANETI_PATH = "/usr/share/ganeti"
 NEW_GANETI_PATH = "/etc/ganeti/share"
 
-import sys
-import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
 # Since Ganeti 2.7, debian package ships the majority of the python code in
@@ -45,29 +58,16 @@ else:
 sys.path.insert(0, GANETI_PATH)
 
 try:
-    import ganeti  # NOQA
+    import ganeti  # noqa
 except ImportError:
     raise Exception("Cannot import ganeti module. Please check if installed"
                     " under %s for 2.8 or under %s for 2.10 or later." %
                     (OLD_GANETI_PATH, NEW_GANETI_PATH))
 
-import json
-import logging
-import pyinotify
-import daemon
-import daemon.pidlockfile
-import daemon.runner
-from lockfile import LockTimeout
-from signal import signal, SIGINT, SIGTERM
-import setproctitle
-
-from ganeti import utils, jqueue, constants, serializer, pathutils, cli
-from ganeti import errors as ganeti_errors
-from ganeti.ssconf import SimpleStore
-
-
-from synnefo import settings
-from synnefo.lib.amqp import AMQPClient
+from ganeti import utils, jqueue, constants, serializer, pathutils, cli, \
+    netutils  # noqa
+from ganeti import errors as ganeti_errors  # noqa
+from ganeti.ssconf import SimpleStore  # noqa
 
 
 def get_time_from_status(op, job):
@@ -80,21 +80,19 @@ def get_time_from_status(op, job):
     """
     status = op.status
     if status == constants.JOB_STATUS_QUEUED:
-        time = job.received_timestamp
+        return job.received_timestamp
     try:  # Compatibility with Ganeti version
         if status == constants.JOB_STATUS_WAITLOCK:
-            time = op.start_timestamp
+            return op.start_timestamp or job.end_timestamp
     except AttributeError:
         if status == constants.JOB_STATUS_WAITING:
-            time = op.start_timestamp
+            return op.start_timestamp or job.end_timestamp
     if status == constants.JOB_STATUS_CANCELING:
-        time = op.start_timestamp
+        return op.start_timestamp or job.end_timestamp
     if status == constants.JOB_STATUS_RUNNING:
-        time = op.exec_timestamp
+        return op.exec_timestamp or job.end_timestamp
     if status in constants.JOBS_FINALIZED:
-        time = op.end_timestamp
-
-    return time and time or job.end_timestamp
+        return op.end_timestamp or job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
 
@@ -187,6 +185,22 @@ def get_field(from_, field):
         None
 
 
+def get_ganeti_master():
+    """Get the Ganeti Master
+
+    @returns: The domain of Ganeti Master
+    """
+    return SimpleStore().GetMasterNode()
+
+
+def get_ganeti_node():
+    """Get the Ganeti node this service is running on
+
+    @returns: The domain of this node
+    """
+    return netutils.GetHostname().GetFqdn()
+
+
 class JobFileHandler(pyinotify.ProcessEvent):
     def __init__(self, logger, cluster_name):
         pyinotify.ProcessEvent.__init__(self)
@@ -197,10 +211,21 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.client = AMQPClient(hosts=settings.AMQP_HOSTS, confirm_buffer=25,
                                  max_retries=0, logger=logger)
 
-        handler_logger.info("Attempting to connect to RabbitMQ hosts")
+        logger.info("Attempting to connect to RabbitMQ hosts")
 
         self.client.connect()
-        handler_logger.info("Connected succesfully")
+        logger.info("Connected successfully")
+
+        self.ganeti_master = get_ganeti_master()
+        logger.debug("Ganeti Master Node: %s", self.ganeti_master)
+
+        self.ganeti_node = get_ganeti_node()
+        logger.debug("Current Ganeti Node: %s", self.ganeti_node)
+
+        # Check if this is the master node
+        logger.info("Checking if this is Ganeti Master of %s cluster: %s",
+                    self.cluster_name,
+                    "YES" if self.ganeti_master == self.ganeti_node else "NO")
 
         self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
@@ -269,11 +294,33 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 # so that the job can be retried if needed.
                 msg["job_fields"] = op.Serialize()["input"]
 
+            # Check if this is the master node. Only the master node should
+            # deliver messages to RabbitMQ.
+            current_master = get_ganeti_master()
+            if self.ganeti_master != current_master:
+                self.logger.warning("Ganeti Master changed! New Master: %s",
+                                    current_master)
+
+                if self.ganeti_node == current_master:
+                    self.logger.info("This node became Ganeti Master.")
+                else:
+                    self.logger.info("This node is not Ganeti Master.")
+
+                self.ganeti_master = current_master
+
             msg = json.dumps(msg)
+
+            if self.ganeti_node != self.ganeti_master:
+                self.logger.debug(
+                    "Ignoring msg for job: %s: %s. Reason: Not Master",
+                    job_id, op_id)
+                continue
 
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
-            # Send the message to RabbitMQ
+            # Send the message to RabbitMQ. Since the master node test and the
+            # message delivery isn't atomic, race conditions may occur. We can
+            # live with that.
             self.client.basic_publish(settings.EXCHANGE_GANETI,
                                       routekey,
                                       msg)

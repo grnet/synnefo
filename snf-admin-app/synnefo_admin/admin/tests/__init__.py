@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,3 +20,4 @@ from synnefo_admin.admin.tests.utils import *
 from synnefo_admin.admin.tests.users import *
 from synnefo_admin.admin.tests.projects import *
 from synnefo_admin.admin.tests.vms import *
+from synnefo_admin.admin.tests.templatetags import *

@@ -1,9 +1,9 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your application for project {{object.chain.realname}} has been denied.
+Dear {{ object.applicant.realname }},
 
+Your project application request ({{ object.chain.realname }}) has been denied.
 Comment:
-{{object.response}}
-
-{% endblock content %}
+{{ object.response }}
+{% endblock %}

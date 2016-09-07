@@ -201,12 +201,12 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                                  image=options.image,
                                  ssh_keys=options.ssh_keys,
                                  server_name=options.server_name)
+    if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.clone_repo(
             synnefo_repo=options.synnefo_repo,
             synnefo_branch=options.synnefo_branch,
             local_repo=options.local_repo,
             pull_request=options.pull_request)
-    if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_packages()
         if options.fetch_packages:
             dest = os.path.abspath(options.fetch_packages)

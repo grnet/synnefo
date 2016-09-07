@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ class GroupJSONView(AdminJSONView):
 JSON_CLASS = GroupJSONView
 
 
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     raise AdminHttp404("There are no actions for Groups")
 
 

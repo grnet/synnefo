@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,11 +37,9 @@ from astakos.im import settings
 from astakos.admin import stats
 from astakos.im.models import AstakosUser, get_latest_terms
 from astakos.im.auth import make_local_user
-from astakos.im import activation_backends
+from astakos.im import user_logic
 
 ADMIN_GROUPS = settings.ADMIN_API_PERMITTED_GROUPS
-
-activation_backend = activation_backends.get_backend()
 
 logger = logging.getLogger(__name__)
 
@@ -202,14 +200,14 @@ def users_create(request):
 
         user = AstakosUser.objects.get(pk=user.pk)
         code = user.verification_code
-        ver_res = activation_backend.handle_verification(user, code)
+        ver_res = user_logic.verify(user, code)
         if ver_res.is_error():
             raise Exception(ver_res.message)
 
         # in case of auto moderation user moderation is handled within the
         # verification process, no need to reapply moderation process
         if not user.moderated:
-            mod_res = activation_backend.handle_moderation(user, accept=True)
+            mod_res = user_logic.accept(user, accept=True, notify_user=False)
             if mod_res.is_error():
                 raise Exception(ver_res.message)
 
@@ -233,11 +231,11 @@ def user_action(request, user_id):
     logger.info('user_action: %s user: %s request: %s', admin_id, user_id, req)
     if 'activate' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
 
-        activation_backend.activate_user(user)
+        user_logic.activate(user)
 
         user = AstakosUser.objects.get(uuid=user_id)
         user_data = {
@@ -249,11 +247,11 @@ def user_action(request, user_id):
                                  content_type='application/json')
     if 'deactivate' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
 
-        activation_backend.deactivate_user(
+        user_logic.deactivate(
             user, reason=req['deactivate'].get('reason', None))
 
         user = AstakosUser.objects.get(uuid=user_id)
@@ -267,7 +265,7 @@ def user_action(request, user_id):
 
     if 'renewToken' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
         user.renew_token()
@@ -282,7 +280,7 @@ def user_action(request, user_id):
 
     if 'signTerms' in req:
         try:
-            user = AstakosUser.objects.get(uuid=user_id)
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
         except AstakosUser.DoesNotExist:
             raise faults.ItemNotFound("User not found")
         user.has_signed_terms = True
@@ -309,7 +307,7 @@ def user_update(request, user_id):
     user_data = req.get('user', {})
 
     try:
-        user = AstakosUser.objects.get(uuid=user_id)
+        user = AstakosUser.objects.select_for_update().get(uuid=user_id)
     except AstakosUser.DoesNotExist:
         raise faults.ItemNotFound("User not found")
 

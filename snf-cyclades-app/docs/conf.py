@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath('../'))
 from synnefo.versions.apps import __version__
 
 project = u'snf-cyclades-app'
-copyright = u'2012-2013, GRNET'
+copyright = u'2012-2016, GRNET'
 version = __version__
 release = __version__
 html_title = 'synnefo ' + version

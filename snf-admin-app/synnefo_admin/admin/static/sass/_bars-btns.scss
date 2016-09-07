@@ -167,7 +167,7 @@ and light gray font colors
 	}
 }
 
-.instructions .line-btn {
+ .line-btn {
     padding: 8px 10px;
     span {
         padding: 0 4px;
@@ -270,7 +270,7 @@ body .custom-buttons .extra-btn {
 	}
 }
 
-.show-hide-all {
+.btn-r {
 	float:right;
     em {
         font-style: normal;
@@ -415,17 +415,52 @@ table.dataTable tbody tr.selected .snf-checkbox-unchecked{
 table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
     display: none;
 }
-.show-hide-all.open .snf-font-arrow-down {
-    display: none;
-}
-.show-hide-all:not(.open) .snf-font-arrow-up {
+
+.line-btn.open .snf-angle-down, .line-btn.open .snf-font-arrow-down, {
     display: none;
 }
 
-.instructions .line-btn.open .snf-angle-down {
+.line-btn:not(.open) .snf-angle-up, .line-btn:not(.open) .snf-font-arrow-up {
     display: none;
 }
 
-.instructions .line-btn:not(.open) .snf-angle-up {
-    display: none;
+.wrap-btn-between-dls {
+    width: $component-offset-horizontal - 20;
+    margin: 15px 0 10px;
+}
+
+
+/*
+ * The classes below are used in buttons that their text changes when the state
+ * of another html change. Fox example, if the button toggles the visibility of
+ * an area, its text is different when the area is visible ("Hide") n when the
+ * area is hidden ("Show").
+ * HTML examples:
+ * <a class="txt">
+ *  <span class="txt-close">Show</span>
+ *  <span class="txt-open">Hide</span>
+ * </a>
+ * <a class="txt">
+ *  <span class="txt-state-a">Do!</span>
+ *  <span class="txt-state-b">Undo!</span>
+ * </a>
+ * When the .txt element has the class open or state-b, the text in the element
+ * with the class .txt-open or with the .txt-state-b is visible.
+ * The names of the classes show the state of the element that the button effects.
+ */
+html body .txt {
+    .txt-close, .txt-state-a {
+        display: initial;
+    }
+    .txt-open, .txt-state-b {
+        display: none;
+    }
+    &.open, &.state-b {
+        .txt-close, .txt-state-a {
+            display: none;
+        }
+        .txt-open, .txt-state-b {
+            display: initial;
+        }
+    }
 }

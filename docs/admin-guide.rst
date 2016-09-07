@@ -430,6 +430,22 @@ add up quota from different projects. Note also that if allocating an entity
 requires multiple resources (e.g. cpu and ram for a Cyclades VM) these must
 be all assigned to a single project.
 
+Reclaiming resources
+````````````````````
+
+When a project is deactivated or a user is removed from a project, the quota
+that have been granted to the user are revoked. If the user still owns
+resources assigned to the project, the user quota appear overlimit on that
+project. The services are responsible to inspect the overquota state of
+users and reclaim their resources. For instance, cyclades provides
+the management command ``enforce-resources-cyclades`` to reclaim VMs,
+volumes, and floating IPs.
+
+When a user is deactivated, their system project, owned projects and project
+memberships are suspended. Subsequently, the user's resources can be
+reclaimed as explained above.
+
+
 Control projects
 ````````````````
 
@@ -1461,20 +1477,30 @@ quota limits, dependent on the overlimit resource:
 * `cyclades.cpu`: Shutdown VMs
 * `cyclades.total_ram`: Delete VMs
 * `cyclades.ram`: Shutdown VMs
-* `cyclades.disk`: Delete VMs
-* `cyclades.floating_ip`: Detach and remove IPs
+* `cyclades.disk`: Delete volumes (may also trigger VM deletion)
+* `cyclades.floating_ip`: Detach and delete IPs
 
 VMs to be deleted/shutdown are chosen first by state in the following order:
 ERROR, BUILD, STOPPED, STARTED or RESIZE and then by decreasing ID. When
 needing to remove IPs, we first choose IPs that are free, then those
 attached to VMs, using the same VM ordering.
 
-By default, the command checks only the following resources: `cyclades.cpu`,
-`cyclades.ram`, and `cyclades.floating_ip`; that is, the less dangerous
-ones, those that do not result in *deleting* any VM. One can change the
-default behavior by specifying the desired resources with option
-``--resources``. It is also possible to specify users to be checked or
-excluded.
+You need to specify the resources to be checked, using the option
+``--resources``. A safe first attempt would be to specify
+``cyclades.cpu,cyclades.ram``, that is, to check the less dangerous resources,
+those that do not result in *deleting* any VM, volume, or IP.
+
+If you want to handle overlimit quota in a safer way for resources that
+would normally trigger a deletion, you can use the option
+``--soft-resources``. Enforcing e.g. `cyclades.vm` in a "soft" way will
+shutdown the VMs rather than deleting them. This is useful as an initial
+warning for a user who is overquota; but notice that the user may restart
+their shutdown VMs, if the resources that control starting VMs allows them
+to do so.
+
+With option ``--list-resources`` you can inspect the available resources
+along with the related standard and soft enforce actions. It is also
+possible to specify users and projects to be checked or excluded.
 
 Actual enforcement is done with option ``--fix``. In order to control the
 load that quota enforcement may cause on Cyclades, one can limit the number
@@ -3051,6 +3077,7 @@ Upgrade Notes
    v0.15 -> v0.16 <upgrade/upgrade-0.16>
    v0.16.1 -> v0.16.2 <upgrade/upgrade-0.16.2>
    v0.16.2 -> v0.17 <upgrade/upgrade-0.17>
+   v0.17 -> v0.18 <upgrade/upgrade-0.18>
 
 
 .. _changelog-news:
@@ -3059,6 +3086,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.18 :ref:`Changelog <Changelog-0.18>`, :ref:`NEWS <NEWS-0.18>`
 * v0.17 :ref:`Changelog <Changelog-0.17>`, :ref:`NEWS <NEWS-0.17>`
 * v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`

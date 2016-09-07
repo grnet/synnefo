@@ -1,17 +1,19 @@
 snf = {
 	filters: {},
 	modals: {
-		performAction: function(modal, notificationArea, warningMsg, itemsCount, countAction) {
+		performAction: function(modal, notificationArea, warningMsg, itemsData, itemsCount, countAction) {
 			var $modal = $(modal);
 			var $notificationArea = $(notificationArea);
 			var $actionBtn = $modal.find('.apply-action')
 			var url = $actionBtn.attr('data-url');
 			var actionName = $actionBtn.find('span').text();
 			var logID = 'action-'+countAction;
+			var items = JSON.stringify(itemsData);
+
 			var data = {
 				op: $actionBtn.attr('data-op'),
 				target: $actionBtn.attr('data-target'),
-				ids: $actionBtn.attr('data-ids')
+				items: items
 			}
 			var contactAction = (data.op === 'contact' ? true : false);
 
@@ -128,7 +130,7 @@ snf = {
 
             var chunks = email.split(" ");
             if (chunks.length == 1) {
-		        return (reg.test(email) || lt_gt_reg.test(email))
+		        return (reg.test(email) || lt_gt_reg.test(email));
             } else {
                 chunk = chunks[chunks.length - 1];
                 return lt_gt_reg.test(chunk);
@@ -162,6 +164,23 @@ snf = {
 			}
 			return noError;
 		},
+    toggleEmailErrorSign: function(el){
+      var val = el.val();
+      var errorSign = el.siblings('.error-sign');
+      var isValid = snf.modals.validateEmail(val);
+      if (!isValid) {
+        errorSign.show();
+      } else {
+        errorSign.hide();
+      }
+    },
+    validateModifyEmailForm: function(modal) {
+			var $modal = $(modal);
+		  $modal.find('.js-email').each(function(i, el){
+        snf.modals.toggleEmailErrorSign($(el));
+      });
+      return $modal.find('.error-sign:visible').length >0 ? false: true ;
+    },
 		resetInputs: function(modal) {
 			var $modal = $(modal);
 			$modal.find('input').each(function() {
@@ -173,40 +192,159 @@ snf = {
 			});
 		},
 		html: {
-			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
-			removeLogLine: '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
-			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
-			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
-			notifyError: '<div class="log"><%= logInfo %></div>',
-			notifyErrorSum: '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="error">failed</b>.<%= removeBtn %></p>',
-			notifyErrorDetails: '<dl class="dl-horizontal"><%= list %></dl>',
-			notifyErrorReason: '<dt>Reason:</dt><dd><%= description %></dd>',
-			notifyErrorIDs: '<dt>IDs:</dt><dd><%= ids %></dd>',
-			notifyRefreshPage: '<p class="warning">The data of the page maybe out of date. Refresh it, to update them.</p>',
-			notifyReloadTable: '<p class="warning">You may need to reload the table before making any new selections.<span class="wrap"><a class="clear-reload warning-btn">Clear selected and reload</a></span></p>',
-			warningDuplicates: '<p class="warning-duplicate">Duplicate accounts have been detected</p>',
-			commonRow:  '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="item-name"><%= itemName %></td><td class="item-id"><%= itemID %></td><td class="owner-name"><%= ownerName %></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= ownerEmail %></div></td></tr>',
-			contactRow: '<tr <% if(showAssociations) { %> title="related with: <%= associations %>" <% } %> data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= email %></div></td></tr>'
+			singleItemInfo:
+			'<dl class="dl-horizontal info-list" data-itemid=<%= id %>> \
+				<dt>Name:</dt><dd><%= name %></dd> \
+				<dt>ID:</dt><dd><%= id %></dd> \
+			<dl>',
+			singleItemInfoWithEmailInput:
+			'<dl class="dl-horizontal info-list" data-itemid=<%= id %>> \
+				<dt>Name:</dt><dd><%= name %></dd> \
+				<dt>ID:</dt><dd><%= id %></dd> \
+			</dl> \
+			<dl class="dl-horizontal info-list with-inputs"> \
+				<dt>New e-mail:</dt> \
+				<dd> \
+					<input placeholder="new e-mail" class="new-email js-email" name=<%= inputName %>> \
+					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
+				</dd> \
+			</dl>',
+			removeLogLine:
+			'<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
+			notifyPending:
+			'<p class="log" id="<%= logID %>"> \
+				<span class="pending state-icon snf-font-admin snf-exclamation-sign"></span> \
+				Action \
+				<b>"<%= actionName %>"</b> \
+				<% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is \
+				<b class="pending">pending.</b> \
+				<%= removeBtn %> \
+			</p>',
+			notifySuccess:
+			'<p class="log"> \
+				<span class="success state-icon snf-font-admin snf-ok"></span> \
+				Action \
+				<b>"<%= actionName %>"</b> \
+				<% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> \
+				<b class="succeed">succeeded.</b> \
+				<%= removeBtn %> \
+			</p>',
+			notifyError:
+			'<div class="log"><%= logInfo %></div>',
+			notifyErrorSum:
+			'<p> \
+				<span class="error state-icon snf-font-admin snf-remove"></span> \
+				Action \
+				<b>"<%= actionName %>"</b> \
+				<% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> \
+				<b class="error">failed.</b> \
+				<%= removeBtn %></p>',
+			notifyErrorDetails:
+			'<dl class="dl-horizontal"><%= list %></dl>',
+			notifyErrorReason:
+			'<dt>Reason:</dt><dd><%= description %></dd>',
+			notifyErrorIDs:
+			'<dt>IDs:</dt><dd><%= ids %></dd>',
+			notifyRefreshPage:
+			'<p class="warning">The data of the page maybe out of date. Refresh it, to update them.</p>',
+			notifyReloadTable:
+			'<p class="warning"> \
+				You may need to reload the table before making any new selections. \
+				<span class="wrap"> \
+					<a class="clear-reload warning-btn">Clear selected and reload</a> \
+				</span> \
+			</p>',
+			warningDuplicates:
+			'<p class="warning-duplicate">Duplicate accounts have been detected.</p>',
+			commonRow:
+			'<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> > \
+				<td class="item-name"><%= itemName %></td> \
+				<td class="item-id"><%= itemID %></td> \
+				<td class="owner-name"><%= ownerName %></td> \
+				<td class="owner-email"> \
+					<div class="wrap"> \
+						<a class="remove" title="Remove item from selection">X</a> \
+						<%= ownerEmail %> \
+					</div> \
+				</td> \
+			</tr>',
+			contactRow:
+			'<tr <% if(showAssociations) { %> title="related with: <%= associations %>" <% } %> data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> > \
+				<td class="full-name"><%= fullName %></td> \
+				<td class="email"> \
+					<div class="wrap"> \
+						<a class="remove" title="Remove item from selection">X</a> \
+						<%= email %> \
+					</div> \
+				</td> \
+			</tr>',
+			modifyEmailRow:
+			'<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> > \
+				<td class="full-name"><%= fullName %></td> \
+				<td class="item-id"><%= itemID %></td> \
+				<td class="email"> \
+					<div class="wrap"><%= email %></div> \
+				</td> \
+				<td class="wrap td-with-input"> \
+					<input placeholder="new e-mail" class="new-email js-email" name=<%= inputName %>> \
+					<a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e&#8209mail address."></a> \
+					<a class="remove" title="Remove item from selection">X</a></td></tr>',
+
 		}
 	},
 	tables: {
 		html: {
-			selectAllBtn: '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>',
-			selectPageBtn: '<a href="" id="select-page" class="select line-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>',
-			toggleSelected: '<a href="" class="toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected </span><span class="badge num selected-num">0</span></a>',
-			reloadTable: '<a href="" class="line-btn reload-table" data-karma="neutral" data-caution="none" title="Reload table"><span class="snf-font-reload"></span></a>',
-			clearSelected: '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span class="snf-font-remove"></span><span>Clear All</span></a>',
-			toggleNotifications: '',
-			showTips: '',
-			trimedCell: '<span title="click to see"><span data-container="body" data-toggle="popover" data-placement="bottom" data-content="<%= data %>"><%= trimmedData %>...</span></span>',
-			checkboxCell: '<span class="snf-checkbox-unchecked selection-indicator select"></span><span class="snf-checkbox-checked selection-indicator select"></span><%= content %>',
-			summary: '<a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal"><%= list %></dl>',
-			summaryLine: '<dt><%= key %></dt><dd><%= value %></dd>',
-			detailsBtn: '<a title="Details" href="<%= url %>" class="details-link"><span class="snf-font-admin snf-search"></span></a>'
+			selectAllBtn:
+			'<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"> \
+				<span>Select All</span> \
+			</a>',
+			selectPageBtn:
+			'<a href="" id="select-page" class="select line-btn txt" data-karma="neutral" data-caution="none"> \
+				<span class="txt-state-a">Select Page</span> \
+				<span class="txt-state-b">Deselect Page</span> \
+			</a>',
+			toggleSelected:
+			'<a href="" class="toggle-selected extra-btn line-btn txt" data-karma="neutral txt"> \
+				<span class="txt-close">Show selected</span> \
+				<span class="txt-open">Hide selected</span> \
+				<span class="badge num selected-num">0</span> \
+			</a>',
+			reloadTable:
+			'<a href="" class="line-btn reload-table" data-karma="neutral" data-caution="none" title="Reload table"> \
+				<span class="snf-font-reload"></span> \
+			</a>',
+			clearSelected:
+			'<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"> \
+				<span class="snf-font-remove"></span> \
+				<span>Clear All</span> \
+			</a>',
+			toggleNotifications:
+			'',
+			showTips:
+			'',
+			trimedCell:
+			'<span title="click to see"> \
+				<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="<%= data %>"><%= trimmedData %>...</span> \
+			</span>',
+			checkboxCell:
+			'<span class="snf-checkbox-unchecked selection-indicator select"></span> \
+			<span class="snf-checkbox-checked selection-indicator select"></span> \
+			<%= content %>',
+			summary:
+			'<a title="Show summary" href="#" class="summary-expand expand-area"> \
+				<span class="snf-font-admin snf-angle-down"></span> \
+			</a> \
+			<dl class="info-summary dl-horizontal"><%= list %></dl>',
+			summaryLine:
+			'<dt><%= key %></dt><dd><%= value %></dd>',
+			detailsBtn:
+			'<a title="Details" href="<%= url %>" class="details-link"> \
+				<span class="snf-font-admin snf-search"></span> \
+			</a>'
 		}
 	},
 	timer: 0,
-	ajaxdelay: 400
+	ajaxdelay: 400,
 };
 
 function setThemeIcon() {
@@ -323,3 +461,9 @@ $(document).ready(function(){
         }
     });
 });
+
+$('.modal').on('focusout', '.js-email', function(e){
+  var el = $(this);
+  snf.modals.toggleEmailErrorSign(el);
+});
+

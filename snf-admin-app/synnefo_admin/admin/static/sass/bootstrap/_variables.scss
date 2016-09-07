@@ -622,11 +622,13 @@ $label-info-bg:               $brand-info !default;
 $label-warning-bg:            $brand-warning !default;
 //** Danger label background color
 $label-danger-bg:             $brand-danger !default;
+$label-almost-white-bg:       $almost-white;
 
 //** Default label text color
 $label-color:                 $gray-dark !default;
 //** Default text color of a linked label
 $label-link-hover-color:      #fff;
+$label-grey-color:            $snf_gray-light;
 
 
 //== Modals
@@ -902,4 +904,5 @@ $page-header-border-color:    $gray-lighter !default;
 $hr-border:                   $gray-lighter !default;
 
 //** Horizontal offset for forms and lists.
-$component-offset-horizontal: 180px !default;
+// $component-offset-horizontal: 180px !default;
+$component-offset-horizontal: 210px;

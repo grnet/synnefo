@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from astakosclient.version import __version__
 
 project = u'nnefo'
-copyright = u'2012-2013, GRNET'
+copyright = u'2012-2016, GRNET'
 version = __version__
 release = __version__
 html_title = 'synnefo ' + version

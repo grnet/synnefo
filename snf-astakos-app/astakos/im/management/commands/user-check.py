@@ -23,6 +23,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import AstakosUser
 from astakos.im import functions, activation_backends
+from django.conf import settings
 
 SUSPENSION_REASON = activation_backends.PROJECT_SUSPENSION_REASON
 
@@ -44,6 +45,10 @@ class Command(SynnefoCommand):
                     action="store_true",
                     default=False,
                     help="Apply actions"),
+        make_option('--noemail',
+                    action="store_true",
+                    default=False,
+                    help="Don't send email to affected users"),
     )
 
     def get_user(self, query, userid):
@@ -63,6 +68,10 @@ class Command(SynnefoCommand):
                                 "or a valid user UUID"))
 
     def handle(self, *args, **options):
+        if options["noemail"]:
+            settings.EMAIL_BACKEND = \
+                "django.core.mail.backends.dummy.EmailBackend"
+
         fix = options["fix"]
         all_users = options["all_users"]
         if not (all_users ^ bool(args)):

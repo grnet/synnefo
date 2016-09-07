@@ -954,7 +954,7 @@ class IPAddressLog(models.Model):
 
     def __unicode__(self):
         return u"<Address: %s, Server: %s, Network: %s, Allocated at: %s>"\
-               % (self.address, self.network_id, self.server_id,
+               % (self.address, self.server_id, self.network_id,
                   self.allocated_at)
 
 

@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your project {{object.realname}} has been suspended.
-{% endblock content %}
+Dear {{ object.owner.realname }},
+
+Your project ({{ object.name }}) has been suspended.
+{% endblock %}

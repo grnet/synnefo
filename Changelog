@@ -52,13 +52,12 @@ CI
 --
 * Target Debian Jessie as CI base platform.
 
+.. _Changelog-0.18:
 
-.. _Changelog-0.17next:
+v0.18
+========
 
-v0.17next
-=========
-
-Released: UNRELEASED
+Released: Wed  7 Sep 16:50:30 EEST 2016
 
 Astakos
 -------
@@ -74,6 +73,7 @@ Astakos
   deactivated users.
 * Send an informative email to the user's current email address when they
   request to change their email.
+* Add option to control whether to send e-mail to the user when suspending them
 
 Cyclades
 --------
@@ -101,6 +101,10 @@ Admin
   pending verification', 'e-mail change requested at', 'initially accepted
   e-mail'
 
+Pithos
+------
+
+* Optimize object latest listing query
 
 .. _Changelog-0.17:
 

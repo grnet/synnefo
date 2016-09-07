@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your application for project {{object.chain.realname}} has been approved.
-{% endblock  %}
+Dear {{ object.applicant.realname }},
+
+Your project application request ({{ object.chain.realname }}) has been approved.
+{% endblock %}

@@ -3,7 +3,8 @@
 {% block content %}
 Dear {{ user.realname }},
 
-Your account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} has been activated.
+Your account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} service has been activated.
 
-To login, please use the link: {{ url }}
+To login, please use the link:
+{{ url }}
 {% endblock %}

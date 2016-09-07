@@ -1,5 +1,7 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-User {{user}} requests to leave project {{object.name}}.
+Dear {{ object.owner.realname }},
+
+User {{ user }} requests to leave project {{ object.name }}.
 {% endblock content %}

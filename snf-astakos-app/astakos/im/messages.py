@@ -343,6 +343,7 @@ HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
     '%s account activated (%%(user)s)' % _SITENAME
 EMAIL_CHANGE_NEW_EMAIL_SUBJECT = '%s e-mail change notification' % _SITENAME
 EMAIL_CHANGE_OLD_EMAIL_SUBJECT = '%s e-mail change notification' % _SITENAME
+EMAIL_ADMIN_APPLICATION_APPROVED = "%s project application approved ({0})" % _SITENAME
 PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % _SITENAME
 PROJECT_CREATION_SUBJECT = \
     '%s application for a new project created (%%s)' % _SITENAME

@@ -8,35 +8,10 @@ repository and have aligned versions.
 
 .. _Changelog-0.18:
 
-v0.18rc3
+v0.18
 ========
 
-Released: UNRELEASED
-
-Cyclades
---------
-
-* Fix minor logging issues
-
-Astakos
--------
-
-* Add option to control whether to send e-mail to the user when suspending them
-
-v0.18rc2
-========
-
-Released: UNRELEASED
-
-Documentation
--------------
-
-* Reword Administrator's guide
-
-v0.18rc1
-========
-
-Released: UNRELEASED
+Released: Wed  7 Sep 16:50:30 EEST 2016
 
 Astakos
 -------
@@ -52,6 +27,7 @@ Astakos
   deactivated users.
 * Send an informative email to the user's current email address when they
   request to change their email.
+* Add option to control whether to send e-mail to the user when suspending them
 
 Cyclades
 --------

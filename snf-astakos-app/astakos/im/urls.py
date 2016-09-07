@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -114,16 +114,18 @@ urlpatterns = patterns(
 
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},
         name='remove_auth_provider'),
+
+    url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email',
+        {}, name='email_change_confirm'),
+
 )
 
 
 if settings.EMAILCHANGE_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
-        url(r'^email_change/?$', 'change_email', {}, name='email_change'),
-        url(r'^email_change/confirm/(?P<activation_key>\w+)/?$',
-            'change_email', {},
-            name='email_change_confirm'))
+        url(r'^email_change/?$', 'request_change_email', {},
+            name='request_email_change'))
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(

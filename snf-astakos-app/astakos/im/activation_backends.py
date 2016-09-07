@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,10 @@ import re
 import json
 
 logger = logging.getLogger(__name__)
+
+
+PROJECT_SUSPENSION_REASON = "user_deactivation"
+PROJECT_UNSUSPENSION_REASON = "user_reactivation"
 
 
 def get_backend():
@@ -353,10 +357,16 @@ class ActivationBackend(object):
         if not ok:
             return ActivationResult(self.Result.ERROR, msg)
 
+        was_deactivated = bool(user.deactivated_at)
         user.is_active = True
         user.deactivated_reason = None
         user.deactivated_at = None
         user.save()
+
+        if was_deactivated:
+            functions.unsuspend_user_projects(
+                user, reason=PROJECT_UNSUSPENSION_REASON,
+                condition=PROJECT_SUSPENSION_REASON)
         logger.info("User activated: %s", user.log_display)
         return ActivationResult(self.Result.ACTIVATED)
 
@@ -370,6 +380,7 @@ class ActivationBackend(object):
         user.is_active = False
         user.deactivated_reason = reason
         user.save()
+        functions.suspend_user_projects(user, reason=PROJECT_SUSPENSION_REASON)
         logger.info("User deactivated: %s", user.log_display)
         return ActivationResult(self.Result.DEACTIVATED)
 

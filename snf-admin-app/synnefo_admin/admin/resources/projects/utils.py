@@ -14,8 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
-
+from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 
 from astakos.im.models import Project
@@ -23,7 +22,7 @@ from astakos.im.quotas import get_project_quota
 
 from synnefo.util import units
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import is_resource_useful, create_details_href
 
 
 def get_actual_owner(inst):
@@ -35,17 +34,20 @@ def get_actual_owner(inst):
         return None
 
 
-def get_project_or_404(query):
-    # Get by UUID
-    try:
-        return Project.objects.get(uuid=query)
-    except ObjectDoesNotExist:
-        pass
+def get_project_or_404(query, for_update=False):
+    project_obj = Project.objects.select_for_update() if for_update\
+        else Project.objects
 
-    # Get by ID
+    if isinstance(query, basestring):
+        q = Q(id=int(query)) if query.isdigit() else Q(uuid=query)
+    elif isinstance(query, int) or isinstance(query, long):
+        q = Q(id=int(query))
+    else:
+        raise TypeError("Unexpected type of query")
+
     try:
-        return Project.objects.get(id=query)
-    except (ObjectDoesNotExist, ValueError):
+        return project_obj.get(q)
+    except ObjectDoesNotExist:
         raise AdminHttp404(
             "No Project was found that matches this query: %s\n" % query)
 
@@ -148,3 +150,10 @@ def display_project_limit_horizontally(inst):
     """Display project resources (member or total) in one line."""
     resource_list = get_project_quota_category(inst, "limit")
     return display_quota_horizontally(resource_list)
+
+def get_user_details_href(inst):
+    owner = get_actual_owner(inst)
+    if owner:
+        return create_details_href('user', owner.realname, owner.email, owner.uuid)
+    else:
+        return 'None'

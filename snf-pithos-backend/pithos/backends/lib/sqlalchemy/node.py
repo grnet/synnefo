@@ -1362,32 +1362,48 @@ class Node(DBWorker):
         pappend = prefixes.append
         matches = []
         mappend = matches.append
+        skip_prefix = None
+        one_more = False
 
         rp = self.conn.execute(s, start=start)
-        while True:
-            props = rp.fetchone()
-            if props is None:
-                break
-            path = props[0]
-            idx = path.find(delimiter, pfz)
 
-            if idx < 0:
+        while count < limit or one_more:
+            props_many = rp.fetchmany(10000)
+            if not props_many:
+                break
+
+            for props in props_many:
+                path = props[0]
+
+                if skip_prefix is not None:
+                    if path.startswith(skip_prefix):
+                        continue
+                    skip_prefix = None
+
+                idx = path.find(delimiter, pfz)
+
+                if one_more:
+                    one_more = False
+                    if idx > 0 and idx + dz != len(path):
+                        pf = path[:idx + dz]
+                        pappend(pf)
+                    break
+
+                if idx > 0 and idx + dz != len(path):
+                    pf = path[:idx + dz]
+                    pappend(pf)
+                    skip_prefix = pf
+                    continue
+
                 mappend(props)
                 count += 1
                 if count >= limit:
-                    break
-                continue
+                    if idx + dz == len(path):
+                        # Get one more, in case there is a path.
+                        one_more = True
+                    else:
+                        break
 
-            if idx + dz == len(path):
-                mappend(props)
-                count += 1
-                continue  # Get one more, in case there is a path.
-            pf = path[:idx + dz]
-            pappend(pf)
-            if count >= limit:
-                break
-
-            rp = self.conn.execute(s, start=strnextling(pf))  # New start.
         rp.close()
 
         return matches, prefixes

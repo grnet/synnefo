@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import importlib
 import logging
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -29,10 +30,19 @@ import synnefo.util.date as date_util
 from astakos.im.models import AstakosUser, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock, \
     create_project, ProjectResourceQuota, ProjectResourceGrant
+from astakos.im import settings
 from astakos.im import quotas
 from astakos.im import project_notif
 
 import astakos.im.messages as astakos_messages
+
+QUOTA_POLICY = settings.QUOTA_POLICY_MODULE
+if QUOTA_POLICY is not None:
+    try:
+        QUOTA_POLICY = importlib.import_module(QUOTA_POLICY)
+    except ImportError:
+        QUOTA_POLICY = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +261,8 @@ def accept_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("accept", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'ACCEPT')
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
 
@@ -322,10 +334,64 @@ def remove_membership(memb_id, request_user=None, reason=None):
     user = membership.person
     membership.perform_action("remove", actor=request_user, reason=reason)
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'REMOVE')
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
 
     project_notif.membership_change_notify(project, user, 'removed')
+    return membership
+
+
+def suspend_membership_checks(membership, request_user=None):
+    if not membership.check_action("suspend"):
+        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
+        raise ProjectConflict(m)
+
+    project = membership.project
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
+    checkAlive(project)
+
+
+def suspend_membership(memb_id, request_user=None, reason=None):
+    project = get_project_of_membership_for_update(memb_id)
+    membership = get_membership_by_id(memb_id)
+    suspend_membership_checks(membership, request_user)
+    user = membership.person
+    membership.perform_action("suspend", actor=request_user, reason=reason)
+    quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'SUSPEND')
+    logger.info("User %s has been suspended from %s." %
+                (user.log_display, project))
+
+    project_notif.membership_change_notify(project, user, 'suspended')
+    return membership
+
+
+def unsuspend_membership_checks(membership, request_user=None):
+    if not membership.check_action("unsuspend"):
+        m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
+        raise ProjectConflict(m)
+
+    project = membership.project
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
+    checkAlive(project)
+
+
+def unsuspend_membership(memb_id, request_user=None, reason=None):
+    project = get_project_of_membership_for_update(memb_id)
+    membership = get_membership_by_id(memb_id)
+    unsuspend_membership_checks(membership, request_user)
+    user = membership.person
+    membership.perform_action("unsuspend", actor=request_user, reason=reason)
+    quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'UNSUSPEND')
+    logger.info("User %s has been unsuspended from %s." %
+                (user.log_display, project))
+
+    project_notif.membership_change_notify(project, user, 'unsuspended')
     return membership
 
 
@@ -355,6 +421,8 @@ def enroll_member(project_id, user, request_user=None, reason=None):
                                     enroll=True)
 
     quotas.qh_sync_membership(membership)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_membership(membership, 'ENROLL')
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
@@ -405,6 +473,8 @@ def leave_project(memb_id, request_user, reason=None):
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.perform_action("remove", actor=request_user, reason=reason)
         quotas.qh_sync_membership(membership)
+        if QUOTA_POLICY:
+            QUOTA_POLICY.check_state_membership(membership, 'LEAVE')
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
@@ -471,6 +541,8 @@ def join_project(project_id, request_user, reason=None):
             not project.violates_members_limit(adding=1))):
         membership.perform_action("accept", actor=request_user, reason=reason)
         quotas.qh_sync_membership(membership)
+        if QUOTA_POLICY:
+            QUOTA_POLICY.check_state_membership(membership, 'JOIN')
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
     else:
@@ -613,6 +685,8 @@ def _modify_projects(projects, request):
         filter(project__in=projects, resource__in=changed_resources).delete()
     ProjectResourceQuota.objects.bulk_create(pquotas)
     quotas.qh_sync_projects(projects)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects(projects, 'MODIFY')
 
 
 MAX_TEXT_INPUT = 4096
@@ -919,6 +993,7 @@ def approve_application(application_id, project_id=None, request_user=None,
     application = get_application(application_id)
     check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=ADMIN_LEVEL)
+    previous_state = project.state_display()
 
     if not application.can_approve():
         m = _(astakos_messages.APPLICATION_CANNOT_APPROVE %
@@ -938,6 +1013,10 @@ def approve_application(application_id, project_id=None, request_user=None,
     project.activate(actor=request_user, reason=reason)
 
     quotas.qh_sync_project(project)
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects([project], 'MODIFY')
+
+    project_notif.application_approved_admins_notify(application, previous_state)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
     return project
@@ -1098,46 +1177,159 @@ def validate_project_action(project, action, request_user=None, silent=True):
     return True, None
 
 
-def terminate(project_id, request_user=None, reason=None):
+def _perform_action_project(project_id, action, request_user, reason):
+    """
+    This method performs an action regarding to a specific project, e.g. project
+    termination, etc.
+
+    Args:
+        project_id: ID of project.
+        action: Action to be performed on project.
+        request_user: User who's performing action.
+        reason: Reason of action.
+
+    Returns:
+        Project in which a user performed an action.
+    """
     project = get_project_for_update(project_id)
-    validate_project_action(project, "TERMINATE", request_user, silent=False)
+    action_methods = {
+        'TERMINATE': project.terminate,
+        'SUSPEND': project.suspend,
+        'UNSUSPEND': project.resume,
+        'REINSTATE': project.resume,
+    }
 
-    project.terminate(actor=request_user, reason=reason)
+    validate_project_action(project, action, request_user, silent=False)
+    action_methods[action](actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
-    logger.info("%s has been terminated." % (project))
+    if QUOTA_POLICY:
+        QUOTA_POLICY.check_state_projects([project], action)
+    project_notif.project_notify(project, action.lower())
+    return project
 
-    project_notif.project_notify(project, "terminate")
+
+def terminate(project_id, request_user=None, reason=None):
+    project = _perform_action_project(
+        project_id, 'TERMINATE', request_user, reason)
+    logger.info("%s has been terminated." % (project))
 
 
 def suspend(project_id, request_user=None, reason=None):
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "SUSPEND", request_user, silent=False)
-
-    project.suspend(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'SUSPEND', request_user, reason)
     logger.info("%s has been suspended." % (project))
-
-    project_notif.project_notify(project, "suspend")
 
 
 def unsuspend(project_id, request_user=None, reason=None):
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "UNSUSPEND", request_user, silent=False)
-
-    project.resume(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'UNSUSPEND', request_user, reason)
     logger.info("%s has been unsuspended." % (project))
-    project_notif.project_notify(project, "unsuspend")
 
 
 def reinstate(project_id, request_user=None, reason=None):
-    get_project_lock()
-    project = get_project_for_update(project_id)
-    validate_project_action(project, "REINSTATE", request_user, silent=False)
-    project.resume(actor=request_user, reason=reason)
-    quotas.qh_sync_project(project)
+    project = _perform_action_project(
+        project_id, 'REINSTATE', request_user, reason)
     logger.info("%s has been reinstated" % (project))
-    project_notif.project_notify(project, "reinstate")
+
+
+def _get_base_projects(user_ids):
+    base_projects = Project.objects.filter(base_user__in=user_ids)
+    return {p.id: p for p in base_projects}
+
+
+def _get_memberships(user_ids):
+    ms = ProjectMembership.objects.actually_accepted().\
+        filter(person__in=user_ids)
+    return _partition_by(lambda m: m.person_id, ms)
+
+
+def _get_owned_projects(user_ids):
+    ps = Project.objects.filter(state=Project.NORMAL, owner__in=user_ids)
+    return _partition_by(lambda p: p.owner_id, ps)
+
+
+def suspend_users_projects(users, request_user=None, reason=None, fix=True):
+    affected_users = []
+    user_ids = [user.id for user in users]
+    if not user_ids:
+        return affected_users
+
+    base_projects_d = _get_base_projects(user_ids)
+    memberships_d = _get_memberships(user_ids)
+    owned_projects_d = _get_owned_projects(user_ids)
+
+    for user in users:
+        is_affected = False
+        base_project = base_projects_d[user.base_project_id]
+        if base_project.state == Project.NORMAL:
+            try:
+                if fix:
+                    suspend(user.base_project_id,
+                            request_user=request_user, reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+        memberships = memberships_d.get(user.id, [])
+        for membership in memberships:
+            try:
+                if fix:
+                    suspend_membership(
+                        membership.id, request_user=request_user,
+                        reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+
+        owned_projects = owned_projects_d.get(user.id, [])
+        for project in owned_projects:
+            try:
+                if fix:
+                    suspend(
+                        project.id, request_user=request_user, reason=reason)
+                is_affected = True
+            except ProjectError:
+                pass
+        if is_affected:
+            affected_users.append(user)
+    return affected_users
+
+
+def suspend_user_projects(user, request_user=None, reason=None):
+    return suspend_users_projects(
+        [user], request_user=request_user, reason=reason)
+
+
+def unsuspend_project_on_condition(project, request_user=None, reason=None,
+                                   condition=None):
+    last_deactivation = project.last_deactivation()
+    if last_deactivation is not None and last_deactivation.reason == condition:
+        unsuspend(project.id, request_user=request_user, reason=reason)
+
+
+def unsuspend_membership_on_condition(membership, request_user=None,
+                                      reason=None, condition=None):
+    last_suspension = membership.latest_log().get(
+        ProjectMembership.USER_SUSPENDED)
+    if last_suspension is not None and last_suspension.reason == condition:
+        unsuspend_membership(membership.id, request_user=request_user,
+                             reason=reason)
+
+
+def unsuspend_user_projects(user, request_user=None, reason=None,
+                            condition=None):
+    base_project = user.base_project
+    if base_project.is_suspended:
+        unsuspend_project_on_condition(
+            base_project, request_user, reason, condition)
+    memberships = user.projectmembership_set.filter(
+        state=ProjectMembership.USER_SUSPENDED)
+    for membership in memberships:
+        unsuspend_membership_on_condition(
+            membership, request_user, reason, condition)
+    owned_projects = user.projs_owned.filter(state=Project.SUSPENDED)
+    for project in owned_projects:
+        unsuspend_project_on_condition(
+            project, request_user, reason, condition)
 
 
 def _partition_by(f, l):

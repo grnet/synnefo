@@ -24,3 +24,4 @@ from astakos.im.tests.user_utils import *
 from astakos.im.tests.management import (TestUserModification,
                                          TestSendUserActivation)
 from astakos.im.tests.transactions import *
+from astakos.im.tests.forms import *

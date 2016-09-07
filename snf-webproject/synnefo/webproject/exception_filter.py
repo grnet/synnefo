@@ -16,7 +16,9 @@
 from django.conf import settings
 from django.views.debug import SafeExceptionReporterFilter
 from django.http import HttpRequest, build_request_repr
+from synnefo.webproject.cleanse_utils import cleanse_request
 
+HIDDEN_COOKIES = settings.HIDDEN_COOKIES
 HIDDEN_ALL = settings.HIDDEN_COOKIES + settings.HIDDEN_HEADERS
 CLEANSED_SUBSTITUTE = u'********************'
 
@@ -68,16 +70,6 @@ class SynnefoExceptionReporterFilter(SafeExceptionReporterFilter):
             return _repr[:settings.MAIL_MAX_LEN]
 
     def build_request_repr(self, request):
-        cleansed = {}
-        for fields in ["GET", "POST", "COOKIES", "META"]:
-            _cleansed = getattr(request, fields).copy()
-            for key in _cleansed.keys():
-                for hidden in HIDDEN_ALL:
-                    if hidden in key:
-                        _cleansed[key] = CLEANSED_SUBSTITUTE
-            cleansed[fields] = _cleansed
-        return build_request_repr(request,
-                                  GET_override=cleansed["GET"],
-                                  POST_override=cleansed["POST"],
-                                  COOKIES_override=cleansed["COOKIES"],
-                                  META_override=cleansed["META"])
+        cleansed_request = cleanse_request(request, HIDDEN_COOKIES,
+                                           HIDDEN_ALL)
+        return build_request_repr(cleansed_request)

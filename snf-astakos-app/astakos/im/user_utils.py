@@ -14,16 +14,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import hashlib
+import urlparse
+from random import random
+
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.utils.translation import ugettext as _
+from django.core.exceptions import ValidationError
+from django.utils.encoding import smart_str
+
 
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 
 from astakos.im import settings
-from astakos.im.models import Invitation
+from astakos.im.models import Invitation, EmailChange, AstakosUser
+from astakos.im.fields import validate_email
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
@@ -197,17 +205,52 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
 
 
-def send_change_email(ec, request, email_template_name=(
-                      'registration/email_change_email.txt')):
+def change_user_email(user, new_email,
+                 email_to_new_template_name='registration/email_change_email_new_email.txt',
+                 email_to_old_template_name='registration/email_change_email_old_email.txt'):
+
+    validate_email(new_email)
+
+    if AstakosUser.objects.verified_user_exists(new_email):
+        raise ValidationError(_(astakos_messages.EMAIL_USED))
+
+    activation_key = hashlib.sha1(
+        str(random()) + smart_str(new_email)
+    ).hexdigest()
+
+    user.emailchanges.all().delete()
+    email_change = EmailChange.objects.create(
+        user=user,
+        new_email_address=new_email,
+        activation_key=activation_key
+    )
+
+    send_change_email_to_new(email_change, email_to_new_template_name)
+    send_change_email_to_old(email_change, email_to_old_template_name)
+
+    return email_change
+
+
+def send_change_email_to_new(ec, email_template_name=(
+                      'registration/email_change_email_new_email.txt')):
     url = ec.get_url()
-    url = request.build_absolute_uri(url)
+    url = urlparse.urljoin(settings.BASE_URL, url)
     c = {'url': url,
          'support': settings.CONTACT_EMAIL,
          'ec': ec}
     message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
-    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
+    send_mail(_(astakos_messages.EMAIL_CHANGE_NEW_EMAIL_SUBJECT), message,
               from_email,
               [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s'
     logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
+
+def send_change_email_to_old(email_change,
+        email_template_name='registration/email_change_email_old_email.txt'):
+
+    message = render_to_string(email_template_name, {'ec': email_change})
+    from_email = settings.SERVER_EMAIL
+
+    send_mail(_(astakos_messages.EMAIL_CHANGE_OLD_EMAIL_SUBJECT), message,
+        from_email, [email_change.user.email], connection=get_connection())

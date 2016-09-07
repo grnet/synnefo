@@ -232,12 +232,12 @@ def send_admin_email(user, request):
                text=body)
 
 
-def create_details_href(type, name, id):
+def create_details_href(type, name, id, uuid=None):
     """Create an href (name + url) for an item."""
     name = escape(name)
     url = reverse('admin-details', args=[type, id])
     if type == 'user':
-        href = '<a href=%s>%s (%s)</a>' % (url, name, id)
+        href = '<a href=%s>%s | %s | %s </a>' % (url, uuid, name, id)
     elif type == 'ip':
         href = '<a href=%s>%s</a>' % (url, name)
     else:

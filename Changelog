@@ -6,6 +6,84 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.18:
+
+v0.18rc3
+========
+
+Released: UNRELEASED
+
+Cyclades
+--------
+
+* Fix minor logging issues
+
+Astakos
+-------
+
+* Add option to control whether to send e-mail to the user when suspending them
+
+v0.18rc2
+========
+
+Released: UNRELEASED
+
+Documentation
+-------------
+
+* Reword Administrator's guide
+
+v0.18rc1
+========
+
+Released: UNRELEASED
+
+Astakos
+-------
+
+* Introduce 'overquota' state on project memberships, which can be used by
+  third-party plugins in order to implement a quota reclamation policy.
+  Setting `QUOTA_POLICY_MODULE` specifies the plugin that updates the
+  overquota state on project actions.
+* Support suspending and unsuspending project memberships.
+* User deactivation now automatically suspends user's system project, owned
+  projects, and project memberships. Reactivation unsuspends them.
+* Add command `user-check`. It supports suspending projects for previously
+  deactivated users.
+* Send an informative email to the user's current email address when they
+  request to change their email.
+
+Cyclades
+--------
+
+* Command `enforce-resources-cyclades` now provides an option to "soft"
+  enforce dangerous resources. There is now no default list of resources to
+  check; the administrator must provide one.
+* Make dispatcher use DISPATCHER_LOGGING_SETUP from synnefo settings to setup
+  its logging. Remove previous settings.
+* Add a raven processor to filter sensitive information sent to Sentry using
+  the Sentry logging handler.
+* Imporove SynnefoExceptionReporterFilter to better cleanse request body.
+* Make eventd detect Ganeti Master failovers and allow having multiple eventd
+  instances running in the Ganeti cluster.
+
+Admin
+-----
+
+* Add mechanism to generate css files on packaging
+* Improve the displayed data in the tables
+* Display more information regarding the enabled authentication providers
+* Display pending modifications of projects
+* Add the action 'modify user e-mail' in the Admin interface
+* Display data related with the modification of users' e-mails like 'e-mail
+  pending verification', 'e-mail change requested at', 'initially accepted
+  e-mail'
+
+Pithos
+------
+
+* Optimize object latest listing query
+
 .. _Changelog-0.17:
 
 v0.17

@@ -53,7 +53,6 @@ from synnefo.lib.amqp import AMQPClient, AMQPConnectionError
 from synnefo.logic import callbacks
 from synnefo.logic import queues
 from synnefo.db.models import Backend, pooled_rapi_client
-from synnefo import cyclades_settings
 
 import logging
 import select
@@ -482,24 +481,13 @@ def daemon_mode(opts):
 
 
 def setup_logging(opts):
-    import logging
-    formatter = logging.Formatter("%(asctime)s %(name)s %(module)s"
-                                  " [%(levelname)s] %(message)s")
-    if opts.debug or opts.status_check:
-        log_handler = logging.StreamHandler()
-        log_handler.setFormatter(formatter)
-    else:
-        import logging.handlers
-        log_file = "/var/log/synnefo/dispatcher.log"
-        log_handler = logging.handlers.WatchedFileHandler(log_file)
-        log_handler.setFormatter(formatter)
-
-    for l in LOGGERS:
-        l.addHandler(log_handler)
-
-    log.setLevel(cyclades_settings.DISPATCHER_LOGGING_LEVEL)
-    log_amqp.setLevel(cyclades_settings.AMQP_LOGGING_LEVEL)
-    log_logic.setLevel(cyclades_settings.LOGIC_LOGGING_LEVEL)
+    try:
+        from synnefo.lib.dictconfig import dictConfig
+        from synnefo.settings import DISPATCHER_LOGGING_SETUP
+        dictConfig(DISPATCHER_LOGGING_SETUP)
+    except ImportError:
+        sys.stderr.write("ERROR: Cannot import \'DISPATCHER_LOGGING_SETUP\'")
+        sys.exit(1)
 
 
 def main():
@@ -544,13 +532,19 @@ def main():
 
     files_preserve = []
     for handler in log.handlers:
-        stream = getattr(handler, 'stream')
+        try:
+            stream = getattr(handler, 'stream')
+        except AttributeError:
+            continue
         if stream and hasattr(stream, 'fileno'):
             files_preserve.append(handler.stream)
 
     stderr_stream = None
     for handler in log.handlers:
-        stream = getattr(handler, 'stream')
+        try:
+            stream = getattr(handler, 'stream')
+        except AttributeError:
+            continue
         if stream and hasattr(handler, 'baseFilename'):
             stderr_stream = stream
             break

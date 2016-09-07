@@ -741,6 +741,16 @@ class TestLocal(TestCase):
 
 class UserActionsTests(TestCase):
 
+    def tearDown(self):
+        AstakosUser.objects.all().delete()
+        Group.objects.all().delete()
+
+    def user_login(self, username, password):
+        self.client.login(username=username, password=password)
+        r = self.client.get(ui_url('profile'), follow=True)
+        user = r.context['request'].user
+        self.assertTrue(user.is_authenticated())
+
     def test_email_validation(self):
         backend = activation_backends.get_backend()
         form = backend.get_signup_form('local')
@@ -759,18 +769,14 @@ class UserActionsTests(TestCase):
                                        initial_data=user_data)
         self.assertFalse(form.is_valid())
 
-    def test_email_change(self):
+    def test_request_change_email(self):
         # to test existing email validation
         get_local_user('existing@synnefo.org')
 
-        # local user
         user = get_local_user('kpap@synnefo.org')
 
         # login as kpap
-        self.client.login(username='kpap@synnefo.org', password='password')
-        r = self.client.get(ui_url('profile'), follow=True)
-        user = r.context['request'].user
-        self.assertTrue(user.is_authenticated())
+        self.user_login(username='kpap@synnefo.org', password='password')
 
         # change email is enabled
         r = self.client.get(ui_url('email_change'))
@@ -794,7 +800,6 @@ class UserActionsTests(TestCase):
         r = self.client.post(ui_url('email_change'), data, follow=True)
         self.assertRedirects(r, ui_url('profile'))
         self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
-        change1 = EmailChange.objects.get()
 
         # user sees a warning
         r = self.client.get(ui_url('email_change'))
@@ -803,7 +808,7 @@ class UserActionsTests(TestCase):
         self.assertTrue(user.email_change_is_pending())
 
         # link was sent
-        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 1)
         self.assertEqual(len(get_mailbox('kpap@gmail.com')), 1)
 
         # proper email change
@@ -811,8 +816,27 @@ class UserActionsTests(TestCase):
         r = self.client.post(ui_url('email_change'), data, follow=True)
         self.assertRedirects(r, ui_url('profile'))
         self.assertContains(r, messages.EMAIL_CHANGE_REGISTERED)
-        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 2)
         self.assertEqual(len(get_mailbox('kpap@yahoo.com')), 1)
+
+    def test_change_email(self):
+        # to test existing email validation
+        get_local_user('existing@synnefo.org')
+
+        # local user
+        user = get_local_user('kpap@synnefo.org')
+
+        # login as kpap
+        self.user_login(username='kpap@synnefo.org', password='password')
+
+        # proper email change
+        data = {'new_email_address': 'kpap@gmail.com'}
+        r = self.client.post(ui_url('email_change'), data, follow=True)
+        change1 = EmailChange.objects.get()
+
+        # proper email change
+        data = {'new_email_address': 'kpap@yahoo.com'}
+        r = self.client.post(ui_url('email_change'), data, follow=True)
         change2 = EmailChange.objects.get()
 
         r = self.client.get(change1.get_url())
@@ -844,9 +868,6 @@ class UserActionsTests(TestCase):
                              follow=True)
         self.assertContains(r, "Please enter a correct username and password")
         self.assertEqual(user.emailchanges.count(), 0)
-
-        AstakosUser.objects.all().delete()
-        Group.objects.all().delete()
 
 
 TEST_TARGETED_ID1 = \

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ def generate_actions():
                                             karma='neutral',
                                             caution_level='dangerous',)
 
-    actions['contact'] = NetworkAction(name='Send e-mail', f=send_admin_email,
+    actions['contact'] = NetworkAction(name='Send e&#8209;mail', f=send_admin_email,
                                        c=check_network_action("CONTACT"),)
 
     update_actions_rbac(actions)

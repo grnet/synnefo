@@ -24,7 +24,8 @@ from synnefo_admin.admin.utils import _filter_public_ip_log
 from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user_details_href, get_ip_details_href,
-                    get_vm_details_href, get_network_details_href)
+                    get_vm_details_href, get_network_details_href,
+                    get_user_uuid_from_server,)
 from .filters import IPLogFilterSet
 
 
@@ -35,7 +36,7 @@ templates = {
 
 class IPLogJSONView(AdminJSONView):
     model = IPAddressLog
-    fields = ('address', 'server_id', 'network_id', 'allocated_at',
+    fields = ('address', 'server_id', 'server_id', 'network_id', 'allocated_at',
               'released_at', 'active',)
     filters = IPLogFilterSet
 
@@ -48,15 +49,21 @@ class IPLogJSONView(AdminJSONView):
 
     def format_data_row(self, row):
         row = list(row)
-        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
-        if row[4]:
-            row[4] = row[4].strftime("%Y-%m-%d %H:%M")
+        row[1] = get_user_uuid_from_server(row[1])
+        row[4] = row[4].strftime("%Y-%m-%d %H:%M")
+        if row[5]:
+            row[5] = row[5].strftime("%Y-%m-%d %H:%M")
         else:
-            row[4] = "-"
+            row[5] = "-"
         return row
 
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "Owner",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
         extra_dict['id'] = {
             'display_name': "ID",
             'value': inst.pk,
@@ -77,12 +84,6 @@ class IPLogJSONView(AdminJSONView):
             'value': get_network_details_href(inst),
             'visible': True,
         }
-        extra_dict['user_info'] = {
-            'display_name': "User",
-            'value': get_user_details_href(inst),
-            'visible': True,
-        }
-
         return extra_dict
 
 
@@ -94,7 +95,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = None
     context['filter_dict'] = IPLogFilterSet().filters.values()
-    context['columns'] = ["Address", "Server ID", "Network ID",
+    context['columns'] = ["Address", "Owner UUID", "Server ID", "Network ID",
                           "Allocation date", "Release date", "Active", ""]
     context['item_type'] = 'ip_log'
 

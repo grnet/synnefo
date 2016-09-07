@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ from .actions import cached_actions
 from .utils import (get_contact_id, get_contact_name, get_contact_email,
                     get_project_or_404, display_project_usage_horizontally,
                     display_member_quota_horizontally,
-                    display_project_limit_horizontally)
+                    display_project_limit_horizontally,
+                    get_user_details_href,)
 
 
 templates = {
@@ -51,15 +52,15 @@ templates = {
 
 class ProjectJSONView(AdminJSONView):
     model = Project
-    fields = ('id', 'realname', '{owner__first_name} {owner__last_name}',
+    fields = ('id', 'owner__uuid', 'realname',
               'state', 'last_application__state', 'creation_date', 'end_date')
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
         if self.dt_data['iDisplayLength'] > 0:
             row = list(row)
-            if row[2] == "None None":
-                row[2] = "(not set)"
+            if row[1] == "None None":
+                row[1] = "(not set)"
 
             project = Project.objects.get(id=row[0])
             row[3] = (str(row[3]) + ' (' + project.state_display() + ')')
@@ -136,6 +137,11 @@ class ProjectJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "Owner",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
         extra_dict['uuid'] = {
             'display_name': "UUID",
             'value': inst.uuid,
@@ -193,12 +199,12 @@ JSON_CLASS = ProjectJSONView
 
 @has_permission_or_403(cached_actions)
 @transaction.commit_on_success
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified user."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        project = get_project_or_404(id)
+        project = get_project_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
@@ -213,7 +219,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = ProjectFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Owner Name", "Project Status",
+    context['columns'] = ["ID", "Owner UUID", "Name", "Project Status",
                           "Application Status", "Creation date", "End date",
                           ""]
     context['item_type'] = 'project'
@@ -257,6 +263,7 @@ def details(request, query):
         'main_type': 'project',
         'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': associations,
+        'last_app': project.last_pending_modification(),
     }
 
     return context

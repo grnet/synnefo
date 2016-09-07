@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,11 +23,12 @@ validate_user_action = activation_backend.validate_user_action
 ##
 # Actions: The necessary logic for actions on a user. Uses extensively
 # the activation_backends.
-def reject(user, reason):
+def reject(user, reason, notify_user=True):
     """Reject a user."""
     res = activation_backend.handle_moderation(
         user, accept=False, reject_reason=reason)
-    activation_backend.send_result_notifications(res, user)
+    if notify_user:
+        activation_backend.send_result_notifications(res, user)
     return res
 
 
@@ -39,10 +40,11 @@ def verify(user, verification_code, notify_user=False):
     return res
 
 
-def accept(user):
+def accept(user, notify_user=True):
     """Accept a verified user."""
     res = activation_backend.handle_moderation(user, accept=True)
-    activation_backend.send_result_notifications(res, user)
+    if notify_user:
+        activation_backend.send_result_notifications(res, user)
     return res
 
 

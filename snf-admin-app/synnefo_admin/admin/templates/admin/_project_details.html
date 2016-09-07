@@ -28,6 +28,9 @@
             <li><a href="#prj-members{{ project.uuid }}" data-toggle="tab">Members</a></li>
             <li><a href="#prj-policies{{ project.uuid }}" data-toggle="tab">Member Policies</a></li>
             <li><a href="#resources{{ project.uuid }}" data-toggle="tab">Resources</a></li>
+            {% if last_app %}
+                <li><a href="#modifications{{ project.uuid }}" data-toggle="tab">Pending Modifications</a></li>
+            {% endif %}
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="prj-details{{ project.uuid }}">
@@ -114,6 +117,73 @@
 		            </tbody>
 		        </table>
             </div>
+            {% if last_app %}
+                <div class="tab-pane modifications" id="modifications{{ project.uuid }}">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Initial</th>
+                                <th>Final</th>
+                                <th class="diff">Changes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% with mod=project|get_project_modifications %}
+                            {% with rows=mod.details %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td class="capitalize nowrap">{{ row.label }}</td>
+                                        <td>{{ row.old }}</td>
+                                        <td>{{ row.new }}</td>
+                                        <td class="diff nowrap">
+                                            {% if row.diff %}
+                                                <span class="label label-almost-white {{ row.diff|diff_cls }}">
+                                                    {{ row.diff }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                            {% with rows=mod.policies %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td class="capitalize nowrap">{{ row.label }}</td>
+                                        <td>{{ row.old }}</td>
+                                        <td>{{ row.new }}</td>
+                                        <td class="diff nowrap">
+                                            {% if row.diff %}
+                                                <span class="label label-almost-white  {{ row.diff|diff_cls }}">
+                                                    {{ row.diff }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                            {% with rows=mod.resources %}
+                                {% for row in rows %}
+                                    <tr>
+                                        <td class="nowrap">{{ row.label }} *</td>
+                                        <td>{{ row.old_member }} / {{ row.old_project }}</td>
+                                        <td>{{ row.new_member }} / {{ row.new_project }}</td>
+                                        <td class="diff nowrap">
+                                            <span class="label label-almost-white">
+                                                <span class="{{ row.diff_member|diff_cls }}">{{ row.diff_member }}</span>
+                                                &nbsp/&nbsp
+                                                <span class="{{ row.diff_project|diff_cls }}">{{ row.diff_project }}</span>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endwith %}
+                        {% endwith %}
+                        </tbody>
+                    </table>
+                    <span>* The displayed values represent <em>max resources per member / max resources per project</em>.</span>
+                </div>
+            {% endif %}
         </div>
     </div>
     {% include "admin/action_list_horizontal.html" %}

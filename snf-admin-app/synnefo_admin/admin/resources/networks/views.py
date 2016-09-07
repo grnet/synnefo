@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
 from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
+from synnefo.db import transaction
 from synnefo.db.models import (Network, NetworkInterface, IPAddress,
                                IPAddressLog)
 from astakos.im.models import AstakosUser, Project
@@ -27,6 +27,7 @@ from astakos.im.models import AstakosUser, Project
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
+from synnefo_admin.admin.resources.networks.utils import get_network_or_404
 from synnefo_admin.admin.resources.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
@@ -48,7 +49,7 @@ templates = {
 
 class NetworkJSONView(AdminJSONView):
     model = Network
-    fields = ('pk', 'name', 'state', 'public', 'drained',)
+    fields = ('pk', 'userid', 'name', 'state', 'public', 'drained',)
     filters = NetworkFilterSet
 
     def format_data_row(self, row):
@@ -108,7 +109,7 @@ class NetworkJSONView(AdminJSONView):
         }
 
         extra_dict['user_info'] = {
-            'display_name': "User",
+            'display_name': "Owner",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -143,13 +144,14 @@ class NetworkJSONView(AdminJSONView):
 JSON_CLASS = NetworkJSONView
 
 
+@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
-def do_action(request, op, id):
+def do_action(request, op, id, data):
     """Apply the requested action on the specified network."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        network = Network.objects.get(pk=id)
+        network = get_network_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
@@ -164,7 +166,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
     context['filter_dict'] = NetworkFilterSet().filters.values()
-    context['columns'] = ["ID", "Name", "Status", "Public",
+    context['columns'] = ["ID", "Owner UUID", "Name", "Status", "Public",
                           "Drained", ""]
     context['item_type'] = 'network'
 

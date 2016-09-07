@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
-
 from django.core.exceptions import ObjectDoesNotExist
 
 from astakos.im.models import AstakosUser
@@ -25,9 +23,11 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_network_or_404(query):
+def get_network_or_404(query, for_update=False):
+    network_obj = Network.objects.select_for_update() if for_update\
+        else Network.objects
     try:
-        return Network.objects.get(pk=int(query))
+        return network_obj.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No Network was found that matches this query: %s\n" % query)
@@ -50,6 +50,6 @@ def get_contact_name(inst):
 def get_user_details_href(inst):
     if inst.userid:
         user = AstakosUser.objects.get(uuid=inst.userid)
-        return create_details_href('user', user.realname, user.email)
+        return create_details_href('user', user.realname, user.email, user.uuid)
     else:
         return "-"

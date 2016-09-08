@@ -6,18 +6,46 @@ Upgrade Steps
 
 The upgrade to v0.18 consists of the following steps:
 
-#. Stop gunicorn in all nodes
+#. Bring down services::
 
-   .. code-block:: console
+    $ service gunicorn stop
+    $ service snf-dispatcher stop
+    $ service snf-ganeti-eventd stop
 
-      # service gunicorn stop
+#. Upgrade Synnefo on all nodes to the latest version::
 
-#. Upgrade Synnefo on all nodes to the latest version
+    astakos.host$ apt-get install \
+                            snf-common \
+                            python-astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-astakos-app
 
-   .. code-block:: console
+    cyclades.host$ apt-get install \
+                            snf-common \
+                            python-astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-pithos-backend \
+                            snf-cyclades-app
 
-      # apt-get update
-      # apt-get upgrade
+    pithos.host$ apt-get install \
+                            snf-common \
+                            python-astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-pithos-backend \
+                            snf-pithos-app \
+                            snf-ui-app
+
+    ganeti.node$ apt-get install \
+                            snf-common \
+                            snf-cyclades-gtools \
+                            snf-pithos-backend
+
 
 #. Run migrations on Astakos.
 
@@ -34,11 +62,13 @@ The upgrade to v0.18 consists of the following steps:
 
       astakos.host$ snf-manage user-check --all-users --suspend-deactivated --noemail --fix
 
-#. Start gunicorn
+#. Restart services
 
   .. code-block:: console
 
-     # service gunicorn start
+     $ service gunicorn start
+     $ service snf-dispatcher start
+     $ service snf-ganeti-eventd start
 
 
 New configuration options

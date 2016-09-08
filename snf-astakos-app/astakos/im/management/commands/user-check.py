@@ -86,8 +86,8 @@ class Command(SynnefoCommand):
     @transaction.commit_on_success
     def suspend_projects(self, userid, fix):
         count = 0
-        deactivated = AstakosUser.objects.filter(
-            is_active=False, deactivated_at__isnull=False).select_for_update()
+        deactivated = AstakosUser.objects.accepted().filter(
+            is_active=False).select_for_update()
         if userid is None:
             users = deactivated
         else:

@@ -5,6 +5,18 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.18.1:
+
+v0.18.1
+=======
+
+Release: UNRELEASED
+
+The Synnefo 0.18.1 release resolves the following issue.
+
+* Fixed a bug in `user-check` management command, where the list of
+  deactivated users was computed wrongly.
+
 .. _NEWS-0.18:
 
 v0.18

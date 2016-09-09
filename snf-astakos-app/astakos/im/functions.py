@@ -1239,7 +1239,8 @@ def _get_base_projects(user_ids):
 
 def _get_memberships(user_ids):
     ms = ProjectMembership.objects.actually_accepted().\
-        filter(person__in=user_ids)
+        filter(person__in=user_ids,
+               project__state__in=[Project.NORMAL, Project.SUSPENDED])
     return _partition_by(lambda m: m.person_id, ms)
 
 
@@ -1248,55 +1249,59 @@ def _get_owned_projects(user_ids):
     return _partition_by(lambda p: p.owner_id, ps)
 
 
-def suspend_users_projects(users, request_user=None, reason=None, fix=True):
-    affected_users = []
+def get_projects_and_memberships_of_users(users):
     user_ids = [user.id for user in users]
     if not user_ids:
-        return affected_users
+        return {}, {}, {}
 
     base_projects_d = _get_base_projects(user_ids)
     memberships_d = _get_memberships(user_ids)
     owned_projects_d = _get_owned_projects(user_ids)
+    return base_projects_d, memberships_d, owned_projects_d
 
-    for user in users:
-        is_affected = False
-        base_project = base_projects_d[user.base_project_id]
-        if base_project.state == Project.NORMAL:
-            try:
-                if fix:
-                    suspend(user.base_project_id,
-                            request_user=request_user, reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
-        memberships = memberships_d.get(user.id, [])
-        for membership in memberships:
-            try:
-                if fix:
-                    suspend_membership(
-                        membership.id, request_user=request_user,
-                        reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
 
-        owned_projects = owned_projects_d.get(user.id, [])
-        for project in owned_projects:
-            try:
-                if fix:
-                    suspend(
-                        project.id, request_user=request_user, reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
-        if is_affected:
-            affected_users.append(user)
-    return affected_users
+def suspend_user_projects_and_memberships(
+        user, base_project, memberships, owned_projects,
+        request_user=None, reason=None, fix=True):
+    is_affected = False
+    if base_project.state == Project.NORMAL:
+        try:
+            if fix:
+                suspend(user.base_project_id,
+                        request_user=request_user, reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+    for membership in memberships:
+        try:
+            if fix:
+                suspend_membership(
+                    membership.id, request_user=request_user,
+                    reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+
+    for project in owned_projects:
+        try:
+            if fix:
+                suspend(
+                    project.id, request_user=request_user, reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+    return is_affected
 
 
 def suspend_user_projects(user, request_user=None, reason=None):
-    return suspend_users_projects(
-        [user], request_user=request_user, reason=reason)
+    bpd, md, opd = get_projects_and_memberships_of_users([user])
+    base_project = bpd[user.base_project_id]
+    memberships = md.get(user.id, [])
+    owned_projects = opd.get(user.id, [])
+
+    return suspend_user_projects_and_memberships(
+        user, base_project, memberships, owned_projects,
+        request_user=request_user, reason=reason)
 
 
 def unsuspend_project_on_condition(project, request_user=None, reason=None,

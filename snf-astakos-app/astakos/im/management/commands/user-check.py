@@ -93,14 +93,19 @@ class Command(SynnefoCommand):
         else:
             users = [self.get_user(deactivated, userid)]
 
-        affected_users = functions.suspend_users_projects(
-            users, reason=SUSPENSION_REASON, fix=fix)
-        if affected_users:
-            verb = "Suspended" if fix else "Would suspend"
-            self.stderr.write(
-                "%s projects/memberships for %s "
-                "deactivated users:\n" % (verb, len(affected_users)))
-            for user in affected_users:
-                self.stderr.write("%s (%s)\n" % (user.email, user.uuid))
+        bpd, md, opd = functions.get_projects_and_memberships_of_users(users)
+        for user in users:
+            base_project = bpd[user.base_project_id]
+            memberships = md.get(user.id, [])
+            owned_projects = opd.get(user.id, [])
+            affected = functions.suspend_user_projects_and_memberships(
+                user, base_project, memberships, owned_projects,
+                reason=SUSPENSION_REASON, fix=fix)
+            if affected:
+                verb = "Affected" if fix else "Would affect"
+                self.stderr.write("%s %s (%s)\n" % (verb, user.email, user.uuid))
+                count +=1
+        if count:
+            self.stderr.write("Total %s users.\n" % count)
         else:
             self.stderr.write("No users affected.\n")

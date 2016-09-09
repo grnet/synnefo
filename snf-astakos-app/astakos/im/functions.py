@@ -1239,7 +1239,8 @@ def _get_base_projects(user_ids):
 
 def _get_memberships(user_ids):
     ms = ProjectMembership.objects.actually_accepted().\
-        filter(person__in=user_ids)
+        filter(person__in=user_ids,
+               project__state__in=[Project.NORMAL, Project.SUSPENDED])
     return _partition_by(lambda m: m.person_id, ms)
 
 

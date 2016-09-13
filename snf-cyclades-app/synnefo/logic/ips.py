@@ -222,25 +222,22 @@ def get_free_floating_ip(userid, network=None):
     that network.
 
     """
-    floating_ips = IPAddress.objects\
-                            .filter(userid=userid, deleted=False, nic=None,
-                                    floating_ip=True)
+    objects = IPAddress.objects
     if network is not None:
-        floating_ips = floating_ips.filter(network=network)
+        objects = objects.filter(network=network)
 
-    for floating_ip in floating_ips:
-        floating_ip = IPAddress.objects.select_for_update()\
-                                       .get(id=floating_ip.id)
-        if floating_ip.nic is None:
-            return floating_ip
-
-    msg = "Cannot find an unused floating IP to connect server to"
-    if network is not None:
-        msg += " network '%s'." % network.id
-    else:
-        msg += " a public network."
-    msg += " Please create a floating IP."
-    raise faults.Conflict(msg)
+    try:
+        return objects.select_for_update()\
+                      .filter(userid=userid, deleted=False, nic=None,
+                              floating_ip=True)[0]
+    except IndexError:
+        msg = "Cannot find an unused floating IP to connect server to"
+        if network is not None:
+            msg += " network '%s'." % network.id
+        else:
+            msg += " a public network."
+        msg += " Please create a floating IP."
+        raise faults.Conflict(msg)
 
 
 @ip_command("DELETE")

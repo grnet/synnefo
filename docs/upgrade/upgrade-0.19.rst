@@ -105,6 +105,19 @@ migrations.
 
   # snf-manage migrate
 
+Fix IP history inconsistencies
+""""""""""""""""""""""""""""""
+
+Previously, when the owner of a VM with attached IPs changed, the IP
+history failed to properly record the relation of both the old and the
+new VM owner with the attached IPs. In order to review these cases,
+run (use --fix to apply)::
+
+  cyclades.host$ /usr/lib/synnefo/tools/fix_ip_history <changelog_file>
+
+providing as argument a file containing a log of VM owner changes. See
+command help for details.
+
 
 4. Adjust configuration files
 -----------------------------

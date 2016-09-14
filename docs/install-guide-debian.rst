@@ -1004,7 +1004,6 @@ Then, we load the pre-defined user groups:
 .. code-block:: console
 
    # snf-manage loaddata groups
-   # snf-manage loaddata projectlock
 
 .. _services-reg-h:
 

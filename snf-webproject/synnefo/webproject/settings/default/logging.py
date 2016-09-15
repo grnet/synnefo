@@ -81,12 +81,19 @@ SNF_MANAGE_LOGGING_SETUP = {
     'version': 1,
     'disable_existing_loggers': False,
 
+    'filters': {
+        'suppress_deprecated': {
+            '()': 'synnefo.webproject.logging_filter.SuppressDeprecated'
+        }
+    },
+
     'formatters': FORMATTERS,
 
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
+            'formatter': 'verbose',
+            'filters': ['suppress_deprecated']
         },
     },
 

@@ -483,7 +483,7 @@ def daemon_mode(opts):
 
 def setup_logging(opts):
     try:
-        from synnefo.lib.dictconfig import dictConfig
+        from logging.config import dictConfig
         from synnefo.settings import DISPATCHER_LOGGING_SETUP
         dictConfig(DISPATCHER_LOGGING_SETUP)
     except ImportError:

@@ -17,7 +17,7 @@
 from django.core.management import ManagementUtility
 from django.core import management
 from synnefo.util.version import get_component_version
-from synnefo.lib.dictconfig import dictConfig
+from logging.config import dictConfig
 
 # monkey patch to show synnefo version instead of django version
 management.get_version = lambda: get_component_version('webproject')

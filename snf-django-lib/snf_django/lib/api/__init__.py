@@ -29,19 +29,12 @@ from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException
 from django.conf import settings
 from snf_django.lib.api import faults
+from snf_django.lib.utils import get_token, get_client_ip, retrieve_user
 
 import itertools
 
 log = getLogger(__name__)
 django_logger = getLogger("django.request")
-
-
-def get_token(request):
-    """Get the Authentication Token of a request."""
-    token = request.GET.get("X-Auth-Token", None)
-    if not token:
-        token = request.META.get("HTTP_X_AUTH_TOKEN", None)
-    return token
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
@@ -93,23 +86,15 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos_url = astakos_auth_url
-                    if astakos_url is None:
-                        try:
-                            astakos_url = settings.ASTAKOS_AUTH_URL
-                        except AttributeError:
-                            logger.error("Cannot authenticate without having"
-                                         " an Astakos Authentication URL")
-                            raise
-                    astakos = AstakosClient(token, astakos_url,
-                                            use_pool=True,
-                                            retry=2,
-                                            logger=logger)
-                    user_info = astakos.authenticate()
+                    client_ip = get_client_ip(request)
+                    user_info = retrieve_user(token, astakos_auth_url,
+                                              logger=logger,
+                                              client_ip=client_ip)
                     _user_access = user_info["access"]["user"]
                     request.user_uniq = _user_access["id"]
                     request.user_projects = _user_access.get("projects", None)
                     request.user = user_info
+
 
                 # Get the response object
                 response = func(request, *args, **kwargs)

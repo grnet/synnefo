@@ -14,8 +14,9 @@ v0.18.1
 Astakos
 -------
 
-* Fix a bug in `user-check` management command, where the list of deactivated
-  users was computed wrongly.
+* Move script that suspends projects for deactivated users under
+  /usr/lib/astakos/tools and fix a bug on the computation of the list
+  of deactivated users.
 
 
 .. _Changelog-0.18:

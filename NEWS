@@ -14,8 +14,7 @@ Release: UNRELEASED
 
 The Synnefo 0.18.1 release resolves the following issue.
 
-* Fixed a bug in `user-check` management command, where the list of
-  deactivated users was computed wrongly.
+* Fixed a bug on the script that suspends projects for deactivated users.
 
 .. _NEWS-0.18:
 

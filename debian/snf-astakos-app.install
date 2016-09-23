@@ -1,2 +1,3 @@
 snf-astakos-app/astakos/im/static/im usr/share/synnefo/static
 snf-astakos-app/conf/* etc/synnefo
+snf-astakos-app/astakos/tools/ usr/lib/astakos/

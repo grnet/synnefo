@@ -13,13 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import operator
 from astakos.im.models import (
     Resource, AstakosUser, Service,
     Project, ProjectMembership, ProjectResourceQuota)
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
-from django.db.models import Q, F
+from django.db.models import Q
 from collections import defaultdict
 
 
@@ -332,102 +331,3 @@ def qh_sync_new_resource(resource):
                 member_capacity=limit))
     ProjectResourceQuota.objects.bulk_create(entries)
     qh_sync_projects(projects, resource=resource.name)
-
-
-def _mk_quota_per_project_verbose(quotas):
-    """
-    This function constructs a dictionary which contains the usage and limit of
-    of resources of users for every project.
-
-    Args:
-        quotas: Quotas dictionary.
-
-    Returns:
-        Dictionary keyed by project uuid and it contains detailed info about
-        user's resources limits and usages.
-    """
-    overquotas_users = defaultdict(lambda: defaultdict(dict))
-    for (u_uuid, p_uuid, resource), usage in quotas.iteritems():
-        project = p_uuid.split(PROJECT_TAG)[1]
-        user = u_uuid.split(USER_TAG)[1]
-        value = from_holding(usage)
-        overquotas_users[project][user][resource] = value
-    return overquotas_users
-
-
-def _mk_quota_per_project(quotas):
-    """
-    This functions constructs a dictionary keyed by project and it contains
-    a list of uuids of users who own resources
-
-    Args:
-        quotas: Quotas dictionary.
-
-    Returns:
-        Dictionary keyed by project uuid and it contains a list of uuids of
-        its overquota users.
-    """
-    overquotas_users = defaultdict(lambda: [])
-    for u_uuid, p_uuid, _ in quotas.keys():
-        project = p_uuid.split(PROJECT_TAG)[1]
-        user = u_uuid.split(USER_TAG)[1]
-        overquotas_users[project].append(user)
-    return overquotas_users
-
-
-def get_overquota_users(projects, services, resource=None, verbose=False):
-    """
-    Get a dictionary of overquota users per project.
-
-    This function gets users who are using resources of specific services and
-    surpass their current limit.
-
-    Args:
-        projects: Projects to get their overquota users.
-        services: List of services whose resources are associated
-        with, e.g. cyclades.
-        resource: Resources to check if user is overquota.
-        verbose: True if returned value should contain detailed info about
-        resources usage.
-
-    Returns:
-        1) Dictionary keyed by project uuid and it contains a list of uuids of
-        its overquota users if verbose is `False`
-        2) Dictionary keyed by project uuid and it contains detailed info about
-        user's resources limits and usages if verbose is `True`.
-    """
-    users = []
-    for project in projects:
-        users += [get_user_ref(user) for user in project.members.all()]
-    projects = [get_project_ref(project) for project in projects]
-    flt = Q()
-    flt &= Q(usage_max__gt=F("limit"))
-    flt &= reduce(operator.or_, [Q(resource__startswith=service)
-                                 for service in services])
-    quotas = qh.get_quota(holders=users, sources=projects,
-                          resources=resource, flt=flt)
-    return _mk_quota_per_project_verbose(quotas) if verbose\
-        else _mk_quota_per_project(quotas)
-
-
-def is_membership_overquota(membership, services, resource=None):
-    """
-    This function checks if a specific membership is overquota.
-
-    Args:
-        membership: Membership to check if it's overquota.
-        services: List of services which resources are associated
-        with, e.g. cyclades.
-        resource: Resources to check if membership is overquota.
-
-    Returns:
-        True if membership is overquota; False otherwise.
-    """
-    user = get_user_ref(membership.person)
-    project = get_project_ref(membership.project)
-    flt = Q()
-    flt &= Q(usage_max__gt=F("limit"))
-    flt &= reduce(operator.or_, [Q(resource__startswith=service)
-                                 for service in services])
-    return len(qh.get_quota(holders=[user], sources=[project],
-                            resources=resource, flt=flt)) != 0

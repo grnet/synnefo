@@ -4,7 +4,7 @@ Upgrade to Synnefo v0.18.1
 Upgrade Steps
 =============
 
-The upgrade to v0.18.1 consists of the following steps:
+The upgrade from v0.17 to v0.18.1 consists of the following steps:
 
 #. Bring down services::
 

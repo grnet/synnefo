@@ -14,21 +14,6 @@ v0.18.1
 Astakos
 -------
 
-* Move script that suspends projects for deactivated users under
-  /usr/lib/astakos/tools and fix a bug on the computation of the list
-  of deactivated users.
-
-
-.. _Changelog-0.18:
-
-v0.18
-========
-
-Released: Wed  7 Sep 16:50:30 EEST 2016
-
-Astakos
--------
-
 * Introduce 'overquota' state on project memberships, which can be used by
   third-party plugins in order to implement a quota reclamation policy.
   Setting `QUOTA_POLICY_MODULE` specifies the plugin that updates the
@@ -36,7 +21,7 @@ Astakos
 * Support suspending and unsuspending project memberships.
 * User deactivation now automatically suspends user's system project, owned
   projects, and project memberships. Reactivation unsuspends them.
-* Add command `user-check`. It supports suspending projects for previously
+* Add script `fix_deactivated_users` to suspend projects for previously
   deactivated users.
 * Send an informative email to the user's current email address when they
   request to change their email.

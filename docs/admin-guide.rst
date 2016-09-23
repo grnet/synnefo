@@ -3087,7 +3087,6 @@ Changelog, NEWS
 
 
 * v0.18.1 :ref:`Changelog <Changelog-0.18.1>`, :ref:`NEWS <NEWS-0.18.1>`
-* v0.18 :ref:`Changelog <Changelog-0.18>`, :ref:`NEWS <NEWS-0.18>`
 * v0.17 :ref:`Changelog <Changelog-0.17>`, :ref:`NEWS <NEWS-0.17>`
 * v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`
 * v0.16.1 :ref:`Changelog <Changelog-0.16.1>`, :ref:`NEWS <NEWS-0.16.1>`

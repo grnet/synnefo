@@ -100,13 +100,13 @@ class Command(SynnefoCommand):
                 reason=SUSPENSION_REASON, fix=fix)
             if affected:
                 verb = "Affected" if fix else "Would affect"
-                self.stderr.write("%s %s (%s)\n" %
+                self.stdout.write("%s %s (%s)\n" %
                                   (verb, user.email, user.uuid))
                 count += 1
         if count:
-            self.stderr.write("Total %s users.\n" % count)
+            self.stdout.write("Total %s users.\n" % count)
         else:
-            self.stderr.write("No users affected.\n")
+            self.stdout.write("No users affected.\n")
 
 
 command = Command()

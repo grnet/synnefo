@@ -6,6 +6,8 @@ After=network.target network-online.target
 [Service]
 Environment=SNF_EVENTD_OPTS=
 EnvironmentFile=-/etc/default/snf-ganeti-eventd
-ExecStart=/usr/sbin/snf-ganeti-eventd --pid-file /var/run/snf-ganeti-eventd.pid
+ExecStart=/usr/sbin/snf-ganeti-eventd --pid-file /var/run/snf-ganeti-eventd.pid $SNF_EVENTD_OPTS
 PIDFile=/var/run/snf-ganeti-eventd.pid
 
+[Install]
+WantedBy=multi-user.target

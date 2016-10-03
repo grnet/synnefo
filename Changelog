@@ -43,6 +43,9 @@ Cyclades
   PUBLIC_STATS_CACHE, VM_PASSWORD_CACHE, VMAPI_CACHE. Remove settings
   PUBLIC_STATS_CACHE_POPULATE_INTERVAL, VMAPI_CACHE_BACKEND,
   VMAPI_CACHE_KEY_PREFIX.
+* Propagate VM owner change to the VM's NICs and attached IPs.
+* Fix recording associated user to the IP history. Provide a script to fix
+  IP history inconsistencies due to prior VM owner changes.
 
 Deploy
 ------

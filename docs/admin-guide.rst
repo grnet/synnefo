@@ -1341,9 +1341,9 @@ Public IP accounting
 
 There are many use cases, e.g. abuse ports, where you need to find which user
 or which server had a public IP address. For this reason, Cyclades keeps track
-usage of public IPv4/IPv6 addresses. Specifically, it keeps the date and time
-that each public IP address was allocated and released from a virtual server.
-This information can be found using `ip-list` command:
+of the usage of public IPv4/IPv6 addresses. Specifically, when an IP address
+is attached to or detached from a virtual server, the timestamp of the
+action is logged. This information can be found using the `ip-list` command:
 
 .. code-block:: console
 

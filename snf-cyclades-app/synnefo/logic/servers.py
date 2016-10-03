@@ -28,8 +28,8 @@ from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddressLog, Network,
-                               Image, pooled_rapi_client)
+                               VirtualMachineMetadata, IPAddressHistory,
+                               IPAddress, Network, Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -459,6 +459,55 @@ def rename(server, new_name):
     return server
 
 
+def show_owner_change(vmid, from_user, to_user):
+    return "[OWNER CHANGE vm: %s, from: %s, to: %s]" % (
+        vmid, from_user, to_user)
+
+
+def change_owner(server, new_owner):
+    old_owner = server.userid
+    server.userid = new_owner
+    old_project = server.project
+    server.project = new_owner
+    server.save()
+    log.info("Changed the owner of server '%s' from '%s' to '%s'.",
+             server, old_owner, new_owner)
+    log.info("Changed the project of server '%s' from '%s' to '%s'.",
+             server, old_project, new_owner)
+    for vol in server.volumes.filter(
+            userid=old_owner).select_for_update():
+        vol.userid = new_owner
+        vol_old_project = vol.project
+        vol.project = new_owner
+        vol.save()
+        log.info("Changed the owner of volume '%s' from '%s' to '%s'.",
+                 vol, old_owner, new_owner)
+        log.info("Changed the project of volume '%s' from '%s' to '%s'.",
+                 vol, vol_old_project, new_owner)
+    for nic in server.nics.filter(userid=old_owner).select_for_update():
+        nic.userid = new_owner
+        nic.save()
+        log.info("Changed the owner of port '%s' from '%s' to '%s'.",
+                 nic.id, old_owner, new_owner)
+    for ip in IPAddress.objects.filter(nic__machine=server, userid=old_owner).\
+            select_for_update().select_related("nic"):
+        ips.change_ip_owner(ip, new_owner)
+        IPAddressHistory.objects.create(
+            server_id=server.id,
+            user_id=old_owner,
+            network_id=ip.nic.network_id,
+            address=ip.address,
+            action=IPAddressHistory.DISASSOCIATE,
+            action_reason=show_owner_change(server.id, old_owner, new_owner))
+        IPAddressHistory.objects.create(
+            server_id=server.id,
+            user_id=new_owner,
+            network_id=ip.nic.network_id,
+            address=ip.address,
+            action=IPAddressHistory.ASSOCIATE,
+            action_reason=show_owner_change(server.id, old_owner, new_owner))
+
+
 @transaction.commit_on_success
 def create_port(*args, **kwargs):
     vm = kwargs.get("machine", None)
@@ -550,7 +599,8 @@ def associate_port_with_machine(port, machine):
     """Associate a Port with a VirtualMachine.
 
     Associate the port with the VirtualMachine and add an entry to the
-    IPAddressLog if the port has a public IPv4 address from a public network.
+    IPAddressHistory if the port has a public IPv4 address from a public
+    network.
 
     """
     if port.machine is not None:
@@ -558,11 +608,15 @@ def associate_port_with_machine(port, machine):
     if port.network.public:
         ipv4_address = port.ipv4_address
         if ipv4_address is not None:
-            ip_log = IPAddressLog.objects.create(server_id=machine.id,
-                                                 network_id=port.network_id,
-                                                 address=ipv4_address,
-                                                 active=True)
-            log.debug("Created IP log entry %s", ip_log)
+            ip_log = IPAddressHistory.objects.create(
+                server_id=machine.id,
+                user_id=machine.userid,
+                network_id=port.network_id,
+                address=ipv4_address,
+                action=IPAddressHistory.ASSOCIATE,
+                action_reason="associate port %s" % port.id
+            )
+            log.info("Created IP log entry %s", ip_log)
     port.machine = machine
     port.state = "BUILD"
     port.device_owner = "vm"

@@ -25,7 +25,7 @@ from django.utils.html import escape
 
 from astakos.im.models import Resource
 from synnefo.db.models import (VirtualMachine, Volume, Network, IPAddress,
-                               IPAddressLog)
+                               IPAddressHistory)
 from astakos.im.models import AstakosUser, Project, ProjectApplication
 
 from synnefo.util import units
@@ -46,7 +46,7 @@ model_dict = {
     "volume": Volume,
     "network": Network,
     "ip": IPAddress,
-    "ip_log": IPAddressLog,
+    "ip_log": IPAddressHistory,
     "project": Project,
     "application": ProjectApplication,
 }

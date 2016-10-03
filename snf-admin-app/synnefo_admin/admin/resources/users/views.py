@@ -19,8 +19,8 @@ from collections import OrderedDict
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
-from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
-                               NetworkInterface, IPAddress)
+from synnefo.db.models import (VirtualMachine, Network, IPAddressHistory,
+                               Volume, NetworkInterface, IPAddress)
 from astakos.im.models import AstakosUser, Project
 from astakos.im import user_logic as users
 from astakos.im import transaction
@@ -233,7 +233,7 @@ def details(request, query):
     associations.append(IPAssociation(request, ip_list))
 
     vm_ids = VirtualMachine.objects.filter(userid=user.uuid).values('id')
-    ip_log_list = IPAddressLog.objects.filter(server_id__in=vm_ids)
+    ip_log_list = IPAddressHistory.objects.filter(user_id=user.uuid)
     associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {

@@ -16,7 +16,7 @@
 
 import logging
 
-from synnefo.db.models import IPAddressLog, VirtualMachine
+from synnefo.db.models import IPAddressHistory, VirtualMachine
 import django_filters
 
 from synnefo_admin.admin.queries_common import (process_queries, model_filter,
@@ -27,8 +27,7 @@ from synnefo_admin.admin.queries_common import (process_queries, model_filter,
 def filter_user(queryset, queries):
     q = process_queries("user", queries)
     user_ids = get_model_field("user", q, 'uuid')
-    vm_ids = VirtualMachine.objects.filter(userid__in=user_ids)
-    return queryset.filter(server_id__in=vm_ids)
+    return queryset.filter(user_id__in=user_ids)
 
 
 @model_filter
@@ -62,8 +61,7 @@ class IPLogFilterSet(django_filters.FilterSet):
     vm = django_filters.CharFilter(label='OF VM', action=filter_vm)
     net = django_filters.CharFilter(label='OF Network', action=filter_network)
     ip = django_filters.CharFilter(label='OF IP', action=filter_ip)
-    active = django_filters.BooleanFilter(label='Active')
 
     class Meta:
-        model = IPAddressLog
-        fields = ('user', 'vm', 'net', 'ip', 'active')
+        model = IPAddressHistory
+        fields = ('user', 'vm', 'net', 'ip')

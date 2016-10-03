@@ -6,14 +6,7 @@
     <td>{{ ip_log|details_url:"vm"|safe }}</td>
     <td>{{ ip_log|details_url:"network"|safe }}</td>
     <td>{{ ip_log|details_url:"user"|safe }}</td>
-    <td>{{ ip_log.allocated_at }}</td>
-    <td>{{ ip_log.released_at|default:"-" }}</td>
-    <td>
-        {% if ip_log.active %}
-        <span class="label label-success">In Use</span>
-        {% else %}
-        Free
-        {% endif %}
-    </td>
+    <td>{{ ip_log.action }}</td>
+    <td>{{ ip_log.action_date }}</td>
 </tr>
 {% endwith %}

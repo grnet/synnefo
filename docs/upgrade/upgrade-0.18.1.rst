@@ -4,7 +4,7 @@ Upgrade to Synnefo v0.18.1
 Upgrade Steps
 =============
 
-The upgrade to v0.18 consists of the following steps:
+The upgrade from v0.17 to v0.18.1 consists of the following steps:
 
 #. Bring down services::
 
@@ -60,7 +60,7 @@ The upgrade to v0.18 consists of the following steps:
 
    .. code-block:: console
 
-      astakos.host$ snf-manage user-check --all-users --suspend-deactivated --noemail --fix
+      astakos.host$ /usr/lib/astakos/tools/fix_deactivated_users --all-users --noemail --fix
 
 #. Restart services
 

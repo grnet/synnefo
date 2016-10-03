@@ -10,21 +10,9 @@ Since v0.13 all Synnefo components have been merged into a single repository.
 v0.18.1
 =======
 
-Release: UNRELEASED
+Released: UNRELEASED
 
-The Synnefo 0.18.1 release resolves the following issue.
-
-* Fixed a bug in `user-check` management command, where the list of
-  deactivated users was computed wrongly.
-
-.. _NEWS-0.18:
-
-v0.18
-=====
-
-Released: Wed  7 Sep 16:50:30 EEST 2016
-
-The Synnefo 0.18 release brings significant bug fixes across Synnefo.
+The Synnefo 0.18.1 release brings significant improvements across Synnefo.
 
 The most notable changes are:
 

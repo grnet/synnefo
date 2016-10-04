@@ -1565,7 +1565,7 @@ Ganeti nodes:
    # apt-get install qemu-kvm
 
 It's time to install Ganeti. We recommend using our Ganeti package version:
-``2.10.7.1+grnet2+bpo2-1~jessie``.
+``2.10.7.1+grnet2+bpo2-2~jessie``.
 
 Let's briefly explain the included patch set:
 

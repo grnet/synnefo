@@ -13,7 +13,7 @@ jessie.
 
    Synnefo 0.19 upgrades to newer Django and Django's database migration tool
    is used instead of ``South``. Because of this, the upgrade to v0.19 *must*
-   be executed only from version 0.18.
+   be executed only from version 0.18.1.
 
 Upgrade Steps
 =============
@@ -33,19 +33,28 @@ at a time.
 1. Evacuate ganeti node
 -----------------------
 
-2. Stop archipelago (?)
------------------------
+You must first evacuate the node in order to upgrade Archipelago.
+
+
+2. Stop archipelago
+-------------------
+
+.. code-block:: console
+
+  # service archipelago stop
+
 
 3. Upgrade node
---------------
-* Change APT repos to jessie (apt.dev.grnet.gr and also ceph's if they exist)
+---------------
+* Change all APT repos to jessie, including apt.dev.grnet.gr and also ceph's if
+  they exist.
 * Upgrade all packages to jessie
 
 .. code-block:: console
 
   # apt-get update
-  # apt-get upgrade
   # apt-get dist-upgrade
+
 
 4. Reboot node
 --------------
@@ -54,30 +63,20 @@ After rebooting, the upgrade is complete and you can migrate VMs back to the
 node, to proceed with the rest of the cluster.
 
 
-# Is this feasible for production ??? Need to check witn NOC.
-# Otherwise, shutdown all VMs, and perform the steps as described.
-
 
 Upgrade Service nodes
 =====================
 
-1. Upgrade to Jessie
---------------------
+1. Change repos to Jessie
+-------------------------
 
-* Change APT repos to jessie (including apt.dev.grnet.gr and also ceph's)
-* Upgrade to jessie (install gevent/gunicorn from apt (1.1.1~grnet))
-
-.. warning::
-
-   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, we
-   have backported gevent 1.1.1 and greenlet 0.4.9 from stretch. Make sure you
-   use these packages found on GRNet's Jessie repo.
+* Change all APT repos to jessie, including apt.dev.grnet.gr and also ceph's if
+  they exist.
 
 .. code-block:: console
 
   # apt-get update
-  # apt-get upgrade
-  # apt-get dist-upgrade
+
 
 2. Bring services down
 ----------------------
@@ -88,12 +87,64 @@ Shutdown gunicorn on all hosts:
 
   # service gunicorn stop
 
-Shutdown archipelago on pithos host:
+Shutdown archipelago on pithos and cyclades hosts:
 
 .. code-block:: console
 
   # service archipelago stop
 
+Shutdown snf-dispatcher on cyclades host:
+
+.. code-block:: console
+
+  # service snf-dispatcher stop
+
+Shutdown snf-ganeti-eventd on ganeti master candidates:
+
+.. code-block:: console
+
+  # service snf-ganeti-eventd stop
+
+
+3. Upgrade to jessie
+--------------------
+
+* Upgrade to jessie.
+
+.. code-block:: console
+
+  # apt-get dist-upgrade
+
+.. warning::
+
+   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, we
+   have backported gevent 1.1.1 and greenlet 0.4.9 from stretch. Make sure you
+   use these packages found on GRNet's Jessie repo.
+
+.. warning::
+
+   After package installation some services automatically start. You must shut
+   them down again. Alternatively, you can use the
+   `policy-rc.d <https://people.debian.org/~hmh/invokerc.d-policyrc.d-specification.txt>`_
+   funcionality to disallow this functionality.
+
+Shutdown gunicorn on all hosts:
+
+.. code-block:: console
+
+  # service gunicorn stop
+
+Shutdown snf-dispatcher on cyclades host:
+
+.. code-block:: console
+
+  # service snf-dispatcher stop
+
+Shutdown snf-ganeti-eventd on ganeti nodes:
+
+.. code-block:: console
+
+  # service snf-ganeti-eventd stop
 
 3. Run database migrations
 --------------------------
@@ -212,21 +263,3 @@ Please adjust the new settings to match your previous setup.
 
 Reboot to finish the system upgrade. After reboot, services should
 automatically start.
-
-OR
-
-5. Bring services back up
--------------------------
-
-Start archipelago on pithos host:
-
-.. code-block:: console
-
-  # service archipelago start
-
-
-Start gunicorn on all hosts:
-
-.. code-block:: console
-
-  # service gunicorn start

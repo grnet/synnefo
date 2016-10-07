@@ -218,16 +218,20 @@ def app_check_allowed(application, request_user,
     return _failure(silent)
 
 
-def checkAlive(project, silent=False):
+def checkAlive(project, silent=False, check_initialized=False):
     def fail(msg):
         if silent:
             return False, msg
         else:
             raise ProjectConflict(msg)
-
-    if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
-        return fail(m)
+    if check_initialized:
+        if not project.is_initialized():
+            m = _(astakos_messages.NOT_INITIALIZED_PROJECT) % project.uuid
+            return fail(m)
+    else:
+        if not project.is_alive:
+            m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
+            return fail(m)
     return True, None
 
 
@@ -249,7 +253,9 @@ def accept_membership_checks(membership, request_user):
     if not membership.check_action("accept"):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
-
+    if not membership.person.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise ProjectConflict(m)
     project = membership.project
     accept_membership_project_checks(project, request_user)
 
@@ -350,7 +356,7 @@ def suspend_membership_checks(membership, request_user=None):
 
     project = membership.project
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    checkAlive(project, check_initialized=True)
 
 
 def suspend_membership(memb_id, request_user=None, reason=None):
@@ -376,7 +382,7 @@ def unsuspend_membership_checks(membership, request_user=None):
 
     project = membership.project
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    checkAlive(project, check_initialized=True)
 
 
 def unsuspend_membership(memb_id, request_user=None, reason=None):
@@ -403,12 +409,19 @@ def enroll_member_by_email(project_id, email, request_user=None, reason=None):
         raise ProjectConflict(astakos_messages.UNKNOWN_USERS % email)
 
 
+def enroll_member_checks(project, user, request_user):
+    if not user.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise ProjectConflict(m)
+    accept_membership_project_checks(project, request_user)
+
+
 def enroll_member(project_id, user, request_user=None, reason=None):
     try:
         project = get_project_for_update(project_id)
     except ProjectNotFound as e:
         raise ProjectConflict(e.message)
-    accept_membership_project_checks(project, request_user)
+    enroll_member_checks(project, user, request_user)
 
     try:
         membership = get_membership(project.id, user.id)
@@ -1239,8 +1252,7 @@ def _get_base_projects(user_ids):
 
 def _get_memberships(user_ids):
     ms = ProjectMembership.objects.actually_accepted().\
-        filter(person__in=user_ids,
-               project__state__in=[Project.NORMAL, Project.SUSPENDED])
+        filter(person__in=user_ids)
     return _partition_by(lambda m: m.person_id, ms)
 
 

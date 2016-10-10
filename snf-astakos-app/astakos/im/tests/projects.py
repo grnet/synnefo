@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ class ProjectAPITest(TestCase):
         self.user2.uuid = "uuid2"
         self.user2.save()
         self.user3 = get_local_user("test3@grnet.gr")
+        self.user4 = get_local_user("test4@grnet.gr", is_active=False)
 
         astakos = Component.objects.create(name="astakos")
         register.add_service(astakos, "astakos_account", "account", [])
@@ -373,6 +374,10 @@ class ProjectAPITest(TestCase):
 
         # Enroll fails, already in
         status, body = self.enroll(project_id, self.user1, h_owner)
+        self.assertEqual(status, 409)
+
+        # Enroll fails, user is not active
+        status, body = self.enroll(project_id, self.user4, h_owner)
         self.assertEqual(status, 409)
 
         # Enroll fails, project does not exist
@@ -730,6 +735,84 @@ class ProjectAPITest(TestCase):
         owner_pa3 = get_pending_apps(self.user1)
         self.assertEqual(admin_pa3, admin_pa2)
         self.assertEqual(owner_pa3, owner_pa2)
+
+    @im_settings(PROJECT_ADMINS=["uuid2"])
+    def test_suspend_deactivated(self):
+        client = self.client
+        h_owner = {"HTTP_X_AUTH_TOKEN": self.user1.auth_token}
+        h_admin = {"HTTP_X_AUTH_TOKEN": self.user2.auth_token}
+        h_plain = {"HTTP_X_AUTH_TOKEN": self.user3.auth_token}
+
+        app1 = {"name": "test.pr",
+                "description": u"δεσκρίπτιον",
+                "end_date": "2113-5-5T20:20:20Z",
+                "join_policy": "auto",
+                "max_members": 5,
+                "resources": {u"σέρβις1.ρίσορς11": {
+                    "project_capacity": 1024,
+                    "member_capacity": 512}}
+                }
+
+        # Create
+        status, body = self.create(app1, h_owner)
+        self.assertEqual(status, 201)
+        project_id = body["id"]
+        app_id = body["application"]
+        # Approve
+        status = self.project_action(project_id, "approve", app_id,
+                                     headers=h_admin)
+        self.assertEqual(status, 200)
+
+        # Enroll
+        status, body = self.enroll(project_id, self.user1, h_owner)
+        self.assertEqual(status, 200)
+        m_plain_id = body["id"]
+
+        # Check user memberships
+        memberships = self.user1.projectmembership_set.all()
+        self.assertEqual(len(memberships), 2)
+        for membership in memberships:
+            self.assertEqual(membership.state, membership.ACCEPTED)
+
+        # Deactivate user
+        backend = activation_backends.get_backend()
+        backend.deactivate_user(self.user1)
+
+        # Check memberships and owned project of deactivated user
+        memberships = self.user1.projectmembership_set.all()
+        self.assertEqual(len(memberships), 2)
+        for membership in memberships:
+            self.assertEqual(membership.state, membership.USER_SUSPENDED)
+        project = Project.objects.get(uuid=project_id)
+        self.assertEqual(project.state, project.SUSPENDED)
+
+        # Re-activate user
+        backend = activation_backends.get_backend()
+        backend.activate_user(self.user1)
+
+        # Check memberships and owned project of re-activated user
+        memberships = self.user1.projectmembership_set.all()
+        self.assertEqual(len(memberships), 2)
+        for membership in memberships:
+            self.assertEqual(membership.state, membership.ACCEPTED)
+        project = Project.objects.get(uuid=project_id)
+        self.assertEqual(project.state, project.NORMAL)
+
+        # Terminate
+        status = self.project_action(project_id, "terminate", headers=h_admin)
+        self.assertEqual(status, 200)
+
+        # Deactivate user
+        backend = activation_backends.get_backend()
+        backend.deactivate_user(self.user1)
+
+        # check memberships and owned project of deactivated user
+        memberships = self.user1.projectmembership_set.all()
+        self.assertEqual(len(memberships), 2)
+        for membership in memberships:
+            self.assertEqual(membership.state, membership.USER_SUSPENDED)
+        project = Project.objects.get(uuid=project_id)
+        self.assertEqual(project.state, project.TERMINATED)
 
 
 class TestProjects(TestCase):

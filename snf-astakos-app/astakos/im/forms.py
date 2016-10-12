@@ -1222,7 +1222,10 @@ class AddProjectMembersForm(forms.Form):
         q = self.cleaned_data.get('q') or ''
         users = re.split("\r\n|\n|,", q)
         users = list(u.strip() for u in users if u)
-        db_entries = AstakosUser.objects.accepted().filter(email__in=users)
+
+        # Notice that deactivated users are reported as 'unknown' here, too.
+        db_entries = AstakosUser.objects.accepted().filter(
+            email__in=users, is_active=True)
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
             raise forms.ValidationError(

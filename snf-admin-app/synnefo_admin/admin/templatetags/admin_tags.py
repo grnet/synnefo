@@ -500,7 +500,7 @@ def flatten_dict_to_dl(d, default_if_empty='-'):
             if isinstance(v, dict):
                 stack.extend(v.iteritems())
             else:
-                a = '<dt>{0}</dt><dd>{1}</dd>'.format(k, v or default_if_empty)
+                a = u'<dt>{0}</dt><dd>{1}</dd>'.format(k, v or default_if_empty)
                 l.append(a)
     return mark_safe(''.join(reversed(l)))
 

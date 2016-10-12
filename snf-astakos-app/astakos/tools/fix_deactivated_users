@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import string
-from datetime import datetime
+import sys
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "synnefo.settings")
 
 from optparse import make_option
 
@@ -23,20 +26,17 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import AstakosUser
 from astakos.im import functions, activation_backends
+from astakos.im.management.commands._common import is_uuid
 from django.conf import settings
 
 SUSPENSION_REASON = activation_backends.PROJECT_SUSPENSION_REASON
 
 
 class Command(SynnefoCommand):
-    help = "Check and fix user state"
+    help = "Check and fix state of projects for deactivated users"
     args = "<user ID> (or --all-users)"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--suspend-deactivated',
-                    action="store_true",
-                    default=False,
-                    help="Suspend projects if user is deactivated"),
         make_option('--all-users',
                     action="store_true",
                     default=False,
@@ -78,29 +78,38 @@ class Command(SynnefoCommand):
             raise CommandError("Need to specify either a userid "
                                "or option --all-users.")
         userid = None if all_users else args[0]
-        if options["suspend_deactivated"]:
-            self.suspend_projects(userid, fix)
-        else:
-            self.stderr.write("No action specified.\n")
+        self.suspend_projects(userid, fix)
 
     @transaction.commit_on_success
     def suspend_projects(self, userid, fix):
         count = 0
-        deactivated = AstakosUser.objects.filter(
-            is_active=False, deactivated_at__isnull=False).select_for_update()
+        deactivated = AstakosUser.objects.accepted().filter(
+            is_active=False).select_for_update()
         if userid is None:
             users = deactivated
         else:
             users = [self.get_user(deactivated, userid)]
 
-        affected_users = functions.suspend_users_projects(
-            users, reason=SUSPENSION_REASON, fix=fix)
-        if affected_users:
-            verb = "Suspended" if fix else "Would suspend"
-            self.stderr.write(
-                "%s projects/memberships for %s "
-                "deactivated users:\n" % (verb, len(affected_users)))
-            for user in affected_users:
-                self.stderr.write("%s (%s)\n" % (user.email, user.uuid))
+        bpd, md, opd = functions.get_projects_and_memberships_of_users(users)
+        for user in users:
+            base_project = bpd[user.base_project_id]
+            memberships = md.get(user.id, [])
+            owned_projects = opd.get(user.id, [])
+            affected = functions.suspend_user_projects_and_memberships(
+                user, base_project, memberships, owned_projects,
+                reason=SUSPENSION_REASON, fix=fix)
+            if affected:
+                verb = "Affected" if fix else "Would affect"
+                self.stdout.write("%s %s (%s)\n" %
+                                  (verb, user.email, user.uuid))
+                count += 1
+        if count:
+            self.stdout.write("Total %s users.\n" % count)
         else:
-            self.stderr.write("No users affected.\n")
+            self.stdout.write("No users affected.\n")
+
+
+command = Command()
+args = sys.argv[:]
+args.insert(1, 'fix-deactivated-users')
+command.run_from_argv(args)

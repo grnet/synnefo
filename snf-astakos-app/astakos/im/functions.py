@@ -218,16 +218,20 @@ def app_check_allowed(application, request_user,
     return _failure(silent)
 
 
-def checkAlive(project, silent=False):
+def checkAlive(project, silent=False, check_initialized=False):
     def fail(msg):
         if silent:
             return False, msg
         else:
             raise ProjectConflict(msg)
-
-    if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
-        return fail(m)
+    if check_initialized:
+        if not project.is_initialized():
+            m = _(astakos_messages.NOT_INITIALIZED_PROJECT) % project.uuid
+            return fail(m)
+    else:
+        if not project.is_alive:
+            m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
+            return fail(m)
     return True, None
 
 
@@ -249,7 +253,9 @@ def accept_membership_checks(membership, request_user):
     if not membership.check_action("accept"):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
-
+    if not membership.person.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise ProjectConflict(m)
     project = membership.project
     accept_membership_project_checks(project, request_user)
 
@@ -350,7 +356,7 @@ def suspend_membership_checks(membership, request_user=None):
 
     project = membership.project
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    checkAlive(project, check_initialized=True)
 
 
 def suspend_membership(memb_id, request_user=None, reason=None):
@@ -376,7 +382,7 @@ def unsuspend_membership_checks(membership, request_user=None):
 
     project = membership.project
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    checkAlive(project, check_initialized=True)
 
 
 def unsuspend_membership(memb_id, request_user=None, reason=None):
@@ -403,12 +409,19 @@ def enroll_member_by_email(project_id, email, request_user=None, reason=None):
         raise ProjectConflict(astakos_messages.UNKNOWN_USERS % email)
 
 
+def enroll_member_checks(project, user, request_user):
+    if not user.is_active:
+        m = _(astakos_messages.ACCOUNT_NOT_ACTIVE)
+        raise ProjectConflict(m)
+    accept_membership_project_checks(project, request_user)
+
+
 def enroll_member(project_id, user, request_user=None, reason=None):
     try:
         project = get_project_for_update(project_id)
     except ProjectNotFound as e:
         raise ProjectConflict(e.message)
-    accept_membership_project_checks(project, request_user)
+    enroll_member_checks(project, user, request_user)
 
     try:
         membership = get_membership(project.id, user.id)
@@ -1250,55 +1263,59 @@ def _get_owned_projects(user_ids):
     return _partition_by(lambda p: p.owner_id, ps)
 
 
-def suspend_users_projects(users, request_user=None, reason=None, fix=True):
-    affected_users = []
+def get_projects_and_memberships_of_users(users):
     user_ids = [user.id for user in users]
     if not user_ids:
-        return affected_users
+        return {}, {}, {}
 
     base_projects_d = _get_base_projects(user_ids)
     memberships_d = _get_memberships(user_ids)
     owned_projects_d = _get_owned_projects(user_ids)
+    return base_projects_d, memberships_d, owned_projects_d
 
-    for user in users:
-        is_affected = False
-        base_project = base_projects_d[user.base_project_id]
-        if base_project.state == Project.NORMAL:
-            try:
-                if fix:
-                    suspend(user.base_project_id,
-                            request_user=request_user, reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
-        memberships = memberships_d.get(user.id, [])
-        for membership in memberships:
-            try:
-                if fix:
-                    suspend_membership(
-                        membership.id, request_user=request_user,
-                        reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
 
-        owned_projects = owned_projects_d.get(user.id, [])
-        for project in owned_projects:
-            try:
-                if fix:
-                    suspend(
-                        project.id, request_user=request_user, reason=reason)
-                is_affected = True
-            except ProjectError:
-                pass
-        if is_affected:
-            affected_users.append(user)
-    return affected_users
+def suspend_user_projects_and_memberships(
+        user, base_project, memberships, owned_projects,
+        request_user=None, reason=None, fix=True):
+    is_affected = False
+    if base_project.state == Project.NORMAL:
+        try:
+            if fix:
+                suspend(user.base_project_id,
+                        request_user=request_user, reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+    for membership in memberships:
+        try:
+            if fix:
+                suspend_membership(
+                    membership.id, request_user=request_user,
+                    reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+
+    for project in owned_projects:
+        try:
+            if fix:
+                suspend(
+                    project.id, request_user=request_user, reason=reason)
+            is_affected = True
+        except ProjectError:
+            pass
+    return is_affected
 
 
 def suspend_user_projects(user, request_user=None, reason=None):
-    return suspend_users_projects(
-        [user], request_user=request_user, reason=reason)
+    bpd, md, opd = get_projects_and_memberships_of_users([user])
+    base_project = bpd[user.base_project_id]
+    memberships = md.get(user.id, [])
+    owned_projects = opd.get(user.id, [])
+
+    return suspend_user_projects_and_memberships(
+        user, base_project, memberships, owned_projects,
+        request_user=request_user, reason=reason)
 
 
 def unsuspend_project_on_condition(project, request_user=None, reason=None,

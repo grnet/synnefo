@@ -357,7 +357,7 @@ class ActivationBackend(object):
         if not ok:
             return ActivationResult(self.Result.ERROR, msg)
 
-        was_deactivated = bool(user.deactivated_at)
+        was_deactivated = not user.is_active
         user.is_active = True
         user.deactivated_reason = None
         user.deactivated_at = None

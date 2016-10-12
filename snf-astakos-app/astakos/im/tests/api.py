@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -418,16 +418,10 @@ class TokensApiTest(TestCase):
     def setUp(self):
         backend = activation_backends.get_backend()
 
-        self.user1 = get_local_user(
-            'test1@example.org', email_verified=True, moderated=True,
-            is_rejected=False)
-        backend.activate_user(self.user1)
+        self.user1 = get_local_user('test1@example.org')
         assert self.user1.is_active is True
 
-        self.user2 = get_local_user(
-            'test2@example.org', email_verified=True, moderated=True,
-            is_rejected=False)
-        backend.activate_user(self.user2)
+        self.user2 = get_local_user('test2@example.org')
         assert self.user2.is_active is True
 
         c1 = Component(name='component1', url='http://localhost/component1')
@@ -661,8 +655,7 @@ class TokensApiTest(TestCase):
 class UserCatalogsTest(TestCase):
     def test_get_uuid_displayname_catalogs(self):
         self.user = get_local_user(
-            'test1@example.org', email_verified=True, moderated=True,
-            is_rejected=False, is_active=False)
+            'test1@example.org', email_verified=True, is_active=False)
 
         client = Client()
         url = reverse('astakos.api.user.get_uuid_displayname_catalogs')
@@ -689,7 +682,8 @@ class UserCatalogsTest(TestCase):
         self.assertEqual(r.status_code, 401)
 
         backend = activation_backends.get_backend()
-        backend.activate_user(self.user)
+        backend.verify_user(self.user, self.user.verification_code)
+        backend.accept_user(self.user)
         assert self.user.is_active is True
 
         r = client.post(url,

@@ -6,12 +6,10 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.18:
+.. _Changelog-0.18.1:
 
-v0.18
-========
-
-Released: Wed  7 Sep 16:50:30 EEST 2016
+v0.18.1
+=======
 
 Astakos
 -------
@@ -23,7 +21,7 @@ Astakos
 * Support suspending and unsuspending project memberships.
 * User deactivation now automatically suspends user's system project, owned
   projects, and project memberships. Reactivation unsuspends them.
-* Add command `user-check`. It supports suspending projects for previously
+* Add script `fix_deactivated_users` to suspend projects for previously
   deactivated users.
 * Send an informative email to the user's current email address when they
   request to change their email.

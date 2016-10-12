@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -210,6 +210,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '
     'be unique among all active projects.')
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
+NOT_INITIALIZED_PROJECT = 'Project %s is not initialized.'
 SUSPENDED_PROJECT = 'Project %s is suspended.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'

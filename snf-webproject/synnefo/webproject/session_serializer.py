@@ -15,8 +15,13 @@
 
 import json
 import logging
+import datetime
 from dateutil import parser
 from django.core.serializers.json import DjangoJSONEncoder
+
+TYPE_TOKEN = '_type'
+VALUE_TOKEN = '_value'
+DATE_TYPE_TOKEN = 'date'
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +32,28 @@ class DateTimeDecoder(json.JSONDecoder):
                                   *args, **kwargs)
 
     def object_hook(self, obj):
-        for (key, value) in obj.items():
+        if set(obj.keys()) != set([TYPE_TOKEN, VALUE_TOKEN]):
+            return obj
+
+        typ = obj[TYPE_TOKEN]
+        val = obj[VALUE_TOKEN]
+        if typ == DATE_TYPE_TOKEN:
             try:
-                # Convert only top level strings, since there are no nested
-                # dates in the Session object. In such a case, this must be
-                # extended to recursively convert isoformatted strings to
-                # datetime objects.
-                obj[key] = parser.parse(value)
-            except Exception:
-                pass
-        return obj
+                r = parser.parse(val)
+            except Exception as e:
+                logger.error("Could not deserialize date from: %s", str(val))
+                logger.exception(e)
+                return obj
+
+            logger.debug("Deserialized date str '%s' to %s", val, repr(r))
+            return r
+
+        raise ValueError("Unrecognized type %s" % typ)
 
 
 class DateTimeAwareJSON(object):
     def dumps(self, obj):
-        return json.dumps(obj, cls=DjangoJSONEncoder)
+        return json.dumps(obj, cls=DateJSONEncoder)
 
     def loads(self, data):
         try:
@@ -49,3 +61,23 @@ class DateTimeAwareJSON(object):
         except Exception as e:
             logger.error("Failed to load session: " + str(e))
             raise
+
+
+class DateJSONEncoder(DjangoJSONEncoder):
+    """
+    JSONEncoder subclass that knows how to encode date/time and add type
+    information.
+    """
+
+    def default(self, o):
+        """
+        Serialize a date object similar to Django's Json Encoder, but add a
+        type field for deterministic deserialization.
+        """
+        r = super(DateJSONEncoder, self).default(o)
+        datetime_classes = (datetime.datetime, datetime.date, datetime.time)
+        if isinstance(o, datetime_classes):
+            logger.debug("Converted date type %s to '%s'", repr(o), r)
+            return {TYPE_TOKEN: DATE_TYPE_TOKEN, VALUE_TOKEN: r}
+
+        return r

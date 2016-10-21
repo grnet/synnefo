@@ -14,9 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import oauth2 as oauth
-import cgi
-import urllib
+import requests
+from requests_oauthlib import OAuth1
+from urlparse import parse_qsl
 
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
@@ -24,8 +24,6 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.conf import settings as django_settings
 from django.utils.http import urlencode
-
-from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from astakos.im.models import AstakosUser
 from astakos.im import settings
@@ -56,24 +54,25 @@ authenticate_url = django_setting(
 @cookie_fix
 def login(request):
     init_third_party_session(request)
+
     force_login = request.GET.get('force_login',
                                   settings.TWITTER_AUTH_FORCE_LOGIN)
-    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
-                              settings.TWITTER_SECRET)
-    client = oauth.Client(consumer)
-    resp, content = client.request(request_token_url, "GET")
-    if resp['status'] != '200':
+    oauth = OAuth1(settings.TWITTER_TOKEN,
+                   client_secret=settings.TWITTER_SECRET)
+    resp = requests.post(url=request_token_url, auth=oauth)
+    if resp.status_code != 200:
         messages.error(request, 'Invalid Twitter response')
-        logger.error("Invalid twitter response %s", resp)
+        logger.error("Invalid twitter response (code: %d) %s",
+                     resp.status_code, resp.content)
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    oa_resp = dict(cgi.parse_qsl(content))
+    oa_resp = dict(parse_qsl(resp.content))
     if 'status' in oa_resp and oa_resp['status'] != '200':
         messages.error(request, 'Invalid Twitter response')
         logger.error("Invalid twitter response %s", resp)
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    request.session['request_token'] = dict(cgi.parse_qsl(content))
+    request.session['request_token'] = oa_resp
     params = {
         'oauth_token': request.session['request_token']['oauth_token'],
     }
@@ -100,41 +99,35 @@ def authenticated(request,
     if extra_context is None:
         extra_context = {}
 
-    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
-                              settings.TWITTER_SECRET)
-    client = oauth.Client(consumer)
-
     if request.GET.get('denied'):
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if not 'request_token' in request.session:
+    if 'request_token' not in request.session:
         messages.error(request, 'Twitter handshake failed')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    token = oauth.Token(request.session['request_token']['oauth_token'],
-                        request.session['request_token']['oauth_token_secret'])
-    client = oauth.Client(consumer, token)
-
-    # Step 2. Request the authorized access token from Twitter.
-    parts = list(urlsplit(access_token_url))
-    params = dict(parse_qsl(parts[3], keep_blank_values=True))
     oauth_verifier = request.GET.get('oauth_verifier')
-    params['oauth_verifier'] = oauth_verifier
-    parts[3] = urlencode(params)
-    parameterized_url = urlunsplit(parts)
+    resource_owner_key = request.session['request_token'].get('oauth_token')
+    resource_owner_secret = request.session['request_token']\
+        .get('oauth_token_secret')
+    oauth = OAuth1(settings.TWITTER_TOKEN,
+                   client_secret=settings.TWITTER_SECRET,
+                   resource_owner_key=resource_owner_key,
+                   resource_owner_secret=resource_owner_secret,
+                   verifier=oauth_verifier)
 
-    resp, content = client.request(parameterized_url, "GET")
-
-    if resp['status'] != '200':
+    resp = requests.post(url=access_token_url, auth=oauth)
+    if resp.status_code != 200:
         try:
             del request.session['request_token']
         except:
             pass
         messages.error(request, 'Invalid Twitter response')
-        logger.error("Invalid twitter response %s", resp)
+        logger.error("Invalid twitter response (code: %d) %s",
+                     resp.status_code, resp.content)
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    access_token = dict(cgi.parse_qsl(content))
+    access_token = dict(parse_qsl(resp.content))
     userid = access_token['user_id']
     username = access_token.get('screen_name', userid)
     provider_info = {'screen_name': username}
@@ -145,7 +138,7 @@ def authenticated(request,
         return handle_third_party_login(request, 'twitter', userid,
                                         provider_info, affiliation,
                                         user_info=user_info)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         third_party_key = get_pending_key(request)
         return handle_third_party_signup(request, userid, 'twitter',
                                          third_party_key,

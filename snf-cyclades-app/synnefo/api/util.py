@@ -21,7 +21,6 @@ from hashlib import sha256
 from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
-from time import time
 
 from Crypto.Cipher import AES
 
@@ -29,7 +28,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 import json
-from django.db.models import Q
 from django.core.cache import caches
 
 from snf_django.lib.api import faults
@@ -499,16 +497,16 @@ def start_action(vm, action, jobId):
     vm.save()
 
 
-
 STATS_CACHE_VALUES = {
     'spawned_servers':
-    lambda: len(VirtualMachine.objects.exclude(operstate="ERROR")),
+    lambda: VirtualMachine.objects.exclude(operstate="ERROR").count(),
     'active_servers':
-    lambda: len(
-        VirtualMachine.objects.exclude(operstate__in=["DELETED", "ERROR"])),
+    lambda:
+    VirtualMachine.objects.exclude(operstate__in=["DELETED", "ERROR"]).count(),
     'spawned_networks':
-    lambda: len(Network.objects.exclude(state__in=["ERROR", "PENDING"])),
+    lambda: Network.objects.exclude(state__in=["ERROR", "PENDING"]).count(),
 }
+
 
 def get_or_set_cache(cache, key, func):
     value = cache.get(key)

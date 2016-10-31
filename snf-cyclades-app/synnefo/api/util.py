@@ -35,6 +35,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
+from synnefo.userdata.models import PublicKeyPair
 from synnefo.plankton.backend import PlanktonBackend
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST,\
@@ -186,6 +187,19 @@ def get_image(image_id, user_id):
             return backend.get_image(image_id)
         except faults.ItemNotFound:
             raise faults.ItemNotFound("Image '%s' not found" % image_id)
+
+
+def get_keypair(keypair_name, user_id, for_update=False):
+    try:
+        keypairs = PublicKeyPair.objects
+        if for_update:
+            keypairs = keypairs.select_for_update()
+        keypair = keypairs.get(name=keypair_name, user=user_id)
+        if keypair.deleted:
+            raise faults.BadRequest("Keypair has been deleted.")
+        return keypair
+    except PublicKeyPair.DoesNotExist:
+        raise faults.ItemNotFound('Keypair %s not found.' % keypair_name)
 
 
 def get_image_dict(image_id, user_id):

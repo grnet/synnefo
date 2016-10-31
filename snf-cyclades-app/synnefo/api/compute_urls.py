@@ -16,7 +16,7 @@
 from django.conf.urls import include, patterns
 
 from snf_django.lib.api import api_endpoint_not_found
-from synnefo.api import (servers, flavors, images, extensions)
+from synnefo.api import (servers, flavors, images, extensions, keypairs)
 from synnefo.api.versions import versions_list, version_details
 
 
@@ -29,6 +29,7 @@ compute_api20_patterns = patterns(
     (r'^flavors', include(flavors)),
     (r'^images', include(images)),
     (r'^extensions', include(extensions)),
+    (r'^os-keypairs', include(keypairs))
 )
 
 

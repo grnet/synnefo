@@ -227,9 +227,9 @@ MEMBERSHIP_ASSOCIATED = 'Request or membership already exists.'
 NO_APPLICANT = (
     'Project application requires at least one applicant. None found.')
 INVALID_PROJECT_START_DATE = (
-    'Project start date should be equal or greater than the current date.')
+    'Project start date should be equal to or greater than the current date.')
 INVALID_PROJECT_END_DATE = (
-    'Project end date should be equal or greater than than the current date.')
+    'Project end date should be equal to or greater than the current date.')
 INCONSISTENT_PROJECT_DATES = (
     'Project end date should be greater than the project start date.')
 ADD_PROJECT_MEMBERS_Q_HELP = (

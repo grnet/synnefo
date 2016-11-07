@@ -360,6 +360,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
+    key_name = models.CharField(max_length=100, null=True)
     image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)

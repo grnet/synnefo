@@ -18,6 +18,7 @@ from django.conf.urls import patterns, include
 from django.http import HttpResponseNotAllowed
 from snf_django.lib import api
 from synnefo.volume import views, util
+from synnefo.volume.versions import versions_list
 from snf_django.lib.api import faults, utils
 
 
@@ -149,6 +150,8 @@ if settings.CYCLADES_SNAPSHOTS_ENABLED:
 
 urlpatterns = patterns(
     '',
+    (r'^(?:.json)?$', versions_list),
     (r'^v2.0/', include(volume_v2_patterns)),
-    (r'^.*', api.api_endpoint_not_found)
+    (r'^v2/', include(volume_v2_patterns)),
+    (r'^.*', api.api_endpoint_not_found),
 )

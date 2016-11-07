@@ -18,52 +18,45 @@ from logging import getLogger
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 import json
-from synnefo.cyclades_settings import COMPUTE_ROOT_URL
+from synnefo.cyclades_settings import NETWORK_ROOT_URL
+from synnefo.api.util import build_version_object
 
 from snf_django.lib import api
-
 
 log = getLogger('synnefo.api')
 
 
-VERSION_2_0 = {
-    "id": "v2.0",
-    "status": "CURRENT",
-    "updated": "2011-01-21T11:33:21-06:00",
-    "links": [
-        {
-            "rel": "self",
-            "href": COMPUTE_ROOT_URL,
-        },
-    ],
-}
-
-VERSIONS = [VERSION_2_0]
-
-MEDIA_TYPES = [
-    {
-        "base": "application/xml",
-        "type": "application/vnd.openstack.compute.v2+xml"
-    },
-    {
-        "base": "application/json",
-        "type": "application/vnd.openstack.compute.v2+json"
-    }
+VERSIONS = [
+    build_version_object(NETWORK_ROOT_URL, 2.0, 'v2.0', 'CURRENT')
 ]
 
-DESCRIBED_BY = [
+
+RESOURCES_NAMES = [
+    'networks',
+    'subnets',
+    'ports',
+    'floatingips',
+]
+
+PLURAL_TO_SINGULAR = {
+    'networks': 'network',
+    'subnets': 'subnet',
+    'ports': 'port',
+    'floatingips': 'floatingip'
+}
+
+NETWORK_RESOURCES_V2_0 = [
     {
-        "rel": "describedby",
-        "type": "application/pdf",
-        "href": "http://docs.rackspacecloud.com/servers/api/v2/"
-                "cs-devguide-20110125.pdf"
-    },
-    {
-        "rel": "describedby",
-        "type": "application/vnd.sun.wadl+xml",
-        "href": "http://docs.rackspacecloud.com/servers/api/v2/"
-                "application.wadl"
+        "links": [
+            {
+                "href": "{0}/v2.0/{1}".format(NETWORK_ROOT_URL, resource),
+                "rel": "self"
+            }
+        ],
+        "name": PLURAL_TO_SINGULAR[resource],
+        "collection": resource
     }
+    for resource in RESOURCES_NAMES
 ]
 
 
@@ -81,7 +74,7 @@ def versions_list(request):
 
 
 @api.api_method('GET', user_required=True, logger=log)
-def version_details(request, api_version):
+def version_details(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -89,15 +82,9 @@ def version_details(request, api_version):
     #                       badRequest (400),
     #                       overLimit(413)
 
-    log.debug('version_details %s', api_version)
-    # We hardcode to v2.0 since it is the only one we support
-    version = VERSION_2_0.copy()
-    version['links'] = version['links'] + DESCRIBED_BY
-
     if request.serialization == 'xml':
-        version['media_types'] = MEDIA_TYPES
-        data = render_to_string('version_details.xml', {'version': version})
+        data = render_to_string('version_details.xml',
+                                {'resources': NETWORK_RESOURCES_V2_0})
     else:
-        version['media-types'] = MEDIA_TYPES
-        data = json.dumps({'version': version})
+        data = json.dumps({'resources': NETWORK_RESOURCES_V2_0})
     return HttpResponse(data)

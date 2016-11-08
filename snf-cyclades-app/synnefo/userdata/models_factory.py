@@ -1,3 +1,4 @@
+#
 # Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,16 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Import TestCases
-from .servers import *
-from .networks import *
-from .ports import *
-from .flavors import *
-from .images import *
-from .versions import *
-from .extensions import *
-from .subnets import *
-from .floating_ips import *
-from .admin_stats import *
-from .admin_views import *
-from .keypairs import *
+
+import factory
+from synnefo.userdata import models
+
+
+class PublicKeyPairFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.PublicKeyPair
+    content = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCkF3MX59OrlBs3dH5CU7lNmvpbrgZxSpyGjlnE8Flkirnc/Up22lpjznoxqeoTAwTW034k7Dz6aYIrZGmQwe\2TkE084yqvlj45Dkyoj95fW/sZacm0cZNuL69EObEGHdprfGJQajrpz22NQoCD8TFB8Wv+8om9NH9Le6s+WPe98WC77KLw8qgfQsbIey+JawPWl4O67ZdL5xrypuRjfIPWjgy/VH85IXg/Z/GONZ2nxHgSShMkwqSFECAC5L3PHB+0+/12M/iikdatFSVGjpuHvkLOs3oe7m6HlOfluSJ85BzLWBbvva93qkGmLg4ZAc8rPh2O+YIsBUHNLLMM/oQp'
+    fingerprint = '7e:eb:ab:24:ba:d1:e1:88:ae:9a:fb:66:53:df:d3:bd'
+    type = 'ssh'

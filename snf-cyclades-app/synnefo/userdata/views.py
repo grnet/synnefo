@@ -20,33 +20,23 @@ from django.conf import settings
 
 from synnefo.userdata import rest
 from synnefo.userdata.models import PublicKeyPair
-from synnefo.userdata.util import exportKey
+from synnefo.userdata.util import exportKey, generate_keypair
 from snf_django.lib.astakos import get_user
-
-SUPPORT_GENERATE_KEYS = True
-try:
-    from paramiko import rsakey
-    from paramiko.message import Message
-except ImportError, e:
-    SUPPORT_GENERATE_KEYS = False
-
-import base64
 
 
 class PublicKeyPairResourceView(rest.UserResourceView):
     model = PublicKeyPair
-    exclude_fields = ["user"]
+    exclude_fields = ["user", "deleted", "deleted_at",
+                      "updated_at", "created_at", "type"]
 
 
 class PublicKeyPairCollectionView(rest.UserCollectionView):
     model = PublicKeyPair
-    exclude_fields = ["user"]
+    exclude_fields = ["user", "deleted", "deleted_at",
+                      "updated_at", "created_at", "type"]
 
 
-SSH_KEY_LENGTH = getattr(settings, 'USERDATA_SSH_KEY_LENGTH', 2048)
-
-
-def generate_key_pair(request):
+def create_new_keypair(request):
     """
     Response to generate private/public RSA key pair
     """
@@ -62,24 +52,7 @@ def generate_key_pair(request):
     if PublicKeyPair.user_limit_exceeded(request.user_uniq):
         return http.HttpResponseServerError("SSH keys limit exceeded")
 
-    # generate RSA key
-    from Crypto import Random
-    Random.atfork()
-
-    key = rsakey.RSA.generate(SSH_KEY_LENGTH)
-
-    # get PEM string
-    pem = exportKey(key, 'PEM')
-
-    public_data = Message()
-    public_data.add_string('ssh-rsa')
-    public_data.add_mpint(key.key.e)
-    public_data.add_mpint(key.key.n)
-
-    # generate public content
-    public = str("ssh-rsa %s" % base64.b64encode(str(public_data)))
-
-    data = {'private': pem, 'public': public}
+    data = generate_keypair()
     return http.HttpResponse(json.dumps(data), content_type="application/json")
 
 

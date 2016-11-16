@@ -48,7 +48,9 @@ ADMIN_PREFIX = cyclades_services['cyclades_admin']['prefix']
 VOLUME_PREFIX = cyclades_services['cyclades_volume']['prefix']
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
-
+NETWORK_ROOT_URL = join_urls(BASE_URL, NETWORK_PREFIX)
+BLOCKSTORAGE_ROOT_URL = join_urls(BASE_URL, VOLUME_PREFIX)
+IMAGE_ROOT_URL = join_urls(BASE_URL, PLANKTON_PREFIX)
 # --------------------------------------------------------------------
 # Process Astakos settings
 

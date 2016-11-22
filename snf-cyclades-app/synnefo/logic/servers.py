@@ -47,7 +47,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None, helper=False, user_projects=None,
-           shared_to_project=False):
+           shared_to_project=False, key_name=None):
 
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
@@ -126,6 +126,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        shared_to_project=shared_to_project,
                                        imageid=image["id"],
                                        image_version=image["version"],
+                                       key_name=key_name,
                                        flavor=flavor,
                                        operstate="BUILD",
                                        helper=helper)
@@ -172,9 +173,14 @@ def create(userid, name, password, flavor, image_id, metadata={},
             meta_value=val,
             vm=vm)
 
+    public_key = None
+    if key_name is not None:
+        keypair = util.get_keypair(key_name, userid)
+        public_key = keypair.content
+
     # Create the server in Ganeti.
     vm = create_server(vm, ports, server_volumes, flavor, image, personality,
-                       password)
+                       password, public_key)
 
     return vm
 
@@ -200,7 +206,8 @@ def allocate_new_server(userid, flavor):
 
 
 @commands.server_command("BUILD")
-def create_server(vm, nics, volumes, flavor, image, personality, password):
+def create_server(vm, nics, volumes, flavor, image, personality, password,
+                  public_key):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -212,13 +219,18 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
     if root_volume.volume_type.provider in settings.GANETI_CLONE_PROVIDERS:
         image_id = "null"
 
-    server_created.send(sender=vm, created_vm_params={
+    created_vm_params = {
         'img_id': image_id,
         'img_passwd': password,
         'img_format': str(image['format']),
         'img_personality': json.dumps(personality),
         'img_properties': json.dumps(image['metadata']),
-    })
+    }
+
+    if public_key is not None:
+        created_vm_params['auth_keys'] = public_key
+
+    server_created.send(sender=vm, created_vm_params=created_vm_params)
 
     # send job to Ganeti
     try:

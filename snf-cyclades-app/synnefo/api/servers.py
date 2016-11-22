@@ -231,7 +231,7 @@ def vm_to_dict(vm, detail=False):
             d['diagnostics'] = []
         # Fixed
         d["security_groups"] = [{"name": "default"}]
-        d["key_name"] = None
+        d["key_name"] = vm.key_name
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
@@ -413,6 +413,7 @@ def create_server(request):
             assert isinstance(networks, list)
         project = server.get("project")
         shared_to_project=server.get("shared_to_project", False)
+        key_name = server.get('key_name')
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -439,7 +440,8 @@ def create_server(request):
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
-                        user_projects=request.user_projects)
+                        user_projects=request.user_projects,
+                        key_name=key_name)
 
     log.info("User %s created VM %s, shared: %s", user_id, vm.id,
              shared_to_project)

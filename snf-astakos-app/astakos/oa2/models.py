@@ -85,7 +85,7 @@ class AuthorizationCode(models.Model):
     redirect_uri = models.TextField(null=True, default=None)
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
-    created_at = models.DateTimeField(default=datetime.datetime.now())
+    created_at = models.DateTimeField(auto_now_add=True)
 
     access_token = models.CharField(max_length=100, choices=ACCESS_TOKEN_TYPES,
                                     default='online')
@@ -111,7 +111,7 @@ class AuthorizationCode(models.Model):
 
 class Token(models.Model):
     code = models.TextField()
-    created_at = models.DateTimeField(default=datetime.datetime.now())
+    created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     token_type = models.CharField(max_length=100, choices=TOKEN_TYPES,
                                   default='Bearer')

@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             field=models.DateTimeField(
                 default=datetime.datetime(1970, 1, 1, 0, 0),
                 auto_now_add=True),
-            preserve_default=True,
+            preserve_default=False,
         ),
         migrations.AddField(
             model_name='publickeypair',

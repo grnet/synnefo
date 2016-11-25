@@ -41,7 +41,7 @@ pools_urlpatterns = patterns(
 )
 '''
 
-ips_urlpatterns = patterns(
+urlpatterns = patterns(
     'synnefo.api.floating_ips',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_floating_ips', {'detail': True}),

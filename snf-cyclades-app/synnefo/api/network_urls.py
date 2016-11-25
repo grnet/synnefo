@@ -25,7 +25,7 @@ network_api20_patterns = patterns(
     (r'^networks', include(networks)),
     (r'^ports', include(ports)),
     (r'^subnets', include(subnets)),
-    (r'^floatingips', include(floating_ips.ips_urlpatterns)),
+    (r'^floatingips', include(floating_ips)),
 )
 
 urlpatterns = patterns(

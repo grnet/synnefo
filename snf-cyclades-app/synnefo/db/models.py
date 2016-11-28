@@ -1395,3 +1395,18 @@ class VolumeMetadata(Metadata):
     class Meta:
         unique_together = (("volume", "key"),)
         verbose_name = u"Key-Value pair of Volumes metadata"
+
+
+class ProjectBackend(models.Model):
+    project = models.CharField(max_length=255)
+    backend = models.ForeignKey(Backend, related_name='projects')
+
+    class Meta:
+        unique_together = (('project', 'backend'),)
+        verbose_name = u'Project-backend mappings.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.project, self.backend_id)

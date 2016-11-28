@@ -17,7 +17,8 @@ from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                Flavor, IPAddress, Subnet,
                                BridgePoolTable, MacPrefixPoolTable,
-                               NetworkInterface, Volume, VolumeType)
+                               NetworkInterface, Volume, VolumeType,
+                               ProjectBackend)
 from functools import wraps
 
 from django.conf import settings
@@ -49,7 +50,8 @@ RESOURCE_MAP = {
     "subnet": Subnet.objects,
     "port": NetworkInterface.objects,
     "floating-ip": IPAddress.objects.filter(floating_ip=True),
-    "volume-type": VolumeType.objects}
+    "volume-type": VolumeType.objects,
+    "project-backend": ProjectBackend.objects}
 
 
 def get_resource(name, value, for_update=False):

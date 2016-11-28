@@ -59,11 +59,13 @@ class BackendAllocator():
         available_backends = get_available_backends()
 
         # Remove unnecessary backends based on the filtering strategy
-        filtered_backends = self.strategy_mod.filter_backends(available_backends, vm)
+        filtered_backends = self.strategy_mod\
+                                .filter_backends(available_backends, vm)
 
         # Lock the backends that may host the VM
         backend_ids = [b.pk for b in filtered_backends]
-        backends = list(Backend.objects.select_for_update().filter(pk__in=backend_ids))
+        backends = list(Backend.objects.select_for_update()
+                        .filter(pk__in=backend_ids))
 
         # Update the disk_templates if there are empty.
         backends = update_backends_disk_templates(backends, flavor)
@@ -102,6 +104,7 @@ def get_available_backends():
                                       public=True)
 
     return list(backends)
+
 
 def update_backends_disk_templates(backends, flavor):
     """Update the backends' disk templates and filter those

@@ -72,6 +72,7 @@ class BackendFactory(factory.DjangoModelFactory):
     password = factory.Sequence(prefix_seq('password'))
     drained = False
     offline = False
+    public = True
 
     mfree = 8192
     mtotal = 16384

@@ -90,7 +90,7 @@ class BackendAllocator():
 def get_available_backends():
     """Get the list of available backends.
 
-    The list contains the backends that are online and that have enabled
+    The list contains the public backends that are online and that have enabled
     the disk_template of the new VM.
 
     Also, if the new VM will be automatically connected to a public network,
@@ -98,7 +98,8 @@ def get_available_backends():
     excluded.
 
     """
-    backends = Backend.objects.filter(offline=False, drained=False)
+    backends = Backend.objects.filter(offline=False, drained=False,
+                                      public=True)
 
     return list(backends)
 

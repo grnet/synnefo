@@ -119,6 +119,7 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
+    public = models.BooleanField('Public', null=False)
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),

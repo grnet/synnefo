@@ -33,7 +33,7 @@ class BackendAllocator():
         module = importlib.import_module(path)
         self.strategy_mod = getattr(module, strategy_class)()
 
-    def allocate(self, userid, flavor):
+    def allocate(self, userid, project, flavor):
         """Allocate a vm of the specified flavor to a backend.
 
         Warning!!: An explicit commit is required after calling this function,
@@ -51,7 +51,7 @@ class BackendAllocator():
         disk = flavor_disk(flavor)
         ram = flavor.ram
         cpu = flavor.cpu
-        vm = {'ram': ram, 'disk': disk, 'cpu': cpu}
+        vm = {'ram': ram, 'disk': disk, 'cpu': cpu, 'project': project}
 
         log.debug("Allocating VM: %r", vm)
 

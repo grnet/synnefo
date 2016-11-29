@@ -110,7 +110,7 @@ class ServerCreationTest(TransactionTestCase):
                     update_disk_templates_mock.return_value = [backend]
                     vm = servers.create(**req)
 
-        update_disk_templates_mock.assert_called_once_with([backend], ext_flavor)
+        update_disk_templates_mock.assert_called_once_with([backend])
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",

@@ -184,7 +184,8 @@ class Backend(models.Model):
         super(Backend, self).__init__(*args, **kwargs)
         if not self.pk:
             # Generate a unique index for the Backend
-            indexes = Backend.objects.all().values_list('index', flat=True)
+            indexes = list(Backend.objects.all().values_list('index',
+                                                             flat=True))
             try:
                 first_free = [x for x in xrange(0, 16) if x not in indexes][0]
                 self.index = first_free

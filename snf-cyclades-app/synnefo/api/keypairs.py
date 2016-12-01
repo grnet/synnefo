@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import re
 
 from django.conf.urls import patterns
 from django.http import HttpResponse, HttpResponseServerError
@@ -25,15 +26,23 @@ from synnefo.userdata.models import PublicKeyPair
 from synnefo.userdata.util import generate_keypair, SUPPORT_GENERATE_KEYS
 from synnefo.api import util
 from synnefo.db import transaction
+from synnefo.webproject.validators import printable_char_range
 
 from logging import getLogger
+
+key_name_regex = ('[%(ws)s]*[%(no_ws)s]+[%(ws)s]*|'
+    '[%(ws)s]*[%(no_ws)s][%(ws)s%(no_ws)s]+[%(no_ws)s][%(ws)s]' % {
+        'ws': printable_char_range(),
+        'no_ws': printable_char_range(allow_ws=False)
+    })
 
 log = getLogger(__name__)
 
 urlpatterns = patterns(
     'synnefo.api.keypairs',
     (r'^(?:/|.json|.xml)?$', 'demux'),
-    (r'^/([\w-]+)(?:/|.json|.xml)?$', 'keypair_demux'),
+    (r'^/(%s)(?:/|.json|.xml)?$' % (key_name_regex)
+        , 'keypair_demux'),
 )
 
 
@@ -116,6 +125,9 @@ def create_new_keypair(request):
         name = keypair['name']
     except (KeyError, AssertionError):
         raise faults.BadRequest('Malformed request.')
+
+    if re.match(key_name_regex, name) is None:
+        raise faults.BadRequest('Invalid name format')
 
     try:
         # If the public_key is provided  and the corresponding

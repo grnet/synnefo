@@ -16,5 +16,6 @@
 from .default_allocator import *
 from .filter_allocator import *
 from .filter_default import *
+from .filter_project_backends import *
 from .base import *
 from .general import *

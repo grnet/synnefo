@@ -295,3 +295,10 @@ class IPAddressLogFactory(factory.DjangoModelFactory):
     server_id = 1
     network_id = 1
     active = True
+
+
+class ProjectBackendFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.ProjectBackend
+
+    project = factory.Sequence(prefix_seq("project"))
+    backend = factory.SubFactory(BackendFactory)

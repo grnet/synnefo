@@ -331,6 +331,10 @@ def reassign(vm, project, shared_to_project):
         action_fields = {"to_project": project, "from_project": vm.project}
         log.info("Reassigning VM %s from project %s to %s, shared: %s",
                 vm, vm.project, project, shared_to_project)
+        if not (vm.backend.public or
+                vm.backend.projects.filter(project=project).exists()):
+            raise faults.BadRequest("Cannot reassign VM. Target project "
+                                    "doesn't have access to the VM's backend.")
         vm.project = project
         vm.shared_to_project = shared_to_project
         vm.save()

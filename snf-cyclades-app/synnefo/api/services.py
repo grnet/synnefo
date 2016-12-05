@@ -81,7 +81,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v1.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {},
     },
@@ -93,7 +94,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v2.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {
             'network-private': {
@@ -177,7 +179,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v2.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {},
     },

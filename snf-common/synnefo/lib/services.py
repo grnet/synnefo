@@ -23,7 +23,11 @@ def fill_endpoints(services, base_url):
         prefix = service['prefix']
         endpoints = service['endpoints']
         for endpoint in endpoints:
-            version = endpoint['versionId']
+            try:
+                expose_version = endpoint['SNF:exposeVersion']
+            except KeyError:
+                endpoint['SNF:exposeVersion'] = expose_version = True
+            version = endpoint['versionId'] if expose_version else ""
             publicURL = endpoint['publicURL']
             if publicURL is not None:
                 continue

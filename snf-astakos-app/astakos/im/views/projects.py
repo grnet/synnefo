@@ -30,7 +30,7 @@ from django.views.decorators.http import require_http_methods
 from astakos.im import transaction
 from django.template import RequestContext
 from django.db.models import Q
-from snf_django.utils.views import ListViewExtra, DetailViewExtra
+from synnefo.webproject.views import ListViewExtra, DetailViewExtra
 
 import astakos.im.messages as astakos_messages
 

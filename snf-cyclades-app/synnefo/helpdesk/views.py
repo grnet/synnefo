@@ -21,7 +21,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from snf_django.utils.views import TemplateViewExtra
+from synnefo.webproject.views import TemplateViewExtra
 
 from urllib import unquote
 

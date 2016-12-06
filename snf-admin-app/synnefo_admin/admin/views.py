@@ -22,7 +22,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.serializers.json import DjangoJSONEncoder
-from snf_django.utils.views import TemplateViewExtra
+from synnefo.webproject.views import TemplateViewExtra
 
 from urllib import unquote
 

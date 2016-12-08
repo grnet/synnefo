@@ -20,7 +20,7 @@ from django.conf import settings
 
 from synnefo.userdata import rest
 from synnefo.userdata.models import PublicKeyPair
-from synnefo.userdata.util import exportKey, generate_keypair
+from synnefo.userdata.util import exportKey, generate_keypair, SUPPORT_GENERATE_KEYS
 from snf_django.lib.astakos import get_user
 
 

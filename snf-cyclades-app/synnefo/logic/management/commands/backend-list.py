@@ -48,6 +48,7 @@ class Command(ListCommand):
         "username": ("username", "The RAPI user"),
         "drained": ("drained", "Whether backend is marked as drained"),
         "offline": ("offline", "Whether backend if marked as offline"),
+        "public": ("public", "Whether backend if marked as public"),
         "vms": (get_vms, "Number of VMs that this backend hosts"),
         "ips": (get_ips, "free/total number of public IPs"),
         "mem": (get_mem, "free/total memory (MB)"),
@@ -57,4 +58,4 @@ class Command(ListCommand):
     }
 
     fields = ["id", "clustername", "port", "username", "drained", "offline",
-              "vms", "hypervisor", "ips", "disk_templates"]
+              "public", "vms", "hypervisor", "ips", "disk_templates"]

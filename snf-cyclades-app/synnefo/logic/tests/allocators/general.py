@@ -29,7 +29,7 @@ class GeneralAllocatorTests(TestCase):
         ram = flavor.ram
         cpu = flavor.cpu
 
-        self.vm = {'ram': ram, 'disk': disk, 'cpu': cpu}
+        self.vm = {'ram': ram, 'disk': disk, 'cpu': cpu, 'project': 'no_project'}
 
 
     def test_each_allocator_has_required_methods(self):

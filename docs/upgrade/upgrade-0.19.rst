@@ -258,6 +258,17 @@ Please adjust the new settings to match your previous setup.
   Notice that Synnefo now logs in a dedicated file
   ``/var/log/synnefo/synnefo.log``, separately from gunicorn's logs.
 
+
+Backend Allocator Module
+""""""""""""""""""""""""
+Synnefo v0.19 introduces a new FilterAllocator to replace the previous
+DefaultAllocator module. Synnefo v0.19 uses the new module by default, unless
+you have explicitly set the `BACKEND_ALLOCATOR_MODULE` in your settings. In that
+case, it is advised to switch the setting value to the new default setting
+`synnefo.logic.allocators.filter_allocator.FilterAllocator`. The default
+filters include the newly introduced Project-Backend association policy, while
+retaining the previous functionality for picking backends.
+
 5. Reboot
 ---------
 

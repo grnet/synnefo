@@ -119,6 +119,7 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
+    public = models.BooleanField('Public', null=False)
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),
@@ -183,7 +184,8 @@ class Backend(models.Model):
         super(Backend, self).__init__(*args, **kwargs)
         if not self.pk:
             # Generate a unique index for the Backend
-            indexes = Backend.objects.all().values_list('index', flat=True)
+            indexes = list(Backend.objects.all().values_list('index',
+                                                             flat=True))
             try:
                 first_free = [x for x in xrange(0, 16) if x not in indexes][0]
                 self.index = first_free
@@ -1394,3 +1396,18 @@ class VolumeMetadata(Metadata):
     class Meta:
         unique_together = (("volume", "key"),)
         verbose_name = u"Key-Value pair of Volumes metadata"
+
+
+class ProjectBackend(models.Model):
+    project = models.CharField(max_length=255)
+    backend = models.ForeignKey(Backend, related_name='projects')
+
+    class Meta:
+        unique_together = (('project', 'backend'),)
+        verbose_name = u'Project-backend mappings.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.project, self.backend_id)

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,9 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .default_allocator import *
-from .filter_allocator import *
-from .filter_default import *
-from .filter_project_backends import *
-from .base import *
-from .general import *
+from synnefo.db.models import ProjectBackend
+from snf_django.management.commands import ListCommand
+
+
+class Command(ListCommand):
+    help = "List project-backend mappings"
+    object_class = ProjectBackend
+
+    FIELDS = {
+        "id": ("id", "Project-backend mapping's unique ID"),
+        "project": ("project", "Project ID"),
+        "backend": ("backend_id", "Backend ID"),
+    }
+
+    fields = ["id", "project", "backend"]

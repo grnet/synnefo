@@ -61,6 +61,11 @@ class Command(SynnefoCommand):
                     metavar="True|False",
                     help="Set the backend as offline to not communicate in"
                          " order to avoid delays"),
+        make_option('--public',
+                    dest='public',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Mark the backend as public")
     )
 
     @transaction.commit_on_success
@@ -89,6 +94,8 @@ class Command(SynnefoCommand):
             backend.drained = parse_bool(options['drained'], strict=True)
         if options['offline']:
             backend.offline = parse_bool(options['offline'], strict=True)
+        if options['public']:
+            backend.public = parse_bool(options['public'], strict=True)
         hypervisor = options["hypervisor"]
         if hypervisor:
             backend.hypervisor = hypervisor

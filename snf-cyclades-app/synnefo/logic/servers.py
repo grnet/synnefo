@@ -107,15 +107,15 @@ def create(userid, name, password, flavor, image_id, metadata={},
         # Image info is not critical. Continue if it fails for any reason
         log.warning("Failed to store image info: %s", e)
 
+    if project is None:
+        project = userid
+
     if use_backend is None:
         # Allocate server to a Ganeti backend
-        use_backend = allocate_new_server(userid, flavor)
+        use_backend = allocate_new_server(userid, project, flavor)
 
     # Create the ports for the server
     ports = create_instance_ports(userid, user_projects, networks)
-
-    if project is None:
-        project = userid
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
@@ -186,7 +186,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
 
 
 @transaction.commit_on_success
-def allocate_new_server(userid, flavor):
+def allocate_new_server(userid, project, flavor):
     """Allocate a new server to a Ganeti backend.
 
     Allocation is performed based on the owner of the server and the specified
@@ -198,7 +198,7 @@ def allocate_new_server(userid, flavor):
 
     """
     backend_allocator = BackendAllocator()
-    use_backend = backend_allocator.allocate(userid, flavor)
+    use_backend = backend_allocator.allocate(userid, project, flavor)
     if use_backend is None:
         log.error("No available backend for VM with flavor %s", flavor)
         raise faults.ServiceUnavailable("No available backends")
@@ -331,6 +331,10 @@ def reassign(vm, project, shared_to_project):
         action_fields = {"to_project": project, "from_project": vm.project}
         log.info("Reassigning VM %s from project %s to %s, shared: %s",
                 vm, vm.project, project, shared_to_project)
+        if not (vm.backend.public or
+                vm.backend.projects.filter(project=project).exists()):
+            raise faults.BadRequest("Cannot reassign VM. Target project "
+                                    "doesn't have access to the VM's backend.")
         vm.project = project
         vm.shared_to_project = shared_to_project
         vm.save()

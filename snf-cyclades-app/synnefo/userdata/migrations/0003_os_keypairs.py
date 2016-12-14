@@ -8,7 +8,7 @@ import datetime
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('userdata', '0001_initial'),
+        ('userdata', '0002_conflicting_names'),
     ]
 
     operations = [

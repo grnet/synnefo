@@ -15,11 +15,9 @@
 
 import json
 
-from django.conf import settings
 from django.conf.urls import patterns
 from django.http import HttpResponse, HttpResponseServerError
 
-from snf_django.lib.astakos import get_user
 from snf_django.lib import api
 from snf_django.lib.api import utils, faults
 
@@ -40,6 +38,9 @@ urlpatterns = patterns(
 
 
 def keypair_to_dict(keypair, details=False):
+    """Given a PublicKeyPair object it returns a dict with the info stored in
+    in the object.
+    """
     d = {
         'name': keypair.name,
         'fingerprint': keypair.fingerprint,
@@ -80,7 +81,14 @@ def keypair_demux(request, keypair_name):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_keypairs(request):
-    active_keypairs = PublicKeyPair.objects.filter(user=request.user_uniq).all()
+    """List keypairs that are associated with this user.
+
+    Normal response codes: 200
+
+    Error response codes: unauthorized(401), forbidden(403)
+    """
+    active_keypairs = \
+        PublicKeyPair.objects.filter(user=request.user_uniq).all()
     keypairs = [keypair_to_dict(keypair) for keypair in
                 active_keypairs.order_by('name')]
     data = json.dumps({'keypairs': keypairs})
@@ -90,8 +98,13 @@ def list_keypairs(request):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 @transaction.commit_on_success
 def create_new_keypair(request):
+    """Generates or imports a keypair.
 
-    get_user(request, settings.ASTAKOS_AUTH_URL)
+    Normal response code: 201
+
+    Error response codes: badRequest(400), unauthorized(401), forbidden(403),
+                          conflict(409)
+    """
 
     if PublicKeyPair.user_limit_exceeded(request.user_uniq):
         return HttpResponseServerError("SSH keys limit exceeded")
@@ -110,8 +123,7 @@ def create_new_keypair(request):
         keypair_obj = util.get_keypair(name, request.user_uniq,
                                        for_update=True)
     except faults.ItemNotFound:
-        keypair_obj = PublicKeyPair(
-                name=name, user=request.user_uniq)
+        keypair_obj = PublicKeyPair(name=name, user=request.user_uniq)
 
     new_keypair = None
     try:
@@ -138,7 +150,12 @@ def create_new_keypair(request):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_keypair(request, keypair_name):
-    get_user(request, settings.ASTAKOS_AUTH_URL)
+    """Shows details for a keypair that is associated with the account.
+
+    Normal response codes: 200
+
+    Error response codes: unauthorized(401), forbidden(403), itemNotFound(404)
+    """
     keypair = util.get_keypair(keypair_name, request.user_uniq)
     keypairdict = keypair_to_dict(keypair, details=True)
     data = json.dumps(keypairdict)
@@ -148,9 +165,18 @@ def get_keypair(request, keypair_name):
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_keypair(request, keypair_name):
-    get_user(request, settings.ASTAKOS_AUTH_URL)
+    """Deletes a keypair.
+
+    Normal response codes: 204
+
+    Error response codes: unauthorized(401), forbidden(403), itemNotFound(404)
+
+    NOTE: In version 2.10 Openstack added a new optional user_id field in the
+          request to allow administrative users to upload keys for other users
+          than themselves. This is not implemented by us.
+    """
     keypair = util.get_keypair(keypair_name, request.user_uniq,
                                for_update=True)
     # The Keypair object should be deleted from the database
     keypair.delete()
-    return HttpResponse(status=200)
+    return HttpResponse(status=204)

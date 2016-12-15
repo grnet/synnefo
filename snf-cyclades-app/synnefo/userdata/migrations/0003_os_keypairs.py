@@ -29,8 +29,10 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='publickeypair',
             name='updated_at',
-            field=models.DateTimeField(auto_now=True),
-            preserve_default=True,
+            field=models.DateTimeField(
+                default=datetime.datetime(1970, 1, 1, 0, 0),
+                auto_now=True),
+            preserve_default=False,
         ),
         migrations.AlterUniqueTogether(
             name='publickeypair',

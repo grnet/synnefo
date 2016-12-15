@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,16 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from django.conf import settings
+import urllib
 from snf_django.utils.testing import BaseAPITest
-from synnefo.userdata.models import PublicKeyPair
 from synnefo.userdata import models_factory as mfactory
 
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
-
-from mock import patch
 
 
 COMPUTE_PATH = get_service_path(cyclades_services, "compute",
@@ -72,6 +70,24 @@ class KeyPairAPITest(BaseAPITest):
         self.assertIsNone(keypair['deleted_at'])
         self.assertFalse(keypair['deleted'])
 
+    def test_get_keypairs_detail_unicode_name(self):
+        """Test if the details of a keypair with non-ASCII name are returned
+        correctly
+        """
+        new_keypair = mfactory.PublicKeyPairFactory(user=self.user1,
+                                                    name=u'το κλειδί μου!@#')
+        response = self.get(join_urls(KEYPAIRS_PATH,
+                            urllib.quote(new_keypair.name.encode('utf-8'))),
+                            self.user1)
+        self.assertSuccess(response)
+        keypair = json.loads(response.content)['keypair']
+        self.assertEqual(keypair['name'], new_keypair.name)
+        self.assertEqual(keypair['fingerprint'], new_keypair.fingerprint)
+        self.assertIsNotNone(keypair['created_at'])
+        self.assertIsNotNone(keypair['updated_at'])
+        self.assertIsNone(keypair['deleted_at'])
+        self.assertFalse(keypair['deleted'])
+
     def test_get_invalid_keypair(self):
         """Test if an invalid key name is not present"""
         response = self.get(join_urls(KEYPAIRS_PATH, 'invalid-keypair'),
@@ -109,12 +125,21 @@ class KeyPairAPITest(BaseAPITest):
                              json.dumps(keypair_wo_content))
         self.assertBadRequest(response)
 
+    def test_create_key_with_unicode_chars_name(self):
+        """Test keypair creation with non-ASCII name"""
+        keypair_unicode = {'keypair': {'name': u' το κλειδί μου '}}
+        response = self.post(KEYPAIRS_PATH, self.user1,
+                             json.dumps(keypair_unicode))
+        self.assertSuccess201(response)
+        self.assertEqual(json.loads(response.content)['keypair']['name'],
+                         keypair_unicode['keypair']['name'])
+
     def test_generate_new_keypair(self):
         """Test keypair generation"""
         keypair_wo_content = {'keypair': {'name': 'foo'}}
         response = self.post(KEYPAIRS_PATH, self.user1,
                              json.dumps(keypair_wo_content))
-        self.assertEqual(response.status_code, 201)
+        self.assertSuccess201(response)
         new_keypair = json.loads(response.content)['keypair']
         priv_key = new_keypair.get('private_key')
         self.assertIsNotNone(priv_key)
@@ -126,7 +151,7 @@ class KeyPairAPITest(BaseAPITest):
             'keypair': {'name': 'bar', 'public_key': self.keypair.content}}
         response = self.post(KEYPAIRS_PATH, self.user1,
                              json.dumps(keypair_with_content))
-        self.assertEqual(response.status_code, 201)
+        self.assertSuccess201(response)
         new_keypair = json.loads(response.content)['keypair']
         priv_key = new_keypair.get('private_key')
         self.assertIsNone(priv_key)
@@ -143,7 +168,7 @@ class KeyPairAPITest(BaseAPITest):
         keypair_wo_content = {'keypair': {'name': self.u1_key_name}}
         response = self.post(KEYPAIRS_PATH, self.user1,
                              json.dumps(keypair_wo_content))
-        self.assertEqual(response.status_code, 201)
+        self.assertSuccess201(response)
         gen_keypair = json.loads(response.content)['keypair']
         priv_key = gen_keypair.get('private_key')
         self.assertIsNotNone(priv_key)
@@ -164,10 +189,20 @@ class KeyPairAPITest(BaseAPITest):
                                                 name='to-delete')
         response = self.delete(join_urls(KEYPAIRS_PATH, keypair.name),
                                self.user1)
-        self.assertSuccess(response)
+        self.assertSuccess204(response)
 
     def test_delete_invalid_keypair(self):
         """Test keypair with invalid name deletion"""
         response = self.delete(join_urls(KEYPAIRS_PATH, 'invalid-name'),
                                self.user1)
         self.assertItemNotFound(response)
+
+    def test_delete_keypair_unicode_name(self):
+        """Test keypair deletion for keypair with non-ASCII name"""
+        keypair = mfactory.PublicKeyPairFactory(user=self.user1,
+                                                name=u'για σβήσιμο!!!')
+        response = self.delete(
+            join_urls(KEYPAIRS_PATH,
+                      urllib.quote(keypair.name.encode('utf-8'))),
+                      self.user1)
+        self.assertSuccess204(response)

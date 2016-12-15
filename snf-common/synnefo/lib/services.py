@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,6 +44,15 @@ def filter_public(services):
     return public_services
 
 
+def get_versioned_public_url(endpoint):
+    version = endpoint['versionId']
+    expose_version = endpoint.get('SNF:exposeVersion', True)
+    publicURL = endpoint['publicURL']
+    if not expose_version:
+        publicURL = join_urls(publicURL, version).rstrip('/')
+    return publicURL
+
+
 def get_public_endpoint(services, service_type, version=None):
     found_endpoints = {}
     for service_name, service in services.iteritems():
@@ -64,7 +73,7 @@ def get_public_endpoint(services, service_type, version=None):
         raise ValueError(m)
 
     selected = sorted(found_endpoints.keys())[-1]
-    return found_endpoints[selected]['publicURL']
+    return get_versioned_public_url(found_endpoints[selected])
 
 
 def get_service_path(services, service_type, version=None):

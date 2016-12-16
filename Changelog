@@ -51,6 +51,14 @@ Cyclades
 * Add new default FilterAllocator for choosing appropriate VM backends
 * Add an Allocator's filter to place servers on backends based on
   Project-Backend association.
+* Implement keypairs API for management of SSH keys and support 'key_name'
+  parameter in server creation.
+* For OpenStack compatibility, advertise the 'image', 'network', and 'volume'
+  endpoint URLs without a version suffix. The clients should take care to
+  construct the proper versioned URL.
+* Expose /os-floating-ips under compute for compatibility with older
+  OpenStack clients.
+* Provide version listing and details for endpoints.
 
 Deploy
 ------

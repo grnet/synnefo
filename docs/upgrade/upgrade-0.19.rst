@@ -276,6 +276,25 @@ case, it is advised to switch the setting value to the new default setting
 filters include the newly introduced Project-Backend association policy, while
 retaining the previous functionality for picking backends.
 
+Re-register service and resource definitions
+""""""""""""""""""""""""""""""""""""""""""""
+
+The Cyclades service definition has been updated to exposed the 'image',
+'network', and 'volume' endpoint URLs without a version suffix. It needs thus
+to be registered again. On the Astakos node, run::
+
+    astakos-host$ snf-component-register cyclades
+
+This will detect that the Cyclades component is already registered and ask
+to re-register. Answer positively. You need to enter the base URL and the UI
+URL for Cyclades, just like during the initial registration.
+
+.. note::
+
+   You can run ``snf-manage component-list -o name,base_url,ui_url`` to
+   inspect the currently registered base and UI URLs.
+
+
 5. Reboot
 ---------
 

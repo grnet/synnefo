@@ -31,7 +31,7 @@ compute_api20_patterns = patterns(
     (r'^images', include(images)),
     (r'^extensions', include(extensions)),
     (r'^os-keypairs', include(keypairs)),
-    (r'^os-floatingips', include(floating_ips))
+    (r'^os-floating-ips', include(floating_ips))
 )
 
 

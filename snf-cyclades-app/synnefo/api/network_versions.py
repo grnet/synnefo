@@ -60,7 +60,7 @@ NETWORK_RESOURCES_V2_0 = [
 ]
 
 
-@api.api_method(http_method='GET', user_required=True, logger=log)
+@api.api_method(http_method='GET', user_required=False, logger=log)
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503

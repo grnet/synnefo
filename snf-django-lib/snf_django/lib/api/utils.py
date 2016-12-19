@@ -93,12 +93,14 @@ def get_json_body(request):
                                 content_type)
 
 
-def prefix_pattern(prefix, append_slash=True):
+def prefix_pattern(prefix, append_slash=True, end_here=False):
     """Return a reliable urls.py pattern from a prefix"""
     prefix = prefix.strip('/')
     if prefix and append_slash:
         prefix += '/'
     pattern = '^' + prefix
+    if end_here:
+        pattern += '$'
     return pattern
 
 

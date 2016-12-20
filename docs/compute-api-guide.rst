@@ -124,6 +124,17 @@ Description                                  URI                                
 `Delete Metadata <#delete-image-metadata>`_  ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
 ============================================ ===================================== ====== ======== ==========
 
+.. rubric:: Keypairs
+
+================================================= =============================== ====== ======== ==========
+Description                                       URI                             Method Cyclades OS/Compute
+================================================= =============================== ====== ======== ==========
+`List <#list-keypairs>`__                         ``/os-keypairs``                GET    ✔        ✔
+`Create Or Import <#create-or-import-keypairs>`__ ``/os-keypairs``                POST   ✔        ✔
+`Get Details <#get-keypair-details>`__            ``/os-keypairs/<keypair-name>`` GET    ✔        ✔
+`Delete <#delete-keypair>`__                      ``/os-keypairs/<keypair-name>`` DELETE ✔        ✔
+================================================= =============================== ====== ======== ==========
+
 List Servers
 ------------
 
@@ -2620,6 +2631,270 @@ Return Code                 Description
 =========================== =====================
 
 .. note:: In case of a 204 code, the response body should be empty.
+
+List Keypairs
+-------------
+
+List keypairs that are associated with the account.
+
+.. rubric:: Request
+
+================ ====== ======== ==========
+URI              Method Cyclades OS/Compute
+================ ====== ======== ==========
+``/os-keypairs`` GET    ✔        ✔
+================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =============================
+Return Code                 Description
+=========================== =============================
+204 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =============================
+
+Response body contents::
+
+  {
+    "keypairs": [
+      {
+        "keypair": {
+          "fingerprint": <value>,
+          "name": <value>,
+          "public_key": <value>
+        }
+      }
+      {
+        ...
+      }
+  }
+
+*Example List Keypairs: JSON*
+
+  GET https://example.org/compute/v2.0/ok-keypairs
+
+
+.. code-block:: javascript
+
+  {
+    "keypairs": [
+      {
+        "keypair": {
+          "fingerprint": "36:cf:5c:98:0e:19:b1:08:1e:33:5d:be:ce:10:86:9d",
+          "name": "vagrant-generated-mzrdphj8",
+          "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDYaQNb+fWT+U6BI8g0MQIBDArZ8iBfVN9TW9duNbz7jm5dcPNvKSrCfOlPtjxw+Te7FPZqJYrslYtpoLcvIuUn6lnTlNxtdrENi5bviQlVzEDzlzfGfceWLnh4B2IrtUOoEHYRhvw+hxOO7Fj8QjJJIOWXSbL2StXTlIz106ChIR8QVK1UR3PMssmFvQZw0AQMyS1V8Olb5IOXJADbM15Q6d/rAkohTtbQanFdaF2L2d+VYrqMoyFAOJSbTLJ0zVU4KrmPV0s9jN8uZkADjA/3SUXEebwbUSy3nFv0bPlvH0lwuO/wHvA4amavmqF/QJoWy//N+Oezj7+kGPLS22Hd"
+        }
+      }
+    ]
+  }
+
+Create or Import Keypairs
+-------------------------
+
+Generates or import a keypair
+
+.. rubric:: Request
+
+================ ====== ======== ==========
+URI              Method Cyclades OS/Compute
+================ ====== ======== ==========
+``/os-keypairs`` POST   ✔        ✔
+================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+Request body contents::
+
+ {
+   "keypair": {
+     "<parameter>": "<value>",
+     ...
+   }
+ }
+
+========== ======== ==========
+Parameter  Cyclades OS/Compute
+========== ======== ==========
+name       ✔        ✔
+public_key ✔        ✔
+========= ========= =========
+
+* **name** a name for the newly imported or created keypair
+
+* **public_key** (optional) the public ssh key to import. If you omit this
+  value, a keypair is generated for you.
+
+.. rubric:: Responce
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request data
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+=========================== =====================
+
+|
+
+Response body contents::
+
+  {
+    keypair: {
+      <keypair attribute>: <value>,
+      ...
+    }
+  }
+
+*Example Create Keypair Response: JSON*
+
+.. code-block:: javascript
+
+  POST https://example.org/compute/v2.0/os-keypairs
+
+  {
+    "keypair": {
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "name": "create_key",
+      "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAoJNyQl+fXwELe7GTX5cITl98FhyJjXp4tLMb2hmjFMc3DQVT\n0Xmx6CMGT2fvGMhlBTz0oaxRkudGe7Ys8GEvKeqDkcwFZQRkg845UkzkPXfbOGOE\n5pnmuG4gP88wBmFIbJ0gIqxAt+c1K1kJaqYkhAVq71VCR7F+tUACou1U9Tm08a4+\nlnQEUAXed/xhxPXwaCWf7BLUEsH/lcxALeUzn7t/F+o+duGMpmje/Qxnzpop5l5c\nUvVvB9tUdrCn4RO2bsOi8Qkhjr1fzNvsJRlpFm/AvwCRtomY5T1radorL19otmrP\nFaoevA3LHuyp5ZFcKp6oYRqGcnWwKflaKwi+kQIDAQABAoIBAAm/ygEjox52hsb0\nyhjUp6lyfKsvAl73n5qBAWDli5Q4YCxHNYaTV+zbK4forIiZqiB+SfAC8VT0+7+J\nGQNjMyTdWy2f8Hfoo12pSKuphXYB7+pliG0jzPFHpmeZYbYRc/88LvZL9QX1YLII\nDt1NxwvI9GwhhguqSCIjB8XymOTmimXLnMmA1XZF8C6LLRMnH0wqs2b1kwEbxCjo\nLRLN4RC03hE/AgvhorcgBgKKlKKbWTNRXqP2fpdLV39UH3/Bcf/VFQ7gDTjL1JFJ\nOFZoinE+F4BRwHAx/wOzVbMMgLzNJj+nCpjAuJxRyNGd3D6pydrs9o5fS0eCe8QC\nyu9HCdECgYEAw07frTC4JuNJ88VpEiXWB6GEPumkbNzk5cQCqSPaaDX5QYnwnpro\nFhH1O4moLQct84k//GMfX3hDx4UJW4Pf0P9HcJ8Ksn7iiuxiADsWWl56i2CIz8qd\n7dNdCgHNKmKiU6UatEUiFe0Z26RhmN94YlDRc6Y/e5I2TaLthVdeJH0CgYEA0nmQ\n1J94HpeOqHaGd8/AVrXnFaCjrVvm7WITUoVQ/th9Bw2dy64vudQIw8a8O3mCvjPG\n8UEmgv8X+27hFa9NIeUnV5MYveKvs6vMGueTLwezyx7zPL7rp513jGx6IjxfNdQL\ncLf/jPShH7TKIF3qnpLpva72eQjsoPe65d8vQqUCgYEAnprd0EKBOatYces9oWwy\nfG3w/Do2ueVEyUY9NugTxI8YRN3lFpgLo2if8uKePTrYWS57VNWWM6xxtoRWDghw\n6MN2W4H8aOnbxR+jkjZpt6eD8s3JLJ2JVQpRQwAlgacp1a19mymNPasXVaQPUdsg\nYw7omPdIFGyvRqrqIl/J5u0CgYAI+RnNlsbeNwPj9rmg3gCLMdIaP/D6cRKVSDse\np4ReeQhLhq8VgeWS/JErF4vq1TFXvolau7ZSm2GAXKfH7uNQ8J4Ow7yoS8PF2ysm\ncnz54lAt9rHUAye0y6fPGsjSMNS2TMX4FkAU2FEOMvzzCE36WLUSWyUy38iGzEjx\nh+RR6QKBgCg69DlCF+IpqnC8NoklfU2q7wUOYAAqwKEXLCxOMpbqMrHhyO97rDN/\ntEjWDOxdobljtZfMQV2/4xWbEGCv0/sybN+bknnCfz4UnE5u5p9LnSTyR9UhE+1E\nwSZMLWxUjOjSGztBg2uSf2bTocTwdMLXkYqEidjjC6DBLZTB3WUg\n-----END RSA PRIVATE KEY-----",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R"
+    }
+  }
+
+
+*Example Import Keypair Response: JSON*
+
+.. code-block:: javascript
+
+  POST https://example.org/compute/v2.0/os-keypairs
+
+  {
+    "keypair": {
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "name": "import_key",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R"
+    }
+  }
+
+
+Get Keypair Details
+-------------------
+
+Show Keypair Details
+
+.. rubric:: Request
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS/Compute
+=============================== ====== ======== ==========
+``/os-keypairs/<keypair_name>`` GET    ✔        ✔
+=============================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+==================== =============================
+Return Code          Description
+==================== =============================
+204 (OK)             Request succeeded
+401 (Unauthorized)   Missing or expired user token
+404 (Item Not Found) Keypair not found
+==================== =============================
+
+Response body contents::
+
+  {
+    "keypair": {
+      "created_at": <value>,
+      "deleted": <value>,
+      "deleted_at": <value>,
+      "fingerprint": <value>,
+      "id": <value>,
+      "name": <value>,
+      "public_key": <value>,
+      "updated_at": <value>
+    }
+  }
+
+*Example List Keypair Details Response: JSON*
+
+.. code-block:: javascript
+
+  GET https://example.org/compute/v2.0/os-keypairs/my_key
+
+  {
+    "keypair": {
+      "created_at": "2016-12-20T10:14:07.988431",
+      "deleted": false,
+      "deleted_at": null,
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "id": 1,
+      "name": "my_key",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R",
+      "updated_at": "2016-12-20T10:14:07.988548"
+    }
+  }
+
+
+Delete Keypair
+--------------
+
+Deletes A Keypair
+
+.. rubric:: Request
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS/Compute
+=============================== ====== ======== ==========
+``/os-keypairs/<keypair_name>`` DELETE ✔        ✔
+=============================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+==================== =============================
+Return Code          Description
+==================== =============================
+204 (OK)             Request succeeded
+401 (Unauthorized)   Missing or expired user token
+404 (Item Not Found) Keypair not found
+==================== =============================
+
 
 Index of Attributes
 -------------------

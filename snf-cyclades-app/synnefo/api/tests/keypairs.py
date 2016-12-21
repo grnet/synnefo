@@ -158,30 +158,13 @@ class KeyPairAPITest(BaseAPITest):
         self.assertEqual(new_keypair['name'], 'bar')
         self.assertEqual(new_keypair['fingerprint'], self.keypair.fingerprint)
 
-    def test_update_keypair(self):
-        """Test keypair update"""
-        keypair_with_content = {
-            'keypair': {'name': 'bar', 'public_key': self.keypair.content}}
+    def test_conflicting_keypair(self):
+        """Test keypair creating with conflicting names"""
+        conflicting_keypair = {'keypair':
+                {'name': self.u1_key_name, 'public_key': self.keypair.content}}
         response = self.post(KEYPAIRS_PATH, self.user1,
-                             json.dumps(keypair_with_content))
-        old_keypair = json.loads(response.content)['keypair']
-        keypair_wo_content = {'keypair': {'name': self.u1_key_name}}
-        response = self.post(KEYPAIRS_PATH, self.user1,
-                             json.dumps(keypair_wo_content))
-        self.assertSuccess201(response)
-        gen_keypair = json.loads(response.content)['keypair']
-        priv_key = gen_keypair.get('private_key')
-        self.assertIsNotNone(priv_key)
-        response = self.get(join_urls(KEYPAIRS_PATH, self.u1_key_name),
-                            self.user1)
-        self.assertSuccess(response)
-        updated_keypair = json.loads(response.content)['keypair']
-        self.assertEqual(updated_keypair['name'], self.u1_key_name)
-        self.assertIsNotNone(updated_keypair['updated_at'])
-        self.assertNotEqual(updated_keypair['updated_at'],
-                            updated_keypair['created_at'])
-        self.assertNotEqual(old_keypair['fingerprint'],
-                            updated_keypair['fingerprint'])
+                             json.dumps(conflicting_keypair))
+        self.assertConflict(response)
 
     def test_delete_keypair(self):
         """Test keypair deletion"""

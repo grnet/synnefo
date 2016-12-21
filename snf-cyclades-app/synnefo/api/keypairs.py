@@ -130,17 +130,19 @@ def create_new_keypair(request):
         raise faults.BadRequest('Invalid name format')
 
     try:
-        # If the public_key is provided  and the corresponding
-        # keypair already exists update the public key
-        keypair_obj = util.get_keypair(name, request.user_uniq,
-                                       for_update=True)
-    except faults.ItemNotFound:
-        keypair_obj = PublicKeyPair(name=name, user=request.user_uniq)
+        # If the key with the same name exists in the database
+        # a conflict error will be raised
 
-    new_keypair = None
+        util.get_keypair(name, request.user_uniq)
+        # If we get past this point then the key is already present
+        # in the database
+        raise faults.Conflict('A keypair with that name already exists')
+    except faults.ItemNotFound:
+        new_keypair = PublicKeyPair(name=name, user=request.user_uniq)
+
+    gen_keypair = None
     try:
-        public_key = keypair['public_key']
-        keypair_obj.content = public_key
+        new_keypair.content = keypair['public_key']
     except KeyError:
         # If the public_key field is omitted, generate a new
         # keypair and return both the private and the public key
@@ -148,14 +150,14 @@ def create_new_keypair(request):
             raise faults.Forbidden(
                 "Application does not support ssh keys generation")
 
-        new_keypair = generate_keypair()
-        keypair_obj.content = new_keypair['public']
+        gen_keypair = generate_keypair()
+        new_keypair.content = gen_keypair['public']
 
-    keypair_obj.save()
+    new_keypair.save()
 
-    data = keypair_to_dict(keypair_obj)
-    if new_keypair is not None:
-        data['keypair']['private_key'] = new_keypair['private']
+    data = keypair_to_dict(new_keypair)
+    if gen_keypair is not None:
+        data['keypair']['private_key'] = gen_keypair['private']
 
     return HttpResponse(json.dumps(data), status=201)
 

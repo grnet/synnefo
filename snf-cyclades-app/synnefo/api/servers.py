@@ -1279,7 +1279,7 @@ def add_floating_ip(request, vm, args):
             request.user_projects, address, for_update=True)
 
     servers.create_port(userid, floating_ip.network, machine=vm,
-                        user_ipaddress=floating_ip)
+                        use_ipaddress=floating_ip)
 
     log.info("User %s attached floating IP %s to VM %s, address: %s,"
              " network %s", request.user_uniq, floating_ip.id, vm.id,

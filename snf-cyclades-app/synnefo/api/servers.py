@@ -626,15 +626,17 @@ def delete_server(request, server_id):
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign',
+ARBITRARY_ACTIONS = ('console', 'firewallProfile', 'reassign',
                      'os-getVNCConsole', 'os-getRDPConsole',
-                     'os-getSPICEConsole']
+                     'os-getSPICEConsole')
 
 
 def key_to_action(key):
     """Map HTTP request key to a VM Action"""
-    if key == "shutdown":
+    if key in ("shutdown", "os-stop"):
         return "STOP"
+    if key == "os-start":
+        return "START"
     if key == "delete":
         return "DESTROY"
     if key in ARBITRARY_ACTIONS:
@@ -669,9 +671,8 @@ def demux_server_action(request, server_id):
     if key_to_action(action) not in [x[0] for x in VirtualMachine.ACTIONS]:
         if action not in ARBITRARY_ACTIONS:
             raise faults.BadRequest("Action %s not supported" % action)
-    action_args = utils.get_attribute(req, action, required=True,
+    action_args = utils.get_attribute(req, action, required=False,
                                       attr_type=dict)
-
     return server_actions[action](request, vm, action_args)
 
 
@@ -918,13 +919,14 @@ server_actions = {}
 network_actions = {}
 
 
-def server_action(name):
+def server_action(*names):
     '''Decorator for functions implementing server actions.
-    `name` is the key in the dict passed by the client.
+    `names` are keys in the dict passed by the client.
     '''
 
     def decorator(func):
-        server_actions[name] = func
+        for n in names:
+            server_actions[n] = func
         return func
     return decorator
 
@@ -940,7 +942,7 @@ def network_action(name):
     return decorator
 
 
-@server_action('start')
+@server_action('start', 'os-start')
 def start(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
@@ -952,7 +954,7 @@ def start(request, vm, args):
     return HttpResponse(status=202)
 
 
-@server_action('shutdown')
+@server_action('shutdown', 'os-stop')
 def shutdown(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),

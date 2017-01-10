@@ -186,7 +186,8 @@ Change gunicorn configuration file
 Newer gunicorn drops support for ``django`` mode. You must update the gunicorn
 configuration file (by default ``/etc/gunicorn.d/synnefo``) on all nodes to
 ``wsgi`` mode by changing the ``mode`` setting to use the Synnefo's wsgi
-entry point.
+entry point and by adding ``synnefo.webproject.wsgi`` as the last item in the
+``args`` list.
 
 Example:
 
@@ -224,7 +225,9 @@ Django is allowed to serve.
 Update cache settings
 """""""""""""""""""""
 
-In cyclades, you now have to set each one of the three caches in a new format.
+In cyclades, you now have to set each one of the three caches in the Django's
+cache framework format.
+
 Defaults are:
 
 .. code-block:: python
@@ -251,7 +254,9 @@ Defaults are:
 
 If you want to use memcache, you will need to set ``BACKEND`` to
 ``django.core.cache.backends.memcached.MemcachedCache`` and specify the
-``LOCATION`` as well.
+``LOCATION`` (e.g. ``127.0.0.1:11211``) as well. Check
+`here <https://docs.djangoproject.com/en/1.7/topics/cache/>`_ for more
+information.
 
 Please adjust the new settings to match your previous setup.
 

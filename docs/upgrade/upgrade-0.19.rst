@@ -15,6 +15,13 @@ jessie.
    is used instead of ``South``. Because of this, the upgrade to v0.19 *must*
    be executed only from version 0.18.1.
 
+.. note::
+
+   API endpoint listing has been modified in Synnefo v0.19 to be more Openstack
+   compatible. This introduces a breaking API change and the users of the cloud
+   service must upgrade their ``Kamaki`` client to ``Kamaki >= 0.15``. For more
+   information regarding the changes, refer to the Changelog.
+
 Upgrade Steps
 =============
 

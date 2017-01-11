@@ -166,15 +166,22 @@ migrations.
 Fix IP history inconsistencies
 """"""""""""""""""""""""""""""
 
-Previously, when the owner of a VM with attached IPs changed, the IP
-history failed to properly record the relation of both the old and the
-new VM owner with the attached IPs. In order to review these cases,
-run (use --fix to apply)::
+Prior to 0.19, changing the owner of a VM with attached IPs would break the
+recorded IP history. In particular, the association of the past owner with
+the attached IP would be lost.
+
+If you have made such changes and you have kept a log of them, you can
+recover the IP history with the following tool::
 
   cyclades.host$ /usr/lib/synnefo/tools/fix_ip_history <changelog_file>
 
-providing as argument a file containing a log of VM owner changes. See
-command help for details.
+The command argument is the filename of your VM owner changelog. Each VM
+owner change should be described in a separate line, in the following
+format (date should be in UTC)::
+
+  <vmid>|<from_uuid>|<to_uuid>|<%Y-%m-%d %H:%M:%S.%f>
+
+The tool will print the needed fixes. Use option ``--fix`` to apply.
 
 
 4. Adjust configuration files

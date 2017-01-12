@@ -178,7 +178,7 @@ limit             Page size                           **✘**    ✔
 ================= =================================== ======== ==========
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the
-  response will be formated in json.
+  response will be formatted in json.
 
 * **status** refers to the `server status <#status-ref>`_
 
@@ -760,7 +760,7 @@ xml               Respond in xml
 ================= ===============
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the
-  response will be formated in json.
+  response will be formatted in json.
 
 .. rubric:: Response
 
@@ -867,7 +867,7 @@ Diagnostic attribute Description
 ==================== ===========
 level                Debug level
 created              Log entry timestamp
-source               Log source proccess
+source               Log source process
 source_date          Log source date
 message              Log description
 details              Detailed log description
@@ -1522,7 +1522,7 @@ Response body content::
 Update Server Metadata Item
 ---------------------------
 
-Set a new or update an existing a metadum value for a virtual server.
+Set a new or update an existing a metadata value for a virtual server.
 
 .. rubric:: Request
 
@@ -1821,7 +1821,7 @@ Reassign Server
 
 This operation assigns the VM to a different project.
 Each resource is assigned to a project. A Synnefo project is a set of resource
-limits e.g., maximum number of CPU cores per user, maximum ammount of RAM, etc.
+limits e.g., maximum number of CPU cores per user, maximum amount of RAM, etc.
 
 Although its resource is assigned exactly one project, a user may be a member
 of more, so that different resources are registered to different projects.
@@ -2043,7 +2043,7 @@ Return Code                 Description
 400 (Bad Request)           Malformed flavor ID
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Forbidden to use this flavor
-404 (Not Found)             Flavor id not founmd
+404 (Not Found)             Flavor id not found
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
@@ -2736,7 +2736,8 @@ name       ✔        ✔
 public_key ✔        ✔
 ========= ========= =========
 
-* **name** a name for the newly imported or created keypair
+* **name** a name for the newly imported or created keypair (must be 
+  unique)
 
 * **public_key** (optional) the public ssh key to import. If you omit this
   value, a keypair is generated for you.
@@ -2937,7 +2938,7 @@ deleted             ✔        **✘**
 =================== ======== ==========
 
 * **addresses** Networks related to this server. All information in this field
-  is redundant, since it can be infered from the ``attachments`` field, but
+  is redundant, since it can be inferred from the ``attachments`` field, but
   it is used for compatibility with OS/Compute
 
 * **user_id** The UUID of the owner of the virtual server
@@ -2952,7 +2953,7 @@ deleted             ✔        **✘**
 
 * **status** values are described `here <#status-ref>`__
 
-* **updated** and **created** are date-formated
+* **updated** and **created** are date-formatted
 
 * **adminPass** is shown only once (in ``create server`` response). This
   information is not preserved in a clear text form, so it is not recoverable
@@ -3042,7 +3043,7 @@ links rel         Atom link rel field  ✔        ✔
 links href        Atom link href field ✔        ✔
 ================= ==================== ======== ==========
 
-* **id** is the flavor unique id (a possitive integer)
+* **id** is the flavor unique id (a positive integer)
 * **name** is the flavor name (a string)
 * **ram** is the server RAM size in MB
 * **SNF:disk_template** is a reference to the underlying storage mechanism

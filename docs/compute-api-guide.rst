@@ -2751,6 +2751,7 @@ Return Code                 Description
 400 (Bad Request)           Malformed request data
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
+409 (Conflict)              A keypair with the same name already exists
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 =========================== =====================

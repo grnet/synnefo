@@ -1187,6 +1187,11 @@ def revert_resize(request, vm, args):
     raise faults.NotImplemented('Resize not supported.')
 
 
+@server_action('suspend')
+def suspend(request, vm, args):
+    raise faults.Forbidden('User is not allowed to suspend his server')
+
+
 @server_action('reassign')
 def reassign(request, vm, args):
     if request.user_uniq != vm.userid:

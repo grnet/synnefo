@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ def compute_demux(request):
     if request.method == 'GET':
         return list_floating_ips(request, _compute_floatingip_list_view)
     elif request.method == 'POST':
-        return allocate_floating_ip(request, _compute_floatingip_details_view)
+        return compute_allocate_floating_ip(request)
     else:
         return api.api_method_not_allowed(request,
                                           allowed_methods=['GET', 'POST'])
@@ -137,8 +137,7 @@ def compute_demux(request):
 
 def compute_floating_ip_demux(request, floating_ip_id):
     if request.method == 'GET':
-        return get_floating_ip(request, floating_ip_id,
-                               _compute_floatingip_details_view)
+        return get_floating_ip(request, floating_ip_id)
     elif request.method == 'DELETE':
         return release_floating_ip(request, floating_ip_id)
     else:
@@ -203,7 +202,7 @@ def get_floating_ip(request, floating_ip_id, view=_floatingip_details_view):
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
 @transaction.commit_on_success
-def allocate_floating_ip(request, view=_floatingip_details_view):
+def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_json_body(request)
 
@@ -247,8 +246,25 @@ def allocate_floating_ip(request, view=_floatingip_details_view):
              userid, floating_ip.id, floating_ip.network_id,
              floating_ip.address)
 
-    return HttpResponse(view(floating_ip), status=200)
+    return HttpResponse(_floatingip_details_view(floating_ip), status=200)
 
+@api.api_method(http_method='POST', user_required=True, logger=log,
+                serializations=["json"])
+@transaction.commit_on_success
+def compute_allocate_floating_ip(request):
+    """Allocate a floating IP."""
+    log.debug("User: %s, Action: compute_create_floating_ip, Request: %s",
+              request.user_uniq, request)
+
+    userid = request.user_uniq
+    floating_ip = ips.create_floating_ip(userid)
+
+    log.info("User %s created floating IP %s, network %s, address %s",
+             userid, floating_ip.id, floating_ip.network_id,
+             floating_ip.address)
+
+    return HttpResponse(
+        _compute_floatingip_details_view(floating_ip), status=200)
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log,
                 serializations=["json"])

@@ -46,6 +46,8 @@ DEFAULT_CONFIG_FILE = "ci_jessie.conf"
 USE_COLORS = True
 # Ignore SSL verification
 IGNORE_SSL = False
+# Ignore running SSH agents
+SSH_NO_AGENT = False
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -769,6 +771,10 @@ class SynnefoCI(object):
         fabric.env.shell = "/bin/bash -c"
         fabric.env.disable_known_hosts = True
         fabric.env.output_prefix = None
+
+        no_agent = SSH_NO_AGENT or self.get_config(
+            'Global', 'no_agent', False, 'boolean')
+        fabric.env.no_agent = no_agent
 
         forward_agent = self.get_config(
             'Global', 'forward_agent', False, 'boolean')

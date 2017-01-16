@@ -27,6 +27,9 @@ class TemplateViewExtra(TemplateView):
         context.update(self.extra_context)
         return context
 
+    def post(self, *args, **kwargs):
+        return self.get(*args, **kwargs)
+
 
 class ListViewExtra(ListView):
     """ ListView subclass that supports extra_context. """
@@ -37,6 +40,9 @@ class ListViewExtra(ListView):
         context.update(self.extra_context)
         return context
 
+    def post(self, *args, **kwargs):
+        return self.get(*args, **kwargs)
+
 
 class DetailViewExtra(DetailView):
     """ DetailView subclass that supports extra_context. """
@@ -46,3 +52,6 @@ class DetailViewExtra(DetailView):
         context = super(DetailViewExtra, self).get_context_data(**kwargs)
         context.update(self.extra_context)
         return context
+
+    def post(self, *args, **kwargs):
+        return self.get(*args, **kwargs)

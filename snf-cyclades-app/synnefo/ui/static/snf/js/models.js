@@ -2682,6 +2682,13 @@
             });
         },
         
+        matching_keys: function(key) {
+            var key_name = typeof key === 'string' ? key : key.attributes.name;
+            return this.models.filter(function(k) {
+                return k.attributes.name === key_name;
+            });
+        },
+
         add_crypto_key: function(key, success, error, options) {
             var options = options || {};
             var m = new models.PublicKey();

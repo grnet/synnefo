@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -231,7 +231,9 @@ def vm_to_dict(vm, detail=False):
             d['diagnostics'] = []
         # Fixed
         d["security_groups"] = [{"name": "default"}]
-        d["key_name"] = vm.key_name
+        key_names = json.loads(vm.key_names)
+        d["key_name"] = key_names[0] if len(key_names) > 0 else None
+        d["SNF:key_names"] = key_names
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
@@ -414,6 +416,8 @@ def create_server(request):
         project = server.get("project")
         shared_to_project=server.get("shared_to_project", False)
         key_name = server.get('key_name')
+        SNF_key_names = server.get('SNF:key_names', [])
+        assert isinstance(SNF_key_names, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -436,12 +440,29 @@ def create_server(request):
     # Generate password
     password = util.random_password()
 
+    if key_name is not None:
+        # If both key_name and SNF:key_names are provided we should
+        # raise an error
+        if len(SNF_key_names) > 0:
+            raise faults.BadRequest('Only one of the SNF:key_names and'
+                                    'key_name can be set')
+        # If only key_name is provided then we will set key_names as
+        # a list with only one element
+        else:
+            key_names = [key_name]
+    else:
+        # In case key_name is not provided we will set key_names to the
+        # value of SNF:key_names. We don't need to check if it is provided
+        # since even if it is not, its value will be []
+
+        # Remove duplicate key names
+        key_names = list(set(SNF_key_names))
     vm = servers.create(user_id, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
                         user_projects=request.user_projects,
-                        key_name=key_name)
+                        key_names=key_names)
 
     log.info("User %s created VM %s, shared: %s", user_id, vm.id,
              shared_to_project)

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ from factory.fuzzy import FuzzyChoice
 from synnefo.db import models
 from random import choice
 from string import letters, digits
+import json
 
 
 def prefix_seq(x):
@@ -102,6 +103,7 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     flavor = factory.SubFactory(FlavorFactory)
     deleted = False
     suspended = False
+    key_names = []
     #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
     project = factory.LazyAttribute(lambda a: a.userid)

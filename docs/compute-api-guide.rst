@@ -135,6 +135,17 @@ Description                                       URI                           
 `Delete <#delete-keypair>`__                      ``/os-keypairs/<keypair-name>`` DELETE ✔        ✔
 ================================================= =============================== ====== ======== ==========
 
+.. rubric:: Floating IPs
+
+========================================== ======================================= ====== ================ ==========
+Description                                URI                                     Method Cyclades/Compute OS/Compute
+========================================== ======================================= ====== ================ ==========
+`List <#list-floating-ips>`__              ``/os-floating-ips``                    GET    ✔                ✔
+`Get details <#get-floating-ip-details>`__ ``/os-floating-ips/<floatingip-id>``    GET    ✔                ✔
+`Create <#create-floating-ip>`__           ``/os-floating-ips``                    POST   ✔                ✔
+`Delete <#delete-floating-ip>`__           ``/os-floating-ips/<floatingip id>``    DELETE ✔                ✔
+========================================== ======================================= ====== ================ ==========
+
 List Servers
 ------------
 
@@ -2897,6 +2908,212 @@ Return Code          Description
 404 (Item Not Found) Keypair not found
 ==================== =============================
 
+
+List floating ips
+-----------------
+
+List the floating ips which are reserved by the user
+
+.. rubric:: Request
+
+==================== ====== ======== ==========
+URI                  Method Cyclades OS/Compute
+==================== ====== ======== ==========
+``/os-floating-ips`` GET    ✔        ✔
+==================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =====================
+
+Response body contents::
+
+  floating_ips: [
+    {
+      <floating ip attribute>: <value>,
+      ...
+    }, ...
+  ]
+
+*Example List Floating IPs: JSON*
+
+.. code-block:: javascript
+
+  GET https://example.org/compute/v2.0/os-floating-ips
+  {
+    floating_ips": [
+      {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      },
+      {
+        "instance_id": null,
+        "ip": "10.2.1.3",
+        "fixed_ip": null,
+        "id": 17,
+        "pool": null
+      }
+    ]
+  }
+
+Get floating ip details
+-----------------------
+
+.. rubric:: Request
+
+============================ ====== ======== ==========
+URI                          Method Cyclades OS/Compute
+============================ ====== ======== ==========
+``/os-floating-ips/<ip-id>`` GET    ✔        ✔
+============================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (itemNotFound)          Floating IP not found
+=========================== =====================
+
+Response body contents::
+
+  floating_ip: {
+      <floating ip attribute>: <value>,
+      ...
+    }
+
+*Example get floating IP details: JSON*
+
+.. code-block:: javascript
+
+  GET https://example.org/compute/v2.0/os-floating-ips/42
+  {
+    floating_ip: {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      }
+  }
+
+Create (Allocate) floating ip
+-----------------------------
+
+List the floating ips which are reserved by the user
+
+.. rubric:: Request
+
+==================== ====== ======== ==========
+URI                  Method Cyclades OS/Compute
+==================== ====== ======== ==========
+``/os-floating-ips`` POST   ✔        ✔
+==================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =====================
+
+Response body contents::
+
+  floating_ip: {
+      <floating ip attribute>: <value>,
+      ...
+    }
+
+*Example Allocation of a floating IP: JSON*
+
+.. code-block:: javascript
+
+  POST https://example.org/compute/v2.0/os-floating-ips
+  {
+    floating_ip: {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      }
+  }
+
+Delete (Deallocate) floating ip
+-------------------------------
+
+.. rubric:: Request
+
+============================ ====== ======== ==========
+URI                          Method Cyclades OS/Compute
+============================ ====== ======== ==========
+``/os-floating-ips/<ip-id>`` DELETE ✔        ✔
+============================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+202 (Accepted)              Floating IP deleted
+401 (Unauthorized)          Missing or expired user token
+404 (itemNotFound)          Floating IP not found
+=========================== =====================
+
+*Example dallocation of a floating IP: JSON*
+
+.. code-block:: javascript
+
+  DELETE https://example.org/compute/v2.0/os-floating-ips/42
 
 Index of Attributes
 -------------------

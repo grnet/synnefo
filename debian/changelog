@@ -1,3 +1,9 @@
+synnefo (0.19~rc1-1~jessie) jessie; urgency=medium
+
+  * New upstream version
+
+ -- Nikos Skalkotos <skalkoto@grnet.gr>  Wed, 18 Jan 2017 12:52:53 +0200
+
 synnefo (0.18.1-1~wheezy) wheezy; urgency=low
 
   * New upstream version
@@ -247,6 +253,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

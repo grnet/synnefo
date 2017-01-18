@@ -1001,9 +1001,10 @@ can be dynamically added or removed via `snf-manage` commands.
 Each newly created VM is allocated to a Ganeti backend by the Cyclades backend
 allocator. The VM is "pinned" to this backend, and can not change through its
 lifetime. The backend allocator decides in which backend to spawn the VM based
-on the available resources of each backend, trying to balance the load between
-them. Also, Networks are created to all Ganeti backends, in order to ensure
-that VMs residing on different backends can be connected to the same networks.
+on the policies set and the available resources of each backend, trying to
+balance the load between them. Also, Networks are created to all Ganeti
+backends, in order to ensure that VMs residing on different backends can be
+connected to the same networks.
 
 A backend can be marked as `drained` in order to be excluded from automatic
 servers allocation and not receive new servers. Also, a backend can be marked
@@ -1062,10 +1063,12 @@ allocating new VMs to backends. This allocator does not choose the exact Ganeti
 node that will host the VM but just the Ganeti backend. The exact node is
 chosen by the Ganeti cluster's allocator (hail).
 
-The decision about which backend will host a VM is based on the available
-resources. The allocator computes a score for each backend, that shows its load
-factor, and the one with the minimum score is chosen. The admin can exclude
-backends from the allocation phase by marking them as ``drained`` by running:
+The decision about which backend will host a VM is based on the defined
+policies and the available resources. The default filter allocator filters the
+available backends based on the policy filters set and then computes a score
+for each backend, that shows its load factor. The one with the minimum
+score is chosen. The admin can exclude backends from the allocation phase by
+marking them as ``drained`` by running:
 
 .. code-block:: console
 
@@ -1088,10 +1091,11 @@ even if is marked as drained (useful for testing).
 Allocation based on disk-templates
 **********************************
 
-Besides the available resources of each Ganeti backend, the allocator takes
-into consideration the disk template of the instance when trying to allocate it
-to a Ganeti backend. Specifically, the allocator checks if the flavor of the
-instance belongs to the available disk templates of each Ganeti backend.
+Besides the filter policies and the available resources of each Ganeti backend,
+the allocator takes into consideration the disk template of the instance when
+trying to allocate it to a Ganeti backend. Specifically, the allocator checks
+if the flavor of the instance belongs to the available disk templates of each
+Ganeti backend.
 
 A Ganeti cluster has a list of enabled disk templates
 (`--enabled-disk-templates`) and a list of allowed disk templates for new
@@ -1111,6 +1115,44 @@ each backend.  Also, the administrator can route instances between different
 nodes of the same Ganeti backend, by modifying the same options at the
 nodegroup level (see `gnt-group` manpage for mor details).
 
+.. _alloc_custom_filter:
+
+Allocation based on custom filter
+*********************************
+The default Synnefo allocator is the FilterAllocator which filters the
+available backends based on a configurable list of filters. The administrator
+can modify the backend allocation process by implementing her own filter and
+injecting it into the FilterAllocator's filter chain.
+
+Each custom filter must be a subclass of the `FilterBase` class, located at
+`synnefo.logic.allocators.base`, and implement the `filter_backends` method.
+Then she can insert the custom filter on the filter chain by altering the
+`BACKEND_FILTER_ALLOCATOR_FILTERS` setting to include her own filter on the
+proper position on the list.
+
+The `filter_backends` method is used to filter the backends that the allocator
+can choose from. Altering this list, effectively affects the backends to be
+considered for allocation. It takes two arguments:
+
+1. A list of the available backends that have passed from the previous filters.
+   In the beginning, the process is initiated with all the available backends
+   (i.e. those that are neither drained nor offline).  Each backend is a django
+   object and an instance of the `Backend` model.
+
+2. A map with 4 keys representing the attributes of the VM to be allocated:
+
+   - `ram`: The size of the memory we want to allocate on the backend.
+   - `disk`: The size of the disk we want to allocate on the backend.
+   - `cpu`: The size of the CPU we want to allocate on the backend.
+   - `project`: The project of the VM we want to allocate.
+
+The method returns a list of backends that can be chosen as the VM's backend
+based on the filter's policy.
+
+Note that the disk template allocation policy is always applied irrespectively
+of `BACKEND_ALLOCATOR_MODULE` or the `BACKEND_FILTER_ALLOCATOR_FILTER`
+settings.
+
 Allocation based on custom allocator
 ************************************
 
@@ -1127,11 +1169,12 @@ shouldn't even consider. It takes two arguements:
    or offline. Each backend is a django object and an instance of the `Backend`
    model.
 
-2. A map with 3 keys:
+2. A map with 4 keys:
 
    - `ram`: The size of the memory we want to allocate on the backend.
    - `disk`: The size of the disk we want to allocate on the backend.
    - `cpu`: The size of the CPU we want to allocate on the backend.
+   - `project`: The project of the VM we want to allocate.
 
 
 The `allocate` method returns the backend that will be used to allocate the virtual
@@ -1141,11 +1184,12 @@ machine. It takes two arguements:
    drained or offline. Each backend is a django object and is an instance of
    the `Backend` model.
 
-2. A map with 3 keys:
+2. A map with 4 keys:
 
     - `ram`: The size of the memory we want to allocate on the backend.
     - `disk`: The size of the disk we want to allocate on the backend.
     - `cpu`: The size of the CPU we want to allocate on the backend.
+    - `project`: The project of the VM we want to allocate.
 
 So the administrator can create his own allocation algorithm by creating a class
 that inherits the `AllocatorBase` located at `synnefo.logic.allocators.base`,
@@ -1341,9 +1385,9 @@ Public IP accounting
 
 There are many use cases, e.g. abuse ports, where you need to find which user
 or which server had a public IP address. For this reason, Cyclades keeps track
-usage of public IPv4/IPv6 addresses. Specifically, it keeps the date and time
-that each public IP address was allocated and released from a virtual server.
-This information can be found using `ip-list` command:
+of the usage of public IPv4/IPv6 addresses. Specifically, when an IP address
+is attached to or detached from a virtual server, the timestamp of the
+action is logged. This information can be found using the `ip-list` command:
 
 .. code-block:: console
 
@@ -3078,6 +3122,7 @@ Upgrade Notes
    v0.16.1 -> v0.16.2 <upgrade/upgrade-0.16.2>
    v0.16.2 -> v0.17 <upgrade/upgrade-0.17>
    v0.17 -> v0.18.1 <upgrade/upgrade-0.18.1>
+   v0.18.1 -> v0.19 <upgrade/upgrade-0.19>
 
 
 .. _changelog-news:

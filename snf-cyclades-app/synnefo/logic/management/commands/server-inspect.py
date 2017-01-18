@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.management import pprint
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
@@ -40,6 +41,7 @@ class Command(SynnefoCommand):
             help="Display both uuid and email"),
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")

@@ -15,8 +15,10 @@
 
 
 from snf_django.management.commands import ListCommand
-from synnefo.db.models import IPAddressLog
+from synnefo.db.models import IPAddressHistory
 from optparse import make_option
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_AUTH_URL)
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -34,32 +36,28 @@ class Command(ListCommand):
             '--server',
             dest='server',
             help="Display IP history only for this server"),
-        make_option(
-            '--active',
-            dest="active",
-            action="store_true",
-            default=False,
-            help="Display only IPs that are currently in use")
     )
 
-    object_class = IPAddressLog
-    order_by = "allocated_at"
+    user_uuid_field = "user_id"
+    astakos_auth_url = ASTAKOS_AUTH_URL
+    astakos_token = ASTAKOS_TOKEN
+    object_class = IPAddressHistory
+    order_by = "action_date"
 
     FIELDS = {
         "address": ("address", "The IP address"),
-        "server": ("server_id", "The the server connected to"),
+        "user": ("user_id", "The associated user"),
+        "server": ("server_id", "The server the IP is connected to"),
         "network": ("network_id", "The id of the network"),
-        "allocated_at": ("allocated_at", "Datetime IP allocated to server"),
-        "released_at": ("released_at", "Datetime IP released from server"),
-        "active": ("active", "Whether IP still allocated to server"),
+        "action": ("action", "IP Action"),
+        "date": ("action_date", "The IP action date"),
+        "reason": ("action_reason", "Reason of IP action"),
     }
 
-    fields = ["address", "server", "network", "allocated_at", "released_at"]
+    fields = ["address", "user", "server", "network", "action", "date"]
 
     def handle_args(self, *args, **options):
         if options["address"]:
             self.filters["address"] = options["address"]
         if options["server"]:
             self.filters["server_id"] = options["server"]
-        if options["active"]:
-            self.filters["active"] = True

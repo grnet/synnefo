@@ -37,21 +37,21 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_CLOUDBAR_HOME_URL }}" alt="{{BRANDING_SERVICE_NAME}}" /></a>
+                    <a href="{% url 'admin-home' %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_CLOUDBAR_HOME_URL }}" alt="{{BRANDING_SERVICE_NAME}}" /></a>
                 </div>
                 <div class="collapse navbar-collapse" id="navbar-collapse-1">
                     <ul class="nav navbar-nav navbar-left">
                         {% for view, view_dict in views.items %}
                         <li
                         {% if item_type == view or main_type == view %}class="active"{% endif %}
-                        ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
+                        ><a href="{% url 'admin-list' view %}">{{ view_dict.label }}</a></li>
                         {% endfor %}
                         <li {% block nav-reports %}class="has-dropdown"{% endblock %}>
                             <a href="#">Reports
                             <span class="snf-angle-down arrow"></span></a>
                             <ul class="dropdown-menu align-left">
-                                <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
-                                <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
+                                <li {% block nav-stats %}{%  endblock %}><a href="{% url 'admin-stats' %}">Stats</a></li>
+                                <li {% block nav-charts %}{%  endblock %}><a href="{% url 'admin-charts' %}">Charts</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -64,7 +64,7 @@
                             </a>
                             <ul class="dropdown-menu align-right">
                                 <li>
-                                    <a href="{% url admin-logout %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
+                                    <a href="{% url 'admin-logout' %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
                                 </li>
                             </ul>
                         </li>

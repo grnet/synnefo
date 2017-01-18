@@ -14,4 +14,5 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .default_allocator import *
+from .filter_allocator import *
 from .base import *

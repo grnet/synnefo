@@ -15,8 +15,9 @@
 
 import json
 import logging
-import oauth2 as oauth
-import cgi
+import requests
+from requests_oauthlib import OAuth1
+from urlparse import parse_qsl
 
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
@@ -55,19 +56,20 @@ authenticate_url = django_setting(
 @cookie_fix
 def login(request):
     init_third_party_session(request)
-    consumer = oauth.Consumer(settings.LINKEDIN_TOKEN,
-                              settings.LINKEDIN_SECRET)
-    client = oauth.Client(consumer)
-    resp, content = client.request(request_token_url, "GET")
-    if resp['status'] != '200':
-        messages.error(request, 'Invalid linkedin response')
+    oauth = OAuth1(settings.LINKEDIN_TOKEN,
+                   client_secret=settings.LINKEDIN_SECRET)
+    resp = requests.post(url=request_token_url, auth=oauth)
+    if resp.status_code != 200:
+        messages.error(request, 'Invalid LinkedIn response')
+        logger.error("Invalid LinkedIn response while getting request token " +
+                     "(code: %d) %s", resp.status_code, resp.content)
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    request_token = dict(cgi.parse_qsl(content))
-    request.session['request_token'] = request_token
+    oa_resp = dict(parse_qsl(resp.content))
+    request.session['request_token'] = oa_resp
 
-    url = request_token.get('xoauth_request_auth_url') + \
-        "?oauth_token=%s" % request_token.get('oauth_token')
+    url = oa_resp.get('xoauth_request_auth_url') + \
+        "?oauth_token=%s" % oa_resp.get('oauth_token')
 
     if request.GET.get('key', None):
         request.session['pending_key'] = request.GET.get('key')
@@ -86,52 +88,60 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context=None
 ):
-
     if extra_context is None:
         extra_context = {}
-
-    consumer = oauth.Consumer(settings.LINKEDIN_TOKEN,
-                              settings.LINKEDIN_SECRET)
-    client = oauth.Client(consumer)
 
     if request.GET.get('denied'):
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if not 'request_token' in request.session:
+    if 'request_token' not in request.session:
         messages.error(request, 'linkedin handshake failed')
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    token = oauth.Token(request.session['request_token']['oauth_token'],
-                        request.session['request_token']['oauth_token_secret'])
-    token.set_verifier(request.GET.get('oauth_verifier'))
-    client = oauth.Client(consumer, token)
-    resp, content = client.request(access_token_url, "POST")
-    if resp['status'] != '200':
+    resource_owner_key = request.session['request_token'].get('oauth_token')
+    resource_owner_secret = request.session['request_token']\
+        .get('oauth_token_secret')
+    oauth_verifier = request.GET.get('oauth_verifier')
+    oauth = OAuth1(settings.LINKEDIN_TOKEN,
+                   client_secret=settings.LINKEDIN_SECRET,
+                   resource_owner_key=resource_owner_key,
+                   resource_owner_secret=resource_owner_secret,
+                   verifier=oauth_verifier)
+
+    resp = requests.post(access_token_url, auth=oauth)
+    if resp.status_code != 200:
         try:
             del request.session['request_token']
         except:
             pass
-        messages.error(request, 'Invalid linkedin token response')
+        logger.error("Invalid LinkedIn response while getting access token " +
+                     "(code: %d) %s", resp.status_code, resp.content)
+        messages.error(request, 'Invalid LinkedIn token response')
         return HttpResponseRedirect(reverse('edit_profile'))
-    access_token = dict(cgi.parse_qsl(content))
+    access_token = dict(parse_qsl(resp.content))
 
-    token = oauth.Token(access_token['oauth_token'],
-                        access_token['oauth_token_secret'])
-    client = oauth.Client(consumer, token)
+    resource_owner_key = access_token.get('oauth_token')
+    resource_owner_secret = access_token.get('oauth_token_secret')
+    oauth = OAuth1(settings.LINKEDIN_TOKEN,
+                   client_secret=settings.LINKEDIN_SECRET,
+                   resource_owner_key=resource_owner_key,
+                   resource_owner_secret=resource_owner_secret)
     _url = ("http://api.linkedin.com/v1/people/~:(id,first-name,last-name,"
             "industry,email-address)?format=json")
-    resp, content = client.request(_url, "GET")
-    if resp['status'] != '200':
+    resp = requests.get(_url, auth=oauth)
+    if resp.status_code != 200:
         try:
             del request.session['request_token']
         except:
             pass
-        messages.error(request, 'Invalid linkedin profile response')
+        messages.error(request, 'Invalid LinkedIn profile response')
+        logger.error("Invalid LinkedIn response while getting user info " +
+                     "(code: %d) %s", resp.status_code, resp.content)
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    profile_data = json.loads(content)
+    profile_data = json.loads(resp.content)
     userid = profile_data['id']
-    username = profile_data.get('emailAddress', None)
+    # username = profile_data.get('emailAddress', None)
     realname = profile_data.get('firstName', '') + ' ' + profile_data.get(
         'lastName', '')
     provider_info = profile_data
@@ -142,7 +152,7 @@ def authenticated(
         return handle_third_party_login(request, 'linkedin', userid,
                                         provider_info, affiliation,
                                         user_info=user_info)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         third_party_key = get_pending_key(request)
         return handle_third_party_signup(request, userid, 'linkedin',
                                          third_party_key,

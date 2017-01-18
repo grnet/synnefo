@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Backend
 from snf_django.management.utils import parse_bool
 from synnefo.management import common
+from synnefo.db import transaction
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
@@ -60,8 +61,14 @@ class Command(SynnefoCommand):
                     metavar="True|False",
                     help="Set the backend as offline to not communicate in"
                          " order to avoid delays"),
+        make_option('--public',
+                    dest='public',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Mark the backend as public")
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a backend ID")
@@ -87,6 +94,8 @@ class Command(SynnefoCommand):
             backend.drained = parse_bool(options['drained'], strict=True)
         if options['offline']:
             backend.offline = parse_bool(options['offline'], strict=True)
+        if options['public']:
+            backend.public = parse_bool(options['public'], strict=True)
         hypervisor = options["hypervisor"]
         if hypervisor:
             backend.hypervisor = hypervisor

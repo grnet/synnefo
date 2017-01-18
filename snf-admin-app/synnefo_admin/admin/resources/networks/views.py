@@ -21,7 +21,7 @@ from django.utils.html import escape
 
 from synnefo.db import transaction
 from synnefo.db.models import (Network, NetworkInterface, IPAddress,
-                               IPAddressLog)
+                               IPAddressHistory)
 from astakos.im.models import AstakosUser, Project
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -193,7 +193,7 @@ def details(request, query):
     project_list = Project.objects.filter(uuid=network.project)
     associations.append(ProjectAssociation(request, project_list,))
 
-    ip_log_list = IPAddressLog.objects.filter(network_id=network.pk)
+    ip_log_list = IPAddressHistory.objects.filter(network_id=network.pk)
     associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {

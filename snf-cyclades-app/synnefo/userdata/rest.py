@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 import logging
 
 from django import http
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 
@@ -147,7 +147,8 @@ class JSONRestView(View):
             yield self.instance_to_dict(i, exclude_fields)
 
     def json_response(self, data):
-        return http.HttpResponse(json.dumps(data), mimetype="application/json")
+        return http.HttpResponse(json.dumps(data),
+                                 content_type="application/json")
 
 
 class ResourceView(JSONRestView):

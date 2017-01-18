@@ -21,6 +21,8 @@ from synnefo.logic import ips as logic_ips
 from synnefo.logic import backend
 from synnefo.volume import volumes as volumes_logic
 from synnefo.lib.ordereddict import OrderedDict
+import logging
+logger = logging.getLogger(__name__)
 
 
 MiB = 2 ** 20
@@ -345,7 +347,10 @@ def apply_to_vm(action, vm_id, shutdown_timeout):
         vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
         VM_ACTION[action](vm, shutdown_timeout=shutdown_timeout)
         return True
-    except BaseException:
+    except BaseException as e:
+        logger.error(
+            "Error while applying action '%s' to vm '%s':" % (action, vm_id))
+        logger.exception(e)
         return False
 
 
@@ -380,7 +385,10 @@ def remove_volume(volume_id):
         if not machine or not machine.deleted and machine.task != "DESTROY":
             volumes_logic.delete(volume)
         return True
-    except BaseException:
+    except BaseException as e:
+        logger.error(
+            "Error while removing volume '%s':" % volume_id)
+        logger.exception(e)
         return False
 
 
@@ -411,14 +419,10 @@ def wait_for_ip(ip_id):
 
 
 def delete_port(port_id):
-    try:
-        port = NetworkInterface.objects.select_for_update().get(id=port_id)
-        servers.delete_port(port)
-        if port.machine:
-            wait_server_job(port.machine)
-        return True
-    except BaseException:
-        raise
+    port = NetworkInterface.objects.select_for_update().get(id=port_id)
+    servers.delete_port(port)
+    if port.machine:
+        wait_server_job(port.machine)
 
 
 def remove_ip(ip_id):
@@ -426,13 +430,14 @@ def remove_ip(ip_id):
         ip = IPAddress.objects.select_for_update().get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
-            r = delete_port(port_id)
-            if not r:
-                return False
+            delete_port(port_id)
             ip = wait_for_ip(ip_id)
         logic_ips.delete_floating_ip(ip)
         return True
-    except BaseException:
+    except BaseException as e:
+        logger.error(
+            "Error while removing IP '%s':" % ip_id)
+        logger.exception(e)
         return False
 
 
@@ -441,10 +446,13 @@ def detach_ip(ip_id):
         ip = IPAddress.objects.select_for_update().get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
-            return delete_port(port_id)
+            delete_port(port_id)
         return True
-    except BaseException:
-        raise
+    except BaseException as e:
+        logger.error(
+            "Error while detaching IP '%s':" % ip_id)
+        logger.exception(e)
+        return False
 
 
 def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False,

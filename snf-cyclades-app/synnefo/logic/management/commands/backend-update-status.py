@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Backend
 from synnefo.logic import backend as backend_mod
+from synnefo.db import transaction
 
 
 HELP_MSG = """Query Ganeti backends and update the status of backend in DB.
@@ -29,6 +30,7 @@ This command updates:
 class Command(SynnefoCommand):
     help = HELP_MSG
 
+    @transaction.commit_on_success
     def handle(self, **options):
         for backend in Backend.objects.select_for_update()\
                                       .filter(offline=False):

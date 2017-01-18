@@ -1,5 +1,6 @@
-recursive-include synnefo *.json *.html *.json *.xml *.txt
-recursive-include docs *.rst
+include README.md
+recursive-include synnefo/webproject/static *
+recursive-include synnefo/webproject/templates *
+recursive-include docs *
+prune docs/_build
 recursive-include extras *
-
-include distribute_setup.py README.md

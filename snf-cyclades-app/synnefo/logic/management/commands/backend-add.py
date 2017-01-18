@@ -21,7 +21,7 @@ from django.db.utils import IntegrityError
 from synnefo.logic import backend as backend_mod
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import check_backend_credentials
-from snf_django.management.utils import pprint_table
+from snf_django.management.utils import pprint_table, parse_bool
 
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
@@ -52,7 +52,14 @@ class Command(SynnefoCommand):
         make_option(
             '--no-init', action='store_false',
             dest='init', default=True,
-            help="Do not perform initialization of the Backend Model")
+            help="Do not perform initialization of the Backend Model"),
+        make_option(
+            '--public',
+            dest='public',
+            choices=["True", "False"],
+            metavar="True|False",
+            default="True",
+            help="Mark the backend as public")
     )
 
     def handle(self, *args, **options):
@@ -63,6 +70,7 @@ class Command(SynnefoCommand):
         port = options['port']
         username = options['username']
         password = options['password']
+        public = parse_bool(options['public'], strict=True)
 
         if not (clustername and username and password):
             raise CommandError("Clustername, user and pass must be supplied")
@@ -71,16 +79,17 @@ class Command(SynnefoCommand):
         if options['check']:
             check_backend_credentials(clustername, port, username, password)
 
-        self.create_backend(clustername, port, username, password,
+        self.create_backend(clustername, port, username, password, public,
                             hypervisor=options["hypervisor"],
                             initialize=options["init"])
 
-    def create_backend(self, clustername, port, username, password,
+    def create_backend(self, clustername, port, username, password, public,
                        hypervisor=None, initialize=True):
             kw = {"clustername": clustername,
                   "port": port,
                   "username": username,
                   "password": password,
+                  "public": public,
                   "drained": True}
 
             if hypervisor:

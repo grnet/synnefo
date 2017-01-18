@@ -4,7 +4,7 @@
 {% endif %}
 
  
-<p class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of service</a></p>
+<p class="termslink" style="float:right"><a href="{% url 'latest_terms' %}">Terms of service</a></p>
 {% if BRANDING_SHOW_COPYRIGHT%}
 	<p><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a> All rights reserved.</p>
 {% endif %}

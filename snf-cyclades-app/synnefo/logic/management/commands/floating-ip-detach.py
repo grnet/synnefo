@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,12 +20,14 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import servers
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):
     args = "<floating_ip_id>"
     help = "Detach a floating IP from a VM or router"
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args or len(args) > 1:

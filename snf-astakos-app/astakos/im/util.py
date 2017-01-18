@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ import urllib
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest, urlencode
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
@@ -28,6 +28,7 @@ from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.encoding import iri_to_uri
 from django.utils.translation import ugettext as _
+from django.utils.http import urlencode
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.user_utils import login
@@ -36,6 +37,11 @@ from astakos.im import settings
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
+
+
+class WebloginHttpResponseRedirect(HttpResponseRedirect):
+
+    allowed_schemes = HttpResponseRedirect.allowed_schemes + list(settings.REDIRECT_ALLOWED_SCHEMES)
 
 
 class UTC(tzinfo):
@@ -199,7 +205,6 @@ def prepare_response(request, user, next='', renew=False):
             params = '?' + urlencode({'next': next})
         next = reverse('edit_profile') + params
 
-    response = HttpResponse()
 
     # authenticate before login
     user = authenticate(email=user.email, auth_token=user.auth_token)
@@ -209,9 +214,7 @@ def prepare_response(request, user, next='', renew=False):
     if not next:
         next = settings.LOGIN_SUCCESS_URL
 
-    response['Location'] = iri_to_uri(next)
-    response.status_code = 302
-    return response
+    return HttpResponseRedirect(iri_to_uri(next))
 
 
 def reserved_email(email):

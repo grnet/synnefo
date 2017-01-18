@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ from optparse import make_option
 
 from django.core.management.base import CommandError
 
+from synnefo.db import transaction
 from synnefo.management import common
 from synnefo.logic import servers
 from synnefo.db.models import Backend, VirtualMachine
@@ -152,6 +153,7 @@ class Command(server_create_mod.Command):
                    (backend.clustername, i + 1, copies))
             self.create_server(options)
 
+    @transaction.commit_on_success
     def stop_server(self, vm, wait):
         """Stop a helper VM.
 

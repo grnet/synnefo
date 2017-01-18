@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from snf_django.management.commands import RemoveCommand
 from snf_django.lib.api import faults
 from synnefo.logic import networks
 from synnefo.management import common
+from synnefo.db import transaction
 
 
 class Command(RemoveCommand):
@@ -26,6 +27,7 @@ class Command(RemoveCommand):
     args = "<network_id> [<network_id> ...]"
     help = "Remove a network from the Database, and Ganeti"
 
+    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:

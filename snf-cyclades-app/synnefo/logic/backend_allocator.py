@@ -33,7 +33,7 @@ class BackendAllocator():
         module = importlib.import_module(path)
         self.strategy_mod = getattr(module, strategy_class)()
 
-    def allocate(self, userid, flavor):
+    def allocate(self, userid, project, flavor):
         """Allocate a vm of the specified flavor to a backend.
 
         Warning!!: An explicit commit is required after calling this function,
@@ -51,22 +51,26 @@ class BackendAllocator():
         disk = flavor_disk(flavor)
         ram = flavor.ram
         cpu = flavor.cpu
-        vm = {'ram': ram, 'disk': disk, 'cpu': cpu}
+        vm = {'ram': ram, 'disk': disk, 'cpu': cpu, 'project': project}
 
         log.debug("Allocating VM: %r", vm)
 
         # Get available backends
-        available_backends = get_available_backends()
+        backends = get_available_backends()
 
         # Remove unnecessary backends based on the filtering strategy
-        filtered_backends = self.strategy_mod.filter_backends(available_backends, vm)
+        filtered_backends = self.strategy_mod.filter_backends(backends, vm)
 
         # Lock the backends that may host the VM
         backend_ids = [b.pk for b in filtered_backends]
-        backends = list(Backend.objects.select_for_update().filter(pk__in=backend_ids))
+        backends = list(Backend.objects.select_for_update()
+                        .filter(pk__in=backend_ids))
 
+        # Note: Is this really needed to be performed every time ?
+        # Perhaps we could have a backend-synchronize command for these ?
         # Update the disk_templates if there are empty.
-        backends = update_backends_disk_templates(backends, flavor)
+        update_backends_disk_templates(backends)
+        backends = filter_backends_by_disk_template(backends, flavor)
 
         # Update the backend stats if it is needed
         refresh_backends_stats(backends)
@@ -88,38 +92,40 @@ class BackendAllocator():
 
 
 def get_available_backends():
-    """Get the list of available backends.
+    """
+    Get the list of available backends.
 
-    The list contains the backends that are online and that have enabled
-    the disk_template of the new VM.
-
-    Also, if the new VM will be automatically connected to a public network,
-    the backends that do not have an available public IPv4 address are
-    excluded.
-
+    The list contains the backends that are online.
     """
     backends = Backend.objects.filter(offline=False, drained=False)
 
     return list(backends)
 
-def update_backends_disk_templates(backends, flavor):
-    """Update the backends' disk templates and filter those
-    that don't have the required disk_template.
 
+def filter_backends_by_disk_template(backends, flavor):
+    """
+    Return backends capable of provisioning VMs with flavor's disk templates.
     """
     disk_template = flavor.volume_type.disk_template
     # Ganeti knows only the 'ext' disk template, but the flavors disk template
     # includes the provider.
+    # Note: How do we take provider into account ?
     if disk_template.startswith("ext_"):
         disk_template = "ext"
-
-    [backend_mod.update_backend_disk_templates(b)
-     for b in backends if not b.disk_templates]
 
     backends = filter(lambda b: disk_template in b.disk_templates,
                       list(backends))
 
     return backends
+
+
+def update_backends_disk_templates(backends):
+    """
+    Update the backends' disk templates.
+    """
+    for b in backends:
+        if not b.disk_templates:
+            backend_mod.update_backend_disk_templates(b)
 
 
 def flavor_disk(flavor):

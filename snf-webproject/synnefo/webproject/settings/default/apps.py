@@ -33,3 +33,9 @@ LANGUAGES = (
 # system time zone.
 TIME_ZONE = 'UTC'   # Warning: The API depends on the TIME_ZONE being UTC
 
+# Specify class to use for serializing session data.
+SESSION_SERIALIZER = 'synnefo.webproject.session_serializer.DateTimeAwareJSON'
+
+# The testing framework should be explicitly set in the test settings.
+# It is here set to empty string to silence Django's upgrade warning.
+TEST_RUNNER = ''

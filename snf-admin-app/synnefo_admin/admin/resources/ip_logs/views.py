@@ -17,7 +17,7 @@
 import logging
 from collections import OrderedDict
 
-from synnefo.db.models import IPAddressLog
+from synnefo.db.models import IPAddressHistory
 
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import _filter_public_ip_log
@@ -35,9 +35,9 @@ templates = {
 
 
 class IPLogJSONView(AdminJSONView):
-    model = IPAddressLog
-    fields = ('address', 'server_id', 'server_id', 'network_id', 'allocated_at',
-              'released_at', 'active',)
+    model = IPAddressHistory
+    fields = ('address', 'user_id', 'server_id', 'network_id', 'action',
+              'action_date', 'action_reason')
     filters = IPLogFilterSet
 
     # This is a rather hackish method of plugging ourselves after
@@ -47,20 +47,10 @@ class IPLogJSONView(AdminJSONView):
         self.qs = _filter_public_ip_log(self.qs)
         return AdminJSONView.set_object_list(self)
 
-    def format_data_row(self, row):
-        row = list(row)
-        row[1] = get_user_uuid_from_server(row[1])
-        row[4] = row[4].strftime("%Y-%m-%d %H:%M")
-        if row[5]:
-            row[5] = row[5].strftime("%Y-%m-%d %H:%M")
-        else:
-            row[5] = "-"
-        return row
-
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
         extra_dict['user_info'] = {
-            'display_name': "Owner",
+            'display_name': "User",
             'value': get_user_details_href(inst),
             'visible': True,
         }
@@ -84,6 +74,11 @@ class IPLogJSONView(AdminJSONView):
             'value': get_network_details_href(inst),
             'visible': True,
         }
+        extra_dict['reason'] = {
+            'display_name': "Action reason",
+            'value': inst.action_reason,
+            'visible': True,
+        }
         return extra_dict
 
 
@@ -95,8 +90,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = None
     context['filter_dict'] = IPLogFilterSet().filters.values()
-    context['columns'] = ["Address", "Owner UUID", "Server ID", "Network ID",
-                          "Allocation date", "Release date", "Active", ""]
+    context['columns'] = ["Address", "User", "Server ID", "Network ID",
+                          "Action", "Date", "Reason", ""]
     context['item_type'] = 'ip_log'
 
     return context

@@ -58,7 +58,7 @@ $(document).ready(function() {
 	 
 	// ugly fix to transfer data easily 
 	$('.with-info input[name^="is_selected_"]').each(function() {
-		$(this).parents('.form-row').hide();
+		$(this).closest('.form-row').hide();
 	});
     
 	$('.quotas-form ul li a').click(function(e){
@@ -147,7 +147,7 @@ $(document).ready(function() {
 	 	var hidden_input = $("input[name='"+hidden_name+"']");
 	 	
         if (value.match(/^(inf|unlimited)/i)) { 
-            $(this).parents('.form-row').removeClass('with-errors');
+            $(this).closest('.form-row').removeClass('with-errors');
             hidden_input.val("Unlimited");
             return;
         }
@@ -213,16 +213,14 @@ $(document).ready(function() {
 		 		} 
 			 	
 			 	if ( flag == '1' ){ 
-			 		$(this).parents('.form-row').addClass('with-errors');
-			 		$(this).parents('.form-row').find('.error-msg').html(msg);
+			 		$(this).closest('.form-row').addClass('with-errors');
+			 		$(this).closest('.form-row').find('.error-msg').html(msg);
 			 		bytes = value;
 			 		$(this).focus();
-                    $(this).data("not-valid", true);
-			 		
-			 		 
+          $(this).data("not-valid", true);
 			 	} else {
-                    $(this).data("not-valid", false);
-			 		$(this).parents('.form-row').removeClass('with-errors');
+          $(this).data("not-valid", false);
+			 		$(this).closest('.form-row').removeClass('with-errors');
 			 	}
 			 	
 			 	hidden_input.val(bytes);
@@ -234,18 +232,19 @@ $(document).ready(function() {
 		 	else {
 		 		var is_int = value.match (new RegExp('^[0-9][0-9]*$'));
 		 		if ( !is_int ){ 
-		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive integer');
-			 		$(this).parents('.form-row').addClass('with-errors');
-			 		 
+		 			$(this).closest('.form-row').find('.error-msg').html('Enter a positive integer');
+			 		$(this).closest('.form-row').addClass('with-errors');
+          $(this).data("not-valid", true);
 			 	} else {
-                    $(this).parents('.form-row').removeClass('with-errors');
+          $(this).data("not-valid", false);
+          $(this).closest('.form-row').removeClass('with-errors');
 			 	}
 			 	hidden_input.val(value);
 	
 		 	}
 	 	
 	 	} else {
-	; 		$(this).parents('.with-errors').removeClass('with-errors')
+	 		$(this).closest('.with-errors').removeClass('with-errors');
 	 		hidden_input.removeAttr('value');
 	 	}
 	 	$('#icons span.info').removeClass('error-msg');
@@ -282,7 +281,7 @@ $(document).ready(function() {
 			$("input[name='"+hidden_field_name+"']").val(value);
 			var field = $(this); 
 			
-			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
+			if ( (field.hasClass('dehumanize')) && !($(this).closest('.form-row').hasClass('with-errors'))) {
 				// for dehumanize fields transform bytes to KB, MB, etc
 				// unless there is an error
                 if (value.match(/^(inf|unlimited)/i)) { 
@@ -297,7 +296,7 @@ $(document).ready(function() {
 				field.val(value);	
                 field.data("value", value);
 			}
-			var group_class = field.parents('div[class^="group"]').attr('class').replace('group ', '');
+			var group_class = field.closest('div[class^="group"]').attr('class').replace('group ', '');
             
 			// select group icon
 			$('.quotas-form ul li a').each(function() {
@@ -316,8 +315,8 @@ $(document).ready(function() {
 			}); 
 			
 			// if the field has class error, transfer error to the proxy fields
-			if ( $(this).parents('.form-row').hasClass('with-errors') ) {
-				field.parents('.form-row').addClass('with-errors');
+			if ( $(this).closest('.form-row').hasClass('with-errors') ) {
+				field.closest('.form-row').addClass('with-errors');
 			}
 		}
 	});  
@@ -345,12 +344,8 @@ $(document).ready(function() {
 		
 		if ($('.not-visible .group .with-errors').length > 0 ){
 			//$('.not-visible .group .with-errors').first().find('input[type="text"]').focus();
-			 
 			return false;
 		}
-		 	
-		  
-		 
 	});
 
 	//goToByScroll("top");
@@ -358,23 +353,24 @@ $(document).ready(function() {
 	
 	// change error colors in quotas forms
 	$('.quotas-form .quota input[type="text"]').focusout(function() {
-	  $(this).parents('.with-errors').addClass('strong-error');
+	  $(this).closest('.with-errors').addClass('strong-error');
 	   
 	});
 	$('.quotas-form .quota input[type="text"]').focusin(function() {
-	  $(this).parents('.with-errors').removeClass('strong-error');
+	  $(this).closest('.with-errors').removeClass('strong-error');
 	   
 	});
 	  
     // enforce uplimit updates
-	$('.quotas-form .quota input[type="text"]').trigger("keyup");
+  //$('.quotas-form .quota input[type="text"]').trigger("keyup");
 
 
     $('.resource-col input').each(function() {
         if (!$(this).attr("name").indexOf("proxy")) { return }
-        if ($(this).hasClass("dehumanize")) {
+        if ($(this).hasClass("dehumanize") && $(this).closest(".form-row").hasClass("with-errors")) {
             var value = $(this).data("value");
             $(this).data("value", bytesToSize2(value) || 0);
+            $(this).val(bytesToSize2(value));
         }
     });
 
@@ -391,16 +387,18 @@ $(document).ready(function() {
             $(this).data("changed", false);
         }
         
+        var get_el = function(id) {
+            return $("input[name='"+name.replace(replace_str, id)+"']");
+        }
         var replace_str = "m_uplimit_proxy";
+        var other = get_el("p_uplimit_proxy");
         if (name.indexOf("p_uplimit_proxy") >= 0) {
             replace_str = "p_uplimit_proxy";
+            other = get_el("m_uplimit_proxy");
         }
 
         window.setTimeout((function() { 
             return function() {
-                var get_el = function(id) {
-                    return $("input[name='"+name.replace(replace_str, id)+"']");
-                }
 
                 var member_proxy_el = get_el("m_uplimit_proxy");
                 var member_value_el = get_el("m_uplimit");
@@ -422,12 +420,19 @@ $(document).ready(function() {
                         return
                     }
                     member_proxy_el.val(project_proxy_el.val());
+                    member_value_el.val(project_proxy_el.val());
                     member_proxy_el.trigger("keyup");
                     member_proxy_el.data("changed-value", 
                                          project_proxy_el.val());
                 }
 
-        }})(replace_str), 100);
+                if (other.closest(".form-row").hasClass("with-errors")) {
+                  if (initial_value != value) {
+                    other.val(other.val()).trigger("keyup");
+                  }
+                }
+
+        }})(replace_str), 0);
 
     });
 });

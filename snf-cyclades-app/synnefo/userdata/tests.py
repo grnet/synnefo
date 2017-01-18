@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,11 +18,9 @@ from django import http
 from django.test import TransactionTestCase
 from django.conf import settings
 from django.test.client import Client
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 from django.core.validators import MaxLengthValidator
-
-from snf_django.utils.testing import with_settings
 
 from mock import patch
 
@@ -63,7 +61,7 @@ class AaiClient(Client):
 
 
 class TestRestViews(TransactionTestCase):
-
+    reset_sequences = True
     fixtures = ['users']
 
     def setUp(self):
@@ -215,14 +213,29 @@ class TestRestViews(TransactionTestCase):
                                             'content': """key 1 content"""}),
                                 content_type='application/json')
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name': 'key1',
+                                json.dumps({'name': 'key2',
                                             'content': """key 1 content"""}),
                                 content_type='application/json')
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name': 'key1',
+                                json.dumps({'name': 'key3',
                                             'content': """key 1 content"""}),
                                 content_type='application/json')
         self.assertEqual(resp.status_code, 422)
         self.assertEqual(resp.content,
                          """{"non_field_key": "__all__", "errors": """
                          """{"__all__": ["SSH keys limit exceeded."]}}""")
+
+    def test_existing_name(self):
+        # test existing key name
+        resp = self.client.post(self.keys_url,
+                                json.dumps({'name': 'original_key',
+                                            'content': """key 1 content"""}),
+                                content_type='application/json')
+        resp = self.client.post(self.keys_url,
+                                json.dumps({'name': 'original_key',
+                                            'content': """key 2 content"""}),
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.content,
+                         """{"non_field_key": "__all__", "errors": """
+                         """{"__all__": ["Public key pair with this User and Name already exists."]}}""")

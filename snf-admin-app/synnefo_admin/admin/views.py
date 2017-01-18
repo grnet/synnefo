@@ -17,12 +17,12 @@ import logging
 import json
 from importlib import import_module
 
-from django.views.generic.simple import direct_to_template
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.serializers.json import DjangoJSONEncoder
+from synnefo.webproject.views import TemplateViewExtra
 
 from urllib import unquote
 
@@ -51,6 +51,7 @@ JSON_MIMETYPE = "application/json"
 
 logger = logging.getLogger(__name__)
 
+direct_to_template = TemplateViewExtra.as_view
 
 # Helper functions ###
 
@@ -181,24 +182,24 @@ def logout(request):
 def home(request):
     """Home view."""
     admin_log(request)
-    return direct_to_template(request, "admin/home.html",
-                              extra_context=default_dict)
+    return direct_to_template(template_name="admin/home.html",
+                              extra_context=default_dict)(request)
 
 
 @admin_user_required
 def stats(request):
     """Stats view."""
     admin_log(request)
-    return direct_to_template(request, "admin/stats.html",
-                              extra_context=default_dict)
+    return direct_to_template(template_name="admin/stats.html",
+                              extra_context=default_dict)(request)
 
 
 @admin_user_required
 def charts(request):
     """Charts view."""
     admin_log(request)
-    return direct_to_template(request, "admin/charts.html",
-                              extra_context=default_dict)
+    return direct_to_template(template_name="admin/charts.html",
+                              extra_context=default_dict)(request)
 
 
 @admin_user_required
@@ -218,7 +219,7 @@ def stats_component(request, component):
     else:
         status = 404
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)
 
 
 @admin_user_required
@@ -238,7 +239,7 @@ def stats_component_details(request, component):
     else:
         status = 404
     return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)
 
 
 @admin_user_required
@@ -268,7 +269,8 @@ def details(request, type, id):
     context.update({'view_type': 'details'})
 
     template = mod.templates['details']
-    return direct_to_template(request, template, extra_context=context)
+    return direct_to_template(template_name=template,
+                              extra_context=context)(request)
 
 
 @admin_user_required
@@ -282,7 +284,8 @@ def catalog(request, type=default_view()):
     context.update({'view_type': 'list'})
 
     template = mod.templates['list']
-    return direct_to_template(request, template, extra_context=context)
+    return direct_to_template(template_name=template,
+                              extra_context=context)(request)
 
 
 @csrf_exempt
@@ -366,4 +369,4 @@ def admin_actions(request):
             mod.wait_action(request, op, id)
 
     return HttpResponse(json.dumps(response, cls=DjangoJSONEncoder),
-                        mimetype=JSON_MIMETYPE, status=status)
+                        content_type=JSON_MIMETYPE, status=status)

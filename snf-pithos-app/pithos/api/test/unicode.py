@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ class TestUnicode(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.get(url)
@@ -396,7 +396,7 @@ class TestUnicode(PithosAPITest):
 
         r = self.get(url, user='διογένης')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, odata + appended_data)
+        self.assertEqual("".join(r.streaming_content), odata + appended_data)
 
         gname = ('a' * 256).capitalize()
         headers = {'HTTP_X_ACCOUNT_GROUP_%s' % gname: 'β'}
@@ -450,7 +450,7 @@ class TestUnicode(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
         # wrong manifestation
         url = join_urls(self.pithos_path, self.user, 'φάκελος', 'άπαντα')
@@ -459,7 +459,7 @@ class TestUnicode(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content != data)
+        self.assertTrue("".join(r.streaming_content) != data)
 
     def test_update_from_another_object(self):
         self.create_container('κουβάς')
@@ -474,4 +474,4 @@ class TestUnicode(PithosAPITest):
 
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, initial_data + src_data)
+        self.assertEqual("".join(r.streaming_content), initial_data + src_data)

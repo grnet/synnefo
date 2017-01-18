@@ -105,6 +105,10 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                            " Supports both search by name (reg expression)"
                            " with \"name:image name\" or by id with"
                            " \"id:image id\".")
+    parser.add_option("--no-agent", dest="no_agent",
+                      default=None, action="store_true",
+                      help="Tell the SSH layer not to seek out running SSH"
+                           " agents when using key-based authentication")
     parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
                       help="Upload/Install the public ssh keys contained"
                            " in this file to the server")
@@ -184,6 +188,7 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
     # Initialize SynnefoCi
     utils.USE_COLORS = options.use_colors
     utils.IGNORE_SSL = options.ignore_ssl
+    utils.SSH_NO_AGENT = options.no_agent
     config_file = options.config_file
     if config_file is not None:
         config_file = os.path.expanduser(config_file)

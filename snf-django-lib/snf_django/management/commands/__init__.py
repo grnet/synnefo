@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
 from snf_django.utils.line_logging import NewlineStreamHandler
 
-import distutils
+from distutils.util import strtobool
 
 USER_EMAIL_FIELD = "user.email"
 LOGGER_EXCLUDE_COMMANDS = "-list$|-show$"
@@ -89,6 +89,7 @@ class SynnefoCommand(BaseCommand):
                  "csv [comma-separated output]"),
     )
 
+    umask = None
     stdout = SynnefoOutputWrapper()
     stderr = SynnefoOutputWrapper()
 
@@ -109,6 +110,9 @@ class SynnefoCommand(BaseCommand):
         using user's preferred encoding.
 
         """
+        if self.umask is not None:
+            os.umask(self.umask)
+
         curr_time = datetime.datetime.now()
         curr_time = datetime.datetime.strftime(curr_time, "%y%m%d%H%M%S")
         command = argv[1]
@@ -543,7 +547,7 @@ class RemoveCommand(SynnefoCommand):
         self.stdout.write("Are you sure you want to delete %s %s?"
                           " [Y/N] " % (resource, ids))
         try:
-            answer = distutils.util.strtobool(raw_input())
+            answer = strtobool(raw_input())
             if answer != 1:
                 raise CommandError("Aborting deletion")
         except ValueError:

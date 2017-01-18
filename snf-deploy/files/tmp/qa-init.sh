@@ -69,7 +69,6 @@ apt-get install -y \
         python-pyinotify \
         python-pyparsing \
         python-setuptools \
-        python-simplejson \
         python-sphinx \
         python-yaml \
         qemu-utils \
@@ -132,7 +131,7 @@ EOF
   modprobe -v vhost-net
   modprobe -v drbd
 
-  apt-get install -t wheezy-backports qemu-kvm
+  apt-get install qemu-kvm
 
   apt-get install snf-image
 

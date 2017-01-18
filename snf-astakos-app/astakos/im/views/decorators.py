@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,8 +78,7 @@ def cookie_fix(func):
         cookie = CookieHandler(request)
         if not cookie.is_valid:
             # redirect to request path to set/delete the cookie
-            response = HttpResponse(status=302)
-            response['Location'] = request.get_full_path()
+            response = HttpResponseRedirect(request.get_full_path())
             cookie.fix(response)
             return response
 

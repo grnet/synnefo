@@ -3,7 +3,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 import sys
 from optparse import OptionParser
 from synnefo.lib.services import fill_endpoints, filter_public
-from django.utils import simplejson as json
+import json
 
 
 astakos_services = {
@@ -143,7 +143,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v1.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {},
     },
@@ -155,7 +156,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v2.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {
             'network-private': {
@@ -239,7 +241,8 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v2.0',
-             'publicURL': None},
+             'publicURL': None,
+             'SNF:exposeVersion': False},
         ],
         'resources': {},
     },

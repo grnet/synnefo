@@ -75,6 +75,11 @@ def strprevling(prefix):
     return s
 
 
+def safe_long(v):
+    """ Cast to long if value is not None """
+    return long(v) if v is not None else v
+
+
 def create_tables(engine):
     metadata = MetaData()
 
@@ -390,7 +395,7 @@ class Node(DBWorker):
         r.close()
         if not row:
             return (), 0, ()
-        nr, size = row[0], row[1] if row[1] else 0
+        nr, size = row[0], safe_long(row[1]) if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster,
@@ -445,7 +450,7 @@ class Node(DBWorker):
         s = s.where(where_clause)
         r = self.conn.execute(s)
         row = r.fetchone()
-        nr, size = row[0], row[1]
+        nr, size = row[0], safe_long(row[1])
         r.close()
         if not nr:
             return (), 0, ()
@@ -500,7 +505,7 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         for population, size, cluster in r.fetchall():
             self.statistics_update_ancestors(
-                node, -population, -size, mtime, cluster,
+                node, -population, -safe_long(size), mtime, cluster,
                 update_statistics_ancestors_depth)
         r.close()
 
@@ -563,7 +568,8 @@ class Node(DBWorker):
         r.close()
         d = defaultdict(lambda: defaultdict(dict))
         for account, project, usage in rows:
-            d[account][project][DEFAULT_DISKSPACE_RESOURCE] = usage
+            d[account][project][DEFAULT_DISKSPACE_RESOURCE] = \
+                    safe_long(usage)
         return d
 
     def node_project_usage(self, project=None, cluster=0):
@@ -596,7 +602,7 @@ class Node(DBWorker):
         r.close()
         d = defaultdict(dict)
         for project, usage in rows:
-            d[project][DEFAULT_DISKSPACE_RESOURCE] = usage
+            d[project][DEFAULT_DISKSPACE_RESOURCE] = safe_long(usage)
         return d
 
     def node_container_usage(self, path=None, cluster=0):
@@ -618,7 +624,7 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
-        return row[0]
+        return safe_long((row[0]))
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
@@ -821,7 +827,7 @@ class Node(DBWorker):
         rp.close()
         if not r:
             return None
-        size = long(r[1] - props.size)
+        size = safe_long(r[1]) - props.size
         mtime = max(mtime, r[2])
         return (count, size, mtime)
 

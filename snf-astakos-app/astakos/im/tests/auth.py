@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -458,13 +458,13 @@ class TestLocal(TestCase):
 
         credentials = {'username': 'γιού τι έφ', 'password': 'password'}
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertFalse('recaptcha_challenge_field' in fields)
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertFalse('recaptcha_challenge_field' in fields)
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
+        fields = r.context['login_form'].fields
         self.assertTrue('recaptcha_challenge_field' in fields)
 
     def test_no_moderation(self):

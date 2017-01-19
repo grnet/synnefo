@@ -348,7 +348,10 @@
     synnefo.util.publicKeyTypesMap = {
         "ecdsa-sha2-nistp256": "ecdsa",
         "ssh-dss" : "dsa",
-        "ssh-rsa": "rsa"
+        "ssh-rsa": "rsa",
+        "ssh-ed25519": "eddsa",
+        "ecdsa-sha2-nistp384": "ecdsa",
+        "ecdsa-sha2-nistp521": "ecdsa",
     }
 
     synnefo.util.validatePublicKey = function(key) {

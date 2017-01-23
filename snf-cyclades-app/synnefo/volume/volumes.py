@@ -53,6 +53,9 @@ def create(credentials, size, server_id=None, name=None, description=None,
     volume_type = None
 
     server = None
+
+    # If given a server id, assert that it exists and that it belongs to the
+    # user.
     if server_id:
         try:
             server = util_get_vm(server_id, credentials,
@@ -60,14 +63,21 @@ def create(credentials, size, server_id=None, name=None, description=None,
         except faults.ItemNotFound:
             raise faults.BadRequest("Server %s not found" % server_id)
 
-        volume_type = server.flavor.volume_type
+    if server:
         # If the server's volume type conflicts with the provided volume type,
         # raise an exception.
-        if volume_type_id and \
-           volume_type.id != util.normalize_volume_type_id(volume_type_id):
-            raise faults.BadRequest("Cannot create a volume with type '%s' to"
-                                    " a server with volume type '%s'."
-                                    % (volume_type_id, volume_type.id))
+        if volume_type_id:
+            volume_type = util.get_volume_type(volume_type_id,
+                                               include_deleted=False,
+                                               exception=faults.BadRequest)
+            if volume_type.template != server.flavor.volume_type.template:
+                raise faults.BadRequest("Cannot create a volume with template"
+                                        " '%s' to a server with volume"
+                                        " template '%s'."
+                                        % (volume_type.template,
+                                           server.flavor.volume_type.template))
+        else:
+            volume_type = server.flavor.volume_type
 
     # If the user has not provided a valid volume type, raise an exception.
     if volume_type is None:

@@ -41,10 +41,10 @@ def attach_volume(vm, volume, atomic_context):
         util.assert_detachable_volume_type(volume.volume_type)
 
     # Check that disk templates are the same
-    if volume.volume_type_id != vm.flavor.volume_type_id:
-        msg = ("Volume and server must have the same volume type. Volume has"
-               " volume type '%s' while server has '%s'"
-               % (volume.volume_type_id, vm.flavor.volume_type_id))
+    if volume.volume_type.template != vm.flavor.volume_type.template:
+        msg = ("Volume and server must have the same volume template. Volume"
+               " has volume template'%s' while server has '%s'"
+               % (volume.volume_type.template, vm.flavor.volume_type.template))
         raise faults.BadRequest(msg)
 
     # Check maximum disk per instance hard limit

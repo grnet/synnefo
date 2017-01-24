@@ -8,6 +8,17 @@ repository and have aligned versions.
 
 .. _Changelog-0.19:
 
+v0.19rc2
+========
+
+Released: UNRELEASED
+
+Cyclades
+--------
+
+* Fix keypair name conflicts in UI
+
+
 v0.19rc1
 =========
 

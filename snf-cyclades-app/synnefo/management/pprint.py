@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -482,10 +482,12 @@ def pprint_volume_type(volume_type, stdout=None, title=None):
     if title is None:
         title = "Volume Type %s" % volume_type.id
 
+    specs_str = ", ".join(str(s) for s in volume_type.specs.all())
     vtype_info = OrderedDict([
         ("name", volume_type.name),
         ("disk template", volume_type.disk_template),
         ("deleted", volume_type.deleted),
+        ("specs", specs_str),
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)

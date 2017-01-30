@@ -124,9 +124,8 @@ Shutdown snf-ganeti-eventd on ganeti master candidates:
 
 .. warning::
 
-   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, we
-   have backported gevent 1.1.1 and greenlet 0.4.9 from stretch. Make sure you
-   use these packages found on GRNet's Jessie repo.
+   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, you
+   should use the gevent 1.1.1-2 and greenlet 0.4.10-1 from jessie-backports.
 
 .. warning::
 

@@ -71,6 +71,7 @@ class Flavor(models.Model):
     deleted = models.BooleanField('Deleted', default=False)
     # Whether the flavor can be used to create new servers
     allow_create = models.BooleanField(default=True, null=False)
+    public = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -87,6 +88,21 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return u"<%s:%s>" % (self.id, self.name)
+
+
+class FlavorAccess(models.Model):
+    project = models.CharField(max_length=255)
+    flavor = models.ForeignKey(Flavor, related_name='access')
+
+    class Meta:
+        unique_together = (('project', 'flavor'),)
+        verbose_name = u'Flavor access per project.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.flavor_id, self.project)
 
 
 class Backend(models.Model):

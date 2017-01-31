@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
+from snf_django.management.utils import parse_bool
 from synnefo.db.models import Flavor, VolumeType
 
 from logging import getLogger
@@ -48,6 +49,13 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option("-n", "--dry-run", dest="dry_run", action="store_true"),
+        make_option(
+            '--public',
+            dest='public',
+            choices=["True", "False"],
+            metavar="True|False",
+            default="True",
+            help="Mark the flavors as public")
     )
     args = "<cpu>[,<cpu>,...] " \
            "<ram>[,<ram>,...] " \
@@ -61,6 +69,7 @@ class Command(SynnefoCommand):
         cpus = args[0].split(',')
         rams = args[1].split(',')
         disks = args[2].split(',')
+        public = parse_bool(options['public'], strict=True)
 
         for i, r in enumerate(rams):
             value = int(r)
@@ -95,7 +104,7 @@ class Command(SynnefoCommand):
         for cpu, ram, disk, volume_type in flavors:
             if options["dry_run"]:
                 flavor = Flavor(cpu=cpu, ram=ram, disk=disk,
-                                volume_type=volume_type)
+                                volume_type=volume_type, public=public)
                 self.stdout.write("Creating flavor '%s'\n" % (flavor.name,))
             else:
                 flavor, created = \
@@ -103,6 +112,8 @@ class Command(SynnefoCommand):
                                                  volume_type=volume_type)
                 if created:
                     self.stdout.write("Created flavor '%s'\n" % (flavor.name,))
+                    flavor.public = public
+                    flavor.save()
                 else:
                     self.stdout.write("Flavor '%s' already exists\n"
                                       % flavor.name)
@@ -111,4 +122,11 @@ class Command(SynnefoCommand):
                               " Use 'snf-manage flavor-modify' to" \
                               " restore this flavor\n" \
                               % flavor.name
+                        self.stdout.write(msg)
+                    elif flavor.public != public:
+                        status = 'public' if public else 'private'
+                        msg = "Flavor '%s' is not %s." \
+                              " Use 'snf-manage flavor-modify' to" \
+                              " make this flavor %s\n" \
+                              % (flavor.name, status, status)
                         self.stdout.write(msg)

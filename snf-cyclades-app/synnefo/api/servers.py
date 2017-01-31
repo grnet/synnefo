@@ -429,10 +429,15 @@ def create_server(request):
             allowed_types.append('snapshot')
         volumes = parse_block_device_mapping(dev_map, allowed_types)
 
+    # If no project is provided, use the user's system project as default.
+    if project is None:
+        project = user_id
+
     # Verify that personalities are well-formed
     util.verify_personality(personality)
-    # Get flavor (ensure it is active)
-    flavor = util.get_flavor(flavor_id, include_deleted=False)
+    # Get flavor (ensure it is active and project has access)
+    flavor = util.get_flavor(flavor_id, include_deleted=False,
+                             for_project=project)
     if not util.can_create_flavor(flavor, request.user):
         msg = ("It is not allowed to create a server from flavor with id '%d',"
                " see 'allow_create' flavor attribute")
@@ -1049,7 +1054,8 @@ def resize(request, vm, args):
     flavor_id = args.get("flavorRef")
     if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
-    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
+    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
+                             for_project=vm.project)
     servers.resize(vm, flavor=flavor)
 
     log.info("User %s resized VM %s to flavor %s",

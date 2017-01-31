@@ -547,6 +547,8 @@ APP_ACTION_FUNCS = APPLICATION_ACTION.values()
 def project_action(request, project_id):
     user = request.user
     input_data = utils.get_json_body(request)
+    if not isinstance(input_data, dict):
+        raise faults.BadRequest("Invalid input data")
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
     with ExceptionHandler():

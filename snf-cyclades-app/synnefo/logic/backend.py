@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ NIC_FIELDS = SIMPLE_NIC_FIELDS + COMPLEX_NIC_FIELDS
 DISK_FIELDS = ["status", "size", "index"]
 UNKNOWN_NIC_PREFIX = "unknown-nic-"
 UNKNOWN_DISK_PREFIX = "unknown-disk-"
+GNT_EXTP_VOLTYPESPEC_PREFIX = "GNT-EXTP:"
 
 
 def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
@@ -862,6 +863,15 @@ def create_instance(vm, nics, volumes, flavor, image):
                                         .get(provider)
             if extra_disk_params is not None:
                 disk.update(extra_disk_params)
+
+            volume_type_specs = {spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                                 spec.value for spec in
+                                 volume.volume_type.specs.filter(
+                                 key__startswith=GNT_EXTP_VOLTYPESPEC_PREFIX)}
+
+            if volume_type_specs:
+                disk.update(volume_type_specs)
+
         disks.append(disk)
 
     kw["disks"] = disks
@@ -1294,13 +1304,22 @@ def attach_volume(vm, volume, depends=[]):
     if disk_provider is not None:
         disk["provider"] = disk_provider
 
+        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                    .get(disk_provider)
+
+        if extra_disk_params is not None:
+            disk.update(extra_disk_params)
+
+        volume_type_specs = {spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                             spec.value for spec in
+                             volume.volume_type.specs.filter(
+                             key__startswith=GNT_EXTP_VOLTYPESPEC_PREFIX)}
+
+        if volume_type_specs:
+            disk.update(volume_type_specs)
+
     if volume.origin is not None:
         disk["origin"] = volume.origin
-
-    extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
-                                .get(disk_provider)
-    if extra_disk_params is not None:
-        disk.update(extra_disk_params)
 
     if volume_actions.util.is_volume_type_detachable(volume.volume_type):
         add_attach_params(volume, disk)

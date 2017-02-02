@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ from django.test import TransactionTestCase
 #from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
 from synnefo.logic import backend
+from synnefo.logic.backend import GNT_EXTP_VOLTYPESPEC_PREFIX
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
 from mock import patch, Mock
@@ -84,8 +85,24 @@ class ServerCreationTest(TransactionTestCase):
 
         # test ext settings:
         req = deepcopy(kwargs)
+        vlmt = mfactory.VolumeTypeFactory(disk_template='ext_archipelago')
+        # Generate 4 specs. 2 prefixed with GNT_EXTP_VOLTYPESPEC_PREFIX
+        # and 2 with an other prefix that should be omitted
+        volume_type_specs = [
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sbar' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sfoo' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='other-prefx-baz'),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='another-prefix-biz'),
+        ]
+
+        gnt_prefixed_specs = filter(lambda s: s.key.startswith(
+            GNT_EXTP_VOLTYPESPEC_PREFIX), volume_type_specs)
         ext_flavor = mfactory.FlavorFactory(
-            volume_type__disk_template="ext_archipelago",
+            volume_type=vlmt,
             disk=1)
         req["flavor"] = ext_flavor
         mrapi().CreateInstance.return_value = 42
@@ -112,14 +129,17 @@ class ServerCreationTest(TransactionTestCase):
 
         update_disk_templates_mock.assert_called_once_with([backend])
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
-        self.assertEqual(kwargs["disks"][0],
-                         {"provider": "archipelago",
-                          "origin": "test_mapfile",
-                          "origin_size": 1000,
-                          "name": vm.volumes.all()[0].backend_volume_uuid,
-                          "foo": "mpaz",
-                          "lala": "lolo",
-                          "size": 1024})
+        disk_kwargs = {"provider": "archipelago",
+                       "origin": "test_mapfile",
+                       "origin_size": 1000,
+                       "name": vm.volumes.all()[0].backend_volume_uuid,
+                       "foo": "mpaz",
+                       "lala": "lolo",
+                       "size": 1024}
+        disk_kwargs.update({spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                            spec.value
+                            for spec in gnt_prefixed_specs})
+        self.assertEqual(kwargs["disks"][0], disk_kwargs)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
@@ -162,6 +182,59 @@ class ServerTest(TransactionTestCase):
         self.assertEqual(nics[1], "-1")
         self.assertEqual(nics[2]["ip"], None)
         self.assertEqual(nics[2]["network"], net.backend_id)
+
+    def test_attach_volume_type_specs(self, mrapi):
+        """Test volume type spces propagation when attaching a
+           volume to an instance
+        """
+        vlmt = mfactory.VolumeTypeFactory(disk_template='ext_archipelago')
+        # Generate 4 specs. 2 prefixed with GNT_EXTP_VOLTYPESPEC_PREFIX
+        # and 2 with an other prefix that should be omitted
+        volume_type_specs = [
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sbar' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sfoo' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='other-prefx-baz'),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='another-prefix-biz'),
+        ]
+
+        gnt_prefixed_specs = filter(lambda s: s.key.startswith(
+            GNT_EXTP_VOLTYPESPEC_PREFIX), volume_type_specs)
+        volume = mfactory.VolumeFactory(volume_type=vlmt, size=1)
+        vm = volume.machine
+        osettings = {
+            "GANETI_DISK_PROVIDER_KWARGS": {
+                "archipelago": {
+                    "foo": "mpaz",
+                    "lala": "lolo"
+                }
+            }
+        }
+
+        with override_settings(settings, **osettings):
+            mrapi().ModifyInstance.return_value = 1
+            jobid = backend.attach_volume(vm, volume)
+            self.assertEqual(jobid, 1)
+            name, args, kwargs = mrapi().ModifyInstance.mock_calls[-1]
+
+            disk_kwargs = {"provider": "archipelago",
+                           "name": vm.volumes.all()[0].backend_volume_uuid,
+                           "reuse_data": 'False',
+                           "foo": "mpaz",
+                           "lala": "lolo",
+                           "size": 1024}
+            disk_kwargs.update({spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                                spec.value
+                                for spec in gnt_prefixed_specs})
+
+        # Should be "disks": [('add', '-1', {disk_kwargs}), ]
+        disk = kwargs["disks"][0]
+        self.assertEqual(disk[0], 'add')
+        self.assertEqual(disk[1], '-1')
+        self.assertEqual(disk[2], disk_kwargs)
 
     def test_attach_wait_for_sync(self, mrapi):
         """Test wait_for_sync when attaching volume to instance.

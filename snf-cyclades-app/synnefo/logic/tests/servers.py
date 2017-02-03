@@ -448,3 +448,35 @@ class ServerCommandTest(TransactionTestCase):
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertEqual(vol.project, original_project)
+
+    def test_reassign_vm_flavors(self, mrapi):
+        volume = mfactory.VolumeFactory()
+        vm = volume.machine
+        original_project = vm.project
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm, another_project, False)
+            self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        flavor = vm.flavor
+        flavor.public = False
+        flavor.save()
+        with mocked_quotaholder():
+            self.assertRaises(faults.BadRequest, servers.reassign, vm,
+                              original_project, False)
+            self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        mfactory.FlavorAccessFactory(project=original_project,
+                                     flavor=flavor)
+        with mocked_quotaholder():
+            servers.reassign(vm, original_project, False)
+            self.assertEqual(vm.project, original_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertEqual(vol.project, original_project)

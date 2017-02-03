@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -331,6 +331,9 @@ class BaseAPITest(TestCase):
         except ValueError:
             self.assertTrue(False)
         self.assertEqual(error['notAllowed']['message'], 'Method not allowed')
+
+    def assertForbidden(self, response):
+        self.assertFault(response, 403, 'forbidden', msg=response.content)
 
 
 # Imitate unittest assertions new in Python 2.7

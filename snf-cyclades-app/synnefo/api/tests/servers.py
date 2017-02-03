@@ -463,6 +463,37 @@ class ServerCreateAPITest(ComputeAPITest):
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 403)
 
+        # Test with an flavor that is not public
+        flavor = mfactory.FlavorFactory(public=False)
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertForbidden(response)
+
+        # Test with an flavor that it does not have access
+        flavor = mfactory.FlavorFactory(public=False)
+        flavor_access = mfactory.FlavorAccessFactory(flavor=flavor,
+                                                     project='proj')
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertForbidden(response)
+
+        request["server"]["flavorRef"] = flavor.id
+        request["server"]["project"] = 'proj'
+        mrapi().CreateInstance.return_value = 12
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        # The user is not a member of the 'proj' project, but since we
+        # mock quotaholder that perform this check, this call succeeds
+        self.assertSuccess202(response)
+
     @django_override_settings(CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE= \
                               {'admins': ['.*']})
     def test_override_flavor_allow_create(self, mrapi):
@@ -1019,6 +1050,7 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
+
         # Check success
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
         flavor4 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
@@ -1035,6 +1067,47 @@ class ServerActionAPITest(ComputeAPITest):
         self.assertEqual(kwargs["beparams"]["vcpus"], 4)
         self.assertEqual(kwargs["beparams"]["minmem"], 2048)
         self.assertEqual(kwargs["beparams"]["maxmem"], 2048)
+
+        # Check private flavor with no flavor-access
+        flavor5 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
+                                         disk=flavor.disk, cpu=1, ram=2048,
+                                         public=False)
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertForbidden(response)
+
+        # Check private flavor the user has access, but it is different
+        # from the VM's project
+        mfactory.FlavorAccessFactory(flavor=flavor5, project='foo')
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json',
+                               _projects=['foo'])
+        self.assertForbidden(response)
+
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        mfactory.FlavorAccessFactory(flavor=flavor5, project=vm.project)
+        # Checking flavor with flavor-access from the same project the VM
+        # belongs to is meaningless, since the membership check is performed by
+        # the quotaholder, which is mocked and always succeeds
+        #
+        # request = {'resize': {'flavorRef': flavor5.id}}
+        # response = self.mypost('servers/%d/action' % vm.id,
+        #                        vm.userid, json.dumps(request), 'json',
+        #                        _projects = ['foo'])
+        # self.assertForbidden(response)
+
+        # Check private flavor with user access to the same project as the VM's
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        mfactory.FlavorAccessFactory(flavor=flavor5, project=vm.project)
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json',
+                               _projects=['foo', vm.project])
+        self.assertSuccess202(response)
 
     def test_action_on_resizing_vm(self, mrapi, mimage):
         vm = mfactory.VirtualMachineFactory()

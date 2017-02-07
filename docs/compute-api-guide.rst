@@ -1877,12 +1877,14 @@ X-Auth-Token    User authentication token required required
 
 |
 
-================= ===============
-Request Parameter Value
-================= ===============
-json              Respond in json
-xml               Respond in xml
-================= ===============
+========================== ==================== ======== ==========
+Request Parameter          Value                Cyclades OS/Compute
+========================== ==================== ======== ==========
+json                       Respond in json      default  **✘**
+xml                        Respond in xml       ✔        **✘**
+os-flavor-access:is_public Flavor visibility    ✔        ✔
+SNF:flavor-access          Project access       ✔        **✘**
+========================== ==================== ======== ==========
 
 .. note:: Request body should be empty
 
@@ -1978,6 +1980,8 @@ only ``id`` and ``name`` attributes.
         "SNF:disk_template": "drbd",
         "disk": 20,
         "vcpus": 1,
+        "os-flavor-access:is_public": true,
+        "SNF:flavor-access": [],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1", 
@@ -1995,6 +1999,10 @@ only ``id`` and ``name`` attributes.
         "SNF:disk_template": "drbd",
         "disk": 40,
         "vcpus": 4,
+        "os-flavor-access:is_public": false,
+        "SNF:flavor-access": [
+            "c0f0188f-2644-4768-8781-cccae7b61344"
+        ],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/3", 
@@ -2076,6 +2084,8 @@ All flavor attributes are listed `here <#flavor-ref>`__.
         "SNF:disk_template": "drbd",
         "disk": 20,
         "vcpus": 1,
+        "os-flavor-access:is_public": true,
+        "SNF:flavor-access": [],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1", 
@@ -3039,18 +3049,20 @@ Flavor
 A flavor is a hardware configuration for a server. It contains the following
 information:
 
-================= ==================== ======== ==========
-Flavor Attributes Description          Cyclades OS/Compute
-================= ==================== ======== ==========
-id                The flavor id        ✔        ✔
-name              The flavor name      ✔        ✔
-ram               Server RAM size      ✔        ✔
-SNF:disk_template Storage mechanism    ✔        **✘**
-disk              Server disk size     ✔        ✔
-vcpus             # of Virtual CPUs    ✔        ✔
-links rel         Atom link rel field  ✔        ✔
-links href        Atom link href field ✔        ✔
-================= ==================== ======== ==========
+========================== ==================== ======== ==========
+Flavor Attributes          Description          Cyclades OS/Compute
+========================== ==================== ======== ==========
+id                         The flavor id        ✔        ✔
+name                       The flavor name      ✔        ✔
+ram                        Server RAM size      ✔        ✔
+SNF:disk_template          Storage mechanism    ✔        **✘**
+disk                       Server disk size     ✔        ✔
+vcpus                      # of Virtual CPUs    ✔        ✔
+SNF:flavor-access          Project access       ✔        **✘**
+os-flavor-access:is_public Flavor visibility    ✔        ✔
+links rel                  Atom link rel field  ✔        ✔
+links href                 Atom link href field ✔        ✔
+========================== ==================== ======== ==========
 
 * **id** is the flavor unique id (a positive integer)
 * **name** is the flavor name (a string)
@@ -3058,6 +3070,8 @@ links href        Atom link href field ✔        ✔
 * **SNF:disk_template** is a reference to the underlying storage mechanism
   used by the Cyclades server (e.g., drdb, ext_elmc).
 * **disk** the servers disk size in GB
+* **SNF:flavor-access** Projects the user is a member of that grant access to the flavor
+* **os-flavor-access:is_public** Whether this flavor is public or scoped to a set of projects
 * **vcpus** refer to the number of virtual CPUs assigned to a server
 * **link ref** and **link href** refer to the Atom link attributes that are
   `used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.

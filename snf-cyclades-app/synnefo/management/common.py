@@ -41,6 +41,7 @@ def format_vm_state(vm):
     else:
         return vm.operstate
 
+
 RESOURCE_MAP = {
     "backend": Backend.objects,
     "flavor": Flavor.objects,

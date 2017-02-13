@@ -16,7 +16,6 @@
 
 # Provides automated tests for logic module
 from django.test import TransactionTestCase
-#from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
 from synnefo.logic import backend
 from synnefo.logic.backend import GNT_EXTP_VOLTYPESPEC_PREFIX
@@ -46,6 +45,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
 @patch('synnefo.api.util.get_image', fixed_image)
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCreationTest(TransactionTestCase):
+
     def test_create(self, mrapi):
         flavor = mfactory.FlavorFactory()
         kwargs = {
@@ -119,7 +119,7 @@ class ServerCreationTest(TransactionTestCase):
         with mocked_quotaholder():
             with override_settings(settings, **osettings):
                 with patch(
-                    'synnefo.logic.backend_allocator.update_backends_disk_templates'
+                    'synnefo.logic.backend_allocator.update_backends_disk_templates'  # noqa E265
                 ) as update_disk_templates_mock:
                     # Check that between the `get_available_backends` call
                     # and the `update_backend_disk_templates` call
@@ -144,6 +144,7 @@ class ServerCreationTest(TransactionTestCase):
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerTest(TransactionTestCase):
+
     def test_connect_network(self, mrapi):
         # Common connect
         for dhcp in [True, False]:
@@ -267,6 +268,7 @@ class ServerTest(TransactionTestCase):
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCommandTest(TransactionTestCase):
+
     def test_pending_task(self, mrapi):
         vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
         self.assertRaises(faults.BadRequest, servers.start, vm)
@@ -301,7 +303,7 @@ class ServerCommandTest(TransactionTestCase):
             self.assertRaises(faults.BadRequest, servers.connect, vm, network)
             self.assertRaises(faults.BadRequest, servers.disconnect, vm,
                               network)
-        #test valid
+        # test valid
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder():

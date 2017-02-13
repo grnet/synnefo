@@ -91,7 +91,7 @@ def override_settings(settings, **kwargs):
     """
 
     _prefix = kwargs.get('prefix', '')
-    prefix = lambda key: '%s%s' % (_prefix, key)
+    prefix = lambda key: '%s%s' % (_prefix, key)  # noqa: E731
 
     oldkeys = [k for k in dir(settings) if k.upper() == k]
     oldsettings = dict([(k, getattr(settings, k)) for k in oldkeys])
@@ -113,7 +113,7 @@ def override_settings(settings, **kwargs):
     if kwargs.get('reset_changes', True):
         newkeys = [k for k in dir(settings) if k.upper() == k]
         for key in newkeys:
-            if not key in oldkeys:
+            if key not in oldkeys:
                 delattr(settings, key)
 
     # Revert old keys
@@ -134,6 +134,7 @@ def with_settings(settings, prefix='', **override):
             return ret
         return inner
     return wrapper
+
 
 serial = 0
 

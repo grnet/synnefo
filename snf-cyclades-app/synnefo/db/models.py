@@ -170,7 +170,7 @@ class Backend(models.Model):
 
     @staticmethod
     def put_client(client):
-            put_rapi_client(client)
+        put_rapi_client(client)
 
     def create_hash(self):
         """Create a hash for this backend. """
@@ -274,7 +274,7 @@ class VirtualMachineManager(models.Manager):
         if userid:
             _filter |= models.Q(userid=userid)
         if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
+            _filter |= (models.Q(shared_to_project=True) &
                         models.Q(project__in=projects))
 
         return self.get_queryset().filter(_filter)
@@ -431,7 +431,7 @@ class VirtualMachine(models.Model):
 
     @staticmethod
     def put_client(client):
-            put_rapi_client(client)
+        put_rapi_client(client)
 
     def save(self, *args, **kwargs):
         # Store hash for first time saved vm
@@ -458,6 +458,7 @@ class VirtualMachine(models.Model):
 
     # Error classes
     class InvalidBackendIdError(ValueError):
+
         def __init__(self, value):
             self.value = value
 
@@ -465,15 +466,17 @@ class VirtualMachine(models.Model):
             return repr(self.value)
 
     class InvalidBackendMsgError(Exception):
+
         def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
 
         def __str__(self):
             return repr('<opcode: %s, status: %s>' % (self.opcode,
-                        self.status))
+                                                      self.status))
 
     class InvalidActionError(Exception):
+
         def __init__(self, action):
             self._action = action
 
@@ -541,7 +544,7 @@ class NetworkManager(models.Manager):
         if userid:
             _filter |= models.Q(userid=userid)
         if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
+            _filter |= (models.Q(shared_to_project=True) &
                         models.Q(project__in=projects))
         if public:
             _filter |= models.Q(public=True)
@@ -722,6 +725,7 @@ class Network(models.Model):
         return total, free
 
     class InvalidBackendIdError(ValueError):
+
         def __init__(self, value):
             self.value = value
 
@@ -729,6 +733,7 @@ class Network(models.Model):
             return repr(self.value)
 
     class InvalidBackendMsgError(Exception):
+
         def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
@@ -738,6 +743,7 @@ class Network(models.Model):
                         % (self.opcode, self.status))
 
     class InvalidActionError(Exception):
+
         def __init__(self, action):
             self._action = action
 
@@ -894,7 +900,7 @@ class IPAddressManager(models.Manager):
         if userid:
             _filter |= models.Q(userid=userid)
         if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
+            _filter |= (models.Q(shared_to_project=True) &
                         models.Q(project__in=projects))
 
         return self.get_queryset().filter(_filter)
@@ -986,7 +992,7 @@ class IPAddressHistory(models.Model):
     server_id = models.IntegerField("Server", null=False)
     network_id = models.IntegerField("Network", null=False)
     user_id = models.CharField("IP user", max_length=128, null=False,
-                              db_index=True)
+                               db_index=True)
     action = models.CharField("Action", max_length=255, null=False)
     action_date = models.DateTimeField("Datetime of IP action",
                                        default=datetime.datetime.now)
@@ -1020,7 +1026,8 @@ class NetworkInterfaceManager(models.Manager):
         vms = VirtualMachine.objects.for_user(userid, projects)
         networks = Network.objects.for_user(userid, projects, public=False)\
                                   .filter(public=False)
-        ips = IPAddress.objects.for_user(userid, projects).filter(floating_ip=True)
+        ips = IPAddress.objects.for_user(userid, projects)\
+                               .filter(floating_ip=True)
 
         _filter = models.Q()
         if userid:
@@ -1173,23 +1180,23 @@ class IPPoolTable(PoolTable):
 
 @contextmanager
 def pooled_rapi_client(obj):
-        if isinstance(obj, (VirtualMachine, BackendNetwork)):
-            backend = obj.backend
-        else:
-            backend = obj
+    if isinstance(obj, (VirtualMachine, BackendNetwork)):
+        backend = obj.backend
+    else:
+        backend = obj
 
-        if backend.offline:
-            log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable("Cannot connect to offline"
-                                            " backend: %s" % backend)
+    if backend.offline:
+        log.warning("Trying to connect with offline backend: %s", backend)
+        raise faults.ServiceUnavailable("Cannot connect to offline"
+                                        " backend: %s" % backend)
 
-        b = backend
-        client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
-                                 b.username, b.password)
-        try:
-            yield client
-        finally:
-            put_rapi_client(client)
+    b = backend
+    client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
+                             b.username, b.password)
+    try:
+        yield client
+    finally:
+        put_rapi_client(client)
 
 
 class VirtualMachineDiagnosticManager(models.Manager):
@@ -1213,7 +1220,7 @@ class VirtualMachineDiagnosticManager(models.Manager):
 
     def since(self, vm, created_since, **kwargs):
         return self.get_queryset().filter(vm=vm, created__gt=created_since,
-                                           **kwargs)
+                                          **kwargs)
 
 
 class VirtualMachineDiagnostic(models.Model):
@@ -1260,7 +1267,7 @@ class VolumeManager(models.Manager):
         if userid:
             _filter |= models.Q(userid=userid)
         if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
+            _filter |= (models.Q(shared_to_project=True) &
                         models.Q(project__in=projects))
 
         return self.get_queryset().filter(_filter)

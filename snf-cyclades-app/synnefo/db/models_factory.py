@@ -120,7 +120,7 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     deleted = False
     suspended = False
     key_names = []
-    #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
+    # operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
     project = factory.LazyAttribute(lambda a: a.userid)
 

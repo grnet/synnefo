@@ -39,6 +39,7 @@ from mock import patch, Mock
 
 
 class ComputeAPITest(BaseAPITest):
+
     def __init__(self, *args, **kwargs):
         super(ComputeAPITest, self).__init__(*args, **kwargs)
         self.compute_path = get_service_path(cyclades_services, 'compute',
@@ -62,6 +63,7 @@ class ComputeAPITest(BaseAPITest):
 
 
 class ServerAPITest(ComputeAPITest):
+
     def setUp(self):
         self.user1 = 'user1'
         self.user2 = 'user2'
@@ -164,15 +166,15 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "vm.example.org")
         # Formatted settings
-        with override_settings(settings, CYCLADES_SERVERS_FQDN=
-                               "snf-%(id)s.vm.example.org"):
+        with override_settings(
+                settings, CYCLADES_SERVERS_FQDN="snf-%(id)s.vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"],
                              "snf-%d.vm.example.org" % vm.id)
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN=
-                               "snf-%(id)s.vm-%(id)s.example.org"):
+        with override_settings(
+                settings,
+                CYCLADES_SERVERS_FQDN="snf-%(id)s.vm-%(id)s.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
@@ -202,7 +204,7 @@ class ServerAPITest(ComputeAPITest):
 
         def _port_from_ip(ip, base):
             fields = ip.split('.', 4)
-            return (base + 256*int(fields[2]) + int(fields[3]))
+            return (base + 256 * int(fields[2]) + int(fields[3]))
 
         ports = {
             22: lambda ip, id, fqdn, user:
@@ -312,6 +314,7 @@ class ServerAPITest(ComputeAPITest):
         response = self.mypost('servers/42/metadata/foo')
         self.assertMethodNotAllowed(response)
 
+
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
                             'mapfile': '1234',
@@ -330,6 +333,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
 @patch('synnefo.volume.util.get_snapshot', fixed_image)
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerCreateAPITest(ComputeAPITest):
+
     def setUp(self):
         self.flavor = mfactory.FlavorFactory()
         self.backend = mfactory.BackendFactory()
@@ -404,8 +408,8 @@ class ServerCreateAPITest(ComputeAPITest):
         request.method = 'INVALID'
         with patch('snf_django.lib.api.api_method_not_allowed') as mocked:
             servers.demux_server_password(request, vm.userid)
-            mocked.assert_called_once_with(request, allowed_methods=['GET', 'DELETE'])
-
+            mocked.assert_called_once_with(
+                request, allowed_methods=['GET', 'DELETE'])
 
     def test_get_server_password(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
@@ -428,7 +432,6 @@ class ServerCreateAPITest(ComputeAPITest):
 
         self.assertEqual(returned_password, password)
 
-
     def test_delete_server_password(self, mrapi):
         # If a password is set the view should produce a
         # 204(No Content) status code and return a JSON dict containing
@@ -437,12 +440,12 @@ class ServerCreateAPITest(ComputeAPITest):
         memory_cache = VM_PASSWORD_CACHE
         memory_cache.set(str(vm.pk), password)
 
-        response = self.mydelete('servers/' + str(vm.pk) + '/password', vm.userid)
+        response = self.mydelete(
+            'servers/' + str(vm.pk) + '/password', vm.userid)
 
         self.assertEqual(response.status_code, 204)
 
         self.assertIsNone(memory_cache.get(str(vm.pk)))
-
 
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist
@@ -474,8 +477,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # Test with an flavor that it does not have access
         flavor = mfactory.FlavorFactory(public=False)
-        flavor_access = mfactory.FlavorAccessFactory(flavor=flavor,
-                                                     project='proj')
+        mfactory.FlavorAccessFactory(flavor=flavor, project='proj')
         request["server"]["flavorRef"] = flavor.id
         with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
@@ -494,8 +496,8 @@ class ServerCreateAPITest(ComputeAPITest):
         # mock quotaholder that perform this check, this call succeeds
         self.assertSuccess202(response)
 
-    @django_override_settings(CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE= \
-                              {'admins': ['.*']})
+    @django_override_settings(
+        CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE={'admins': ['.*']})
     def test_override_flavor_allow_create(self, mrapi):
         # Test with an flavor that is not allowed
         flavor = mfactory.FlavorFactory(allow_create=False)
@@ -565,7 +567,8 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # User requested public networks
         # but no floating IP..
-        s1 = mfactory.IPv4SubnetFactory(network__public=True, network__floating_ip_pool=True)
+        s1 = mfactory.IPv4SubnetFactory(
+            network__public=True, network__floating_ip_pool=True)
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"uuid": s1.network_id}]
         response = self.mypost('servers', "test", json.dumps(request), 'json')
@@ -849,6 +852,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerDestroyAPITest(ComputeAPITest):
+
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
         mrapi().DeleteInstance.return_value = 12
@@ -864,6 +868,7 @@ class ServerDestroyAPITest(ComputeAPITest):
 
 
 class ServerMetadataAPITest(ComputeAPITest):
+
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
         self.metadata = mfactory.VirtualMachineMetadataFactory(vm=self.vm)
@@ -871,7 +876,7 @@ class ServerMetadataAPITest(ComputeAPITest):
 
     def test_get_metadata(self):
         vm = self.vm
-        create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)
+        create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)  # noqa: E731, E501
         metadata = [create_meta(), create_meta(), create_meta()]
         response = self.myget('servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
@@ -937,6 +942,7 @@ class ServerMetadataAPITest(ComputeAPITest):
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerActionAPITest(ComputeAPITest):
+
     def test_actions(self, mrapi, mimage):
         actions = ['start', 'shutdown', 'reboot']
         vm = mfactory.VirtualMachineFactory()
@@ -1133,6 +1139,7 @@ class ServerActionAPITest(ComputeAPITest):
 
 
 class ServerVNCConsole(ComputeAPITest):
+
     def test_not_active_server(self):
         """Test console req for not ACTIVE server returns badRequest"""
         vm = mfactory.VirtualMachineFactory(operstate="BUILD")
@@ -1183,6 +1190,7 @@ class ServerVNCConsole(ComputeAPITest):
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerAttachments(ComputeAPITest):
+
     def test_list_attachments(self, mrapi):
         # Test default volume
         vol = mfactory.VolumeFactory()

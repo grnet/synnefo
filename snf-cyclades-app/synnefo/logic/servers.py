@@ -323,8 +323,8 @@ def reassign(vm, project, shared_to_project):
     if vm.project == project:
         if vm.shared_to_project != shared_to_project:
             log.info("%s VM %s to project %s",
-                "Sharing" if shared_to_project else "Unsharing",
-                vm, project)
+                     "Sharing" if shared_to_project else "Unsharing",
+                     vm, project)
             vm.shared_to_project = shared_to_project
             vm.volumes.filter(index=0, deleted=False)\
                       .update(shared_to_project=shared_to_project)
@@ -332,7 +332,7 @@ def reassign(vm, project, shared_to_project):
     else:
         action_fields = {"to_project": project, "from_project": vm.project}
         log.info("Reassigning VM %s from project %s to %s, shared: %s",
-                vm, vm.project, project, shared_to_project)
+                 vm, vm.project, project, shared_to_project)
         if not (vm.backend.public or
                 vm.backend.projects.filter(project=project).exists()):
             raise faults.BadRequest("Cannot reassign VM. Target project "
@@ -343,10 +343,10 @@ def reassign(vm, project, shared_to_project):
         vm.project = project
         vm.shared_to_project = shared_to_project
         vm.save()
-        vm.volumes.filter(index=0, deleted=False).update(project=project,
-            shared_to_project=shared_to_project)
+        vm.volumes.filter(index=0, deleted=False)\
+                  .update(project=project, shared_to_project=shared_to_project)
         quotas.issue_and_accept_commission(vm, action="REASSIGN",
-                action_fields=action_fields)
+                                           action_fields=action_fields)
     return vm
 
 

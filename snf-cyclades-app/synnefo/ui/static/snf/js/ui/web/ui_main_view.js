@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2014 GRNET S.A.
+// Copyright (C) 2010-2017 GRNET S.A.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +12,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
-// 
 
 ;(function(root){
 
@@ -912,7 +911,7 @@
             // display loading message
             this.show_loading_view();
             this.update_status("flavors", 0);
-            storage.flavors.fetch({refresh:true, update:false, success:function(){
+            storage.flavors.fetch({refresh:true, update:false, data:{is_public:true}, success:function(){
                 self.update_status("flavors", 1);
                 self.check_status()
             }});

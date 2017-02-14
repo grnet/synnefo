@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
+import re
 
 from django.core.management.base import CommandError
 
@@ -52,7 +53,17 @@ class Command(SynnefoCommand):
             choices=["True", "False"],
             metavar="True|False",
             default=None,
-            help="Mark the flavor as public")
+            help="Mark the flavor as public"),
+        make_option(
+            '--spec-add',
+            dest='spec_add',
+            metavar="<key1>=<value1>,<key2>=<value2>,...",
+            help="Add or update key value pair specs to a flavor"),
+        make_option(
+            '--spec-delete',
+            metavar="<key1>,<key2>,...",
+            help="Delete a list of specs from the flavor")
+
     )
 
     @transaction.commit_on_success
@@ -61,6 +72,40 @@ class Command(SynnefoCommand):
             raise CommandError("Please provide a flavor ID")
 
         flavor = get_resource("flavor", args[0], for_update=True)
+
+        # Keep a list with spec keys that are added. If one of these keys
+        # appears in the list to be deleted, we should raise an error
+        added_keys = []
+        spec_add = options.get('spec_add')
+        if spec_add:
+            spec_regex = re.compile(r'^(?P<key>.+?)=(?P<value>.+)$')
+
+            specs = spec_add.split(',')
+            for spec in specs:
+                match = spec_regex.match(spec)
+                if match is None:
+                    raise CommandError("Incorrect spec format. Expected: "
+                                       " <key>=<value> ,found: \'%s\' " % spec)
+                k, v = match.group('key'), match.group('value')
+                spec, _ = flavor.specs.get_or_create(key=k)
+                spec.value = v
+                spec.save()
+                added_keys.append(k)
+
+        spec_delete = options.get('spec_delete')
+        if spec_delete:
+            spec_keys = spec_delete.split(',')
+            for key in spec_keys:
+                if key in added_keys:
+                    raise CommandError("Cannot add and delete key %s at the "
+                                       "same time. If that was the intended "
+                                       "action, consider adding first and then"
+                                       " deleting it" % key)
+                spec = flavor.specs.filter(key=key)
+                if not spec:
+                    raise CommandError("Spec with key \'%s\' does not exist" %
+                                       key)
+                spec.delete()
 
         deleted = options.get('deleted')
         if deleted:

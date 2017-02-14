@@ -105,6 +105,26 @@ class FlavorAccess(models.Model):
         return u'<%s: %s>' % (self.flavor_id, self.project)
 
 
+class FlavorSpecs(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+
+    key = models.CharField("Spec Key", max_length=KEY_LENGTH)
+    value = models.CharField("Spec Value", max_length=VALUE_LENGTH)
+
+    flavor = models.ForeignKey("Flavor", related_name="specs")
+
+    class Meta:
+        verbose_name = u'Flavor specs'
+        unique_together = (('key', 'flavor'),)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.key, self.value)
+
+
 class Backend(models.Model):
     clustername = models.CharField('Cluster Name', max_length=128, unique=True)
     port = models.PositiveIntegerField('Port', default=5080)

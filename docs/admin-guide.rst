@@ -820,13 +820,18 @@ Currently the available disk templates are the following:
   - `ext_archipelago`: External shared storage provided by
     `Archipelago <http://www.synnefo.org/docs/archipelago/latest/index.html>`_.
 
+In addition, volume types contain a list of key value pair specs. The specs
+which their keys are prefixed with `GNT-EXTP:` are propagated to Ganeti
+ext-storage scripts in case the disk template is `ext`.
+
 Volume types are created by the administrator using the `snf-manage
-volume-type-create` command and providing the `disk template` and a
-human-friendly name:
+volume-type-create` command and providing the `disk template`, a
+human-friendly name as well as some optional key-value specs.:
 
 .. code-block:: console
 
  $ snf-manage volume-type-create --disk-template=drbd --name=DRBD
+ $ snf-manage volume-type-create --disk-template=ext_rbd --name=RBD --specs GNT-EXTP:RBD_POOL=poola
 
 Flavors are created by the administrator using `snf-manage flavor-create`
 command. The command takes as argument number of CPUs, amount of RAM, the size

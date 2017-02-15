@@ -344,6 +344,7 @@ The server attributes are listed `here <#server-ref>`__.
         "hostId": "",
         "SNF:fqdn": "snf-42.vm.example.org",
         "key_name": null,
+        "SNF:key_names": [],
         "name": "My Server",
         "created": "2014-02-12T08:31:37.834542+00:00",
         "tenant_id": "s0m5-u5e7-1d",
@@ -450,6 +451,7 @@ The server attributes are listed `here <#server-ref>`__.
         "hostId": "",
         "SNF:fqdn": "snf-84.vm.example.org",
         "key_name": null,
+        "SNF:key_names": [],
         "name": "My Other Server",
         "created": "2014-02-21T08:31:37.834542+00:00",
         "tenant_id": "s0m5-u5e7-1d",
@@ -1038,6 +1040,7 @@ Server attributes are explained `here <#server-ref>`__.
       "hostId": "",
       "SNF:fqdn": "snf-84.vm.example.org",
       "key_name": null,
+      "SNF:key_names": [],
       "name": "My Other Server",
       "created": "2014-02-21T08:31:37.834542+00:00",
       "tenant_id": "s0m5-u5e7-1d",
@@ -2931,7 +2934,8 @@ security_groups     ✔        **✘**
 attachments         ✔        **✘**
 config_drive        ✔        **✘**
 SNF:fqdn            ✔        **✘**
-key_name            ✔        **✘**
+key_name            ✔        ✔
+SNF:key_names       ✔        **✘**
 SNF:port_forwarding ✔        **✘**
 SNF:task_state      ✔        **✘**
 diagnostics         ✔        **✘**
@@ -2970,6 +2974,10 @@ deleted             ✔        **✘**
   creation
 
 * **attachments** List of connection ports. Details `here <#attachments-ref>`__.
+
+* **key_name** The name of the SSH key to be inserted to the server.
+
+* **SNF:key_names** A list of SSH key names to be inserted to the server.
 
 .. _status-ref:
 

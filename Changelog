@@ -11,6 +11,12 @@ repository and have aligned versions.
 v0.20
 =====
 
+Cyclades
+--------
+
+* Add 'SNF:key_names' API parameter on server creation to support multiple
+  SSH key-pairs injection while spawning a VM.
+
 Released: UNRELEASED
 
 .. _Changelog-0.19:

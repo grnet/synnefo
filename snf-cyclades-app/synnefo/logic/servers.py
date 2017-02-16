@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None, helper=False, user_projects=None,
-           shared_to_project=False, key_name=None):
+           shared_to_project=False, key_names=None):
 
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
@@ -114,6 +114,10 @@ def create(userid, name, password, flavor, image_id, metadata={},
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, project, flavor)
 
+    auth_keys = '\n'.join([
+        util.get_keypair(key_name, userid).content for key_name in key_names
+    ])
+
     # Create the ports for the server
     ports = create_instance_ports(userid, user_projects, networks)
 
@@ -126,7 +130,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        shared_to_project=shared_to_project,
                                        imageid=image["id"],
                                        image_version=image["version"],
-                                       key_name=key_name,
+                                       key_names=json.dumps(key_names),
                                        flavor=flavor,
                                        operstate="BUILD",
                                        helper=helper)
@@ -173,14 +177,9 @@ def create(userid, name, password, flavor, image_id, metadata={},
             meta_value=val,
             vm=vm)
 
-    public_key = None
-    if key_name is not None:
-        keypair = util.get_keypair(key_name, userid)
-        public_key = keypair.content
-
     # Create the server in Ganeti.
     vm = create_server(vm, ports, server_volumes, flavor, image, personality,
-                       password, public_key)
+                       password, auth_keys)
 
     return vm
 
@@ -207,7 +206,7 @@ def allocate_new_server(userid, project, flavor):
 
 @commands.server_command("BUILD")
 def create_server(vm, nics, volumes, flavor, image, personality, password,
-                  public_key):
+                  auth_keys):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -227,8 +226,8 @@ def create_server(vm, nics, volumes, flavor, image, personality, password,
         'img_properties': json.dumps(image['metadata']),
     }
 
-    if public_key is not None:
-        created_vm_params['auth_keys'] = public_key
+    if auth_keys:
+        created_vm_params['auth_keys'] = auth_keys
 
     server_created.send(sender=vm, created_vm_params=created_vm_params)
 

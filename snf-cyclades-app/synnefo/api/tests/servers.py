@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ from django.test.utils import override_settings as django_override_settings
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
+from synnefo.userdata import models_factory as keymfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -768,6 +769,51 @@ class ServerCreateAPITest(ComputeAPITest):
             response = self.mypost("servers", user,
                                    json.dumps(request), 'json')
         self.assertBadRequest(response)
+
+    def test_create_server_with_keys(self, mrapi):
+        """Test server creation with SSH key injection"""
+        user = 'test_user'
+        keys = [keymfactory.PublicKeyPairFactory(user=user) for _
+                in range(0, 2)]
+        key_names = [k.name for k in keys]
+        mrapi().CreateInstance.return_value = 42
+        request = deepcopy(self.request)
+
+        # Test creation with invalid key
+        request['server']['key_name'] = 'invalid'
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 404)
+
+        # Test creation with valid key and only key_name set
+        request['server']['key_name'] = keys[0].name
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server = json.loads(response.content)['server']
+        self.assertEqual(server['key_name'], keys[0].name)
+        self.assertEqual(server['SNF:key_names'][0], keys[0].name)
+
+        # Test creation with both SNF:key_names and key_name set
+        request['server']['key_name'] = key_names[0]
+        request['server']['SNF:key_names'] = key_names
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+        # Test server creation with a list of keys and only SNF:key_names set
+        request = deepcopy(self.request)
+        request["server"]["SNF:key_names"] = key_names
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server = json.loads(response.content)['server']
+        self.assertTrue(server['key_name'] in key_names)
+        self.assertEqual(len(server['SNF:key_names']), len(key_names))
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -362,7 +362,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
-    key_name = models.CharField(max_length=100, null=True)
+    key_names = models.TextField(null=True, default='[]')
     image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)

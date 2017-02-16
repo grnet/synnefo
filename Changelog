@@ -28,6 +28,8 @@ Cyclades
   types.
 * Volume type specs prefixed with 'GNT-EXTP:' are propagated to Ganeti ext-
   storage scripts.
+* Add 'public' flag to Flavors and FlavorAccess to assign access to flavors
+  only to specific projects.
 
 Astakos
 -------

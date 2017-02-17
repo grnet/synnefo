@@ -114,6 +114,9 @@ def create(userid, name, password, flavor, image_id, metadata={},
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, project, flavor)
 
+    if key_names is None:
+        key_names = []
+
     auth_keys = '\n'.join([
         util.get_keypair(key_name, userid).content for key_name in key_names
     ])

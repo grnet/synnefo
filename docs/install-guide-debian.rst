@@ -21,6 +21,10 @@ and a single unified Web UI to manage them all.
 If you just want to install the Object Storage Service (Pithos), follow the
 guide and just stop after the "Testing of Pithos" section.
 
+Note: if you plan to use Cyclades and you are installing the OS from scratch,
+it's a good idea either to leave an empty partition of at least 20GB, or to
+install on LVM with volume group named "ganeti" leaving at least 20GB unallocated.
+
 Installation of Synnefo / Introduction
 ======================================
 
@@ -203,7 +207,7 @@ The previous will create a ``ca.crt`` file in the directory
 
    # update-ca-certificates
 
-to update the records. *You will have to do the following on node2 as well*.
+to update the records.
 
 Now you can create the keys and sign them with the certificate:
 
@@ -216,7 +220,12 @@ This will create a ``01.pem`` and a ``node1.example.com.key`` files in the
 ``/etc/ssl/private/`` respectively and use them in the apache2 configuration
 file below instead of the defaults.
 
-.. note:: You will have to do the same on node2 as well.
+Still on node1, also create the certificate and key for node2:
+
+   # ./build-key-server node2.example.com
+
+Copy ``ca.crt``, ``02.pem`` and ``node2.example.com.key`` to node2 in the
+corresponding directories, and run ``update-ca-certificates`` on node2.
 
 Apache2 setup
 ~~~~~~~~~~~~~
@@ -317,6 +326,8 @@ exchanges:
 
 We do not need to initialize the exchanges. This will be done automatically,
 during the Cyclades setup.
+
+.. _system-user-group-setup-h:
 
 System user/group setup
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -503,7 +514,7 @@ General Synnefo dependencies
 
 * apache (http server)
 * gunicorn (WSGI http server)
-* postgresql (database)
+* postgresql-client (database)
 * ntp (NTP daemon)
 * gevent
 * certificates
@@ -515,7 +526,7 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql ntp
+   # apt-get install apache2 postgresql-client ntp
 
 To install gunicorn and gevent, run:
 
@@ -638,6 +649,10 @@ run ``root@node1:~ # update-ca-certificates``.
 
 Installation of Archipelago
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before continuing, make sure you have created the "synnefo" and
+"archipelago" users and groups with common IDs, as described in :ref:`System
+user/group setup <system-user-group-setup-h>`
 
 To install Archipelago, run:
 
@@ -840,7 +855,7 @@ described in more detail later on in this guide. For now, just edit the domain
 to point at node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication
-method, read the relative :ref:`section <shibboleth-auth>`.
+method, read the relevant :ref:`section <shibboleth-auth>`.
 
 .. _email-configuration-h:
 
@@ -1119,7 +1134,7 @@ the following command:
 
 .. code-block:: console
 
-   # snf-manage oauth2-client-add pithos-view --secret=example_passw0rd --is-trusted --url https://node2.example.com/pithos/ui/view
+   # snf-manage oauth2-client-add pithos-view --secret=secret_passw0rd --is-trusted --url https://node2.example.com/pithos/ui/view
 
 Servers Initialization
 ----------------------
@@ -1263,7 +1278,7 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 
 .. code-block:: console
 
-   # snf-manage component-list
+   # snf-manage component-show pithos
 
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg-h>`.
@@ -1475,7 +1490,8 @@ not familiar with Ganeti.
 
 Ganeti Prerequisites
 --------------------
-You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
+You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so on
+all ganeti nodes run:
 
 .. code-block:: console
 

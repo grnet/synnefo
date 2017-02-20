@@ -54,6 +54,14 @@ class VolumeTypeFactory(factory.DjangoModelFactory):
     deleted = False
 
 
+class VolumeTypeSpecsFactory(factory.DjangoModelFactory):
+
+    FACTORY_FOR = models.VolumeTypeSpecs
+    key = factory.Sequence(prefix_seq('key'))
+    value = factory.Sequence(prefix_seq('value'))
+    volume_type = factory.SubFactory(VolumeTypeFactory)
+
+
 class FlavorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Flavor
 

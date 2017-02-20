@@ -1398,6 +1398,25 @@ class VolumeMetadata(Metadata):
         verbose_name = u"Key-Value pair of Volumes metadata"
 
 
+class VolumeTypeSpecs(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+
+    key = models.CharField("Spec Key", max_length=KEY_LENGTH)
+    value = models.CharField("Spec Value", max_length=VALUE_LENGTH)
+
+    volume_type = models.ForeignKey("VolumeType", related_name="specs")
+
+    class Meta:
+        verbose_name = u'Volume type specs'
+        unique_together = (('key', 'volume_type'),)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.key, self.value)
+
 class ProjectBackend(models.Model):
     project = models.CharField(max_length=255)
     backend = models.ForeignKey(Backend, related_name='projects')

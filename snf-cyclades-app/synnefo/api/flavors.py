@@ -119,7 +119,8 @@ def get_flavor_details(request, flavor_id):
 
     log.debug('get_flavor_details %s', flavor_id)
     flavor = util.get_flavor(flavor_id, include_deleted=True,
-                             for_project=request.user_projects)
+                             for_project=request.user_projects,
+                             user=request.user_uniq)
     flavordict = flavor_to_dict(flavor, detail=True,
                                 projects=request.user_projects)
 

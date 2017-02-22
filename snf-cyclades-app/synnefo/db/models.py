@@ -381,7 +381,8 @@ class VirtualMachine(models.Model):
     key_names = models.TextField(null=True, default='[]')
     image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
-    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
+    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT,
+                               related_name="virtual_machines")
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)

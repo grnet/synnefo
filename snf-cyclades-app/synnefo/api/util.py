@@ -246,7 +246,7 @@ def get_image_dict(image_id, user_id):
     return image
 
 
-def get_flavor(flavor_id, include_deleted=False, for_project=None):
+def get_flavor(flavor_id, include_deleted=False, for_project=None, user=None):
     """Return a Flavor instance or raise ItemNotFound."""
 
     try:
@@ -255,7 +255,7 @@ def get_flavor(flavor_id, include_deleted=False, for_project=None):
         if not include_deleted:
             flavors = flavors.filter(deleted=False)
         flavor = flavors.get(id=flavor_id)
-        if not has_access_to_flavor(flavor, project=for_project):
+        if not has_access_to_flavor(flavor, project=for_project, user=user):
             raise faults.Forbidden("Insufficient access")
         return flavor
     except (ValueError, TypeError):
@@ -264,9 +264,9 @@ def get_flavor(flavor_id, include_deleted=False, for_project=None):
         raise faults.ItemNotFound('Flavor not found.')
 
 
-def has_access_to_flavor(flavor, project=None):
+def has_access_to_flavor(flavor, project=None, user=None):
     """Return True if the flavor is public or a project has access to the
-       flavor.
+       flavor or the specified user has VMs using this flavor.
     """
     if flavor.public:
         return True
@@ -274,6 +274,11 @@ def has_access_to_flavor(flavor, project=None):
         if not isinstance(project, list):
             project = [project]
         if flavor.access.filter(project__in=project).count() > 0:
+            return True
+    if user is not None:
+        # XXX: Should this include also the case where the VM is shared to the
+        # project, in which it is not owned by the particular user ?
+        if flavor.virtual_machines.filter(userid=user).count() > 0:
             return True
     return False
 

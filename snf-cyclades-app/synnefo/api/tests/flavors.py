@@ -17,7 +17,11 @@ import json
 
 from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import Flavor
-from synnefo.db.models_factory import FlavorFactory, FlavorAccessFactory
+from synnefo.db.models_factory import (
+    FlavorFactory,
+    FlavorAccessFactory,
+    VirtualMachineFactory,
+)
 from synnefo.lib.services import get_service_path
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib import join_urls
@@ -199,13 +203,15 @@ class FlavorAPITest(BaseAPITest):
         self.assertEqual(api_flavor['SNF:flavor-access'], [])
 
     def test_flavor_access(self):
+        """Test that API returns information only for flavors the user has
+        access."""
         # try to get details of a private flavor with access
         response = self.myget('flavors/%d' % self.flavor4.id)
         self.assertSuccess(response)
         api_flavor = json.loads(response.content)['flavor']
         self.assertEquals(api_flavor['name'], self.flavor4.name)
 
-        # try to get detauls of a public flavor
+        # try to get details of a public flavor
         response = self.myget('flavors/%d' % self.flavor8.id)
         self.assertSuccess(response)
         api_flavor = json.loads(response.content)['flavor']
@@ -214,6 +220,13 @@ class FlavorAPITest(BaseAPITest):
         # try to get details of a non-public flavor with no access
         response = self.myget('flavors/%d' % self.flavor7.id)
         self.assertForbidden(response)
+
+        # try to get details of a flavor with no access, but with spawned VM
+        vm = VirtualMachineFactory(flavor=self.flavor7)
+        response = self.myget('flavors/%d' % self.flavor7.id, user=vm.userid)
+        self.assertSuccess(response)
+        api_flavor = json.loads(response.content)['flavor']
+        self.assertEquals(api_flavor['name'], self.flavor7.name)
 
     def test_deleted_flavor_details(self):
         """Test that API returns details for deleted flavors"""

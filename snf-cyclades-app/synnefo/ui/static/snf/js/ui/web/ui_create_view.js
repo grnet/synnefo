@@ -1195,12 +1195,12 @@
             return storage.flavors.active(project).filter(function(flv) {
 
               var allow_create = flv.get("SNF:allow_create");
-              if (allow_create) { return true; }
-              if (_.filter(user_overrides, function(reg) {
+              allow_create |= _.filter(user_overrides, function(reg) {
                 var _flv = flv;
                 return reg.exec(flv.get('name'));
-              }).length) { return true };
-              return false;
+              }).length > 0;
+
+              return (allow_create)
             });
         },
 

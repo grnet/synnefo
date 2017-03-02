@@ -45,7 +45,8 @@
             views.FlavorOptionsView.__super__.initialize.apply(this);
             _.bindAll(this);
             this.$el = $(this.el);
-            this.flavors = options.flavors || synnefo.storage.flavors.active();
+            this.project = options.project;
+            this.flavors = options.flavors || synnefo.storage.flavors.active(this.project);
             this.collection = options.collection || synnefo.storage.flavors;
             this.choices = options.choices || ['cpu', 'ram', 'disk', 
                                                'disk_template'];
@@ -53,7 +54,6 @@
             this.quotas = options.quotas || synnefo.storage.quotas;
             this.selected_flavor = options.selected_flavor || undefined;
             this.extra_quotas = options.extra_quotas || undefined;
-            this.project = options.project;
             this.render();
             if (this.selected_flavor) { this.set_flavor(this.selected_flavor)}
         },
@@ -145,7 +145,7 @@
             var extra_quotas = this.extra_quotas;
             var user_excluded = storage.flavors.unavailable_values_for_quotas(
               quotas, 
-              storage.flavors.active(), extra_quotas);
+              storage.flavors.active(this.project), extra_quotas);
             _.each(user_excluded, _.bind(function(values, key) {
                 _.each(values, _.bind(function(value) {
                     var choice_el = this.select_choice(key, value);

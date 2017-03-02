@@ -911,7 +911,7 @@
             // display loading message
             this.show_loading_view();
             this.update_status("flavors", 0);
-            storage.flavors.fetch({refresh:true, update:false, data:{is_public:true}, success:function(){
+            storage.flavors.fetch({refresh:true, update:false, success:function(){
                 self.update_status("flavors", 1);
                 self.check_status()
             }});

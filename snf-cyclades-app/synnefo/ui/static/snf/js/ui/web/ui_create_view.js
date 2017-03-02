@@ -923,7 +923,7 @@
         
         update_flavors_data: function() {
             if (!this.parent.project) { return }
-            this.flavors = this.get_active_flavors();
+            this.flavors = this.get_active_flavors(this.parent.project);
             this.flavors_data = storage.flavors.get_data(this.flavors);
             
             var self = this;
@@ -1052,7 +1052,8 @@
         },
 
         create_flavors: function() {
-            var flavors = this.get_active_flavors();
+            if(!this.parent.project) { return; }
+            var flavors = this.get_active_flavors(this.parent.project);
             var valid_flavors = this.get_valid_flavors();
             this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[] };
 
@@ -1188,9 +1189,11 @@
             
         },
         
-        get_active_flavors: function() {
+        get_active_flavors: function(project) {
+            var project = project || this.parent.project;
             var user_overrides = synnefo.config.user_override_allow_create;
-            return storage.flavors.active().filter(function(flv) {
+            return storage.flavors.active(project).filter(function(flv) {
+
               var allow_create = flv.get("SNF:allow_create");
               if (allow_create) { return true; }
               if (_.filter(user_overrides, function(reg) {

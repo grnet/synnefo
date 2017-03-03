@@ -1055,17 +1055,10 @@
             if(!this.parent.project) { return; }
             var flavors = this.get_active_flavors(this.parent.project);
             var valid_flavors = this.get_valid_flavors();
-            this.__added_flavors = {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[] };
+            this.flavor_data = storage.flavors.get_data(flavors);
 
-            _.each(flavors, _.bind(function(flv){
-                this.add_flavor(flv);
-            }, this));
+            this.prepare_flavor_view(this.flavor_data);
             
-            this.sort_flavors(this.disks);
-            this.sort_flavors(this.cpus);
-            this.sort_flavors(this.mems);
-            this.sort_flavors(this.disk_templates);
-
             var self = this;
             this.$(".flavor-options li.option").click(function(){
                 var el = $(this);
@@ -1090,19 +1083,6 @@
               }
             });
         },
-
-        sort_flavors: function(els) {
-            var prev = undefined;
-            els.find("li").each(function(i,el){
-                el = $(el);
-                if (!prev) { prev = el; return true };
-                if (el.data("value") < prev.data("value")) {
-                    prev.before(el);
-                }
-                prev = el;
-            })
-        },
-        
         ui_selected: function() {
             var args = [this.$(".option.cpu.selected").data("value"), 
                 this.$(".option.mem.selected").data("value"), 
@@ -1134,59 +1114,51 @@
             this.$(".disk-template-description p").html(flv.get_disk_template_info().description || "");
         },
         
-        __added_flavors: {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[]},
-        add_flavor: function(flv) {
-            var values = {'cpu': flv.get('cpu'), 
-                          'mem': flv.get('ram'), 
-                          'disk': flv.get('disk'), 
-                          'disk_template': flv.get('disk_template')};
+        flavor_data: {'cpu':[], 'ram':[], 'disk':[], 'disk_template':[]},
+        prepare_flavor_view: function(flavor_data) {
+            var flavor_data = flavor_data || this.flavor_data;
 
             disabled = "";
             
-            if (this.__added_flavors.cpu.indexOf(values.cpu) == -1) {
-                var cpu = $(('<li class="option cpu value-{0} {1}">' + 
-                             '<span class="value">{0}</span>' + 
-                             '<span class="metric">x</span></li>').format(
-                            _.escape(values.cpu), disabled)).data('value', values.cpu);
-                this.cpus.append(cpu);
-                this.__added_flavors.cpu.push(values.cpu);
-            }
-
-            if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
-                var mem_value = parseInt(_.escape(values.mem))*1024*1024;
-                var displayvalue = synnefo.util.readablizeBytes(mem_value, 
-                                                               0).split(" ");
-                var mem = $(('<li class="option mem value-{2}">' + 
-                             '<span class="value">{0}</span>' + 
-                             '<span class="metric">{1}</span></li>').format(
-                          displayvalue[0], displayvalue[1], values.mem)).data(
-                          'value', values.mem);
-                this.mems.append(mem);
-                this.__added_flavors.ram.push(values.mem);
-            }
-
-            if (this.__added_flavors.disk.indexOf(values.disk) == -1) {
-                var disk = $(('<li class="option disk value-{0}">' + 
+            var self = this;
+            _.each(flavor_data.cpu, function(cpu) {
+                var $cpu = $(('<li class="option cpu value-{0} {1}">' + 
                               '<span class="value">{0}</span>' + 
-                              '<span class="metric">GB</span></li>').format(
-                            _.escape(values.disk))).data('value', values.disk);
-                this.disks.append(disk);
-                this.__added_flavors.disk.push(values.disk)
-            }
-            
-            if (this.__added_flavors.disk_template.indexOf(values.disk_template) == -1) {
-                var template_info = flv.get_disk_template_info();
-                var disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
-                                       '<span class="value name">{1}</span>' +
-                                       '</li>').format(values.disk_template, 
-                                            _.escape(template_info.name), 
-                                            template_info.description)).data('value', 
-                                                                values.disk_template);
-
-                this.disk_templates.append(disk_template);
-                this.__added_flavors.disk_template.push(values.disk_template)
-            }
-            
+                              '<span class="metric">x</span></li>').format(
+                             _.escape(cpu), disabled)).data('value', cpu);
+                self.cpus.append($cpu);
+            })
+            _.each(flavor_data.ram, function(ram) {
+                var ram_value = parseInt(_.escape(ram))*1024*1024;
+                var displayvalue = synnefo.util.readablizeBytes(ram_value, 
+                                                               0).split(" ");
+                var $ram = $(('<li class="option mem value-{2}">' + 
+                              '<span class="value">{0}</span>' + 
+                              '<span class="metric">{1}</span></li>').format(
+                           displayvalue[0], displayvalue[1], ram)).data(
+                           'value', ram);
+                self.mems.append($ram);
+            })
+            _.each(flavor_data.disk, function(disk) {
+                var $disk = $(('<li class="option disk value-{0}">' + 
+                               '<span class="value">{0}</span>' + 
+                               '<span class="metric">GB</span></li>').format(
+                               _.escape(disk))).data('value', disk);
+                self.disks.append($disk);
+            })
+            _.each(flavor_data.disk_template, function(disk_template) {
+                var template_info = snf.config.flavors_disk_templates_info[disk_template];
+                if (!template_info) { 
+                    template_info = { name: disk_template, description: '' }
+                }
+                var $disk_template = $(('<li title="{2}" class="option disk_template value-{0}">' + 
+                                        '<span class="value name">{1}</span>' +
+                                        '</li>').format(disk_template, 
+                                        _.escape(template_info.name), 
+                                        template_info.description)).data('value', 
+                                                                         disk_template);
+                self.disk_templates.append($disk_template);
+            })
         },
         
         get_active_flavors: function(project) {

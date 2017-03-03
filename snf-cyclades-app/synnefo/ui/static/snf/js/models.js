@@ -2258,14 +2258,14 @@
         },
         
         get_data: function(lst) {
-            var data = {'cpu': [], 'mem':[], 'disk':[], 'disk_template':[]};
+            var data = {'cpu': [], 'ram':[], 'disk':[], 'disk_template':[]};
 
             _.each(lst, function(flv) {
                 if (data.cpu.indexOf(flv.get("cpu")) == -1) {
                     data.cpu.push(flv.get("cpu"));
                 }
-                if (data.mem.indexOf(flv.get("ram")) == -1) {
-                    data.mem.push(flv.get("ram"));
+                if (data.ram.indexOf(flv.get("ram")) == -1) {
+                    data.ram.push(flv.get("ram"));
                 }
                 if (data.disk.indexOf(flv.get("disk")) == -1) {
                     data.disk.push(flv.get("disk"));
@@ -2275,6 +2275,15 @@
                 }
             })
             
+            // Javascript by default performs lexicographical sorting
+            // that means, 2 > 10 so we need to define a number comparison
+            // function
+            var num_cmp = function(a, b) { return a - b }
+            data.cpu.sort(num_cmp);
+            data.ram.sort(num_cmp);
+            data.disk.sort(num_cmp);
+            data.disk_template.sort();
+
             return data;
         },
 

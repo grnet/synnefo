@@ -682,6 +682,19 @@
           return parser(val);
         },
 
+        unique_quotas: function() {
+            var cpu = this.get('cpu');
+            var ram = this.get('ram');
+            var disk = this.get('disk');
+            ret = {}
+
+            ret['cpu_{0}'.format(cpu)] = cpu;
+            ret['ram_{0}'.format(ram)] = ram;
+            ret['disk_{0}'.format(disk)] = disk;
+
+            return ret;
+        },
+
         quotas: function() {
           return {
             'cyclades.vm': 1,
@@ -2189,40 +2202,43 @@
         comparator: function(flv) {
             return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
-          
+
         unavailable_values_for_quotas: function(quotas, flavors, extra) {
             var flavors = flavors || this.active();
             var index = {cpu:[], disk:[], ram:[]};
             var extra = extra == undefined ? {cpu:0, disk:0, ram:0} : extra;
-            
-            _.each(flavors, function(el) {
 
-                var disk_available = quotas['disk'] + extra.disk;
-                var disk_size = el.get_disk_size();
-                if (index.disk.indexOf(disk_size) == -1) {
-                  var disk = el.disk_to_bytes();
-                  if (disk > disk_available) {
-                    index.disk.push(el.get('disk'));
-                  }
-                }
-                
-                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
-                var ram_size = el.get_ram_size();
-                if (index.ram.indexOf(ram_size) == -1) {
-                  var ram = el.ram_to_bytes();
-                  if (ram > ram_available) {
-                    index.ram.push(el.get('ram'))
-                  }
-                }
-
-                var cpu = el.get('cpu');
-                var cpu_available = quotas['cpu'] + extra.cpu;
-                if (index.cpu.indexOf(cpu) == -1) {
-                  if (cpu > cpu_available) {
-                    index.cpu.push(el.get('cpu'))
-                  }
-                }
+            var all_values = {}
+            _.each(flavors, function(flv) {
+                _.extend(all_values, flv.unique_quotas())
             });
+
+            var is_flavor_valid = function(flv) {
+
+                var cpu_available = quotas['cpu'] + extra.cpu;
+                var cpu = flv.get('cpu');
+                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
+                var ram = flv.ram_to_bytes()
+                var disk_available = quotas['disk'] + extra.disk;
+                var disk = flv.disk_to_bytes();
+
+                return cpu_available > cpu & ram_available > ram & disk_available > disk;
+            }
+
+            var available_values = {}
+            _.each(flavors, function(flv) {
+                if(!is_flavor_valid(flv)) { return }
+                _.extend(available_values, flv.unique_quotas())
+            });
+
+            /* Unavailable values = All Values 0 Available Values */
+            _.each(all_values, function(value, key) {
+                if(available_values[key]) { return }
+                var value_type = key.split("_")[0];
+
+                index[value_type].push(value);
+            });
+
             return index;
         },
 

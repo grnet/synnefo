@@ -955,7 +955,8 @@
             }
             
             var quotas = this.get_project().quotas.get_available_for_vm({active: true});
-            var user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
+            var active_flavors = storage.flavors.active(this.get_project());
+            var user_excluded = storage.flavors.unavailable_values_for_quotas(quotas, active_flavors);
 
             unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
             unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
@@ -984,8 +985,9 @@
             
         set_valid_current_for: function(t, val) {
             var found = this.flavors[0];
+            var self = this;
             _.each(this.flavors, function(flv) {
-                if (flv.get(t) == val) {
+                if (flv.get(t) == val && self.flavor_is_valid(flv)) {
                     found = flv;
                 }
             });

@@ -53,7 +53,7 @@ In `/etc/apache2/sites-available/synnefo-ssl` add:
 
      AllowEncodedSlashes On
 
-     RequestHeader set X-Forwarded-Protocol "https"
+     RequestHeader set X-Forwarded-Proto "https"
 
      <Proxy * >
        Order allow,deny

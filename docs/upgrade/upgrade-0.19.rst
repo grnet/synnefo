@@ -219,6 +219,20 @@ Example:
   }
 
 
+Update webserver's configuration file
+"""""""""""""""""""""""""""""""""""""
+
+Up until now, we used the ``X-Forwarded-Protocol = 'https'`` header to notify the
+proxied django application that it was behind a secure proxy. This worked
+because on gunicorn's version 0.9 a patch was introduced that specifically
+looked for this header and value and adjusted the ``wsgi.url_scheme`` variable to
+'https'. In gunicorn's 19 it now looks for headers defined in the ``secure_scheme_headers``
+config variable which defaults to
+``{ "X-FORWARDED-PROTOCOL": "ssl", "X-FORWARDED-PROTO": "https", "X-FORWARDED-SSL":"on"  }``.
+
+You should change the header's key from ``X-FORWARDED-PROTOCOL`` to ``X-FORWARDED-PROTO``.
+
+
 New ALLOWED_HOSTS setting
 """""""""""""""""""""""""
 

@@ -252,7 +252,7 @@ Now edit the file ``/etc/httpd/conf.d/ssl.conf``, delete the default
 
        AllowEncodedSlashes On
 
-       RequestHeader set X-Forwarded-Protocol "https"
+       RequestHeader set X-Forwarded-Proto "https"
 
     <Proxy * >
         Order allow,deny
@@ -551,7 +551,7 @@ As before, edit the file ``/etc/httpd/conf.d/ssl.conf``, delete the default
         SetEnv dont-vary
         AllowEncodedSlashes On
 
-        RequestHeader set X-Forwarded-Protocol "https"
+        RequestHeader set X-Forwarded-Proto "https"
 
         <Proxy * >
             Order allow,deny

@@ -251,7 +251,7 @@ following:
 
       AllowEncodedSlashes On
 
-      RequestHeader set X-Forwarded-Protocol "https"
+      RequestHeader set X-Forwarded-Proto "https"
 
    <Proxy * >
        Order allow,deny
@@ -571,7 +571,7 @@ containing the following:
        SetEnv dont-vary
        AllowEncodedSlashes On
 
-       RequestHeader set X-Forwarded-Protocol "https"
+       RequestHeader set X-Forwarded-Proto "https"
 
        <Proxy * >
            Order allow,deny

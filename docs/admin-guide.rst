@@ -660,7 +660,7 @@ Enabling this feature consists of the following steps:
 
            AllowEncodedSlashes On
 
-           RequestHeader set X-Forwarded-Protocol "https"
+           RequestHeader set X-Forwarded-Proto "https"
 
         <Proxy * >
             Order allow,deny

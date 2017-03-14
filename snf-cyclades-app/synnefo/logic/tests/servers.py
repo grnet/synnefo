@@ -435,7 +435,7 @@ class ServerCommandTest(TransactionTestCase):
         backend.public = False
         backend.save()
         with mocked_quotaholder():
-            self.assertRaises(faults.BadRequest, servers.reassign, vm,
+            self.assertRaises(faults.Forbidden, servers.reassign, vm,
                               original_project, False)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
@@ -467,7 +467,7 @@ class ServerCommandTest(TransactionTestCase):
         flavor.public = False
         flavor.save()
         with mocked_quotaholder():
-            self.assertRaises(faults.BadRequest, servers.reassign, vm,
+            self.assertRaises(faults.Forbidden, servers.reassign, vm,
                               original_project, False)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)

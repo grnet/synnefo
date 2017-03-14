@@ -335,11 +335,11 @@ def reassign(vm, project, shared_to_project):
                  vm, vm.project, project, shared_to_project)
         if not (vm.backend.public or
                 vm.backend.projects.filter(project=project).exists()):
-            raise faults.BadRequest("Cannot reassign VM. Target project "
-                                    "doesn't have access to the VM's backend.")
+            raise faults.Forbidden("Cannot reassign VM. Target project "
+                                   "doesn't have access to the VM's backend.")
         if not util.has_access_to_flavor(vm.flavor, project=project):
-            raise faults.BadRequest("Cannot reassign VM. Target project "
-                                    "doesn't have access to the VM's flavor.")
+            raise faults.Forbidden("Cannot reassign VM. Target project "
+                                   "doesn't have access to the VM's flavor.")
         vm.project = project
         vm.shared_to_project = shared_to_project
         vm.save()

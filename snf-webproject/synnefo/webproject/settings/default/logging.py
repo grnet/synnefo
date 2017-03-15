@@ -93,14 +93,20 @@ SNF_MANAGE_LOGGING_SETUP = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
-            'filters': ['suppress_deprecated']
+            'filters': ['suppress_deprecated'],
+            'level': 'WARNING',
+        },
+        'file': {
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': '/var/log/synnefo/synnefo.log',
+            'formatter': 'verbose'
         },
     },
 
     'loggers': {
         '': {
-            'handlers': ['console'],
-            'level': 'WARNING'
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
         },
     }
 }

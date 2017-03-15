@@ -13,6 +13,11 @@ v0.20
 
 Released: UNRELEASED
 
+Synnefo-wide
+------------
+
+* snf-manage now records the synnefo logs to synnefo.log, similar to gunicorn.
+
 Cyclades
 --------
 

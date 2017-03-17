@@ -284,7 +284,9 @@ If you want to use memcache, you will need to set ``BACKEND`` to
 `here <https://docs.djangoproject.com/en/1.7/topics/cache/>`_ for more
 information.
 
-Please adjust the new settings to match your previous setup.
+Please adjust the new settings to match your previous setup. You might want to
+remove settings like ``VMAPI_CACHE_BACKEND`` and ``CACHE_BACKEND`` that are
+obsolete since 0.19.
 
 .. note::
 

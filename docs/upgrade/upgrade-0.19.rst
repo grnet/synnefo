@@ -22,6 +22,7 @@ jessie.
    service must upgrade their ``Kamaki`` client to ``Kamaki >= 0.15``. For more
    information regarding the changes, refer to the Changelog.
 
+
 Upgrade Steps
 =============
 
@@ -36,6 +37,7 @@ Upgrade Ganeti nodes
 
 To achieve an upgrade with no VM downtime, you have to upgrade one ganeti node
 at a time.
+
 
 1. Evacuate ganeti node
 -----------------------
@@ -53,6 +55,7 @@ You must first evacuate the node in order to upgrade Archipelago.
 
 3. Upgrade node
 ---------------
+
 * Change all APT repos to jessie, including apt.dev.grnet.gr and also ceph's if
   they exist.
 * Upgrade all packages to jessie
@@ -70,9 +73,9 @@ After rebooting, the upgrade is complete and you can migrate VMs back to the
 node, to proceed with the rest of the cluster.
 
 
-
 Upgrade Service nodes
 =====================
+
 
 1. Change repos to Jessie
 -------------------------
@@ -152,6 +155,7 @@ Shutdown snf-ganeti-eventd on ganeti nodes:
 
   # service snf-ganeti-eventd stop
 
+
 3. Run database migrations
 --------------------------
 
@@ -161,6 +165,7 @@ migrations.
 .. code-block:: console
 
   # snf-manage migrate
+
 
 Fix IP history inconsistencies
 """"""""""""""""""""""""""""""
@@ -185,6 +190,7 @@ The tool will print the needed fixes. Use option ``--fix`` to apply.
 
 4. Adjust configuration files
 -----------------------------
+
 
 Change gunicorn configuration file
 """"""""""""""""""""""""""""""""""
@@ -280,7 +286,6 @@ information.
 
 Please adjust the new settings to match your previous setup.
 
-
 .. note::
 
   Do not forget to add '.conf' suffix on apache's conf files.
@@ -300,6 +305,7 @@ case, it is advised to switch the setting value to the new default setting
 `synnefo.logic.allocators.filter_allocator.FilterAllocator`. The default
 filters include the newly introduced Project-Backend association policy, while
 retaining the previous functionality for picking backends.
+
 
 Re-register service and resource definitions
 """"""""""""""""""""""""""""""""""""""""""""

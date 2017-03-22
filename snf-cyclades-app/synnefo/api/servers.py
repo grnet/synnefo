@@ -943,7 +943,6 @@ def server_stats(request, server_id):
 
 
 server_actions = {}
-network_actions = {}
 
 
 def server_action(*names):
@@ -954,17 +953,6 @@ def server_action(*names):
     def decorator(func):
         for n in names:
             server_actions[n] = func
-        return func
-    return decorator
-
-
-def network_action(name):
-    '''Decorator for functions implementing network actions.
-    `name` is the key in the dict passed by the client.
-    '''
-
-    def decorator(func):
-        network_actions[name] = func
         return func
     return decorator
 
@@ -1242,65 +1230,6 @@ def reassign(request, vm, args):
              request.user_uniq, vm.id, project, shared_to_project)
 
     return HttpResponse(status=200)
-
-
-@network_action('add')
-@transaction.commit_on_success
-def add(request, net, args):
-    # Normal Response Code: 202
-    # Error Response Codes: computeFault (400, 500),
-    #                       serviceUnavailable (503),
-    #                       unauthorized (401),
-    #                       badRequest (400),
-    #                       buildInProgress (409),
-    #                       badMediaType(415),
-    #                       itemNotFound (404),
-    #                       overLimit (413)
-    server_id = args.get('serverRef', None)
-    if not server_id:
-        raise faults.BadRequest('Malformed Request.')
-
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     non_suspended=True, for_update=True, non_deleted=True)
-    servers.connect(vm, network=net)
-
-    log.info("User %s connected VM %s to network %s",
-             request.user_uniq, vm.id, net)
-
-    return HttpResponse(status=202)
-
-
-@network_action('remove')
-@transaction.commit_on_success
-def remove(request, net, args):
-    # Normal Response Code: 202
-    # Error Response Codes: computeFault (400, 500),
-    #                       serviceUnavailable (503),
-    #                       unauthorized (401),
-    #                       badRequest (400),
-    #                       badMediaType(415),
-    #                       itemNotFound (404),
-    #                       overLimit (413)
-
-    attachment = args.get("attachment")
-    if attachment is None:
-        raise faults.BadRequest("Missing 'attachment' attribute.")
-    try:
-        nic_id = int(attachment)
-    except (ValueError, TypeError):
-        raise faults.BadRequest("Invalid 'attachment' attribute.")
-
-    nic = util.get_nic(nic_id=nic_id)
-    server_id = nic.machine_id
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     non_suspended=True, for_update=True, non_deleted=True)
-
-    servers.disconnect(vm, nic)
-
-    log.info("User %s disconnected VM %s to network %s, port: %s",
-             request.user_uniq, vm.id, net, nic.id)
-
-    return HttpResponse(status=202)
 
 
 @server_action("addFloatingIp")

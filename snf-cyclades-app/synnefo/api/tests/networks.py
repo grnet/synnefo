@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -177,6 +177,15 @@ class NetworkTest(BaseAPITest):
         url = join_urls(NETWORKS_URL, str(test_net.id))
         response = self.put(url, params="", user=test_net.userid)
         self.assertEqual(response.status_code, 400)
+
+    def test_reassign_network(self):
+        test_net = dbmf.NetworkFactory(name="foo")
+        url = join_urls(NETWORKS_URL, str(test_net.id), "action")
+        request = {'reassign': {
+            'project': 'new-project-uuid',
+            'shared_to_project': False}}
+        response = self.post(url, test_net.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 200)
 
     def test_rename_network(self):
         test_net = dbmf.NetworkFactory(name="foo")

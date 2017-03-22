@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@ def network_demux(request, network_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def network_action_demux(request, network_id):
     req = utils.get_json_body(request)
     network = util.get_network(network_id,
@@ -153,6 +154,7 @@ def get_network_details(request, network_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_network(request, network_id):
     info = api.utils.get_json_body(request)
 
@@ -214,7 +216,6 @@ def network_to_dict(network, detail=True):
     return d
 
 
-@transaction.commit_on_success
 def reassign_network(request, network, args):
     if network.public:
         raise faults.Forbidden("Cannot reassign public network")

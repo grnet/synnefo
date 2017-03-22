@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 
 from contextlib import contextmanager
-from django.test import TestCase
+from django.test import TransactionTestCase
 import json
 from django.utils.encoding import smart_unicode
 from mock import patch
@@ -242,7 +242,7 @@ def mocked_quotaholder(success=True):
         yield astakos.return_value
 
 
-class BaseAPITest(TestCase):
+class BaseAPITest(TransactionTestCase):
     def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user, kwargs.pop('_projects', None),
                           kwargs.pop('_roles', None)):

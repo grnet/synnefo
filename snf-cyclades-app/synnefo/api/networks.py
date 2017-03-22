@@ -218,16 +218,18 @@ def network_to_dict(network, detail=True):
 
 def reassign_network(request, network, args):
     if network.public:
-        raise faults.Forbidden("Cannot reassign public network")
+        raise api.faults.Forbidden("Cannot reassign public network")
 
     if request.user_uniq != network.userid:
-        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
-                               " of the network.")
+        raise api.faults.Forbidden(
+            "Action 'reassign' is allowed only to the owner"
+            " of the network.")
 
     shared_to_project = args.get("shared_to_project", False)
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
-        raise faults.Forbidden("Sharing resource to the members of the project"
-                                " is not permitted")
+        raise api.faults.Forbidden(
+            "Sharing resource to the members of the project"
+            " is not permitted")
 
     project = args.get("project")
     if project is None:

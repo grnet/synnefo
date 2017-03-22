@@ -369,7 +369,7 @@ class FloatingIPAPITest(BaseAPITest):
         ips_after = floating_ips.filter(id=ip.id)
         self.assertEqual(len(ips_after), 0)
 
-    @patch("synnefo.logic.backend", Mock())
+    @patch("synnefo.logic.networks.backend_mod", Mock())
     def test_delete_network_with_floating_ips(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True,
                                    network=self.pool, nic=None)

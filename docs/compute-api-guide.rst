@@ -225,20 +225,19 @@ The server attributes are listed `here <#server-ref>`__.
 
 *Example List Servers: JSON (regular)*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers
-
 
   {
     "servers": [
       {
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "bookmark"
           }
         ],
@@ -247,10 +246,10 @@ The server attributes are listed `here <#server-ref>`__.
       }, {
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/43", 
+            "href": "https://example.org/compute/v2.0/servers/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/43", 
+            "href": "https://example.org/compute/v2.0/servers/43",
             "rel": "bookmark"
           }
         ],
@@ -262,10 +261,9 @@ The server attributes are listed `here <#server-ref>`__.
 
 *Example List Servers: JSON (detail)*
 
+.. code::
+
   GET https://example.org/compute/v2.0/servers/detail
-
-
-.. code-block:: javascript
 
   {
     "servers": [
@@ -307,10 +305,10 @@ The server attributes are listed `here <#server-ref>`__.
         ],
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "bookmark"
           }
         ],
@@ -318,13 +316,13 @@ The server attributes are listed `here <#server-ref>`__.
           "id": "im4g3-1d",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "bookmark"
             }, {
-              "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+              "href": "https://example.org/image/v1.0/images/im4g3-1d",
               "rel": "alternate"
             }
           ]
@@ -335,10 +333,10 @@ The server attributes are listed `here <#server-ref>`__.
           "id": 1",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/flavors/1", 
+              "href": "https://example.org/compute/v2.0/flavors/1",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/flavors/1", 
+              "href": "https://example.org/compute/v2.0/flavors/1",
               "rel": "bookmark"
             }
           ]
@@ -413,10 +411,10 @@ The server attributes are listed `here <#server-ref>`__.
         ],
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/84", 
+            "href": "https://example.org/compute/v2.0/servers/84",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/84", 
+            "href": "https://example.org/compute/v2.0/servers/84",
             "rel": "bookmark"
           }
         ],
@@ -424,13 +422,13 @@ The server attributes are listed `here <#server-ref>`__.
           "id": "im4g3-1d",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "bookmark"
             }, {
-              "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+              "href": "https://example.org/image/v1.0/images/im4g3-1d",
               "rel": "alternate"
             }
           ]
@@ -441,10 +439,10 @@ The server attributes are listed `here <#server-ref>`__.
           "id": 3",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/flavors/3", 
+              "href": "https://example.org/compute/v2.0/flavors/3",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/flavors/3", 
+              "href": "https://example.org/compute/v2.0/flavors/3",
               "rel": "bookmark"
             }
           ]
@@ -591,7 +589,7 @@ Return Code                 Description
 403 (Forbidden)             User is not allowed to perform this operation
 404 (Not Found)             Image or Flavor not found
 413 (Over Limit)            Exceeded some resource limit
-415 (Bad Media Type)        
+415 (Bad Media Type)
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   No available backends or service currently
@@ -614,10 +612,9 @@ Server attributes are listed `here <#server-ref>`__.
 
 *Example Create Server Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers
-
 
   {
     "server": {
@@ -667,9 +664,10 @@ owner                  File owner          ✔        **✘**
 
 *Example Create Server Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers
+
   {
     "server": {
       "name": "My Password-less Server",
@@ -724,9 +722,10 @@ private network (9876) on the virtual server under construction:
 
 * Example Connect server on various networks*
 
-.. code-block:: python
+.. code::
 
   POST https://example.org/compute/v2.0/servers
+
   {
     "server": {
       "networks": [
@@ -764,10 +763,10 @@ X-Auth-Token    User authentication token required required
 |
 
 ================= ===============
-Request Parameter Value          
+Request Parameter Value
 ================= ===============
 json              Respond in json
-xml               Respond in xml 
+xml               Respond in xml
 ================= ===============
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the
@@ -809,9 +808,10 @@ netTimeSeries Network load / time graph URL
 
 *Example Get Server Stats Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/5678/stats
+
   {
     "stats": {
       "serverRef": 5678,
@@ -886,9 +886,10 @@ details              Detailed log description
 
 *Example Get Server Diagnostics Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/5678/diagnostics
+
   [
     {
       "level": "DEBUG",
@@ -957,10 +958,9 @@ Server attributes are explained `here <#server-ref>`__.
 
 *Example get server Details*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84
-
 
   {
     "server": {
@@ -1001,10 +1001,10 @@ Server attributes are explained `here <#server-ref>`__.
       ],
       "links": [
         {
-          "href": "https://example.org/compute/v2.0/servers/84", 
+          "href": "https://example.org/compute/v2.0/servers/84",
           "rel": "self"
         }, {
-          "href": "https://example.org/compute/v2.0/servers/84", 
+          "href": "https://example.org/compute/v2.0/servers/84",
           "rel": "bookmark"
         }
       ],
@@ -1012,13 +1012,13 @@ Server attributes are explained `here <#server-ref>`__.
         "id": "im4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d",
             "rel": "bookmark"
           }, {
-            "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+            "href": "https://example.org/image/v1.0/images/im4g3-1d",
             "rel": "alternate"
           }
         ]
@@ -1029,10 +1029,10 @@ Server attributes are explained `here <#server-ref>`__.
         "id": 3",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "href": "https://example.org/compute/v2.0/flavors/3",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "href": "https://example.org/compute/v2.0/flavors/3",
             "rel": "bookmark"
           }
         ]
@@ -1116,7 +1116,7 @@ accessIPv6  IP v6 address        **✘**    ✔
 
 *Example Rename Server Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"server": {"name": "New name"}}
 
@@ -1244,7 +1244,7 @@ Attachment attributes are explained `here <#attachments-ref>`__.
 
 *Example List Addresses: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84/ips/
 
@@ -1337,10 +1337,9 @@ Response body contents::
 
 **Example**
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84/ips/2718
-
 
   "network": {
     "2718": [
@@ -1400,7 +1399,7 @@ Response body contents::
 
 *Example List Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     ""metadata": {
@@ -1451,7 +1450,7 @@ Request body contents::
 
 *Example Request Set / Update Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "webmail", "users": "root,maild"}}
 
@@ -1480,7 +1479,7 @@ Response body contents::
 
 *Example Response Set / Update Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"OS": "Linux", "role": "webmail", "users": "root,maild"}}
 
@@ -1526,7 +1525,7 @@ Response body content::
 
 *Example Get Server Metadata for Item 'role', JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "webmail"}}
 
@@ -1559,7 +1558,7 @@ Request body content::
 
 *Example Request to Set or Update Server Metadata "role": JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "gateway"}}
 
@@ -1585,7 +1584,7 @@ Response body content::
 
 *Example Set or Update Server Metadata "role":"gateway": JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "gateway"}}
 
@@ -1698,7 +1697,7 @@ Request body contents::
 
 *Example Start Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"start": {}}
 
@@ -1721,7 +1720,7 @@ Request body contents::
 
 *Example (SOFT) Reboot Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"reboot" : { "type": "SOFT"}}
 
@@ -1737,7 +1736,7 @@ Request body contents::
 
 *Example Resize Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"resize" : { "flavorRef": 153}}
 
@@ -1752,7 +1751,7 @@ Request body contents::
 
 *Example Shutdown Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"shutdown": {}}
 
@@ -1774,7 +1773,7 @@ Request body contents::
 
 *Example Get Server Console: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"console": {"type": "vnc" }
 
@@ -1796,7 +1795,7 @@ type           Connection type (only VNC)
 
 *Example Action Console Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     "console": {
@@ -1821,7 +1820,7 @@ Request body contents::
 
 *Example Action firewallProfile: JSON**
 
-.. code-block:: javascript
+.. code::
 
   {"firewallProfile": {"profile": "ENABLED", "nic": 123}}
 
@@ -1843,7 +1842,7 @@ Request body contents::
 
 *Example Action reassign: JSON**
 
-.. code-block:: javascript
+.. code::
 
   {"reassign": {"project": "9969f2fd-86d8-45d6-9106-5e251f7dd92f"}}
 
@@ -1923,7 +1922,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (regular): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/flavors
 
@@ -1934,11 +1933,11 @@ only ``id`` and ``name`` attributes.
         "name": "One code",
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -1947,11 +1946,11 @@ only ``id`` and ``name`` attributes.
         "name": "Four core",
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "bookmark"
             }
         ]
@@ -1962,7 +1961,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (regular): XML*
 
-.. code-block:: xml
+.. code:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <flavors xmlns="http://docs.openstack.org/compute/api/v1"
@@ -1973,7 +1972,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (detail): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/flavors/detail
 
@@ -1988,11 +1987,11 @@ only ``id`` and ``name`` attributes.
         "vcpus": 1,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -2005,11 +2004,11 @@ only ``id`` and ``name`` attributes.
         "vcpus": 4,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "bookmark"
             }
         ]
@@ -2071,9 +2070,9 @@ All flavor attributes are listed `here <#flavor-ref>`__.
 
 *Example Flavor Details: JSON*
 
-  GET https://example.org/compute/v2.0/flavors/1
+.. code::
 
-.. code-block:: javascript
+  GET https://example.org/compute/v2.0/flavors/1
 
   {
     "flavor": {
@@ -2086,11 +2085,11 @@ All flavor attributes are listed `here <#flavor-ref>`__.
         "vcpus": 1,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -2174,7 +2173,7 @@ a collections of the image attributes listed `here <#image-ref>`__.
 
 *Example List Image (detail): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images
 
@@ -2188,11 +2187,11 @@ a collections of the image attributes listed `here <#image-ref>`__.
         "id": "s0m3-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2211,11 +2210,11 @@ a collections of the image attributes listed `here <#image-ref>`__.
         "id": "07h3r-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2280,7 +2279,7 @@ Image attributes are listed `here <#image-ref>`__.
 
 *Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d
 
@@ -2294,11 +2293,11 @@ Image attributes are listed `here <#image-ref>`__.
         "id": "s0m3-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2393,7 +2392,7 @@ Response body content::
 
 *Example List Image Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
 
@@ -2452,7 +2451,7 @@ Request body content::
 
 *Example Update Image Metadata Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
 
@@ -2483,7 +2482,7 @@ Response body content::
 
 *Example Update Image Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     "metadata": {
@@ -2535,7 +2534,7 @@ Response body content::
 
 *Example Get Image Metadata Item: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
 
@@ -2572,9 +2571,10 @@ Request body content::
 
 *Example Update Image Metadata Item Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   PUT https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
+
   {
     "metadata": {"OS": "Kubuntu"}
   }
@@ -2601,7 +2601,7 @@ Request body content::
 
 *Example Update Image Metadata Item Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"OS": "Kubuntu"}}
 
@@ -2692,10 +2692,9 @@ Response body contents::
 
 *Example List Keypairs: JSON*
 
+.. code::
+
   GET https://example.org/compute/v2.0/ok-keypairs
-
-
-.. code-block:: javascript
 
   {
     "keypairs": [
@@ -2740,14 +2739,14 @@ Request body contents::
    }
  }
 
-========== ======== ==========
-Parameter  Cyclades OS/Compute
-========== ======== ==========
-name       ✔        ✔
-public_key ✔        ✔
-========= ========= =========
+========== ========= ==========
+Parameter  Cyclades  OS/Compute
+========== ========= ==========
+name       ✔         ✔
+public_key ✔         ✔
+========== ========= ==========
 
-* **name** a name for the newly imported or created keypair (must be 
+* **name** a name for the newly imported or created keypair (must be
   unique)
 
 * **public_key** (optional) the public ssh key to import. If you omit this
@@ -2780,7 +2779,7 @@ Response body contents::
 
 *Example Create Keypair Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/os-keypairs
 
@@ -2796,7 +2795,7 @@ Response body contents::
 
 *Example Import Keypair Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/os-keypairs
 
@@ -2858,7 +2857,7 @@ Response body contents::
 
 *Example List Keypair Details Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/os-keypairs/my_key
 
@@ -2951,9 +2950,10 @@ Response body contents::
 
 *Example List Floating IPs: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/os-floating-ips
+
   {
     floating_ips": [
       {
@@ -3012,9 +3012,10 @@ Response body contents::
 
 *Example get floating IP details: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/os-floating-ips/42
+
   {
     floating_ip: {
         "instance_id": null,
@@ -3066,9 +3067,10 @@ Response body contents::
 
 *Example Allocation of a floating IP: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/os-floating-ips
+
   {
     floating_ip: {
         "instance_id": null,
@@ -3111,7 +3113,7 @@ Return Code                 Description
 
 *Example dallocation of a floating IP: JSON*
 
-.. code-block:: javascript
+.. code::
 
   DELETE https://example.org/compute/v2.0/os-floating-ips/42
 
@@ -3226,10 +3228,10 @@ Ports can be handled separately through the Cyclades/Network API.
 In a virtual server context, a port may contain the following information:
 
 ================= ======================
-Port Attributes    Description          
+Port Attributes    Description
 ================= ======================
-id                Port id            
-mac_address       NIC's mac address     
+id                Port id
+mac_address       NIC's mac address
 network_id        Network ID
 OS-EXT-IPS:type   ``fixed`` or ``floating``
 firewallProfile   ``ENABLED``, ``DISABLED``, ``PROTECTED``

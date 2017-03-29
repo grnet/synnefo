@@ -192,6 +192,13 @@ The tool will print the needed fixes. Use option ``--fix`` to apply.
 4. Adjust configuration files
 -----------------------------
 
+As always, the following settings might need further adjustments depending on
+your previous setup.
+
+.. note::
+
+  Do not forget to add ".conf" suffix on apache's conf files.
+
 
 Change gunicorn configuration file
 """"""""""""""""""""""""""""""""""
@@ -224,6 +231,11 @@ Example:
      'synnefo.webproject.wsgi',
    ),
   }
+
+.. note::
+
+  Since 0.19, Synnefo logs in a dedicated file ``/var/log/synnefo/synnefo.log``,
+  separately from gunicorn's logs.
 
 
 Update webserver's configuration file
@@ -289,18 +301,10 @@ Please adjust the new settings to match your previous setup. You might want to
 remove settings like ``VMAPI_CACHE_BACKEND`` and ``CACHE_BACKEND`` that are
 obsolete since 0.19.
 
-.. note::
-
-  Do not forget to add '.conf' suffix on apache's conf files.
-
-.. note::
-
-  Notice that Synnefo now logs in a dedicated file
-  ``/var/log/synnefo/synnefo.log``, separately from gunicorn's logs.
-
 
 Backend Allocator Module
 """"""""""""""""""""""""
+
 Synnefo v0.19 introduces a new FilterAllocator to replace the previous
 DefaultAllocator module. Synnefo v0.19 uses the new module by default, unless
 you have explicitly set the `BACKEND_ALLOCATOR_MODULE` in your settings. In that

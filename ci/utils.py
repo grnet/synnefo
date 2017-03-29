@@ -485,7 +485,7 @@ class SynnefoCI(object):
         echo 'deb https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
         echo 'deb-src https://deb.nodesource.com/node_0.12 jessie main' >> /etc/apt/sources.list.d/nodejs.list
         apt-get update
-        apt-get install -q=2 --force-yes nodejs ruby ruby-dev
+        apt-get install -q=2 --force-yes nodejs python-libsass
         """
         _run(cmd, False)
 

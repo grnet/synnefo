@@ -159,8 +159,9 @@ Shutdown snf-ganeti-eventd on ganeti nodes:
 3. Run database migrations
 --------------------------
 
-Run database migrations in all nodes. This will upgrade from old south
-migrations.
+Run database migrations in all service nodes (i.e. if a service consists of
+multiple nodes/workers, you must run the migrations **only in one** of them).
+This will upgrade from old south migrations:
 
 .. code-block:: console
 

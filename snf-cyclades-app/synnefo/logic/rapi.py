@@ -29,6 +29,8 @@ import requests
 import logging
 import json
 import time
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
 
 GANETI_RAPI_PORT = 5080
 GANETI_RAPI_VERSION = 2
@@ -232,8 +234,10 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                        method, url, query, encoded_content)
 
     req_method = getattr(requests, method.lower())
-    r = req_method(url, auth=self._auth, headers=headers, params=query,
-                   data=encoded_content, verify=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+        r = req_method(url, auth=self._auth, headers=headers, params=query,
+                       data=encoded_content, verify=False)
 
 
     http_code = r.status_code

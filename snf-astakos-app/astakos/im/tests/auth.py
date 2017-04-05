@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -737,6 +737,19 @@ class TestLocal(TestCase):
         self.assertEqual(len(fixed), 1)
         fuser = fixed[0]
         self.assertEqual(fuser.email, fuser.username)
+
+    @im_settings(IM_MODULES=['shibboleth', 'local'])
+    def test_multiple_providers(self):
+        local_user = get_local_user('kpelelis@synnefo.org')
+        self.assertEqual(len(local_user.get_auth_providers()), 1)
+
+        # Make sure we can add third party providers
+        local_user.add_auth_provider('shibboleth', identifier='12345')
+        self.assertEqual(len(local_user.get_auth_providers()), 2)
+
+        # Make sure we are unable to add a second local provier
+        with self.assertRaises(Exception):
+            local_user.add_auth_provider('local')
 
 
 class UserActionsTests(TestCase):

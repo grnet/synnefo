@@ -28,6 +28,11 @@ Cyclades
 * Volume type specs prefixed with 'GNT-EXTP:' are propagated to Ganeti ext-
   storage scripts.
 
+Astakos
+-------
+
+* Fix multiple local authentication providers in user accounts.
+
 .. _Changelog-0.19:
 
 v0.19

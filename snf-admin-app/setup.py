@@ -51,29 +51,18 @@ BUILD_TRIGGERING_COMMANDS = ["sdist", "build", "develop", "install"]
 
 def compile_sass():
     """Compiles sass files to css"""
-    import subprocess
-    from distutils.spawn import find_executable
+    import sass
 
-    css_dir = os.path.join(".", "synnefo_admin", "admin", "static")
-    css_dir = os.path.abspath(css_dir)
+    static_dir = os.path.join(".", "synnefo_admin", "admin", "static")
+    sass_dir = os.path.join(static_dir, "sass")
+    css_dir = os.path.join(static_dir, "css")
 
-    os.environ["PATH"] += ":/usr/local/bin"
-    if not find_executable("compass"):
-        if not find_executable("gem"):
-            raise Exception("gem not found, please install ruby and gem")
-
-        print "Install compass"
-        ret = subprocess.call(["gem", "install", "compass"])
-        if ret == 1:
-            raise Exception("gem install failed")
-
-    environment = "development" if "develop" in sys.argv else "production"
-    compass_bin = find_executable("compass")
-    compass_cmd = [compass_bin, "compile", css_dir,
-                   "-e", environment, "--force"]
-    ret = subprocess.call(compass_cmd)
-    if ret == 1:
-        raise Exception("compass compile failed")
+    output_style = "nested" if "develop" in sys.argv else "compressed"
+    try:
+        sass.compile(dirname=(sass_dir, css_dir,), output_style=output_style)
+    except Exception as e:
+        print(e)
+        raise Exception('Sass compile failed')
 
 
 if any(x in sys.argv for x in BUILD_TRIGGERING_COMMANDS):

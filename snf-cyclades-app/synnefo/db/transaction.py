@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,11 +27,13 @@ functions:
  * rollback
 """
 
-
+from functools import wraps
 from django.db import transaction
 
 from snf_django.utils.transaction import _transaction_func
+from snf_django.utils.transaction import atomic as snf_atomic
 from snf_django.utils.db import select_db
+from synnefo import quotas
 
 
 def commit(using=None):
@@ -52,3 +54,55 @@ def commit_on_success(using=None):
 def commit_manually(using=None):
     method = transaction.commit_manually
     return _transaction_func("db", method, using)
+
+
+def atomic(using=None, savepoint=True):
+    return snf_atomic("db", using, savepoint)
+
+
+class SerialContext(object):
+    def __init__(self, *args, **kwargs):
+        self._serial = None
+
+    def set_serial(self, serial):
+        if self._serial is not None:
+            raise ValueError("Cannot set multiple serials")
+        self._serial = serial
+
+    def handle(self, success):
+        serial = self._serial
+        if success:
+            if not serial.pending:
+                if serial.accept:
+                    quotas.accept_serial(serial)
+                else:
+                    quotas.reject_serial(serial)
+        else:
+            if serial.pending:
+                quotas.reject_serial(serial)
+
+
+def atomic_context(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        ARG_NAME = "atomic_context"
+        handle_context = False
+        context = kwargs.get(ARG_NAME)
+        if context is None:
+            handle_context = True
+            context = SerialContext()
+            kwargs[ARG_NAME] = context
+        try:
+            with atomic():
+                res = func(*args, **kwargs)
+        except:
+            try:
+                if handle_context:
+                    context.handle(success=False)
+            finally:
+                raise
+        else:
+            if handle_context:
+                context.handle(success=True)
+            return res
+    return inner

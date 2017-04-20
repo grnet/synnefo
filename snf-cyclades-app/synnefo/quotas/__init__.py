@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,8 +12,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from synnefo.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
@@ -250,8 +248,8 @@ def get_quotaholder_pending():
     return pending_serials
 
 
-@transaction.commit_on_success
-def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
+def issue_and_accept_commission(resource, action="BUILD", action_fields=None,
+                                atomic_context=None):
     """Issue and accept a commission to Quotaholder.
 
     This function implements the Commission workflow, and must be called
@@ -260,8 +258,7 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     0) Resolve previous unresolved commission if exists
     1) Issue commission, get a serial and correlate it with the resource
     2) Store the serial in DB as a serial to accept
-    3) COMMIT!
-    4) Accept commission to QH
+    3) Mark the serial in the context to be accepted
 
     """
     commission_reason = ("client: api, resource: %s, action: %s"
@@ -277,16 +274,8 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     serial.pending = False
     serial.accept = True
     serial.save()
-    transaction.commit()
-
-    try:
-        # Accept the commission to quotaholder
-        accept_serial(serial)
-    except:
-        # Do not crash if we can not accept commission to Quotaholder. Quotas
-        # have already been reserved and the resource already exists in DB.
-        # Just log the error
-        log.exception("Failed to accept commission: %s", resource.serial)
+    atomic_context.set_serial(serial)
+    return serial
 
 
 def get_volume_resources(volumes):

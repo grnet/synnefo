@@ -44,11 +44,12 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 
 @transaction.commit_on_success
-def create(userid, name, password, flavor, image_id, metadata={},
+def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
-           volumes=None, helper=False, user_projects=None,
+           volumes=None, helper=False,
            shared_to_project=False, key_names=None):
 
+    userid = credentials.userid
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
 
@@ -122,7 +123,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
     ])
 
     # Create the ports for the server
-    ports = create_instance_ports(userid, user_projects, networks)
+    ports = create_instance_ports(credentials, networks)
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
@@ -151,7 +152,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
             uuid = vol_info["source_uuid"]
-            v = get_volume(userid, user_projects, uuid, for_update=True,
+            v = get_volume(credentials, uuid, for_update=True,
                            non_deleted=True, exception=faults.BadRequest)
             if v.volume_type_id != server_vtype.id:
                 msg = ("Volume '%s' has type '%s' while flavor's volume type"
@@ -667,23 +668,23 @@ def delete_port(port):
     return port
 
 
-def create_instance_ports(user_id, user_projects, networks=None):
+def create_instance_ports(credentials, networks=None):
     # First connect the instance to the networks defined by the admin
-    forced_ports = create_ports_for_setting(user_id, category="admin")
+    forced_ports = create_ports_for_setting(credentials, category="admin")
     if networks is None:
         # If the user did not asked for any networks, connect instance to
         # default networks as defined by the admin
-        ports = create_ports_for_setting(user_id, category="default")
+        ports = create_ports_for_setting(credentials, category="default")
     else:
         # Else just connect to the networks that the user defined
-        ports = create_ports_for_request(user_id, user_projects, networks)
+        ports = create_ports_for_request(credentials, networks)
     total_ports = forced_ports + ports
     if len(total_ports) > settings.GANETI_MAX_NICS_PER_INSTANCE:
         raise faults.BadRequest("Maximum ports per server limit reached")
     return total_ports
 
 
-def create_ports_for_setting(user_id, category):
+def create_ports_for_setting(credentials, category):
     if category == "admin":
         network_setting = settings.CYCLADES_FORCED_SERVER_NETWORKS
         exception = faults.ServiceUnavailable
@@ -703,7 +704,8 @@ def create_ports_for_setting(user_id, category):
         for network_id in network_ids:
             success = False
             try:
-                ports.append(_port_from_setting(user_id, network_id, category))
+                ports.append(
+                    _port_from_setting(credentials, network_id, category))
                 # Port successfully created in one of the networks. Skip the
                 # the rest.
                 success = True
@@ -729,20 +731,20 @@ def create_ports_for_setting(user_id, category):
     return ports
 
 
-def _port_from_setting(user_id, network_id, category):
+def _port_from_setting(credentials, network_id, category):
     # TODO: Fix this..you need only IPv4 and only IPv6 network
     if network_id == "SNF:ANY_PUBLIC_IPV4":
-        return create_public_ipv4_port(user_id, user_projects=None,
+        return create_public_ipv4_port(credentials.no_share(),
                                        category=category)
     elif network_id == "SNF:ANY_PUBLIC_IPV6":
-        return create_public_ipv6_port(user_id, category=category)
+        return create_public_ipv6_port(credentials, category=category)
     elif network_id == "SNF:ANY_PUBLIC":
         try:
-            return create_public_ipv4_port(user_id, user_projects=None,
+            return create_public_ipv4_port(credentials.no_share(),
                                            category=category)
         except faults.Conflict as e1:
             try:
-                return create_public_ipv6_port(user_id, category=category)
+                return create_public_ipv6_port(credentials, category=category)
             except faults.Conflict as e2:
                 log.error("Failed to connect server to a public IPv4 or IPv6"
                           " network. IPv4: %s, IPv6: %s", e1, e2)
@@ -751,16 +753,16 @@ def _port_from_setting(user_id, network_id, category):
                 raise faults.Conflict(msg)
     else:  # Case of network ID
         if category in ["user", "default"]:
-            return _port_for_request(user_id, {"uuid": network_id})
+            return _port_for_request(credentials, {"uuid": network_id})
         elif category == "admin":
-            network = util.get_network(network_id, user_id, None,
+            network = util.get_network(network_id, credentials.no_share(),
                                        non_deleted=True)
-            return _create_port(user_id, network)
+            return _create_port(credentials.userid, network)
         else:
             raise ValueError("Unknown category: %s" % category)
 
 
-def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
+def create_public_ipv4_port(credentials, network=None, address=None,
                             category="user"):
     """Create a port in a public IPv4 network.
 
@@ -770,11 +772,12 @@ def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
     create a port to the public network (without floating IPs or quotas).
 
     """
+    user_id = credentials.userid
     if category in ["user", "default"]:
         if address is None:
             ipaddress = ips.get_free_floating_ip(user_id, network)
         else:
-            ipaddress = util.get_floating_ip_by_address(user_id, user_projects,
+            ipaddress = util.get_floating_ip_by_address(credentials,
                                                         address,
                                                         for_update=True)
     elif category == "admin":
@@ -789,20 +792,20 @@ def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
     return _create_port(user_id, network, use_ipaddress=ipaddress)
 
 
-def create_public_ipv6_port(user_id, category=None):
+def create_public_ipv6_port(credentials, category=None):
     """Create a port in a public IPv6 only network."""
     networks = Network.objects.filter(public=True, deleted=False,
                                       drained=False, subnets__ipversion=6)\
                               .exclude(subnets__ipversion=4)
     if networks:
-        return _create_port(user_id, networks[0])
+        return _create_port(credentials.userid, networks[0])
     else:
         msg = "No available IPv6 only network!"
         log.error(msg)
         raise faults.Conflict(msg)
 
 
-def create_ports_for_request(user_id, user_projects, networks):
+def create_ports_for_request(credentials, networks):
     """Create the server ports requested by the user.
 
     Create the ports for the new servers as requested in the 'networks'
@@ -817,37 +820,36 @@ def create_ports_for_request(user_id, user_projects, networks):
     """
     if not isinstance(networks, list):
         raise faults.BadRequest("Malformed request. Invalid 'networks' field")
-    return [_port_for_request(user_id, user_projects, network)
+    return [_port_for_request(credentials, network)
             for network in networks]
 
 
-def _port_for_request(user_id, user_projects, network_dict):
+def _port_for_request(credentials, network_dict):
     if not isinstance(network_dict, dict):
         raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     port_id = network_dict.get("port")
     network_id = network_dict.get("uuid")
     if port_id is not None:
-        return util.get_port(port_id, user_id, user_projects, for_update=True)
+        return util.get_port(port_id, credentials, for_update=True)
     elif network_id is not None:
         address = network_dict.get("fixed_ip")
-        network = util.get_network(network_id, user_id, user_projects,
+        network = util.get_network(network_id, credentials,
                                    non_deleted=True)
         if network.public:
             if network.subnet4 is not None:
                 if "fixed_ip" not in network_dict:
-                    return create_public_ipv4_port(user_id, user_projects,
-                                                   network)
+                    return create_public_ipv4_port(credentials, network)
                 elif address is None:
                     msg = "Cannot connect to public network"
                     raise faults.BadRequest(msg % network.id)
                 else:
-                    return create_public_ipv4_port(user_id, user_projects,
+                    return create_public_ipv4_port(credentials,
                                                    network, address)
             else:
                 raise faults.Forbidden("Cannot connect to IPv6 only public"
                                        " network '%s'" % network.id)
         else:
-            return _create_port(user_id, network, address=address)
+            return _create_port(credentials.userid, network, address=address)
     else:
         raise faults.BadRequest("Network 'uuid' or 'port' attribute"
                                 " is required.")

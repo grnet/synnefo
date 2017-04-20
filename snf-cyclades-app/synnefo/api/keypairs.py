@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ def list_keypairs(request):
     Error response codes: unauthorized(401), forbidden(403)
     """
     active_keypairs = \
-        PublicKeyPair.objects.filter(user=request.user_uniq).all()
+        PublicKeyPair.objects.filter(user=request.credentials.userid).all()
     keypairs = [keypair_to_dict(keypair) for keypair in
                 active_keypairs.order_by('name')]
     data = json.dumps({'keypairs': keypairs})
@@ -115,7 +115,8 @@ def create_new_keypair(request):
                           conflict(409)
     """
 
-    if PublicKeyPair.user_limit_exceeded(request.user_uniq):
+    userid = request.credentials.userid
+    if PublicKeyPair.user_limit_exceeded(userid):
         return HttpResponseServerError("SSH keys limit exceeded")
 
     req = utils.get_json_body(request)
@@ -133,12 +134,12 @@ def create_new_keypair(request):
         # If the key with the same name exists in the database
         # a conflict error will be raised
 
-        util.get_keypair(name, request.user_uniq)
+        util.get_keypair(name, userid)
         # If we get past this point then the key is already present
         # in the database
         raise faults.Conflict('A keypair with that name already exists')
     except faults.ItemNotFound:
-        new_keypair = PublicKeyPair(name=name, user=request.user_uniq)
+        new_keypair = PublicKeyPair(name=name, user=userid)
 
     gen_keypair = None
     try:
@@ -170,7 +171,7 @@ def get_keypair(request, keypair_name):
 
     Error response codes: unauthorized(401), forbidden(403), itemNotFound(404)
     """
-    keypair = util.get_keypair(keypair_name, request.user_uniq)
+    keypair = util.get_keypair(keypair_name, request.credentials.userid)
     keypairdict = keypair_to_dict(keypair, details=True)
     data = json.dumps(keypairdict)
     return HttpResponse(data, status=200)
@@ -189,7 +190,7 @@ def delete_keypair(request, keypair_name):
           request to allow administrative users to upload keys for other users
           than themselves. This is not implemented by us.
     """
-    keypair = util.get_keypair(keypair_name, request.user_uniq,
+    keypair = util.get_keypair(keypair_name, request.credentials.userid,
                                for_update=True)
     # The Keypair object should be deleted from the database
     keypair.delete()

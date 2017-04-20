@@ -30,6 +30,8 @@ from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
+from synnefo import cyclades_settings
+from synnefo.logic.policy import VMPolicy
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -351,7 +353,7 @@ def render_diagnostics(request, diagnostics_dict, status=200):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_server_diagnostics(request, server_id):
     """Virtual machine diagnostics api view."""
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
     diagnostics = diagnostics_to_dict(vm.diagnostics.all())
 
     return render_diagnostics(request, diagnostics)
@@ -366,8 +368,7 @@ def list_servers(request, detail=False):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    user_vms = VirtualMachine.objects.for_user(userid=request.user_uniq,
-                                               projects=request.user_projects)
+    user_vms = VMPolicy.filter_list(request.credentials)
     if detail:
         user_vms = user_vms.prefetch_related("nics__ips", "metadata")
 
@@ -398,7 +399,8 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     req = utils.get_json_body(request)
-    user_id = request.user_uniq
+    credentials = request.credentials
+    user_id = credentials.userid
 
     log.info("User: %s, Action: create_server, Request: %s", user_id, req)
 
@@ -463,11 +465,10 @@ def create_server(request):
 
         # Remove duplicate key names
         key_names = list(set(SNF_key_names))
-    vm = servers.create(user_id, name, password, flavor, image_id,
+    vm = servers.create(credentials, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
-                        user_projects=request.user_projects,
                         key_names=key_names)
 
     log.info("User %s created VM %s, shared: %s", user_id, vm.id,
@@ -497,7 +498,7 @@ def get_server_password(request, server_id):
     #                       unauthorized (401),
     #                       itemNotFound (404),
     #                       badRequest (400),
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
 
     password = VM_PASSWORD_CACHE.get(str(vm.pk))
 
@@ -516,7 +517,7 @@ def delete_server_password(request, server_id):
     #                       unauthorized (401),
     #                       itemNotFound (404),
     #                       badRequest (400),
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
 
     VM_PASSWORD_CACHE.delete(str(vm.pk))
 
@@ -591,7 +592,7 @@ def get_server_details(request, server_id):
     #                       badRequest (400),
     #                       itemNotFound (404),
     #                       overLimit (413)
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, request.credentials,
                      prefetch_related=["nics__ips", "metadata"])
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
@@ -610,20 +611,21 @@ def update_server_name(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
+    credentials = request.credentials
     req = utils.get_json_body(request)
     log.debug("User: %s, VM: %s, Action: rename, Request: %s",
-              request.user_uniq, server_id, req)
+              credentials.userid, server_id, req)
 
     req = utils.get_attribute(req, "server", attr_type=dict, required=True)
     name = utils.get_attribute(req, "name", attr_type=basestring,
                                required=True)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, credentials,
                      for_update=True, non_suspended=True, non_deleted=True)
 
     servers.rename(vm, new_name=name)
 
-    log.info("User %s renamed server %s", request.user_uniq, vm.id)
+    log.info("User %s renamed server %s", credentials.userid, vm.id)
 
     return HttpResponse(status=204)
 
@@ -639,15 +641,15 @@ def delete_server(request, server_id):
     #                       unauthorized (401),
     #                       buildInProgress (409),
     #                       overLimit (413)
-
-    log.debug("User: %s, VM: %s, Action: deleted", request.user_uniq,
+    credentials = request.credentials
+    log.debug("User: %s, VM: %s, Action: deleted", credentials.userid,
               server_id)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, credentials,
                      for_update=True, non_suspended=True, non_deleted=True)
     vm = servers.destroy(vm)
 
-    log.info("User %s deleted VM %s", request.user_uniq, vm.id)
+    log.info("User %s deleted VM %s", credentials.userid, vm.id)
 
     return HttpResponse(status=204)
 
@@ -675,14 +677,15 @@ def key_to_action(key):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 @transaction.commit_on_success
 def demux_server_action(request, server_id):
+    credentials = request.credentials
     req = utils.get_json_body(request)
 
     if not isinstance(req, dict) and len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
     # Do not allow any action on deleted or suspended VMs
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     for_update=True, non_deleted=True, non_suspended=True)
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True,  non_deleted=True, non_suspended=True)
 
     try:
         action = req.keys()[0]
@@ -690,7 +693,7 @@ def demux_server_action(request, server_id):
         raise faults.BadRequest("Malformed Request.")
 
     log.debug("User: %s, VM: %s, Action: %s Request: %s",
-              request.user_uniq, server_id, action, req)
+              credentials.userid, server_id, action, req)
 
     if not isinstance(action, basestring):
         raise faults.BadRequest("Malformed Request. Invalid action.")
@@ -712,7 +715,7 @@ def list_addresses(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, request.credentials,
                      prefetch_related="nics__ips")
     attachments = [nic_to_attachments(nic)
                    for nic in vm.nics.filter(state="ACTIVE")]
@@ -736,10 +739,9 @@ def list_addresses_by_network(request, server_id, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    machine = util.get_vm(server_id, request.user_uniq,
-                          request.user_projects)
-    network = util.get_network(network_id, request.user_uniq,
-                               request.user_projects)
+    credentials = request.credentials
+    machine = util.get_vm(server_id, credentials)
+    network = util.get_network(network_id, credentials)
     nics = machine.nics.filter(network=network, state="ACTIVE")
     addresses = attachments_to_addresses(map(nic_to_attachments, nics))
 
@@ -760,7 +762,7 @@ def list_metadata(request, server_id):
     #                       badRequest (400),
     #                       overLimit (413)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, metadata, use_values=False,
                                 status=200)
@@ -779,12 +781,14 @@ def update_metadata(request, server_id):
     #                       overLimit (413)
 
     req = utils.get_json_body(request)
+    credentials = request.credentials
+    userid = credentials.userid
 
     log.debug("User: %s, VM: %s, Action: update_metadata, Request: %s",
-              request.user_uniq, server_id, req)
+              userid, server_id, req)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     non_suspended=True, non_deleted=True)
+    vm = util.get_vm(server_id, credentials, non_suspended=True,
+                     non_deleted=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
 
@@ -812,7 +816,7 @@ def update_metadata(request, server_id):
 
     vm.save()
 
-    log.info("User %s updated metadata of VM %s", request.user_uniq, vm.id)
+    log.info("User %s updated metadata of VM %s", userid, vm.id)
 
     vm_meta = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
     return util.render_metadata(request, vm_meta, status=201)
@@ -827,7 +831,7 @@ def get_metadata_item(request, server_id, key):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       overLimit (413)
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
     meta = util.get_vm_meta(vm, key)
     d = {meta.meta_key: meta.meta_value}
     return util.render_meta(request, d, status=200)
@@ -847,10 +851,12 @@ def create_metadata_item(request, server_id, key):
     #                       overLimit (413)
 
     req = utils.get_json_body(request)
+    credentials = request.credentials
+    userid = credentials.userid
     log.debug("User: %s, VM: %s, Action: create_metadata, Request: %s",
-              request.user_uniq, server_id, req)
+              userid, server_id, req)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, credentials,
                      non_suspended=True, non_deleted=True)
     try:
         metadict = req['meta']
@@ -900,10 +906,12 @@ def delete_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413),
 
+    credentials = request.credentials
+    userid = credentials.userid
     log.debug("User: %s, VM: %s, Action: delete_metadata, Key: %s",
-              request.user_uniq, server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     non_suspended=True, non_deleted=True)
+              userid, server_id, key)
+    vm = util.get_vm(server_id, credentials, non_suspended=True,
+                     non_deleted=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()
@@ -920,7 +928,7 @@ def server_stats(request, server_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects)
+    vm = util.get_vm(server_id, request.credentials)
     secret = util.stats_encrypt(vm.backend_vm_id)
 
     stats = {
@@ -962,9 +970,10 @@ def start(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
+    credentials = request.credentials
     vm = servers.start(vm)
 
-    log.info("User %s started VM %s", request.user_uniq, vm.id)
+    log.info("User %s started VM %s", credentials.userid, vm.id)
 
     return HttpResponse(status=202)
 
@@ -974,8 +983,9 @@ def shutdown(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
+    credentials = request.credentials
     vm = servers.stop(vm)
-    log.info("User %s stopped VM %s", request.user_uniq, vm.id)
+    log.info("User %s stopped VM %s", credentials.userid, vm.id)
     return HttpResponse(status=202)
 
 
@@ -990,12 +1000,12 @@ def reboot(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
-
+    credentials = request.credentials
     reboot_type = args.get("type", "SOFT")
     if reboot_type not in ["SOFT", "HARD"]:
         raise faults.BadRequest("Invalid 'type' attribute.")
     vm = servers.reboot(vm, reboot_type=reboot_type)
-    log.info("User %s rebooted VM %s", request.user_uniq, vm.id)
+    log.info("User %s rebooted VM %s", credentials.userid, vm.id)
     return HttpResponse(status=202)
 
 
@@ -1010,6 +1020,7 @@ def set_firewall_profile(request, vm, args):
     #                       itemNotFound (404),
     #                       buildInProgress (409),
     #                       overLimit (413)
+    credentials = request.credentials
     profile = args.get("profile")
     if profile is None:
         raise faults.BadRequest("Missing 'profile' attribute")
@@ -1022,7 +1033,7 @@ def set_firewall_profile(request, vm, args):
     servers.set_firewall_profile(vm, profile=profile, nic=nic)
 
     log.info("User %s set firewall profile of VM %s, port %s",
-             request.user_uniq, vm.id, nic.id)
+             credentials.userid, vm.id, nic.id)
 
     return HttpResponse(status=202)
 
@@ -1040,6 +1051,7 @@ def resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
+    credentials = request.credentials
     flavor_id = args.get("flavorRef")
     if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
@@ -1048,7 +1060,7 @@ def resize(request, vm, args):
     servers.resize(vm, flavor=flavor)
 
     log.info("User %s resized VM %s to flavor %s",
-             request.user_uniq, vm.id, flavor.id)
+             credentials.userid, vm.id, flavor.id)
 
     return HttpResponse(status=202)
 
@@ -1102,8 +1114,9 @@ def os_get_vnc_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
+    credentials = request.credentials
     log.debug("User: %s, VM: %s, Action: get_osVNC console, Request: %s",
-              request.user_uniq, vm.id, args)
+              credentials.userid, vm.id, args)
 
     console_type = args.get('type')
     if console_type is None:
@@ -1140,7 +1153,7 @@ def os_get_vnc_console(request, vm, args):
         mimetype = 'application/json'
         data = json.dumps({'console': resp})
 
-    log.info("User %s got VNC console for VM %s", request.user_uniq, vm.id)
+    log.info("User %s got VNC console for VM %s", credentials.userid, vm.id)
 
     return HttpResponse(data, content_type=mimetype, status=200)
 
@@ -1157,8 +1170,9 @@ def get_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
+    credentials = request.credentials
     log.debug("User: %s, VM: %s, Action: get_console, Request: %s",
-              request.user_uniq, vm.id, args)
+              credentials.userid, vm.id, args)
 
     console_type = args.get("type")
     if console_type is None:
@@ -1178,7 +1192,7 @@ def get_console(request, vm, args):
         mimetype = 'application/json'
         data = json.dumps({'console': console_info})
 
-    log.info("User %s got console for VM %s", request.user_uniq, vm.id)
+    log.info("User %s got console for VM %s", credentials.userid, vm.id)
 
     return HttpResponse(data, content_type=mimetype, status=200)
 
@@ -1210,7 +1224,8 @@ def suspend(request, vm, args):
 
 @server_action('reassign')
 def reassign(request, vm, args):
-    if request.user_uniq != vm.userid:
+    credentials = request.credentials
+    if credentials.userid != vm.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
                                " of the VM.")
 
@@ -1227,27 +1242,28 @@ def reassign(request, vm, args):
     servers.reassign(vm, project, shared_to_project)
 
     log.info("User %s reassigned VM %s to project %s, shared %s",
-             request.user_uniq, vm.id, project, shared_to_project)
+             credentials.userid, vm.id, project, shared_to_project)
 
     return HttpResponse(status=200)
 
 
 @server_action("addFloatingIp")
 def add_floating_ip(request, vm, args):
+    credentials = request.credentials
+    userid = credentials.userid
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
 
     userid = vm.userid
-    floating_ip = util.get_floating_ip_by_address(userid,
-                                                  request.user_projects,
-                                                  address, for_update=True)
+    floating_ip = util.get_floating_ip_by_address(
+        credentials, address, for_update=True)
 
     servers.create_port(userid, floating_ip.network, machine=vm,
                         use_ipaddress=floating_ip)
 
     log.info("User %s attached floating IP %s to VM %s, address: %s,"
-             " network %s", request.user_uniq, floating_ip.id, vm.id,
+             " network %s", userid, floating_ip.id, vm.id,
              floating_ip.address, floating_ip.network_id)
 
     return HttpResponse(status=202)
@@ -1255,6 +1271,7 @@ def add_floating_ip(request, vm, args):
 
 @server_action("removeFloatingIp")
 def remove_floating_ip(request, vm, args):
+    credentials = request.credentials
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
@@ -1269,7 +1286,7 @@ def remove_floating_ip(request, vm, args):
     servers.delete_port(floating_ip.nic)
 
     log.info("User %s detached floating IP %s from VM %s",
-             request.user_uniq, floating_ip.id, vm.id)
+             credentials.userid, floating_ip.id, vm.id)
 
     return HttpResponse(status=202)
 
@@ -1283,7 +1300,7 @@ def volume_to_attachment(volume):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_volumes(request, server_id):
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+    vm = util.get_vm(server_id, request.credentials,
                      for_update=False)
 
     # TODO: Filter attachments!!
@@ -1296,10 +1313,10 @@ def get_volumes(request, server_id):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_volume_info(request, server_id, volume_id):
-    user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, request.user_projects,
+    credentials = request.credentials
+    vm = util.get_vm(server_id, credentials,
                      for_update=False)
-    volume = get_volume(user_id, request.user_projects, volume_id,
+    volume = get_volume(credentials, volume_id,
                         for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
     server_attachments._check_attachment(vm, volume)
@@ -1313,19 +1330,20 @@ def get_volume_info(request, server_id, volume_id):
 @transaction.commit_on_success
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
-    user_id = request.user_uniq
+    credentials = request.credentials
+    user_id = credentials.userid
 
     log.debug("User %s, VM: %s, Action: attach_volume, Request: %s",
-              request.user_uniq, server_id, req)
+              user_id, server_id, req)
 
-    vm = util.get_vm(server_id, user_id, request.user_projects,
+    vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True)
 
     attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
                                               required=True)
     # Get volume
     volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
-    volume = get_volume(user_id, request.user_projects, volume_id,
+    volume = get_volume(credentials, volume_id,
                         for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.attach_volume(vm, volume)
@@ -1340,13 +1358,14 @@ def attach_volume(request, server_id):
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def detach_volume(request, server_id, volume_id):
+    credentials = request.credentials
+    user_id = credentials.userid
     log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
-              request.user_uniq, server_id, volume_id)
+              user_id, server_id, volume_id)
 
-    user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, request.user_projects,
+    vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True)
-    volume = get_volume(user_id, request.user_projects, volume_id,
+    volume = get_volume(credentials, volume_id,
                         for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.detach_volume(vm, volume)

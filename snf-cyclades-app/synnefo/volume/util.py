@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ from synnefo.plankton import backend
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
-
+from synnefo.logic.policy import VolumePolicy
 
 
 def assert_snapshots_enabled(request):
@@ -106,9 +106,9 @@ def assign_volume_to_server(server, volume, index=None):
     return volume
 
 
-def get_volume(user_id, projects, volume_id, for_update=False,
+def get_volume(credentials, volume_id, for_update=False,
                non_deleted=False, exception=faults.ItemNotFound):
-    volumes = models.Volume.objects.for_user(user_id, projects)
+    volumes = VolumePolicy.filter_list(credentials)
     if for_update:
         volumes = volumes.select_for_update()
     try:

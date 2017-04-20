@@ -27,6 +27,7 @@ from snf_django.lib.api import utils
 from synnefo.api import util
 from synnefo.db.models import Network
 from synnefo.logic import networks
+from synnefo.logic.policy import NetworkPolicy
 
 from logging import getLogger
 
@@ -71,7 +72,7 @@ def network_demux(request, network_id):
 def network_action_demux(request, network_id):
     req = utils.get_json_body(request)
     network = util.get_network(network_id,
-                               request.user_uniq, request.user_projects,
+                               request.credentials,
                                for_update=True, non_deleted=True)
     action = req.keys()[0]
     try:
@@ -87,9 +88,8 @@ def network_action_demux(request, network_id):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_networks(request, detail=True):
-    user_networks = Network.objects.for_user(userid=request.user_uniq,
-                                             projects=request.user_projects)\
-                                   .order_by('id')
+    user_networks = NetworkPolicy.filter_list(request.credentials)\
+                                 .order_by('id')
 
     user_networks = api.utils.filter_modified_since(request,
                                                     objects=user_networks)
@@ -108,7 +108,7 @@ def list_networks(request, detail=True):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_network(request):
-    userid = request.user_uniq
+    userid = request.credentials.userid
     req = api.utils.get_json_body(request)
 
     log.debug("User: %s, Action: create_network, Request: %s", userid, req)
@@ -147,8 +147,7 @@ def create_network(request):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_network_details(request, network_id):
-    network = util.get_network(network_id, request.user_uniq,
-                               request.user_projects)
+    network = util.get_network(network_id, request.credentials)
 
     return render_network(request, network_to_dict(network, detail=True))
 
@@ -162,15 +161,16 @@ def update_network(request, network_id):
                                       required=True)
     new_name = api.utils.get_attribute(network, "name", attr_type=basestring)
 
-    network = util.get_network(network_id, request.user_uniq,
-                               request.user_projects, for_update=True,
+    network = util.get_network(network_id, request.credentials,
+                               for_update=True,
                                non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot rename the public network.")
 
     network = networks.rename(network, new_name)
 
-    log.info("User %s renamed network %s", request.user_uniq, network.id)
+    log.info("User %s renamed network %s",
+             request.credentials.userid, network.id)
 
     return render_network(request, network_to_dict(network), 200)
 
@@ -178,18 +178,19 @@ def update_network(request, network_id):
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_network(request, network_id):
-    network = util.get_network(network_id, request.user_uniq,
-                               request.user_projects, for_update=True,
+    credentials = request.credentials
+    network = util.get_network(network_id, credentials,
+                               for_update=True,
                                non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot delete the public network.")
 
-    log.debug("User: %s, Network: %s, Action: delete", request.user_uniq,
+    log.debug("User: %s, Network: %s, Action: delete", credentials.userid,
               network.id)
 
     networks.delete(network)
 
-    log.info("User %s deleted network %s", request.user_uniq, network.id)
+    log.info("User %s deleted network %s", credentials.userid, network.id)
 
     return HttpResponse(status=204)
 
@@ -235,13 +236,14 @@ def reassign_network(request, network, args):
     if project is None:
         raise api.faults.BadRequest("Missing 'project' attribute.")
 
+    userid = request.credentials.userid
     log.debug("User: %s, Network: %s, Action: reassign, Request: %s",
-              request.user_uniq, network.id, args)
+              userid, network.id, args)
 
     networks.reassign(network, project, shared_to_project)
 
     log.info("User %s reassigned network %s to project %s, shared: %s",
-             request.user_uniq, network.id, project, shared_to_project)
+             userid, network.id, project, shared_to_project)
 
     return HttpResponse(status=200)
 

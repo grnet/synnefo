@@ -599,7 +599,6 @@ def get_server_details(request, server_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
-@transaction.commit_on_success
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -620,18 +619,14 @@ def update_server_name(request, server_id):
     name = utils.get_attribute(req, "name", attr_type=basestring,
                                required=True)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_suspended=True, non_deleted=True)
+    servers.rename(server_id, new_name=name, credentials=credentials)
 
-    servers.rename(vm, new_name=name)
-
-    log.info("User %s renamed server %s", credentials.userid, vm.id)
+    log.info("User %s renamed server %s", credentials.userid, server_id)
 
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -645,11 +640,9 @@ def delete_server(request, server_id):
     log.debug("User: %s, VM: %s, Action: deleted", credentials.userid,
               server_id)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_suspended=True, non_deleted=True)
-    vm = servers.destroy(vm)
+    servers.destroy(server_id, credentials=credentials)
 
-    log.info("User %s deleted VM %s", credentials.userid, vm.id)
+    log.info("User %s deleted VM %s", credentials.userid, server_id)
 
     return HttpResponse(status=204)
 
@@ -675,17 +668,12 @@ def key_to_action(key):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
 def demux_server_action(request, server_id):
     credentials = request.credentials
     req = utils.get_json_body(request)
 
     if not isinstance(req, dict) and len(req) != 1:
         raise faults.BadRequest("Malformed request")
-
-    # Do not allow any action on deleted or suspended VMs
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True,  non_deleted=True, non_suspended=True)
 
     try:
         action = req.keys()[0]
@@ -703,7 +691,7 @@ def demux_server_action(request, server_id):
             raise faults.BadRequest("Action %s not supported" % action)
     action_args = utils.get_attribute(req, action, required=False,
                                       attr_type=dict)
-    return server_actions[action](request, vm, action_args)
+    return server_actions[action](request, server_id, action_args)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -966,31 +954,31 @@ def server_action(*names):
 
 
 @server_action('start', 'os-start')
-def start(request, vm, args):
+def start(request, server_id, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
     credentials = request.credentials
-    vm = servers.start(vm)
+    servers.start(server_id, credentials=credentials)
 
-    log.info("User %s started VM %s", credentials.userid, vm.id)
+    log.info("User %s started VM %s", credentials.userid, server_id)
 
     return HttpResponse(status=202)
 
 
 @server_action('shutdown', 'os-stop')
-def shutdown(request, vm, args):
+def shutdown(request, server_id, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
     #                       itemNotFound (404)
     credentials = request.credentials
-    vm = servers.stop(vm)
-    log.info("User %s stopped VM %s", credentials.userid, vm.id)
+    servers.stop(server_id, credentials=credentials)
+    log.info("User %s stopped VM %s", credentials.userid, server_id)
     return HttpResponse(status=202)
 
 
 @server_action('reboot')
-def reboot(request, vm, args):
+def reboot(request, server_id, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1004,13 +992,13 @@ def reboot(request, vm, args):
     reboot_type = args.get("type", "SOFT")
     if reboot_type not in ["SOFT", "HARD"]:
         raise faults.BadRequest("Invalid 'type' attribute.")
-    vm = servers.reboot(vm, reboot_type=reboot_type)
-    log.info("User %s rebooted VM %s", credentials.userid, vm.id)
+    servers.reboot(server_id, reboot_type=reboot_type, credentials=credentials)
+    log.info("User %s rebooted VM %s", credentials.userid, server_id)
     return HttpResponse(status=202)
 
 
 @server_action('firewallProfile')
-def set_firewall_profile(request, vm, args):
+def set_firewall_profile(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1028,18 +1016,18 @@ def set_firewall_profile(request, vm, args):
     nic_id = args.get("nic")
     if nic_id is None:
         raise faults.BadRequest("Missing 'nic' attribute")
-    nic = util.get_vm_nic(vm, nic_id)
 
-    servers.set_firewall_profile(vm, profile=profile, nic=nic)
+    servers.set_firewall_profile(server_id, profile=profile, nic_id=nic_id,
+                                 credentials=credentials)
 
     log.info("User %s set firewall profile of VM %s, port %s",
-             credentials.userid, vm.id, nic.id)
+             credentials.userid, server_id, nic_id)
 
     return HttpResponse(status=202)
 
 
 @server_action('resize')
-def resize(request, vm, args):
+def resize(request, server_id, args):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1055,18 +1043,16 @@ def resize(request, vm, args):
     flavor_id = args.get("flavorRef")
     if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
-    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
-                             for_project=vm.project)
-    servers.resize(vm, flavor=flavor)
+    servers.resize(server_id, flavor_id, credentials=credentials)
 
     log.info("User %s resized VM %s to flavor %s",
-             credentials.userid, vm.id, flavor.id)
+             credentials.userid, server_id, flavor_id)
 
     return HttpResponse(status=202)
 
 
 @server_action('os-getSPICEConsole')
-def os_get_spice_console(request, vm, args):
+def os_get_spice_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1077,13 +1063,13 @@ def os_get_spice_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.debug('Get Spice console for VM %s: %s', vm, args)
+    log.debug('Get Spice console for VM %s: %s', server_id, args)
 
     raise faults.NotImplemented('Spice console not implemented')
 
 
 @server_action('os-getRDPConsole')
-def os_get_rdp_console(request, vm, args):
+def os_get_rdp_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1094,7 +1080,7 @@ def os_get_rdp_console(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    log.debug('Get RDP console for VM %s: %s', vm, args)
+    log.debug('Get RDP console for VM %s: %s', server_id, args)
 
     raise faults.NotImplemented('RDP console not implemented')
 
@@ -1103,7 +1089,8 @@ machines_console_url = None
 
 
 @server_action('os-getVNCConsole')
-def os_get_vnc_console(request, vm, args):
+@transaction.commit_on_success
+def os_get_vnc_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1116,7 +1103,10 @@ def os_get_vnc_console(request, vm, args):
 
     credentials = request.credentials
     log.debug("User: %s, VM: %s, Action: get_osVNC console, Request: %s",
-              credentials.userid, vm.id, args)
+              credentials.userid, server_id, args)
+
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
 
     console_type = args.get('type')
     if console_type is None:
@@ -1159,7 +1149,8 @@ def os_get_vnc_console(request, vm, args):
 
 
 @server_action('console')
-def get_console(request, vm, args):
+@transaction.commit_on_success
+def get_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -1172,7 +1163,10 @@ def get_console(request, vm, args):
 
     credentials = request.credentials
     log.debug("User: %s, VM: %s, Action: get_console, Request: %s",
-              credentials.userid, vm.id, args)
+              credentials.userid, server_id, args)
+
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
 
     console_type = args.get("type")
     if console_type is None:
@@ -1198,37 +1192,33 @@ def get_console(request, vm, args):
 
 
 @server_action('changePassword')
-def change_password(request, vm, args):
+def change_password(request, server_id, args):
     raise faults.NotImplemented('Changing password is not supported.')
 
 
 @server_action('rebuild')
-def rebuild(request, vm, args):
+def rebuild(request, server_id, args):
     raise faults.NotImplemented('Rebuild not supported.')
 
 
 @server_action('confirmResize')
-def confirm_resize(request, vm, args):
+def confirm_resize(request, server_id, args):
     raise faults.NotImplemented('Resize not supported.')
 
 
 @server_action('revertResize')
-def revert_resize(request, vm, args):
+def revert_resize(request, server_id, args):
     raise faults.NotImplemented('Resize not supported.')
 
 
 @server_action('suspend')
-def suspend(request, vm, args):
+def suspend(request, server_id, args):
     raise faults.Forbidden('User is not allowed to suspend his server')
 
 
 @server_action('reassign')
-def reassign(request, vm, args):
+def reassign(request, server_id, args):
     credentials = request.credentials
-    if credentials.userid != vm.userid:
-        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
-                               " of the VM.")
-
     shared_to_project = args.get("shared_to_project", False)
 
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
@@ -1239,21 +1229,26 @@ def reassign(request, vm, args):
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
 
-    servers.reassign(vm, project, shared_to_project)
+    servers.reassign(
+        server_id, project, shared_to_project, credentials=credentials)
 
     log.info("User %s reassigned VM %s to project %s, shared %s",
-             credentials.userid, vm.id, project, shared_to_project)
+             credentials.userid, server_id, project, shared_to_project)
 
     return HttpResponse(status=200)
 
 
 @server_action("addFloatingIp")
-def add_floating_ip(request, vm, args):
+@transaction.commit_on_success
+def add_floating_ip(request, server_id, args):
     credentials = request.credentials
     userid = credentials.userid
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
+
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
 
     userid = vm.userid
     floating_ip = util.get_floating_ip_by_address(
@@ -1270,11 +1265,15 @@ def add_floating_ip(request, vm, args):
 
 
 @server_action("removeFloatingIp")
-def remove_floating_ip(request, vm, args):
+@transaction.commit_on_success
+def remove_floating_ip(request, server_id, args):
     credentials = request.credentials
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
+
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
 
     floating_ip = util.get_floating_ip_by_address(vm.userid,
                                                   request.user_projects,

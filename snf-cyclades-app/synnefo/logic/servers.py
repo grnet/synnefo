@@ -257,8 +257,15 @@ def create_server(vm, nics, volumes, flavor, image, personality, password,
     return jobID
 
 
+@transaction.commit_on_success
+def destroy(server_id, shutdown_timeout=None, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    return _destroy(vm, shutdown_timeout)
+
+
 @commands.server_command("DESTROY")
-def destroy(vm, shutdown_timeout=None):
+def _destroy(vm, shutdown_timeout=None):
     # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
     # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
@@ -271,20 +278,41 @@ def destroy(vm, shutdown_timeout=None):
     return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
+@transaction.commit_on_success
+def start(server_id, credentials):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    return _start(vm)
+
+
 @commands.server_command("START")
-def start(vm):
+def _start(vm):
     log.info("Starting VM %s", vm)
     return backend.startup_instance(vm)
 
 
+@transaction.commit_on_success
+def stop(server_id, shutdown_timeout=None, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    return _stop(vm, shutdown_timeout)
+
+
 @commands.server_command("STOP")
-def stop(vm, shutdown_timeout=None):
+def _stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
     return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
+@transaction.commit_on_success
+def reboot(server_id, reboot_type, shutdown_timeout=None, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    return _reboot(vm, reboot_type, shutdown_timeout)
+
+
 @commands.server_command("REBOOT")
-def reboot(vm, reboot_type, shutdown_timeout=None):
+def _reboot(vm, reboot_type, shutdown_timeout=None):
     if reboot_type not in ("SOFT", "HARD"):
         raise faults.BadRequest("Malformed request. Invalid reboot"
                                 " type %s" % reboot_type)
@@ -294,7 +322,12 @@ def reboot(vm, reboot_type, shutdown_timeout=None):
                                    shutdown_timeout=shutdown_timeout)
 
 
-def resize(vm, flavor):
+@transaction.commit_on_success
+def resize(server_id, flavor_id, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
+                             for_project=vm.project)
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
     comm = commands.server_command("RESIZE", action_fields=action_fields)
@@ -318,7 +351,9 @@ def _resize(vm, flavor):
 
 
 @transaction.commit_on_success
-def reassign(vm, project, shared_to_project):
+def reassign(server_id, project, shared_to_project, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
     commands.validate_server_action(vm, "REASSIGN")
 
     if vm.project == project:
@@ -351,8 +386,16 @@ def reassign(vm, project, shared_to_project):
     return vm
 
 
+@transaction.commit_on_success
+def set_firewall_profile(server_id, profile, nic_id, credentials=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    nic = util.get_vm_nic(vm, nic_id)
+    return _set_firewall_profile(vm, profile, nic)
+
+
 @commands.server_command("SET_FIREWALL_PROFILE")
-def set_firewall_profile(vm, profile, nic):
+def _set_firewall_profile(vm, profile, nic):
     log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
 
     if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
@@ -468,8 +511,11 @@ def console(vm, console_type):
     return console
 
 
-def rename(server, new_name):
+@transaction.commit_on_success
+def rename(server_id, new_name, credentials=None):
     """Rename a VirtualMachine."""
+    server = util.get_vm(server_id, credentials,
+                         for_update=True, non_deleted=True, non_suspended=True)
     utils.check_name_length(new_name,
                             VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")

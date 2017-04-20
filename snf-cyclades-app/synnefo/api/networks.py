@@ -17,7 +17,6 @@ from django.conf import settings
 from django.conf.urls import patterns
 from django.http import HttpResponse
 import json
-from synnefo.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
 
@@ -68,12 +67,8 @@ def network_demux(request, network_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
 def network_action_demux(request, network_id):
     req = utils.get_json_body(request)
-    network = util.get_network(network_id,
-                               request.credentials,
-                               for_update=True, non_deleted=True)
     action = req.keys()[0]
     try:
         f = NETWORK_ACTIONS[action]
@@ -83,7 +78,7 @@ def network_action_demux(request, network_id):
     if not isinstance(action_args, dict):
         raise api.faults.BadRequest("Invalid argument.")
 
-    return f(request, network, action_args)
+    return f(request, network_id, action_args)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -153,21 +148,13 @@ def get_network_details(request, network_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
-@transaction.commit_on_success
 def update_network(request, network_id):
     info = api.utils.get_json_body(request)
 
     network = api.utils.get_attribute(info, "network", attr_type=dict,
                                       required=True)
     new_name = api.utils.get_attribute(network, "name", attr_type=basestring)
-
-    network = util.get_network(network_id, request.credentials,
-                               for_update=True,
-                               non_deleted=True)
-    if network.public:
-        raise api.faults.Forbidden("Cannot rename the public network.")
-
-    network = networks.rename(network, new_name)
+    network = networks.rename(network_id, new_name, request.credentials)
 
     log.info("User %s renamed network %s",
              request.credentials.userid, network.id)
@@ -176,21 +163,14 @@ def update_network(request, network_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_network(request, network_id):
     credentials = request.credentials
-    network = util.get_network(network_id, credentials,
-                               for_update=True,
-                               non_deleted=True)
-    if network.public:
-        raise api.faults.Forbidden("Cannot delete the public network.")
-
     log.debug("User: %s, Network: %s, Action: delete", credentials.userid,
-              network.id)
+              network_id)
 
-    networks.delete(network)
+    networks.delete(network_id, credentials)
 
-    log.info("User %s deleted network %s", credentials.userid, network.id)
+    log.info("User %s deleted network %s", credentials.userid, network_id)
 
     return HttpResponse(status=204)
 
@@ -217,15 +197,7 @@ def network_to_dict(network, detail=True):
     return d
 
 
-def reassign_network(request, network, args):
-    if network.public:
-        raise api.faults.Forbidden("Cannot reassign public network")
-
-    if request.user_uniq != network.userid:
-        raise api.faults.Forbidden(
-            "Action 'reassign' is allowed only to the owner"
-            " of the network.")
-
+def reassign_network(request, network_id, args):
     shared_to_project = args.get("shared_to_project", False)
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
         raise api.faults.Forbidden(
@@ -238,12 +210,13 @@ def reassign_network(request, network, args):
 
     userid = request.credentials.userid
     log.debug("User: %s, Network: %s, Action: reassign, Request: %s",
-              userid, network.id, args)
+              userid, network_id, args)
 
-    networks.reassign(network, project, shared_to_project)
+    networks.reassign(
+        network_id, project, shared_to_project, request.credentials)
 
     log.info("User %s reassigned network %s to project %s, shared: %s",
-             userid, network.id, project, shared_to_project)
+             userid, network_id, project, shared_to_project)
 
     return HttpResponse(status=200)
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ def validate_network_action(network, action):
 def network_command(action):
     def decorator(func):
         @wraps(func)
-        @transaction.commit_on_success()
         def wrapper(network, *args, **kwargs):
             validate_network_action(network, action)
             return func(network, *args, **kwargs)
@@ -127,8 +126,14 @@ def create_network_in_backends(network):
     return job_ids
 
 
-@network_command("RENAME")
-def rename(network, name):
+@transaction.commit_on_success
+def rename(network_id, name, credentials):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    if network.public:
+        raise faults.Forbidden("Cannot rename the public network.")
+
+    validate_network_action(network, "RENAME")
     utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
                             "is too long")
     network.name = name
@@ -136,8 +141,15 @@ def rename(network, name):
     return network
 
 
-@network_command("DESTROY")
-def delete(network):
+@transaction.commit_on_success
+def delete(network_id, credentials):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    if network.public:
+        raise faults.Forbidden("Cannot delete the public network.")
+
+    validate_network_action(network, "DESTROY")
+
     if network.nics.exists():
         raise faults.Conflict("Cannot delete network. There are ports still"
                               " configured on network network %s" % network.id)
@@ -161,8 +173,19 @@ def delete(network):
     return network
 
 
-@network_command("REASSIGN")
-def reassign(network, project, shared_to_project):
+@transaction.commit_on_success
+def reassign(network_id, project, shared_to_project, credentials):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+
+    if network.public:
+        raise faults.Forbidden("Cannot reassign public network")
+
+    if credentials.userid != network.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the network.")
+
+    validate_network_action(network, "REASSIGN")
     if network.project == project:
         if network.shared_to_project != shared_to_project:
             log.info("%s network %s to project %s",

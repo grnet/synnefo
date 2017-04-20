@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@ import logging
 import functools
 
 from snf_django.lib.api import faults
+from synnefo.api import util
 from synnefo.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
@@ -68,18 +69,6 @@ def validate_ip_action(ip, action, silent=True):
         return fail(faults.BadRequest, "Unknown action: {}.".format(action))
 
     return True, None
-
-
-def ip_command(action):
-    """Common wrapper for IP commands."""
-    def decorator(func):
-        @functools.wraps(func)
-        @transaction.commit_on_success()
-        def wrapper(ip, *args, **kwargs):
-            validate_ip_action(ip, action, silent=False)
-            return func(ip, *args, **kwargs)
-        return wrapper
-    return decorator
 
 
 def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
@@ -183,11 +172,14 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
 
 
 @transaction.commit_on_success
-def create_floating_ip(userid, network=None, address=None, project=None,
-                       shared_to_project=False):
-    if network is None:
+def create_floating_ip(credentials, network_id=None, address=None,
+                       project=None, shared_to_project=False):
+    userid = credentials.userid
+    if network_id is None:
         floating_ip = allocate_public_ip(userid, floating_ip=True)
     else:
+        network = util.get_network(network_id, credentials,
+                                   for_update=True, non_deleted=True)
         if not network.floating_ip_pool:
             msg = ("Cannot allocate floating IP. Network %s is"
                    " not a floating IP pool.")
@@ -240,8 +232,21 @@ def get_free_floating_ip(userid, network=None):
         raise faults.Conflict(msg)
 
 
-@ip_command("DELETE")
-def delete_floating_ip(floating_ip):
+def delete_floating_ip(floating_ip_id, credentials):
+    floating_ip = _delete_floating_ip(floating_ip_id, credentials)
+
+    # Delete the floating IP from DB
+    log.info("Deleted floating IP '%s' of user '%s", floating_ip,
+             floating_ip.userid)
+    IPAddress.objects.filter(id=floating_ip_id).delete()
+
+
+@transaction.commit_on_success
+def _delete_floating_ip(floating_ip_id, credentials):
+    floating_ip = util.get_floating_ip_by_id(credentials,
+                                             floating_ip_id, for_update=True)
+    validate_ip_action(floating_ip, "DELETE", silent=False)
+
     # Lock network to prevent deadlock
     Network.objects.select_for_update().get(id=floating_ip.network_id)
 
@@ -252,15 +257,19 @@ def delete_floating_ip(floating_ip):
     floating_ip.save()
     # Release quota for floating IP
     quotas.issue_and_accept_commission(floating_ip, action="DESTROY")
-    transaction.commit()
-    # Delete the floating IP from DB
-    log.info("Deleted floating IP '%s' of user '%s", floating_ip,
-             floating_ip.userid)
-    floating_ip.delete()
+    return floating_ip
 
 
-@ip_command("REASSIGN")
-def reassign_floating_ip(floating_ip, project, shared_to_project):
+@transaction.commit_on_success
+def reassign_floating_ip(
+        floating_ip_id, project, shared_to_project, credentials):
+    floating_ip = util.get_floating_ip_by_id(credentials,
+                                             floating_ip_id,
+                                             for_update=True)
+    if credentials.userid != floating_ip.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the floating IP.")
+    validate_ip_action(floating_ip, "REASSIGN", silent=False)
     if floating_ip.project == project:
         if floating_ip.shared_to_project != shared_to_project:
             log.info("%s floating_ip %s to project %s",

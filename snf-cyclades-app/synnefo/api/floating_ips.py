@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import patterns
-from synnefo.db import transaction
 from django.conf import settings
 from django.http import HttpResponse
 import json
@@ -148,7 +147,6 @@ def compute_floating_ip_demux(request, floating_ip_id):
 
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_on_success
 def floating_ip_action_demux(request, floating_ip_id):
     credentials = request.credentials
     req = utils.get_json_body(request)
@@ -159,9 +157,6 @@ def floating_ip_action_demux(request, floating_ip_id):
     if len(req) != 1:
         raise faults.BadRequest('Malformed request.')
 
-    floating_ip = util.get_floating_ip_by_id(credentials,
-                                             floating_ip_id,
-                                             for_update=True)
     action = req.keys()[0]
     try:
         f = FLOATING_IP_ACTIONS[action]
@@ -171,7 +166,7 @@ def floating_ip_action_demux(request, floating_ip_id):
     if not isinstance(action_args, dict):
         raise faults.BadRequest("Invalid argument.")
 
-    return f(request, floating_ip, action_args)
+    return f(request, floating_ip_id, action_args)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -199,7 +194,6 @@ def get_floating_ip(request, floating_ip_id, view=_floatingip_details_view):
 
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_on_success
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_json_body(request)
@@ -222,7 +216,7 @@ def allocate_floating_ip(request):
 
     if network_id is None:
         floating_ip = \
-            ips.create_floating_ip(userid, project=project,
+            ips.create_floating_ip(credentials, project=project,
                                    shared_to_project=shared_to_project)
     else:
         try:
@@ -230,14 +224,12 @@ def allocate_floating_ip(request):
         except ValueError:
             raise faults.BadRequest("Invalid networkd ID.")
 
-        network = util.get_network(network_id, credentials,
-                                   for_update=True, non_deleted=True)
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",
                                           required=False,
                                           attr_type=basestring)
         floating_ip = \
-            ips.create_floating_ip(userid, network, address,
+            ips.create_floating_ip(credentials, network_id, address,
                                    project=project,
                                    shared_to_project=shared_to_project)
 
@@ -247,9 +239,9 @@ def allocate_floating_ip(request):
 
     return HttpResponse(_floatingip_details_view(floating_ip), status=200)
 
+
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_on_success
 def compute_allocate_floating_ip(request):
     """Allocate a floating IP."""
     credentials = request.credentials
@@ -257,7 +249,7 @@ def compute_allocate_floating_ip(request):
     log.debug("User: %s, Action: compute_create_floating_ip, Request: %s",
               userid, request)
 
-    floating_ip = ips.create_floating_ip(userid)
+    floating_ip = ips.create_floating_ip(credentials)
 
     log.info("User %s created floating IP %s, network %s, address %s",
              userid, floating_ip.id, floating_ip.network_id,
@@ -266,9 +258,9 @@ def compute_allocate_floating_ip(request):
     return HttpResponse(
         _compute_floatingip_details_view(floating_ip), status=200)
 
+
 @api.api_method(http_method='DELETE', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_on_success
 def release_floating_ip(request, floating_ip_id):
     """Release a floating IP."""
     credentials = request.credentials
@@ -276,20 +268,16 @@ def release_floating_ip(request, floating_ip_id):
     log.debug("User: %s, Floating IP: %s, Action: delete",
               credentials.userid, floating_ip_id)
 
-    floating_ip = util.get_floating_ip_by_id(credentials,
-                                             floating_ip_id, for_update=True)
-
-    ips.delete_floating_ip(floating_ip)
+    ips.delete_floating_ip(floating_ip_id, credentials)
 
     log.info("User %s deleted floating IP %s", credentials.userid,
-             floating_ip.id)
+             floating_ip_id)
 
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_on_success
 def update_floating_ip(request, floating_ip_id, view=_floatingip_details_view):
     """Update a floating IP."""
     raise faults.NotImplemented("Updating a floating IP is not supported.")
@@ -333,12 +321,8 @@ def list_floating_ip_pools(request):
     return HttpResponse(data, status=200)
 
 
-def reassign(request, floating_ip, args):
+def reassign(request, floating_ip_id, args):
     credentials = request.credentials
-    if credentials.userid != floating_ip.userid:
-        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
-                               " of the floating IP.")
-
     shared_to_project = args.get("shared_to_project", False)
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
         raise faults.Forbidden("Sharing resource to the members of the project"
@@ -348,10 +332,11 @@ def reassign(request, floating_ip, args):
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
 
-    ips.reassign_floating_ip(floating_ip, project, shared_to_project)
+    ips.reassign_floating_ip(
+        floating_ip_id, project, shared_to_project, credentials)
 
     log.info("User %s reaasigned floating IP %s to project %s, shared: %s",
-             credentials.userid, floating_ip.id, project, shared_to_project)
+             credentials.userid, floating_ip_id, project, shared_to_project)
 
     return HttpResponse(status=200)
 

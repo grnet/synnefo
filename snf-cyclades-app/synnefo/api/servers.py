@@ -1239,7 +1239,6 @@ def reassign(request, server_id, args):
 
 
 @server_action("addFloatingIp")
-@transaction.commit_on_success
 def add_floating_ip(request, server_id, args):
     credentials = request.credentials
     userid = credentials.userid
@@ -1247,46 +1246,18 @@ def add_floating_ip(request, server_id, args):
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-
-    userid = vm.userid
-    floating_ip = util.get_floating_ip_by_address(
-        credentials, address, for_update=True)
-
-    servers.create_port(userid, floating_ip.network, machine=vm,
-                        use_ipaddress=floating_ip)
-
-    log.info("User %s attached floating IP %s to VM %s, address: %s,"
-             " network %s", userid, floating_ip.id, vm.id,
-             floating_ip.address, floating_ip.network_id)
-
+    servers.add_floating_ip(server_id, address, credentials)
     return HttpResponse(status=202)
 
 
 @server_action("removeFloatingIp")
-@transaction.commit_on_success
 def remove_floating_ip(request, server_id, args):
     credentials = request.credentials
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-
-    floating_ip = util.get_floating_ip_by_address(vm.userid,
-                                                  request.user_projects,
-                                                  address, for_update=True)
-    if floating_ip.nic is None:
-        raise faults.BadRequest("Floating IP %s not attached to instance"
-                                % address)
-
-    servers.delete_port(floating_ip.nic)
-
-    log.info("User %s detached floating IP %s from VM %s",
-             credentials.userid, floating_ip.id, vm.id)
-
+    servers.remove_floating_ip(server_id, address, credentials)
     return HttpResponse(status=202)
 
 

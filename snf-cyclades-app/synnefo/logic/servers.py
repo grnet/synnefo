@@ -36,6 +36,7 @@ from synnefo.volume.volumes import _create_volume
 from synnefo.volume.util import get_volume, assign_volume_to_server
 from synnefo.logic import commands
 from synnefo import quotas
+from snf_django.lib import api
 
 log = logging.getLogger(__name__)
 
@@ -573,6 +574,20 @@ def change_owner(server, new_owner):
 
 
 @transaction.commit_on_success
+def add_floating_ip(server_id, address, credentials):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    floating_ip = util.get_floating_ip_by_address(
+        credentials, address, for_update=True)
+
+    userid = vm.userid
+    create_port(userid, floating_ip.network, machine=vm,
+                use_ipaddress=floating_ip)
+    log.info("User %s attached floating IP %s to VM %s, address: %s,"
+             " network %s", credentials.userid, floating_ip.id, vm.id,
+             floating_ip.address, floating_ip.network_id)
+
+
 def create_port(*args, **kwargs):
     vm = kwargs.get("machine", None)
     if vm is None and len(args) >= 3:
@@ -689,6 +704,24 @@ def associate_port_with_machine(port, machine):
 
 
 @transaction.commit_on_success
+def remove_floating_ip(server_id, address, credentials):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+
+    # This must be replaced by proper permission handling
+    ip_credentials = api.Credentials(vm.userid, credentials.user_projects)
+    floating_ip = util.get_floating_ip_by_address(
+        ip_credentials, address, for_update=True)
+    if floating_ip.nic is None:
+        raise faults.BadRequest("Floating IP %s not attached to instance"
+                                % address)
+
+    delete_port(floating_ip.nic)
+
+    log.info("User %s detached floating IP %s from VM %s",
+             credentials.userid, floating_ip.id, vm.id)
+
+
 def delete_port(port):
     """Delete a port by removing the NIC card from the instance.
 

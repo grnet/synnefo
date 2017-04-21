@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,22 +25,11 @@ from synnefo.util import units
 log = logging.getLogger(__name__)
 
 
-def create(user_id, volume, name, description, metadata, force=False):
-    """Create a snapshot from a given volume
-
-    Create a snapshot from a given volume. The snapshot is first created as
-    a file in Pithos, with specified metadata to indicate that it is a
-    snapshot. Then a job is sent to Ganeti backend to create the actual
-    snapshot of the volume.
-
-    Snapshots are only supported for volumes of ext_ disk template. Also,
-    the volume must be attached to some server.
-
-    """
-
-    if name is None:
-        raise faults.BadRequest("Snapshot 'name' is required")
-
+@transaction.commit_on_success
+def check_and_record(volume_id, credentials):
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
     # Check that taking a snapshot is feasible
     if volume.machine is None:
         raise faults.BadRequest("Cannot snapshot a detached volume!")
@@ -59,15 +48,21 @@ def create(user_id, volume, name, description, metadata, force=False):
     # generate unique snapshot names
     volume.snapshot_counter += 1
     volume.save()
-    transaction.commit()
 
+
+@transaction.commit_on_success
+def do_create(user_id, volume_id, name, description, metadata, force=False,
+              credentials=None):
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
     snapshot_metadata = {
         "name": name,
         "disk_format": "diskdump",
         "container_format": "bare",
         # Snapshot specific
         "description": description,
-        "volume_id": volume.id,
+        "volume_id": volume_id,
     }
 
     # Snapshots are used as images. We set the most important properties
@@ -127,6 +122,28 @@ def create(user_id, volume, name, description, metadata, force=False):
     snapshot = util.get_snapshot(user_id, snapshot_id)
 
     return snapshot
+
+
+def create(user_id, volume_id, name, description, metadata, force=False,
+           credentials=None):
+    """Create a snapshot from a given volume
+
+    Create a snapshot from a given volume. The snapshot is first created as
+    a file in Pithos, with specified metadata to indicate that it is a
+    snapshot. Then a job is sent to Ganeti backend to create the actual
+    snapshot of the volume.
+
+    Snapshots are only supported for volumes of ext_ disk template. Also,
+    the volume must be attached to some server.
+
+    """
+
+    if name is None:
+        raise faults.BadRequest("Snapshot 'name' is required")
+
+    check_and_record(volume_id, credentials)
+    return do_create(user_id, volume_id, name, description, metadata,
+                     force=force, credentials=credentials)
 
 
 def generate_mapfile_name(volume):

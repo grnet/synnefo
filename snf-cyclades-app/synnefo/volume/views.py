@@ -374,7 +374,6 @@ def snapshot_to_dict(snapshot, detail=True):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def create_snapshot(request):
     """Create a new Snapshot."""
     util.assert_snapshots_enabled(request)
@@ -387,9 +386,6 @@ def create_snapshot(request):
     snap_dict = utils.get_attribute(req, "snapshot", required=True,
                                     attr_type=dict)
     volume_id = utils.get_attribute(snap_dict, "volume_id", required=True)
-    volume = util.get_volume(credentials, volume_id,
-                             for_update=True, non_deleted=True,
-                             exception=faults.BadRequest)
 
     metadata = utils.get_attribute(snap_dict, "metadata", required=False,
                                    attr_type=dict, default={})
@@ -404,9 +400,10 @@ def create_snapshot(request):
     force = utils.get_attribute(req, "force", required=False, attr_type=bool,
                                 default=False)
 
-    snapshot = snapshots.create(user_id=user_id, volume=volume, name=name,
+    snapshot = snapshots.create(user_id=user_id, volume_id=volume_id,
+                                name=name,
                                 description=description, metadata=metadata,
-                                force=force)
+                                force=force, credentials=credentials)
 
     log.info("User %s created snapshot %s", user_id, snapshot["id"])
 

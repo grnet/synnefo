@@ -89,7 +89,6 @@ def get_volume_attachments(volume):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def create_volume(request):
     """Create a new Volume."""
 
@@ -150,26 +149,17 @@ def create_volume(request):
     # Get server ID to attach the volume.
     server_id = utils.get_attribute(vol_dict, "server_id", required=False)
 
-    server = None
-    if server_id:
-        try:
-            server = get_vm(server_id, credentials,
-                            for_update=True, non_deleted=True)
-        except faults.ItemNotFound:
-            raise faults.BadRequest("Server %s not found" % server_id)
-
     # Create the volume
-    volume = volumes.create(user_id=user_id, size=size, name=name,
+    volume = volumes.create(credentials, size=size, name=name,
                             source_volume_id=source_volume_id,
                             source_snapshot_id=source_snapshot_id,
                             source_image_id=source_image_id,
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server=server, project_id=project,
+                            server_id=server_id, project_id=project,
                             shared_to_project=shared_to_project)
 
-    server_id = server.id if server else None
     log.info("User %s created volume %s attached to server %s, shared: %s",
              user_id, volume.id, server_id, shared_to_project)
 
@@ -193,7 +183,6 @@ def list_volumes(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_volume(request, volume_id):
     credentials = request.credentials
     userid = credentials.userid
@@ -201,11 +190,9 @@ def delete_volume(request, volume_id):
     log.debug("User: %s, Volume: %s Action: delete_volume",
               userid, volume_id)
 
-    volume = util.get_volume(credentials,
-                             volume_id, for_update=True, non_deleted=True)
-    volumes.delete(volume)
+    volumes.delete(volume_id, credentials)
 
-    log.info("User %s deleted volume %s", userid, volume.id)
+    log.info("User %s deleted volume %s", userid, volume_id)
 
     return HttpResponse(status=202)
 
@@ -220,15 +207,11 @@ def get_volume(request, volume_id):
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
-@transaction.commit_on_success
 def update_volume(request, volume_id):
     credentials = request.credentials
     req = utils.get_json_body(request)
     log.debug("User: %s, Volume: %s Action: update_volume, Request: %s",
               credentials.userid, volume_id, req)
-
-    volume = util.get_volume(request.credentials,
-                             volume_id, for_update=True, non_deleted=True)
 
     vol_req = utils.get_attribute(req, "volume", attr_type=dict,
                                   required=True)
@@ -243,11 +226,11 @@ def update_volume(request, volume_id):
     if name is None and description is None and\
        delete_on_termination is None:
         raise faults.BadRequest("Nothing to update.")
-    else:
-        volume = volumes.update(volume, name, description,
-                                delete_on_termination)
 
-    log.info("User %s updated volume %s", credentials.userid, volume.id)
+    volume = volumes.update(volume_id, name, description,
+                            delete_on_termination, credentials=credentials)
+
+    log.info("User %s updated volume %s", credentials.userid, volume_id)
 
     data = json.dumps({'volume': volume_to_dict(volume, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
@@ -335,7 +318,6 @@ def delete_volume_metadata_item(request, volume_id, key):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def reassign_volume(request, volume_id, args):
     credentials = request.credentials
     req = utils.get_json_body(request)
@@ -352,17 +334,10 @@ def reassign_volume(request, volume_id, args):
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
 
-    volume = util.get_volume(request.credentials,
-                             volume_id, for_update=True, non_deleted=True)
-
-    if credentials.userid != volume.userid:
-        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
-                               " of the volume.")
-
-    volumes.reassign_volume(volume, project, shared_to_project)
+    volumes.reassign_volume(volume_id, project, shared_to_project, credentials)
 
     log.info("User %s reassigned volume %s to project %s, shared: %s",
-             credentials.userid, volume.id, project, shared_to_project)
+             credentials.userid, volume_id, project, shared_to_project)
 
     return HttpResponse(status=200)
 

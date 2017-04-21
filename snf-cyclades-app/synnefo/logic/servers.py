@@ -405,18 +405,14 @@ def _set_firewall_profile(vm, profile, nic):
 
 
 @commands.server_command("CONNECT")
-def connect(vm, network, port=None):
-    if port is None:
-        port = _create_port(vm.userid, network)
+def connect_port(vm, network, port):
     associate_port_with_machine(port, vm)
-
     log.info("Creating NIC %s with IPv4 Address %s", port, port.ipv4_address)
-
     return backend.connect_to_network(vm, port)
 
 
 @commands.server_command("DISCONNECT")
-def disconnect(vm, nic):
+def disconnect_port(vm, nic):
     log.info("Removing NIC %s from VM %s", nic, vm)
     return backend.disconnect_from_network(vm, nic)
 
@@ -652,7 +648,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
 
     if machine is not None:
         # Connect port to the instance.
-        machine = connect(machine, network, port)
+        machine = connect_port(machine, network, port)
         jobID = machine.task_job_id
         log.info("Created Port %s with IP %s. Ganeti Job: %s",
                  port, ipaddress, jobID)
@@ -704,7 +700,7 @@ def delete_port(port):
 
     vm = port.machine
     if vm is not None and not vm.deleted:
-        vm = disconnect(port.machine, port)
+        vm = disconnect_port(port.machine, port)
         log.info("Removing port %s, Job: %s", port, vm.task_job_id)
     else:
         backend.remove_nic_ips(port)

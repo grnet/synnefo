@@ -581,21 +581,53 @@ def add_floating_ip(server_id, address, credentials):
         credentials, address, for_update=True)
 
     userid = vm.userid
-    create_port(userid, floating_ip.network, machine=vm,
+    _create_port(userid, floating_ip.network, machine=vm,
                 use_ipaddress=floating_ip)
     log.info("User %s attached floating IP %s to VM %s, address: %s,"
              " network %s", credentials.userid, floating_ip.id, vm.id,
              floating_ip.address, floating_ip.network_id)
 
 
-def create_port(*args, **kwargs):
-    vm = kwargs.get("machine", None)
-    if vm is None and len(args) >= 3:
-        vm = args[2]
-    if vm is not None:
+@transaction.commit_on_success
+def create_port(credentials, network_id, machine_id=None, use_ipaddress=None,
+                fixed_ip_address=None,
+                address=None, name="", security_groups=None,
+                device_owner=None):
+    user_id = credentials.userid
+    vm = None
+    if machine_id is not None:
+        vm = util.get_vm(machine_id, credentials,
+                         for_update=True, non_deleted=True, non_suspended=True)
         if vm.nics.count() == settings.GANETI_MAX_NICS_PER_INSTANCE:
             raise faults.BadRequest("Maximum ports per server limit reached")
-    return _create_port(*args, **kwargs)
+
+    network = util.get_network(network_id, credentials,
+                               non_deleted=True, for_update=True)
+
+    ipaddress = None
+    if network.public:
+        # Creating a port to a public network is only allowed if the user has
+        # already a floating IP address in this network which is specified
+        # as the fixed IP address of the port
+        if fixed_ip_address is None:
+            msg = ("'fixed_ips' attribute must contain a floating IP address"
+                   " in order to connect to a public network.")
+            raise faults.BadRequest(msg)
+        ipaddress = util.get_floating_ip_by_address(credentials,
+                                                    fixed_ip_address,
+                                                    for_update=True)
+    elif fixed_ip_address:
+        ipaddress = ips.allocate_ip(network, user_id,
+                                    address=fixed_ip_address)
+
+    port = _create_port(user_id, network, machine=vm, use_ipaddress=ipaddress,
+                        address=address, name=name,
+                        security_groups=security_groups,
+                        device_owner=device_owner)
+
+    log.info("User %s created port %s, network: %s, machine: %s, ip: %s",
+             user_id, port.id, network, vm, ipaddress)
+    return port
 
 
 def _create_port(userid, network, machine=None, use_ipaddress=None,

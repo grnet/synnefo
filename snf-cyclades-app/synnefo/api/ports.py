@@ -83,7 +83,6 @@ def list_ports(request, detail=True):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
 def create_port(request):
     credentials = request.credentials
     user_id = credentials.userid
@@ -98,10 +97,6 @@ def create_port(request):
 
     device_id = api.utils.get_attribute(port_dict, "device_id", required=False,
                                         attr_type=(basestring, int))
-    vm = None
-    if device_id is not None:
-        vm = util.get_vm(device_id, credentials,
-                         for_update=True, non_deleted=True, non_suspended=True)
 
     # Check if the request contains a valid IPv4 address
     fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False,
@@ -126,25 +121,6 @@ def create_port(request):
     else:
         fixed_ip_address = None
 
-    network = util.get_network(net_id, credentials,
-                               non_deleted=True, for_update=True)
-
-    ipaddress = None
-    if network.public:
-        # Creating a port to a public network is only allowed if the user has
-        # already a floating IP address in this network which is specified
-        # as the fixed IP address of the port
-        if fixed_ip_address is None:
-            msg = ("'fixed_ips' attribute must contain a floating IP address"
-                   " in order to connect to a public network.")
-            raise faults.BadRequest(msg)
-        ipaddress = util.get_floating_ip_by_address(credentials,
-                                                    fixed_ip_address,
-                                                    for_update=True)
-    elif fixed_ip_address:
-        ipaddress = ips.allocate_ip(network, user_id,
-                                    address=fixed_ip_address)
-
     name = api.utils.get_attribute(port_dict, "name", required=False,
                                    attr_type=basestring)
     if name is None:
@@ -165,12 +141,10 @@ def create_port(request):
                 raise faults.BadRequest("Invalid 'security_groups' field.")
             sg_list.append(sg)
 
-    new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
-                                   machine=vm, name=name,
+    new_port = servers.create_port(credentials, net_id,
+                                   fixed_ip_address=fixed_ip_address,
+                                   machine_id=device_id, name=name,
                                    security_groups=sg_list)
-
-    log.info("User %s created port %s, network: %s, machine: %s, ip: %s",
-             user_id, new_port.id, network, vm, ipaddress)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

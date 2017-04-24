@@ -35,6 +35,7 @@ from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
 from synnefo.volume.util import get_volume, assign_volume_to_server
 from synnefo.logic import commands
+from synnefo.logic import server_attachments
 from synnefo import quotas
 from snf_django.lib import api
 
@@ -997,3 +998,27 @@ def _port_for_request(credentials, network_dict):
     else:
         raise faults.BadRequest("Network 'uuid' or 'port' attribute"
                                 " is required.")
+
+
+@transaction.commit_on_success
+def attach_volume(server_id, volume_id, credentials):
+    user_id = credentials.userid
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+
+    volume = get_volume(credentials, volume_id,
+                        for_update=True, non_deleted=True,
+                        exception=faults.BadRequest)
+    server_attachments.attach_volume(vm, volume)
+    log.info("User %s attached volume %s to VM %s", user_id, volume.id, vm.id)
+    return volume
+
+
+@transaction.commit_on_success
+def detach_volume(server_id, volume_id, credentials):
+    user_id = credentials.userid
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = get_volume(credentials, volume_id,
+                        for_update=True, non_deleted=True,
+                        exception=faults.BadRequest)
+    server_attachments.detach_volume(vm, volume)
+    log.info("User %s detached volume %s to VM %s", user_id, volume.id, vm.id)

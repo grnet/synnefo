@@ -1297,7 +1297,6 @@ def get_volume_info(request, server_id, volume_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     credentials = request.credentials
@@ -1306,40 +1305,25 @@ def attach_volume(request, server_id):
     log.debug("User %s, VM: %s, Action: attach_volume, Request: %s",
               user_id, server_id, req)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True)
-
     attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
                                               required=True)
     # Get volume
     volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
-    volume = get_volume(credentials, volume_id,
-                        for_update=True, non_deleted=True,
-                        exception=faults.BadRequest)
-    vm = server_attachments.attach_volume(vm, volume)
+
+    volume = servers.attach_volume(server_id, volume_id, credentials)
     attachment = volume_to_attachment(volume)
     data = json.dumps({'volumeAttachment': attachment})
-
-    log.info("User %s attached volume %s to VM %s", user_id, volume.id, vm.id)
 
     return HttpResponse(data, status=202)
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
 def detach_volume(request, server_id, volume_id):
     credentials = request.credentials
     user_id = credentials.userid
     log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
               user_id, server_id, volume_id)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True)
-    volume = get_volume(credentials, volume_id,
-                        for_update=True, non_deleted=True,
-                        exception=faults.BadRequest)
-    vm = server_attachments.detach_volume(vm, volume)
-
-    log.info("User %s detached volume %s to VM %s", user_id, volume.id, vm.id)
+    servers.detach_volume(server_id, volume_id, credentials)
     # TODO: Check volume state, send job to detach volume
     return HttpResponse(status=202)

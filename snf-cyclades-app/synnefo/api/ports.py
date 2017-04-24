@@ -18,7 +18,6 @@ import ipaddr
 from django.conf.urls import patterns
 from django.http import HttpResponse
 import json
-from synnefo.db import transaction
 from django.template.loader import render_to_string
 
 from snf_django.lib import api
@@ -192,28 +191,10 @@ def update_port(request, port_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_port(request, port_id):
     log.info('delete_port %s', port_id)
     credentials = request.credentials
-    user_id = credentials.userid
-    port = util.get_port(port_id, credentials,
-                         for_update=True)
-
-    # Deleting port that is connected to a public network is allowed only if
-    # the port has an associated floating IP address.
-    if port.network.public and not port.ips.filter(floating_ip=True,
-                                                   deleted=False).exists():
-        raise faults.Forbidden("Cannot disconnect from public network.")
-
-    vm = port.machine
-    if vm is not None and vm.suspended:
-        raise faults.Forbidden("Administratively Suspended VM.")
-
-    servers.delete_port(port)
-
-    log.info("User %s deleted port %s", user_id, port_id)
-
+    servers.delete_port(port_id, credentials)
     return HttpResponse(status=204)
 
 #util functions

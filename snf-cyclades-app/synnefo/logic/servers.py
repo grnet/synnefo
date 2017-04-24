@@ -765,13 +765,33 @@ def remove_floating_ip(server_id, address, credentials):
         raise faults.BadRequest("Floating IP %s not attached to instance"
                                 % address)
 
-    delete_port(floating_ip.nic)
+    _delete_port(floating_ip.nic)
 
     log.info("User %s detached floating IP %s from VM %s",
              credentials.userid, floating_ip.id, vm.id)
 
 
-def delete_port(port):
+@transaction.commit_on_success
+def delete_port(port_id, credentials):
+    user_id = credentials.userid
+    port = util.get_port(port_id, credentials, for_update=True)
+
+    # Deleting port that is connected to a public network is allowed only if
+    # the port has an associated floating IP address.
+    if port.network.public and not port.ips.filter(floating_ip=True,
+                                                   deleted=False).exists():
+        raise faults.Forbidden("Cannot disconnect from public network.")
+
+    vm = port.machine
+    if vm is not None and vm.suspended:
+        raise faults.Forbidden("Administratively Suspended VM.")
+
+    _delete_port(port)
+
+    log.info("User %s deleted port %s", user_id, port_id)
+
+
+def _delete_port(port):
     """Delete a port by removing the NIC card from the instance.
 
     Send a Job to remove the NIC card from the instance. The port

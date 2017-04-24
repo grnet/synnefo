@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo import quotas
-from synnefo.db.models import VirtualMachine
 
 
 log = logging.getLogger(__name__)
@@ -95,6 +94,10 @@ def server_command(action, action_fields=None, for_user=None):
             if user_id is None:
                 user_id = vm.userid
 
+            if action == "BUILD":
+                raise AssertionError(
+                    "decorator does not support action 'BUILD'")
+
             validate_server_action(vm, action)
             vm.action = action
 
@@ -104,26 +107,6 @@ def server_command(action, action_fields=None, for_user=None):
                                               commission_name=commission_name,
                                               for_user=user_id)
             vm.save()
-
-            # XXX: Special case for server creation!
-            if action == "BUILD":
-                serial = vm.serial
-                serial.pending = False
-                serial.accept = True
-                serial.save()
-                # Perform a commit, because the VirtualMachine must be saved to
-                # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
-                # Otherwise, messages will arrive from snf-dispatcher about
-                # this instance, before the VM is stored in DB.
-                transaction.commit()
-                # After committing the locks are released. Refetch the instance
-                # to guarantee x-lock.
-                vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-                # XXX: Special case for server creation: we must accept the
-                # commission because the VM has been stored in DB. Also, if
-                # communication with Ganeti fails, the job will never reach
-                # Ganeti, and the commission will never be resolved.
-                quotas.accept_resource_serial(vm)
 
             # Send the job to Ganeti and get the associated jobID
             try:

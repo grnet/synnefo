@@ -27,7 +27,7 @@ from django.conf import settings
 from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.db.models import (NetworkInterface, VirtualMachine,
+from synnefo.db.models import (NetworkInterface, VirtualMachine, Volume,
                                VirtualMachineMetadata, IPAddressHistory,
                                IPAddress, Network, Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
@@ -45,7 +45,6 @@ log = logging.getLogger(__name__)
 server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 
-@transaction.commit_on_success
 def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None, helper=False,
@@ -124,6 +123,20 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         util.get_keypair(key_name, userid).content for key_name in key_names
     ])
 
+    vm_id, port_ids, volume_ids = _db_create_server(
+        credentials, name, flavor, image, metadata, networks, use_backend,
+        project, volumes, helper, shared_to_project,
+        key_names)
+
+    return _create_server(vm_id, port_ids, volume_ids, flavor, image,
+                          personality, password, auth_keys)
+
+
+@transaction.commit_on_success
+def _db_create_server(
+        credentials, name, flavor, image, metadata, networks, use_backend,
+        project, volumes, helper, shared_to_project, key_names):
+
     # Create the ports for the server
     ports = create_instance_ports(credentials, networks)
 
@@ -131,7 +144,7 @@ def create(credentials, name, password, flavor, image_id, metadata={},
     # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(name=name,
                                        backend=use_backend,
-                                       userid=userid,
+                                       userid=credentials.userid,
                                        project=project,
                                        shared_to_project=shared_to_project,
                                        imageid=image["id"],
@@ -165,7 +178,8 @@ def create(credentials, name, password, flavor, image_id, metadata={},
                                         " status" % v.status)
             v.delete_on_termination = vol_info["delete_on_termination"]
         else:
-            v = _create_volume(user_id=userid, volume_type=server_vtype,
+            v = _create_volume(user_id=credentials.userid,
+                               volume_type=server_vtype,
                                project=project, index=index,
                                shared_to_project=shared_to_project,
                                **vol_info)
@@ -183,11 +197,10 @@ def create(credentials, name, password, flavor, image_id, metadata={},
             meta_value=val,
             vm=vm)
 
-    # Create the server in Ganeti.
-    vm = create_server(vm, ports, server_volumes, flavor, image, personality,
-                       password, auth_keys)
-
-    return vm
+    quotas.issue_and_accept_commission(vm, action="BUILD")
+    return (vm.id,
+            [port.id for port in ports],
+            [volume.id for volume in server_volumes])
 
 
 @transaction.commit_on_success
@@ -210,12 +223,18 @@ def allocate_new_server(userid, project, flavor):
     return use_backend
 
 
-@commands.server_command("BUILD")
-def create_server(vm, nics, volumes, flavor, image, personality, password,
-                  auth_keys):
+@transaction.commit_on_success
+def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
+                   password, auth_keys):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
+
+    vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
+    nics = NetworkInterface.objects.select_for_update().filter(
+        id__in=port_ids)
+    volumes = Volume.objects.select_for_update().filter(
+        id__in=volume_ids)
 
     # If the root volume has a provider, then inform snf-image to not fill
     # the volume with data
@@ -256,7 +275,12 @@ def create_server(vm, nics, volumes, flavor, image, personality, password,
     log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
              vm.userid, vm, nics, vm.backend, str(jobID))
 
-    return jobID
+    # store the new task in the VM
+    if jobID is not None:
+        vm.task = "BUILD"
+        vm.task_job_id = jobID
+    vm.save()
+    return vm
 
 
 @transaction.commit_on_success

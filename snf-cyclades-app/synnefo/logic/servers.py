@@ -706,6 +706,23 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     return port
 
 
+@transaction.commit_on_success
+def update_port(port_id, credentials, name=None, security_groups=None):
+    port = util.get_port(port_id, credentials, for_update=True)
+    if name:
+        port.name = name
+
+    if security_groups:
+        #clear the old security groups
+        port.security_groups.clear()
+
+        #add the new groups
+        port.security_groups.add(*security_groups)
+    port.save()
+    log.info("User %s updated port %s", credentials.userid, port_id)
+    return port
+
+
 def associate_port_with_machine(port, machine):
     """Associate a Port with a VirtualMachine.
 

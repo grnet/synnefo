@@ -158,14 +158,11 @@ def get_port_details(request, port_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
-@transaction.commit_on_success
 def update_port(request, port_id):
     '''
     You can update only name, security_groups
     '''
     credentials = request.credentials
-    port = util.get_port(port_id, credentials,
-                         for_update=True)
     req = api.utils.get_json_body(request)
 
     log.debug("User %s, Port %s, Action: update, Request: %s",
@@ -176,14 +173,11 @@ def update_port(request, port_id):
     name = api.utils.get_attribute(port_info, "name", required=False,
                                    attr_type=basestring)
 
-    if name:
-        port.name = name
-
     security_groups = api.utils.get_attribute(port_info, "security_groups",
                                               required=False, attr_type=list)
 
+    sg_list = []
     if security_groups:
-        sg_list = []
         #validate security groups
         for gid in security_groups:
             try:
@@ -192,15 +186,8 @@ def update_port(request, port_id):
                 raise faults.BadRequest("Invalid 'security_groups' field.")
             sg_list.append(sg)
 
-        #clear the old security groups
-        port.security_groups.clear()
-
-        #add the new groups
-        port.security_groups.add(*sg_list)
-    port.save()
-
-    log.info("User %s updated port %s", request.credentials.userid, port.id)
-
+    port = servers.update_port(port_id, credentials, name=name,
+                        security_groups=sg_list)
     return render_port(request, port_to_dict(port), 200)
 
 

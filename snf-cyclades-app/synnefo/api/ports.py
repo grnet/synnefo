@@ -166,7 +166,8 @@ def create_port(request):
             sg_list.append(sg)
 
     new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
-                                   machine=vm, name=name)
+                                   machine=vm, name=name,
+                                   security_groups=sg_list)
 
     log.info("User %s created port %s, network: %s, machine: %s, ip: %s",
              user_id, new_port.id, network, vm, ipaddress)

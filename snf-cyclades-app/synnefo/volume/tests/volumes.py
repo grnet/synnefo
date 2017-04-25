@@ -21,7 +21,7 @@ from synnefo.db.models import Volume, VirtualMachine
 from synnefo.volume import volumes
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
-from snf_django.lib.api import faults
+from snf_django.lib.api import faults, Credentials
 from mock import patch
 from copy import deepcopy
 
@@ -218,10 +218,11 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
                                               disk_template="ext_archipelago")
         self.file_vt = mf.VolumeTypeFactory(name="file", disk_template="file")
 
+        self.credentials = Credentials("test_user")
         # Common arguments
         self.userid = "test_user"
         self.size = 1
-        self.kwargs = {"user_id": self.userid, }
+        self.kwargs = {"credentials": self.credentials, }
 
         # VMs
         self.archip_vm = mf.VirtualMachineFactory(
@@ -274,7 +275,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
     def test_create_bad_volume_types(self, mrapi):
         """Various tests for the create action regarding volume types."""
         # No volume type
-        kwargs = self.create_kwargs(server=None)
+        kwargs = self.create_kwargs(server_id=None)
         with self.assertRaises(faults.BadRequest):
             volumes.create(**kwargs)
 
@@ -283,21 +284,21 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
                        " with volume type '{}'.".format(
                            self.archip_vt.id, self.file_vt.id)
         kwargs = self.create_kwargs(volume_type_id=self.archip_vt.id,
-                                    server=self.file_vm)
+                                    server_id=self.file_vm.id)
         with self.assertRaisesMessage(faults.BadRequest, conflict_msg):
             volumes.create(**kwargs)
 
         # Non-detachable volume type
         non_detachable_msg = "Volume type 'file' is not detachable"
         kwargs = self.create_kwargs(volume_type_id=self.file_vt.id,
-                                    server=None)
+                                    server_id=None)
         with self.assertRaisesMessage(faults.BadRequest, non_detachable_msg):
             volumes.create(**kwargs)
 
     def test_create_standalone(self, mrapi):
         """Test if standalone volumes are created properly."""
         kwargs = self.create_kwargs(volume_type_id=self.archip_vt.id,
-                                    server=None)
+                                    server_id=None)
         with mocked_quotaholder() as m:
             vol = volumes.create(**kwargs)
         expected_commission = {(self.userid, "cyclades.disk"): self.size << 30}
@@ -312,7 +313,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
 
     def create_and_attach(self, mrapi, vm):
         """Common tests for create and attach operation."""
-        kwargs = self.create_kwargs(server=vm)
+        kwargs = self.create_kwargs(server_id=vm.id)
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
             vol = volumes.create(**kwargs)
@@ -350,7 +351,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         svol = mf.VolumeFactory(userid=self.userid, status="IN_USE",
                                 volume_type=self.file_vm.flavor.volume_type)
         kwargs = deepcopy(self.kwargs)
-        kwargs = self.create_kwargs(size=svol.size, server=self.file_vm)
+        kwargs = self.create_kwargs(size=svol.size, server_id=self.file_vm.id)
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
@@ -403,7 +404,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
     def test_create_from_snapshot(self, mimage, mrapi):
         # Wrong source
         mimage().__enter__().get_snapshot.side_effect = faults.ItemNotFound
-        kwargs = self.create_kwargs(server=self.archip_vm,
+        kwargs = self.create_kwargs(server_id=self.archip_vm.id,
                                     source_snapshot_id=421)
         self.assertRaises(faults.BadRequest, volumes.create, **kwargs)
 
@@ -421,7 +422,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
 
         mrapi().ModifyInstance.return_value = 42
         kwargs = self.create_kwargs(source_snapshot_id=12,
-                                    server=self.archip_vm)
+                                    server_id=self.archip_vm.id)
         with mocked_quotaholder():
             vol = volumes.create(**kwargs)
 
@@ -556,14 +557,15 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
                                index=0, size=self.size)
         self.assertRaises(faults.BadRequest,
                           volumes.delete,
-                          vol)
+                          vol.id, credentials=self.credentials)
 
         # We can delete everything else
         vol.index = 1
         vol.save()
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
-            volumes.delete(vol)
+            volumes.delete(vol.id, credentials=self.credentials)
+        vol = Volume.objects.get(id=vol.id)
         self.assertEqual(vol.backendjobid, 42)
         args, kwargs = mrapi().ModifyInstance.call_args
 
@@ -583,13 +585,13 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
                                userid=self.userid, size=self.size)
         message = "Volume is in invalid state: %s" % vol.status
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.delete(vol)
+            volumes.delete(vol.id, credentials=self.credentials)
 
         # Test if the deletion and quota logic works as expected
         vol.status = "AVAILABLE"
         vol.save()
         with mocked_quotaholder() as m:
-            vol = volumes.delete(vol)
+            vol = volumes.delete(vol.id, credentials=self.credentials)
         expected_commission = {(self.userid, "cyclades.disk"):
                                - (self.size << 30)}
         self.assertCommissionEqual(m, expected_commission)
@@ -609,7 +611,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
 
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
-            vol = volumes.delete(vol)
+            vol = volumes.delete(vol.id, credentials=self.credentials)
 
         self.assertNoCommission(m)
         self.assertEqual(vol.machine, vm)
@@ -634,11 +636,12 @@ class VolumesTransactionsTest(QuotaAssertions,
 
         self.volume_name = "Unfortunate volume"
         self.size = 1
+        self.credentials = Credentials("test_user")
         self.kwargs = {
-            "user_id": self.userid,
+            "credentials": self.credentials,
             "size": self.size,
             "volume_type_id": self.archip_vt.id,
-            "server": None,
+            "server_id": None,
             "name": self.volume_name,
         }
 
@@ -689,14 +692,14 @@ class VolumesTransactionsTest(QuotaAssertions,
 
     def test_create_and_attach_ex(self, mrapi):
         """Create a volume and crash when attaching it to a VM."""
-        self.kwargs["server"] = self.archip_vm
+        self.kwargs["server_id"] = self.archip_vm.id
         mrapi().ModifyInstance.return_value = 42
         with patch("synnefo.logic.backend.attach_volume") as m:
             m.side_effect = MurphysLaw
             with self.assertRaises(MurphysLaw):
                 with mocked_quotaholder() as mqh:
                     volumes.create(**self.kwargs)
-        del self.kwargs["server"]
+        del self.kwargs["server_id"]
 
         # Assert that the commission was sent.
         expected_commission = {(self.userid, "cyclades.disk"): self.size << 30}

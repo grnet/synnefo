@@ -21,9 +21,10 @@ from synnefo.logic import backend
 from synnefo.logic.backend import GNT_EXTP_VOLTYPESPEC_PREFIX
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
+from synnefo.db import transaction
 from mock import patch, Mock
 
-from snf_django.lib.api import faults
+from snf_django.lib.api import faults, Credentials
 from snf_django.utils.testing import mocked_quotaholder, override_settings
 from django.conf import settings
 from copy import deepcopy
@@ -45,11 +46,13 @@ fixed_image.return_value = {'location': 'pithos://foo',
 @patch('synnefo.api.util.get_image', fixed_image)
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCreationTest(TransactionTestCase):
+    def setUp(self):
+        self.credentials = Credentials("test")
 
     def test_create(self, mrapi):
         flavor = mfactory.FlavorFactory()
         kwargs = {
-            "userid": "test",
+            "credentials": self.credentials,
             "name": "test_vm",
             "password": "1234",
             "flavor": flavor,
@@ -157,7 +160,9 @@ class ServerTest(TransactionTestCase):
             mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
             mrapi().ModifyInstance.return_value = 42
             with override_settings(settings, GANETI_USE_HOTPLUG=True):
-                servers.connect(vm, net)
+                with transaction.commit_on_success():
+                    port = servers._create_port(vm.userid, net)
+                    servers.connect_port(vm, net, port)
             pool = net.get_ip_pools(locked=False)[0]
             self.assertFalse(pool.is_available("192.168.2.2"))
             args, kwargs = mrapi().ModifyInstance.call_args
@@ -175,7 +180,9 @@ class ServerTest(TransactionTestCase):
         net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         with override_settings(settings, GANETI_USE_HOTPLUG=True):
-            servers.connect(vm, net)
+            with transaction.commit_on_success():
+                port = servers._create_port(vm.userid, net)
+                servers.connect_port(vm, net, port)
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
@@ -268,46 +275,56 @@ class ServerTest(TransactionTestCase):
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCommandTest(TransactionTestCase):
+    def setUp(self):
+        self.credentials = Credentials("admin_id", is_admin=True)
 
     def test_pending_task(self, mrapi):
         vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
-        self.assertRaises(faults.BuildInProgress, servers.start, vm)
+        self.assertRaises(faults.BuildInProgress, servers.start, vm.id,
+                          credentials=self.credentials)
         # Assert always succeeds
         vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
         mrapi().DeleteInstance.return_value = 1
         with mocked_quotaholder():
-            servers.destroy(vm)
+            servers.destroy(vm.id, credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
         with mocked_quotaholder():
-            servers.destroy(vm)
+            servers.destroy(vm.id, credentials=self.credentials)
 
     def test_deleted_vm(self, mrapi):
         vm = mfactory.VirtualMachineFactory(deleted=True)
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          self.credentials)
 
     def test_invalid_operstate_for_action(self, mrapi):
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
-        self.assertRaises(faults.BadRequest, servers.stop, vm)
+        self.assertRaises(faults.BadRequest, servers.stop, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         flavor = mfactory.FlavorFactory()
-        self.assertRaises(faults.BadRequest, servers.resize, vm, flavor)
+        self.assertRaises(faults.BadRequest, servers.resize, vm.id, flavor,
+                          credentials=self.credentials)
         # Check that connect/disconnect is allowed only in STOPPED vms
         # if hotplug is disabled.
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         network = mfactory.NetworkFactory(state="ACTIVE")
         with override_settings(settings, GANETI_USE_HOTPLUG=False):
-            self.assertRaises(faults.BadRequest, servers.connect, vm, network)
-            self.assertRaises(faults.BadRequest, servers.disconnect, vm,
-                              network)
-        # test valid
+            self.assertRaises(
+                faults.BadRequest, servers.connect_port, vm, network)
+            self.assertRaises(faults.BadRequest, servers.disconnect_port,
+                              vm, network)
+        #test valid
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder():
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
+        vm = models.VirtualMachine.objects.get(id=vm.id)
         vm.task = None
         vm.task_job_id = None
         vm.save()
@@ -315,7 +332,7 @@ class ServerCommandTest(TransactionTestCase):
             quotas.accept_resource_serial(vm)
         mrapi().RebootInstance.return_value = 1
         with mocked_quotaholder():
-            servers.reboot(vm, "HARD")
+            servers.reboot(vm.id, "HARD", credentials=self.credentials)
 
     def test_commission(self, mrapi):
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
@@ -323,21 +340,23 @@ class ServerCommandTest(TransactionTestCase):
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=200,
                                                       resolved=False,
                                                       pending=True)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
             with self.assertRaises(quotas.ResolveError):
-                servers.start(vm)
+                servers.start(vm.id, credentials=self.credentials)
         # Not pending, rejct
         vm.task = None
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=400,
                                                       resolved=False,
                                                       pending=False,
                                                       accept=False)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
             m.resolve_commissions.assert_called_once_with([],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
@@ -347,10 +366,11 @@ class ServerCommandTest(TransactionTestCase):
                                                       resolved=False,
                                                       pending=False,
                                                       accept=True)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
             m.resolve_commissions.assert_called_once_with([serial.serial],
                                                           [])
             self.assertTrue(m.issue_one_commission.called)
@@ -358,10 +378,11 @@ class ServerCommandTest(TransactionTestCase):
         mrapi().StartupInstance.side_effect = ValueError
         vm.task = None
         vm.serial = None
+        vm.save()
         # Test reject if Ganeti erro
         with mocked_quotaholder() as m:
             try:
-                servers.start(vm)
+                servers.start(vm.id, credentials=self.credentials)
             except Exception:
                 (accept, reject), kwargs = m.resolve_commissions.call_args
                 self.assertEqual(accept, [])
@@ -380,18 +401,21 @@ class ServerCommandTest(TransactionTestCase):
         with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STOPPED"
-            servers.start(vm)
+            vm.save()
+            servers.start(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "START")
             self.assertEqual(vm.task_job_id, 1)
         with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STARTED"
-            servers.stop(vm)
+            vm.save()
+            servers.stop(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "STOP")
             self.assertEqual(vm.task_job_id, 2)
         with mocked_quotaholder():
             vm.task = None
-            servers.reboot(vm)
+            vm.save()
+            servers.reboot(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "REBOOT")
             self.assertEqual(vm.task_job_id, 3)
 
@@ -400,7 +424,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, False)
+            vm = servers.reassign(vm.id, another_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -412,7 +437,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, True)
+            vm = servers.reassign(vm.id, another_project, True,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, True)
             vol = vm.volumes.get(id=volume.id)
@@ -425,7 +451,8 @@ class ServerCommandTest(TransactionTestCase):
         original_project = vm.project
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, False)
+            vm = servers.reassign(vm.id, another_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -435,8 +462,9 @@ class ServerCommandTest(TransactionTestCase):
         backend.public = False
         backend.save()
         with mocked_quotaholder():
-            self.assertRaises(faults.Forbidden, servers.reassign, vm,
-                              original_project, False)
+            self.assertRaises(faults.Forbidden, servers.reassign, vm.id,
+                              original_project, False,
+                              credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -445,7 +473,8 @@ class ServerCommandTest(TransactionTestCase):
         mfactory.ProjectBackendFactory(project=original_project,
                                        backend=backend)
         with mocked_quotaholder():
-            servers.reassign(vm, original_project, False)
+            vm = servers.reassign(vm.id, original_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, original_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)

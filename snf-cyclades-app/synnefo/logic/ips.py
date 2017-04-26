@@ -171,9 +171,10 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
         raise faults.Conflict(exception_msg)
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def create_floating_ip(credentials, network_id=None, address=None,
-                       project=None, shared_to_project=False):
+                       project=None, shared_to_project=False,
+                       atomic_context=None):
     userid = credentials.userid
     if network_id is None:
         floating_ip = allocate_public_ip(userid, floating_ip=True)
@@ -198,8 +199,8 @@ def create_floating_ip(credentials, network_id=None, address=None,
     floating_ip.shared_to_project=shared_to_project
     floating_ip.save()
     # Issue commission (quotas)
-    quotas.issue_and_accept_commission(floating_ip)
-    transaction.commit()
+    quotas.issue_and_accept_commission(
+        floating_ip, atomic_context=atomic_context)
 
     log.info("Created floating IP '%s' for user IP '%s'", floating_ip, userid)
 
@@ -241,8 +242,8 @@ def delete_floating_ip(floating_ip_id, credentials):
     IPAddress.objects.filter(id=floating_ip_id).delete()
 
 
-@transaction.commit_on_success
-def _delete_floating_ip(floating_ip_id, credentials):
+@transaction.atomic_context
+def _delete_floating_ip(floating_ip_id, credentials, atomic_context=None):
     floating_ip = util.get_floating_ip_by_id(credentials,
                                              floating_ip_id, for_update=True)
     validate_ip_action(floating_ip, "DELETE", silent=False)
@@ -256,13 +257,15 @@ def _delete_floating_ip(floating_ip_id, credentials):
     floating_ip.deleted = True
     floating_ip.save()
     # Release quota for floating IP
-    quotas.issue_and_accept_commission(floating_ip, action="DESTROY")
+    quotas.issue_and_accept_commission(floating_ip, action="DESTROY",
+                                       atomic_context=atomic_context)
     return floating_ip
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def reassign_floating_ip(
-        floating_ip_id, project, shared_to_project, credentials):
+        floating_ip_id, project, shared_to_project, credentials,
+        atomic_context=None):
     floating_ip = util.get_floating_ip_by_id(credentials,
                                              floating_ip_id,
                                              for_update=True)
@@ -287,7 +290,8 @@ def reassign_floating_ip(
         floating_ip.save()
 
         quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return floating_ip
 
 

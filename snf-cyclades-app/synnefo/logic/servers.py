@@ -132,10 +132,11 @@ def create(credentials, name, password, flavor, image_id, metadata={},
                           personality, password, auth_keys)
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
-        project, volumes, helper, shared_to_project, key_names):
+        project, volumes, helper, shared_to_project, key_names,
+        atomic_context=None):
 
     # Create the ports for the server
     ports = create_instance_ports(credentials, networks)
@@ -197,7 +198,8 @@ def _db_create_server(
             meta_value=val,
             vm=vm)
 
-    quotas.issue_and_accept_commission(vm, action="BUILD")
+    quotas.issue_and_accept_commission(vm, action="BUILD",
+                                       atomic_context=atomic_context)
     return (vm.id,
             [port.id for port in ports],
             [volume.id for volume in server_volumes])
@@ -376,8 +378,9 @@ def _resize(vm, flavor):
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 
-@transaction.commit_on_success
-def reassign(server_id, project, shared_to_project, credentials=None):
+@transaction.atomic_context
+def reassign(server_id, project, shared_to_project, credentials=None,
+             atomic_context=None):
     vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True, non_suspended=True)
     commands.validate_server_action(vm, "REASSIGN")
@@ -408,7 +411,8 @@ def reassign(server_id, project, shared_to_project, credentials=None):
         vm.volumes.filter(index=0, deleted=False)\
                   .update(project=project, shared_to_project=shared_to_project)
         quotas.issue_and_accept_commission(vm, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return vm
 
 

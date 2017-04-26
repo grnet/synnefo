@@ -43,11 +43,11 @@ def get_vm(vm_id):
         raise faults.BadRequest("Virtual machine '%s' does not exist" % vm_id)
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def create(credentials, size, server_id=None, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
-           project_id=None, shared_to_project=False):
+           project_id=None, shared_to_project=False, atomic_context=None):
     """Create a new volume and optionally attach it to a server.
 
     This function serves as the main entry-point for volume creation. It gets
@@ -96,7 +96,8 @@ def create(credentials, size, server_id=None, name=None, description=None,
     if server is not None:
         server_attachments.attach_volume(server, volume)
     else:
-        quotas.issue_and_accept_commission(volume, action="BUILD")
+        quotas.issue_and_accept_commission(volume, action="BUILD",
+                                           atomic_context=atomic_context)
         # If the volume has been created in the DB, consider it available.
         volume.status = "AVAILABLE"
         volume.save()
@@ -330,8 +331,8 @@ def delete_volume_from_helper(volume, helper_vm):
              volume.id, helper_vm.id, volume.backendjobid)
 
 
-@transaction.commit_on_success
-def delete(volume_id, credentials):
+@transaction.atomic_context
+def delete(volume_id, credentials, atomic_context=None):
     """Delete a Volume.
 
     The canonical way of deleting a volume is to send a command to Ganeti to
@@ -362,7 +363,8 @@ def delete(volume_id, credentials):
                                     volume.status)
         log.debug("Attempting to delete uninitialized volume %s.", volume)
         util.mark_volume_as_deleted(volume, immediate=True)
-        quotas.issue_and_accept_commission(volume, action="DESTROY")
+        quotas.issue_and_accept_commission(volume, action="DESTROY",
+                                           atomic_context=atomic_context)
         log.info("Deleting uninitialized volume '%s'", volume.id)
     else:
         # Case 2: Detached volume
@@ -410,8 +412,9 @@ def update(volume_id, name=None, description=None, delete_on_termination=None,
     return volume
 
 
-@transaction.commit_on_success
-def reassign_volume(volume_id, project, shared_to_project, credentials):
+@transaction.atomic_context
+def reassign_volume(volume_id, project, shared_to_project, credentials,
+                    atomic_context=None):
     volume = util.get_volume(credentials,
                              volume_id, for_update=True, non_deleted=True)
 
@@ -442,7 +445,8 @@ def reassign_volume(volume_id, project, shared_to_project, credentials):
         volume.shared_to_project = shared_to_project
         volume.save()
         quotas.issue_and_accept_commission(volume, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return volume
 
 

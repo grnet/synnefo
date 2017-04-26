@@ -45,10 +45,10 @@ def network_command(action):
     return decorator
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
            floating_ip_pool=False, tags=None, public=False, drained=False,
-           project=None, shared_to_project=False):
+           project=None, shared_to_project=False, atomic_context=None):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -109,9 +109,9 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.
-    # Note: the following call does a commit!
     if not public:
-        quotas.issue_and_accept_commission(network)
+        quotas.issue_and_accept_commission(
+            network, atomic_context=atomic_context)
 
     return network
 
@@ -173,8 +173,9 @@ def delete(network_id, credentials):
     return network
 
 
-@transaction.commit_on_success
-def reassign(network_id, project, shared_to_project, credentials):
+@transaction.atomic_context
+def reassign(network_id, project, shared_to_project, credentials,
+             atomic_context=None):
     network = util.get_network(network_id, credentials,
                                for_update=True, non_deleted=True)
 
@@ -201,5 +202,6 @@ def reassign(network_id, project, shared_to_project, credentials):
         network.shared_to_project = shared_to_project
         network.save()
         quotas.issue_and_accept_commission(network, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return network

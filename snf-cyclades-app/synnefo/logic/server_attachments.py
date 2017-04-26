@@ -23,7 +23,7 @@ from synnefo.volume import util
 log = logging.getLogger(__name__)
 
 
-def attach_volume(vm, volume):
+def attach_volume(vm, volume, atomic_context):
     """Attach a volume to a server.
 
     The volume must be in 'AVAILABLE' status in order to be attached. Also,
@@ -58,6 +58,7 @@ def attach_volume(vm, volume):
         action_fields = None
 
     with commands.ServerCommand("ATTACH_VOLUME", vm,
+                                atomic_context=atomic_context,
                                 action_fields=action_fields):
         util.assign_volume_to_server(vm, volume)
         jobid = backend.attach_volume(vm, volume)
@@ -101,7 +102,7 @@ def detach_volume(vm, volume):
         volume.save()
 
 
-def delete_volume(vm, volume):
+def delete_volume(vm, volume, atomic_context):
     """Delete attached volume and update its status
 
     The volume must be in 'IN_USE' status in order to be deleted. This
@@ -118,6 +119,7 @@ def delete_volume(vm, volume):
 
     action_fields = {"disks": [("remove", volume, {})]}
     with commands.ServerCommand("DELETE_VOLUME", vm,
+                                atomic_context=atomic_context,
                                 action_fields=action_fields,
                                 for_user=volume.userid):
         jobid = backend.delete_volume(vm, volume)

@@ -1026,15 +1026,15 @@ def _port_for_request(credentials, network_dict):
                                 " is required.")
 
 
-@transaction.commit_on_success
-def attach_volume(server_id, volume_id, credentials):
+@transaction.atomic_context
+def attach_volume(server_id, volume_id, credentials, atomic_context=None):
     user_id = credentials.userid
     vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
 
     volume = get_volume(credentials, volume_id,
                         for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
-    server_attachments.attach_volume(vm, volume)
+    server_attachments.attach_volume(vm, volume, atomic_context)
     log.info("User %s attached volume %s to VM %s", user_id, volume.id, vm.id)
     return volume
 

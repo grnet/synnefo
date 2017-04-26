@@ -94,7 +94,7 @@ def create(credentials, size, server_id=None, name=None, description=None,
                            shared_to_project=shared_to_project)
 
     if server is not None:
-        server_attachments.attach_volume(server, volume)
+        server_attachments.attach_volume(server, volume, atomic_context)
     else:
         quotas.issue_and_accept_commission(volume, action="BUILD",
                                            atomic_context=atomic_context)
@@ -289,7 +289,7 @@ def attach(server, volume_id):
     return volume
 
 
-def delete_detached_volume(volume):
+def delete_detached_volume(volume, atomic_context):
     """Delete a detached volume.
 
     There is actually no way (that involves Ganeti) to delete a detached
@@ -308,7 +308,7 @@ def delete_detached_volume(volume):
 
     # Attach the volume to the helper server, in order to delete it
     # internally later.
-    server_attachments.attach_volume(server, volume)
+    server_attachments.attach_volume(server, volume, atomic_context)
     volume.status = "DELETING"
     volume.save()
 
@@ -353,7 +353,7 @@ def delete(volume_id, credentials, atomic_context=None):
     server_id = volume.machine_id
     if server_id is not None:
         server = get_vm(server_id)
-        server_attachments.delete_volume(server, volume)
+        server_attachments.delete_volume(server, volume, atomic_context)
         log.info("Deleting volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
     elif volume.backendjobid is None:
@@ -369,7 +369,7 @@ def delete(volume_id, credentials, atomic_context=None):
     else:
         # Case 2: Detached volume
         log.debug("Attempting to delete detached volume %s", volume)
-        delete_detached_volume(volume)
+        delete_detached_volume(volume, atomic_context)
         log.info("Deleting volume '%s' from helper server '%s', job: %s",
                  volume.id, volume.machine.id, volume.backendjobid)
 

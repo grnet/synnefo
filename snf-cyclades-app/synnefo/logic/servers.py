@@ -285,97 +285,90 @@ def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
     return vm
 
 
-@transaction.commit_on_success
-def destroy(server_id, shutdown_timeout=None, credentials=None):
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-    return _destroy(vm, shutdown_timeout)
+@transaction.atomic_context
+def destroy(server_id, shutdown_timeout=None, credentials=None,
+            atomic_context=None):
+    with commands.ServerCommand("DESTROY", server_id, credentials,
+                                atomic_context) as vm:
+        # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
+        # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
+        # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
+        if (vm.backendopcode == "OP_INSTANCE_CREATE" and
+           vm.backendjobstatus not in rapi.JOB_STATUS_FINALIZED and
+           backend.job_is_still_running(vm) and
+           not backend.vm_exists_in_backend(vm)):
+                raise faults.BuildInProgress("Server is being build")
+        log.info("Deleting VM %s", vm)
+        job_id = backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("DESTROY")
-def _destroy(vm, shutdown_timeout=None):
-    # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
-    # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
-    # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
-    if (vm.backendopcode == "OP_INSTANCE_CREATE" and
-       vm.backendjobstatus not in rapi.JOB_STATUS_FINALIZED and
-       backend.job_is_still_running(vm) and
-       not backend.vm_exists_in_backend(vm)):
-            raise faults.BuildInProgress("Server is being build")
-    log.info("Deleting VM %s", vm)
-    return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
+@transaction.atomic_context
+def start(server_id, credentials, atomic_context=None):
+    with commands.ServerCommand(
+            "START", server_id, credentials, atomic_context) as vm:
+        log.info("Starting VM %s", vm)
+        job_id = backend.startup_instance(vm)
+        vm.record_job(job_id)
+        return vm
 
 
-@transaction.commit_on_success
-def start(server_id, credentials):
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-    return _start(vm)
+@transaction.atomic_context
+def stop(server_id, shutdown_timeout=None, credentials=None,
+         atomic_context=None):
+    with commands.ServerCommand(
+            "STOP", server_id, credentials, atomic_context) as vm:
+        log.info("Stopping VM %s", vm)
+        job_id = backend.shutdown_instance(
+            vm, shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("START")
-def _start(vm):
-    log.info("Starting VM %s", vm)
-    return backend.startup_instance(vm)
+@transaction.atomic_context
+def reboot(server_id, reboot_type, shutdown_timeout=None, credentials=None,
+           atomic_context=None):
+    with commands.ServerCommand(
+            "REBOOT", server_id, credentials, atomic_context) as vm:
+        if reboot_type not in ("SOFT", "HARD"):
+            raise faults.BadRequest("Malformed request. Invalid reboot"
+                                    " type %s" % reboot_type)
+        log.info("Rebooting VM %s. Type %s", vm, reboot_type)
+
+        job_id = backend.reboot_instance(vm, reboot_type.lower(),
+                                         shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-@transaction.commit_on_success
-def stop(server_id, shutdown_timeout=None, credentials=None):
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-    return _stop(vm, shutdown_timeout)
-
-
-@commands.server_command("STOP")
-def _stop(vm, shutdown_timeout=None):
-    log.info("Stopping VM %s", vm)
-    return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
-
-
-@transaction.commit_on_success
-def reboot(server_id, reboot_type, shutdown_timeout=None, credentials=None):
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-    return _reboot(vm, reboot_type, shutdown_timeout)
-
-
-@commands.server_command("REBOOT")
-def _reboot(vm, reboot_type, shutdown_timeout=None):
-    if reboot_type not in ("SOFT", "HARD"):
-        raise faults.BadRequest("Malformed request. Invalid reboot"
-                                " type %s" % reboot_type)
-    log.info("Rebooting VM %s. Type %s", vm, reboot_type)
-
-    return backend.reboot_instance(vm, reboot_type.lower(),
-                                   shutdown_timeout=shutdown_timeout)
-
-
-@transaction.commit_on_success
-def resize(server_id, flavor_id, credentials=None):
+@transaction.atomic_context
+def resize(server_id, flavor_id, credentials=None, atomic_context=None):
     vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True, non_suspended=True)
     flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
                              for_project=vm.project)
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
-    comm = commands.server_command("RESIZE", action_fields=action_fields)
-    return comm(_resize)(vm, flavor)
+    with commands.ServerCommand(
+            "RESIZE", server_id, credentials, atomic_context,
+            action_fields=action_fields) as vm:
+        old_flavor = vm.flavor
+        # User requested the same flavor
+        if old_flavor.id == flavor.id:
+            raise faults.BadRequest("Server '%s' flavor is already '%s'."
+                                    % (vm, flavor))
+        # Check that resize can be performed
+        if old_flavor.disk != flavor.disk:
+            raise faults.BadRequest("Cannot change instance's disk size.")
+        if old_flavor.volume_type_id != flavor.volume_type_id:
+            raise faults.BadRequest("Cannot change instance's volume type.")
 
-
-def _resize(vm, flavor):
-    old_flavor = vm.flavor
-    # User requested the same flavor
-    if old_flavor.id == flavor.id:
-        raise faults.BadRequest("Server '%s' flavor is already '%s'."
-                                % (vm, flavor))
-    # Check that resize can be performed
-    if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Cannot change instance's disk size.")
-    if old_flavor.volume_type_id != flavor.volume_type_id:
-        raise faults.BadRequest("Cannot change instance's volume type.")
-
-    log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
-    return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
+        log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
+        job_id = backend.resize_instance(
+            vm, vcpus=flavor.cpu, memory=flavor.ram)
+        vm.record_job(job_id)
+        return vm
 
 
 @transaction.atomic_context
@@ -416,35 +409,36 @@ def reassign(server_id, project, shared_to_project, credentials=None,
     return vm
 
 
-@transaction.commit_on_success
-def set_firewall_profile(server_id, profile, nic_id, credentials=None):
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-    nic = util.get_vm_nic(vm, nic_id)
-    return _set_firewall_profile(vm, profile, nic)
+@transaction.atomic_context
+def set_firewall_profile(server_id, profile, nic_id, credentials=None,
+                         atomic_context=None):
+    with commands.ServerCommand("SET_FIREWALL_PROFILE", server_id,
+                                credentials, atomic_context) as vm:
+        nic = util.get_vm_nic(vm, nic_id)
+        log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
+
+        if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
+            raise faults.BadRequest("Unsupported firewall profile")
+        backend.set_firewall_profile(vm, profile=profile, nic=nic)
+        return vm
 
 
-@commands.server_command("SET_FIREWALL_PROFILE")
-def _set_firewall_profile(vm, profile, nic):
-    log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
-
-    if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
-        raise faults.BadRequest("Unsupported firewall profile")
-    backend.set_firewall_profile(vm, profile=profile, nic=nic)
-    return None
-
-
-@commands.server_command("CONNECT")
 def connect_port(vm, network, port):
-    associate_port_with_machine(port, vm)
-    log.info("Creating NIC %s with IPv4 Address %s", port, port.ipv4_address)
-    return backend.connect_to_network(vm, port)
+    with commands.ServerCommand("CONNECT", vm):
+        associate_port_with_machine(port, vm)
+        log.info("Creating NIC %s with IPv4 Address %s",
+                 port, port.ipv4_address)
+        job_id = backend.connect_to_network(vm, port)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("DISCONNECT")
 def disconnect_port(vm, nic):
-    log.info("Removing NIC %s from VM %s", nic, vm)
-    return backend.disconnect_from_network(vm, nic)
+    with commands.ServerCommand("DISCONNECT", vm):
+        log.info("Removing NIC %s from VM %s", nic, vm)
+        job_id = backend.disconnect_from_network(vm, nic)
+        vm.record_job(job_id)
+        return vm
 
 
 @transaction.commit_on_success

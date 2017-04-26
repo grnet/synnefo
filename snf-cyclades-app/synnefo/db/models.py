@@ -414,6 +414,13 @@ class VirtualMachine(models.Model):
     task = models.CharField(max_length=64, null=True)
     task_job_id = models.BigIntegerField(null=True)
 
+    def record_job(self, job_id):
+        if job_id is not None:
+            # Note that self.action is the current action
+            self.task = self.action
+            self.task_job_id = job_id
+            self.save()
+
     def get_client(self):
         if self.backend:
             return self.backend.get_client()

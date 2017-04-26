@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,25 +56,21 @@ def attach_volume(vm, volume):
         action_fields = {"disks": [("add", volume, {})]}
     else:
         action_fields = None
-    comm = commands.server_command("ATTACH_VOLUME",
-                                   action_fields=action_fields)
-    return comm(_attach_volume)(vm, volume)
 
-
-def _attach_volume(vm, volume):
-    """Attach a Volume to a VM and update the Volume's status."""
-    util.assign_volume_to_server(vm, volume)
-    jobid = backend.attach_volume(vm, volume)
-    log.info("Attached volume '%s' to server '%s'. JobID: '%s'", volume.id,
-             volume.machine_id, jobid)
-    volume.backendjobid = jobid
-    volume.machine = vm
-    if volume.status == "AVAILABLE":
-        volume.status = "ATTACHING"
-    else:
-        volume.status = "CREATING"
-    volume.save()
-    return jobid
+    with commands.ServerCommand("ATTACH_VOLUME", vm,
+                                action_fields=action_fields):
+        util.assign_volume_to_server(vm, volume)
+        jobid = backend.attach_volume(vm, volume)
+        vm.record_job(jobid)
+        log.info("Attached volume '%s' to server '%s'. JobID: '%s'", volume.id,
+                 volume.machine_id, jobid)
+        volume.backendjobid = jobid
+        volume.machine = vm
+        if volume.status == "AVAILABLE":
+            volume.status = "ATTACHING"
+        else:
+            volume.status = "CREATING"
+        volume.save()
 
 
 def detach_volume(vm, volume):
@@ -95,19 +91,14 @@ def detach_volume(vm, volume):
         raise faults.BadRequest("Cannot detach the root volume of server %s." %
                                 vm)
 
-    comm = commands.server_command("DETACH_VOLUME")
-    return comm(_detach_volume)(vm, volume)
-
-
-def _detach_volume(vm, volume):
-    """Detach a Volume from a VM and update the Volume's status"""
-    jobid = backend.detach_volume(vm, volume)
-    log.info("Detached volume '%s' from server '%s'. JobID: '%s'", volume.id,
-             volume.machine_id, jobid)
-    volume.backendjobid = jobid
-    volume.status = "DETACHING"
-    volume.save()
-    return jobid
+    with commands.ServerCommand("DETACH_VOLUME", vm):
+        jobid = backend.detach_volume(vm, volume)
+        vm.record_job(jobid)
+        log.info("Detached volume '%s' from server '%s'. JobID: '%s'",
+                 volume.id, volume.machine_id, jobid)
+        volume.backendjobid = jobid
+        volume.status = "DETACHING"
+        volume.save()
 
 
 def delete_volume(vm, volume):
@@ -126,19 +117,15 @@ def delete_volume(vm, volume):
                                 vm)
 
     action_fields = {"disks": [("remove", volume, {})]}
-    comm = commands.server_command("DELETE_VOLUME",
-                                   action_fields=action_fields,
-                                   for_user=volume.userid)
-    return comm(_delete_volume)(vm, volume)
-
-
-def _delete_volume(vm, volume):
-    jobid = backend.delete_volume(vm, volume)
-    log.info("Deleted volume '%s' from server '%s'. JobID: '%s'", volume.id,
-             volume.machine_id, jobid)
-    volume.backendjobid = jobid
-    util.mark_volume_as_deleted(volume)
-    return jobid
+    with commands.ServerCommand("DELETE_VOLUME", vm,
+                                action_fields=action_fields,
+                                for_user=volume.userid):
+        jobid = backend.delete_volume(vm, volume)
+        vm.record_job(jobid)
+        log.info("Deleted volume '%s' from server '%s'. JobID: '%s'",
+                 volume.id, volume.machine_id, jobid)
+        volume.backendjobid = jobid
+        util.mark_volume_as_deleted(volume)
 
 
 def _check_attachment(vm, volume):

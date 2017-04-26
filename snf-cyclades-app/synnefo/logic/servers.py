@@ -443,7 +443,8 @@ def disconnect_port(vm, nic):
     return backend.disconnect_from_network(vm, nic)
 
 
-def console(vm, console_type):
+@transaction.commit_on_success
+def console(server_id, console_type, credentials=None):
     """Arrange for an OOB console of the specified type
 
     This method arranges for an OOB console of the specified type.
@@ -454,6 +455,9 @@ def console(vm, console_type):
     VNC connection info to the caller.
 
     """
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+
     log.info("Get console  VM %s, type %s", vm, console_type)
 
     if vm.operstate != "STARTED":

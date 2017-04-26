@@ -1089,7 +1089,6 @@ machines_console_url = None
 
 
 @server_action('os-getVNCConsole')
-@transaction.commit_on_success
 def os_get_vnc_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -1105,9 +1104,6 @@ def os_get_vnc_console(request, server_id, args):
     log.debug("User: %s, VM: %s, Action: get_osVNC console, Request: %s",
               credentials.userid, server_id, args)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-
     console_type = args.get('type')
     if console_type is None:
         raise faults.BadRequest("No console 'type' specified.")
@@ -1117,7 +1113,8 @@ def os_get_vnc_console(request, server_id, args):
         raise faults.BadRequest('Supported types: %s' %
                                 ', '.join(supported_types.keys()))
 
-    console_info = servers.console(vm, supported_types[console_type])
+    console_info = servers.console(server_id, supported_types[console_type],
+                                   credentials=credentials)
 
     global machines_console_url
     if machines_console_url is None:
@@ -1143,13 +1140,13 @@ def os_get_vnc_console(request, server_id, args):
         mimetype = 'application/json'
         data = json.dumps({'console': resp})
 
-    log.info("User %s got VNC console for VM %s", credentials.userid, vm.id)
+    log.info("User %s got VNC console for VM %s",
+             credentials.userid, server_id)
 
     return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('console')
-@transaction.commit_on_success
 def get_console(request, server_id, args):
     # Normal Response Code: 200
     # Error Response Codes: computeFault (400, 500),
@@ -1165,9 +1162,6 @@ def get_console(request, server_id, args):
     log.debug("User: %s, VM: %s, Action: get_console, Request: %s",
               credentials.userid, server_id, args)
 
-    vm = util.get_vm(server_id, credentials,
-                     for_update=True, non_deleted=True, non_suspended=True)
-
     console_type = args.get("type")
     if console_type is None:
         raise faults.BadRequest("No console 'type' specified.")
@@ -1177,7 +1171,8 @@ def get_console(request, server_id, args):
         raise faults.BadRequest('Supported types: %s' %
                                 ', '.join(supported_types))
 
-    console_info = servers.console(vm, console_type)
+    console_info = servers.console(server_id, console_type,
+                                   credentials=credentials)
 
     if request.serialization == 'xml':
         mimetype = 'application/xml'
@@ -1186,7 +1181,7 @@ def get_console(request, server_id, args):
         mimetype = 'application/json'
         data = json.dumps({'console': console_info})
 
-    log.info("User %s got console for VM %s", credentials.userid, vm.id)
+    log.info("User %s got console for VM %s", credentials.userid, server_id)
 
     return HttpResponse(data, content_type=mimetype, status=200)
 

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
-from synnefo.db import transaction
 import json
 from datetime import datetime, timedelta
 
@@ -110,7 +109,6 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
     return vm
 
 
-@transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                       disks=None, job_fields=None):
     """Process a job progress notification from the backend
@@ -645,7 +643,6 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
                                                   state=state)
 
 
-@transaction.commit_on_success
 def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise Network.InvalidBackendMsgError(opcode, status)
@@ -758,7 +755,6 @@ def update_network_state(network):
     network.save()
 
 
-@transaction.commit_on_success
 def process_network_modify(back_network, etime, jobid, opcode, status,
                            job_fields):
     assert (opcode == "OP_NETWORK_SET_PARAMS")
@@ -780,7 +776,6 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
     back_network.save()
 
 
-@transaction.commit_on_success
 def process_create_progress(vm, etime, progress):
 
     percentage = int(progress)
@@ -811,7 +806,6 @@ def process_create_progress(vm, etime, progress):
     vm.save()
 
 
-@transaction.commit_on_success
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                details=None):
     """

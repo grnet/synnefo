@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
 
 from synnefo.logic import servers
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 HELP_MSG = """
 
@@ -82,7 +82,6 @@ class Command(SynnefoCommand):
 
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
@@ -122,7 +121,8 @@ class Command(SynnefoCommand):
 
         connection_list = parse_connections(options["connections"])
         volumes_list = parse_volumes(volumes)
-        server = servers.create(user_id, name, password, flavor, image_id,
+        credentials = Credentials(user_id)
+        server = servers.create(credentials, name, password, flavor, image_id,
                                 networks=connection_list,
                                 volumes=volumes_list,
                                 use_backend=backend, helper=helper_vm,
@@ -195,8 +195,7 @@ def parse_connections(con_list):
                     val = {"port": port_id}
                 elif con_kind == "floatingip":
                     fip_id = opt.split(":")[1]
-                    fip = common.get_resource("floating-ip", fip_id,
-                                              for_update=True)
+                    fip = common.get_resource("floating-ip", fip_id)
                     val = {"uuid": fip.network_id, "fixed_ip": fip.address}
                 else:
                     raise CommandError("Unknown argument for option --port")

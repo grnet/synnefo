@@ -700,7 +700,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     port = NetworkInterface.objects.create(network=network,
                                            state="DOWN",
                                            userid=userid,
-                                           device_owner=None,
+                                           device_owner=device_owner,
                                            public=network.public,
                                            name=name)
 

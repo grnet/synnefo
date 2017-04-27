@@ -745,8 +745,10 @@ class AstakosUser(User):
         return ",".join(["%s:%s" % (p.module, p.identifier or '') for p in
                          self.get_enabled_auth_providers()])
 
-    def add_auth_provider(self, module='local', identifier=None, **params):
+    def add_auth_provider(self, module='local', identifier='', **params):
         if identifier is None:
+            logger.warn('Found identifier = None, '
+                        'should be empty string instead')
             identifier = ''
         provider = auth.get_provider(module, self, identifier, **params)
         provider.add_to_user()

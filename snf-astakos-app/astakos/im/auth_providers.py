@@ -747,10 +747,13 @@ class LDAPAuthProvider(AuthProvider):
 
 
 # Utility method
-def get_provider(module, user_obj=None, identifier=None, **params):
+def get_provider(module, user_obj=None, identifier='', **params):
     """
     Return a provider instance from the auth providers registry.
     """
+    if identifier is None:
+        logger.warn('Found identifier = None, should be empty string instead')
+        identifier = ''
     if module not in PROVIDERS:
         raise InvalidProvider('Invalid auth provider "%s"' % module)
 

@@ -1116,7 +1116,7 @@ class TestAuthProvidersAPI(TestCase):
             module, identifier)._instance.info.get('age'), 27)
 
         module = 'local'
-        identifier = None
+        identifier = ''
         provider_params = {'auth_backend': 'ldap', 'info':
                           {'office': 'A1'}}
         provider = auth.get_provider(module, user, identifier,
@@ -1154,7 +1154,7 @@ class TestAuthProvidersAPI(TestCase):
         self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
                          sorted([u'group1', u'group2', u'group-create']))
 
-        local = auth.get_provider('local', user)
+        local = auth.get_provider('local', user, identifier='')
         local.add_to_user()
         provider = user.get_auth_provider('shibboleth')
         self.assertEqual(provider.get_add_groups_policy, ['group1', 'group2'])
@@ -1261,7 +1261,7 @@ class TestAuthProvidersAPI(TestCase):
                                                'test@academia.test')
         provider.add_to_user()
         user.get_auth_provider('shibboleth', 'test@academia.test')
-        provider = auth_providers.get_provider('local', user)
+        provider = auth_providers.get_provider('local', user, identifier='')
         provider.add_to_user()
         user.get_auth_provider('local')
 

@@ -145,7 +145,7 @@ def rename(network_id, name, credentials):
 def delete(network_id, credentials):
     network = util.get_network(network_id, credentials,
                                for_update=True, non_deleted=True)
-    if network.public:
+    if network.public and not credentials.is_admin:
         raise faults.Forbidden("Cannot delete the public network.")
 
     validate_network_action(network, "DESTROY")

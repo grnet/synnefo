@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ from synnefo.management import common, pprint
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
 from synnefo.logic import servers
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 HELP_MSG = """Create a new port.
 
@@ -86,7 +86,6 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
@@ -112,12 +111,12 @@ class Command(SynnefoCommand):
         owner = None
         if server_id:
             owner = "vm"
-            vm = common.get_resource("server", server_id, for_update=True)
+            vm = common.get_resource("server", server_id)
             #if vm.router:
             #    raise CommandError("Server '%s' does not exist." % server_id)
         elif router_id:
             owner = "router"
-            vm = common.get_resource("server", router_id, for_update=True)
+            vm = common.get_resource("server", router_id)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
 
@@ -127,20 +126,19 @@ class Command(SynnefoCommand):
             else:
                 raise CommandError("Please specify the owner of the port.")
 
-        # get the network
-        network = common.get_resource("network", network_id)
-
         # Get either floating IP or fixed ip address
         ipaddress = None
         floating_ip_id = options["floating_ip_id"]
         ipv4_address = options["ipv4_address"]
         if floating_ip_id:
-            ipaddress = common.get_resource("floating-ip", floating_ip_id,
-                                            for_update=True)
-            if ipv4_address is not None and ipaddress.address != ipv4_address:
+            ipaddress = common.get_resource("floating-ip", floating_ip_id)
+            address = ipaddress.address
+            if ipv4_address is not None and address != ipv4_address:
                 raise CommandError("Floating IP address '%s' is different from"
                                    " specified address '%s'" %
-                                   (ipaddress.address, ipv4_address))
+                                   (address, ipv4_address))
+        else:
+            address = ipv4_address
 
         # validate security groups
         sg_list = []
@@ -150,10 +148,10 @@ class Command(SynnefoCommand):
                 sg = util.get_security_group(int(gid))
                 sg_list.append(sg)
 
-        new_port = servers.create_port(user_id, network, machine=vm,
+        credentials = Credentials(user_id)
+        new_port = servers.create_port(credentials, network_id, machine=vm.id,
                                        name=name,
-                                       use_ipaddress=ipaddress,
-                                       address=ipv4_address,
+                                       address=address,
                                        security_groups=sg_list,
                                        device_owner=owner)
         self.stdout.write("Created port '%s' in DB:\n" % new_port)

@@ -141,7 +141,7 @@ def create_port(request):
             sg_list.append(sg)
 
     new_port = servers.create_port(credentials, net_id,
-                                   fixed_ip_address=fixed_ip_address,
+                                   address=fixed_ip_address,
                                    machine_id=device_id, name=name,
                                    security_groups=sg_list)
 

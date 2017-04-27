@@ -616,8 +616,7 @@ def add_floating_ip(server_id, address, credentials):
 
 
 @transaction.commit_on_success
-def create_port(credentials, network_id, machine_id=None, use_ipaddress=None,
-                fixed_ip_address=None,
+def create_port(credentials, network_id, machine_id=None,
                 address=None, name="", security_groups=None,
                 device_owner=None):
     user_id = credentials.userid
@@ -636,19 +635,15 @@ def create_port(credentials, network_id, machine_id=None, use_ipaddress=None,
         # Creating a port to a public network is only allowed if the user has
         # already a floating IP address in this network which is specified
         # as the fixed IP address of the port
-        if fixed_ip_address is None:
+        if address is None:
             msg = ("'fixed_ips' attribute must contain a floating IP address"
                    " in order to connect to a public network.")
             raise faults.BadRequest(msg)
         ipaddress = util.get_floating_ip_by_address(credentials,
-                                                    fixed_ip_address,
+                                                    address,
                                                     for_update=True)
-    elif fixed_ip_address:
-        ipaddress = ips.allocate_ip(network, user_id,
-                                    address=fixed_ip_address)
-
     port = _create_port(user_id, network, machine=vm, use_ipaddress=ipaddress,
-                        address=address, name=name,
+                        name=name,
                         security_groups=security_groups,
                         device_owner=device_owner)
 
@@ -658,8 +653,7 @@ def create_port(credentials, network_id, machine_id=None, use_ipaddress=None,
 
 
 def _create_port(userid, network, machine=None, use_ipaddress=None,
-                 address=None, name="", security_groups=None,
-                 device_owner=None):
+                 name="", security_groups=None, device_owner=None):
     """Create a new port on the specified network.
 
     Create a new Port(NetworkInterface model) on the specified Network. If
@@ -680,10 +674,9 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
                             "Port name is too long")
 
     ipaddress = None
-    if use_ipaddress is not None:
-        # Use an existing IPAddress object.
+    if isinstance(use_ipaddress, IPAddress):
         ipaddress = use_ipaddress
-        if ipaddress and (ipaddress.network_id != network.id):
+        if ipaddress.network_id != network.id:
             msg = "IP Address %s does not belong to network %s"
             raise faults.Conflict(msg % (ipaddress.address, network.id))
     else:
@@ -695,10 +688,10 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         # the user specified or a random one.
         if network.subnets.filter(ipversion=4).exists():
             ipaddress = ips.allocate_ip(network, userid=userid,
-                                        address=address)
-        elif address is not None:
+                                        address=use_ipaddress)
+        elif use_ipaddress is not None:
             raise faults.BadRequest("Address %s is not a valid IP for the"
-                                    " defined network subnets" % address)
+                                    " defined network subnets" % use_ipaddress)
 
     if ipaddress is not None and ipaddress.nic is not None:
         raise faults.Conflict("IP address '%s' is already in use" %
@@ -1020,7 +1013,8 @@ def _port_for_request(credentials, network_dict):
                 raise faults.Forbidden("Cannot connect to IPv6 only public"
                                        " network '%s'" % network.id)
         else:
-            return _create_port(credentials.userid, network, address=address)
+            return _create_port(
+                credentials.userid, network, use_ipaddress=address)
     else:
         raise faults.BadRequest("Network 'uuid' or 'port' attribute"
                                 " is required.")

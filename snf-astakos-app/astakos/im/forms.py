@@ -661,7 +661,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
             provider = auth_providers.get_provider('local', self.user)
             if provider.get_add_policy:
                 try:
-                    local_provider = provider.get_user_providers()[0]
+                    local_provider = provider.get_user_module_providers()[0]
                     local_provider.active = True
                     local_provider.save()
                 except IndexError:

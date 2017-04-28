@@ -551,12 +551,26 @@ def rename(server_id, new_name, credentials=None):
     return server
 
 
+@transaction.commit_on_success
+def suspend(server_id, suspended, credentials):
+    """Set server's suspended flag."""
+    server = util.get_vm(server_id, credentials,
+                         for_update=True, non_deleted=True)
+    server.suspended = suspended
+    server.save()
+    log.info("Set suspended flag of server '%s' to %s", server, suspended)
+    return server
+
+
 def show_owner_change(vmid, from_user, to_user):
     return "[OWNER CHANGE vm: %s, from: %s, to: %s]" % (
         vmid, from_user, to_user)
 
 
-def change_owner(server, new_owner):
+@transaction.commit_on_success
+def change_owner(server_id, new_owner, credentials):
+    server = util.get_vm(server_id, credentials,
+                         for_update=True, non_deleted=True)
     old_owner = server.userid
     server.userid = new_owner
     old_project = server.project

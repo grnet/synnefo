@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@ class Command(RemoveCommand):
             help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
@@ -50,13 +49,15 @@ class Command(RemoveCommand):
         for port_id in args:
             self.stdout.write("\n")
             try:
-                port = common.get_resource("port", port_id, for_update=True)
-
-                servers.delete_port(port)
+                with transaction.commit_on_success():
+                    port = common.get_resource(
+                        "port", port_id, for_update=True)
+                    machine = port.machine
+                    servers._delete_port(port)
 
                 wait = parse_bool(options["wait"])
-                if port.machine is not None:
-                    common.wait_server_task(port.machine, wait,
+                if machine is not None:
+                    common.wait_server_task(machine, wait,
                                             stdout=self.stdout)
                 else:
                     self.stdout.write("Successfully removed port %s\n" % port)

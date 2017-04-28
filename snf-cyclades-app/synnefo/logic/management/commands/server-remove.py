@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ from synnefo.logic import servers
 from snf_django.management.commands import RemoveCommand
 from snf_django.management.utils import parse_bool
 from snf_django.lib.api import faults
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(RemoveCommand):
@@ -39,7 +39,6 @@ class Command(RemoveCommand):
             help="Wait for Ganeti job to complete. [Default: True]"),
     )
 
-    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if not args:
@@ -52,13 +51,14 @@ class Command(RemoveCommand):
         for server_id in args:
             self.stdout.write("\n")
             try:
-                server = get_resource("server", server_id, for_update=True)
+                server = get_resource("server", server_id)
 
                 self.stdout.write("Trying to remove server '%s' from backend "
                                   "'%s' \n" % (server.backend_vm_id,
                                                server.backend))
 
-                server = servers.destroy(server)
+                credentials = Credentials("snf-manage", is_admin=True)
+                server = servers.destroy(server_id, credentials=credentials)
                 jobID = server.task_job_id
 
                 self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" %

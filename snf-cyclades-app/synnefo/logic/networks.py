@@ -132,7 +132,10 @@ def rename(network_id, name, credentials):
                                for_update=True, non_deleted=True)
     if network.public:
         raise faults.Forbidden("Cannot rename the public network.")
+    return _rename(network, name)
 
+
+def _rename(network, name):
     validate_network_action(network, "RENAME")
     utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
                             "is too long")

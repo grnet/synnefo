@@ -66,16 +66,16 @@ def instance_from_msg(func):
 
     """
     @handle_message_delivery
-    @transaction.commit_on_success
+    @transaction.atomic_context
     @wraps(func)
-    def wrapper(msg):
+    def wrapper(msg, atomic_context=None):
         try:
             vm_id = utils.id_from_instance_name(msg["instance"])
             vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
             if vm.deleted:
                 log.debug("Ignoring message for deleted instance '%s'", vm)
                 return
-            func(vm, msg)
+            func(vm, msg, atomic_context=atomic_context)
         except VirtualMachine.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
         except VirtualMachine.DoesNotExist:
@@ -91,9 +91,9 @@ def network_from_msg(func):
 
     """
     @handle_message_delivery
-    @transaction.commit_on_success
+    @transaction.atomic_context
     @wraps(func)
-    def wrapper(msg):
+    def wrapper(msg, atomic_context=None):
         try:
             network_id = utils.id_from_network_name(msg["network"])
             network = Network.objects.select_for_update().get(id=network_id)
@@ -105,7 +105,7 @@ def network_from_msg(func):
                                                              backend=backend)
             if new:
                 log.info("Created missing BackendNetwork %s", bnet)
-            func(bnet, msg)
+            func(bnet, msg, atomic_context=atomic_context)
         except Network.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown network %s.", msg['network'])
         except Network.DoesNotExist:
@@ -132,7 +132,7 @@ def if_update_required(func):
 
     """
     @wraps(func)
-    def wrapper(target, msg):
+    def wrapper(target, msg, atomic_context=None):
         try:
             event_time = merge_time(msg['event_time'])
         except:
@@ -151,14 +151,14 @@ def if_update_required(func):
                       db_time.strftime(format_))
             return
         # New message. Update the database!
-        func(target, msg, event_time)
+        func(target, msg, event_time, atomic_context=atomic_context)
 
     return wrapper
 
 
 @instance_from_msg
 @if_update_required
-def update_db(vm, msg, event_time):
+def update_db(vm, msg, event_time, atomic_context=None):
     """Process a notification of type 'ganeti-op-status'"""
     log.debug("Processing ganeti-op-status msg: %s", msg)
 
@@ -214,7 +214,8 @@ def update_db(vm, msg, event_time):
                                   operation, status,
                                   logmsg, nics=nics,
                                   disks=disks,
-                                  job_fields=job_fields)
+                                  job_fields=job_fields,
+                                  atomic_context=atomic_context)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])
@@ -222,7 +223,7 @@ def update_db(vm, msg, event_time):
 
 @network_from_msg
 @if_update_required
-def update_network(network, msg, event_time):
+def update_network(network, msg, event_time, atomic_context=None):
     """Process a notification of type 'ganeti-network-status'"""
     log.debug("Processing ganeti-network-status msg: %s", msg)
 
@@ -240,7 +241,8 @@ def update_network(network, msg, event_time):
                                            status, job_fields)
     else:
         backend_mod.process_network_status(network, event_time, jobid, opcode,
-                                           status, msg['logmsg'])
+                                           status, msg['logmsg'],
+                                           atomic_context=atomic_context)
 
     log.debug("Done processing ganeti-network-status msg for network %s.",
               msg['network'])
@@ -248,7 +250,7 @@ def update_network(network, msg, event_time):
 
 @instance_from_msg
 @if_update_required
-def update_build_progress(vm, msg, event_time):
+def update_build_progress(vm, msg, event_time, atomic_context=None):
     """
     Process a create progress message. Update build progress, or create
     appropriate diagnostic entries for the virtual machine instance.

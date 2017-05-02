@@ -326,7 +326,9 @@ def delete_volume_from_helper(volume, helper_vm):
                                 helper_vm.backend_vm_id)
     log.debug("Attempting to delete volume '%s' from helper server '%s'",
               volume.id, helper_vm.id)
-    server_attachments.delete_volume(helper_vm, volume)
+    # XXX: If another delete is already served, the helper_vm has a pending
+    # task which prohibits the code in server_command to issue another action
+    server_attachments.delete_volume(helper_vm, volume, atomic_context)
     log.info("Deleting volume '%s' from server '%s', job: %s",
              volume.id, helper_vm.id, volume.backendjobid)
 

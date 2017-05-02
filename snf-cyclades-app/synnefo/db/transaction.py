@@ -177,7 +177,7 @@ def atomic_context(func):
         context = kwargs.get(ARG_NAME)
         if context is None:
             handle_context = True
-            context = SerialContext()
+            context = DeferredJobContext()
             kwargs[ARG_NAME] = context
         try:
             with atomic():

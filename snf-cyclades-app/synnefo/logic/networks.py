@@ -144,8 +144,8 @@ def _rename(network, name):
     return network
 
 
-@transaction.commit_on_success
-def delete(network_id, credentials):
+@transaction.atomic_context
+def delete(network_id, credentials, atomic_context=None):
     network = util.get_network(network_id, credentials,
                                for_update=True, non_deleted=True)
     if network.public and not credentials.is_admin:
@@ -172,7 +172,8 @@ def delete(network_id, credentials):
         backend_mod.delete_network(network, bnet.backend)
     else:
         # If network does not exist in any backend, update the network state
-        backend_mod.update_network_state(network)
+        backend_mod.update_network_state(
+            network, atomic_context=atomic_context)
     return network
 
 

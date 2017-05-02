@@ -157,6 +157,36 @@ def accept_resource_serial(resource, strict=True):
     return resource
 
 
+def mark_resource_serial_as_accepted(resource):
+    serial = resource.serial
+    mark_serial_as_accepted(serial)
+    resource.serial = None
+    resource.save()
+    return resource
+
+
+def mark_resource_serial_as_rejected(resource):
+    serial = resource.serial
+    mark_serial_as_rejected(serial)
+    resource.serial = None
+    resource.save()
+    return resource
+
+
+def mark_serial_as_accepted(serial):
+    log.debug("Marking serial %s as accepted" % serial)
+    serial.accept = True
+    serial.pending = False
+    serial.save()
+
+
+def mark_serial_as_rejected(serial):
+    log.debug("Marking serial %s as rejected" % serial)
+    serial.accept = False
+    serial.pending = False
+    serial.save()
+
+
 def accept_serial(serial, strict=True):
     assert serial.pending or serial.accept, "%s can't be accepted" % serial
     log.debug("Accepting serial %s", serial)
@@ -171,8 +201,10 @@ def reject_resource_serial(resource, strict=True):
     return resource
 
 
-def reject_serial(serial, strict=True):
-    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+def reject_serial(serial, strict=True, force=False):
+    if not force:
+        assert serial.pending or not serial.accept,\
+                "%s can't be rejected" % serial
     log.debug("Rejecting serial %s", serial)
     _resolve_commissions(reject=[serial.serial], strict=strict)
 

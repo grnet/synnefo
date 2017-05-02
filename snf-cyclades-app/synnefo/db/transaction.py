@@ -27,6 +27,7 @@ functions:
  * rollback
 """
 
+import logging
 from functools import wraps
 from django.db import transaction
 
@@ -34,6 +35,8 @@ from snf_django.utils.transaction import _transaction_func
 from snf_django.utils.transaction import atomic as snf_atomic
 from snf_django.utils.db import select_db
 from synnefo import quotas
+
+log = logging.getLogger(__name__)
 
 
 def commit(using=None):
@@ -80,6 +83,90 @@ class SerialContext(object):
         else:
             if serial.pending:
                 quotas.reject_serial(serial)
+
+
+class Job(object):
+    description = None
+    fn = None
+    args = None
+    kwargs = None
+
+    def __init__(self, fn, args=None, kwargs=None, description=None):
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.description = description
+
+    def run(self):
+        try:
+            args = self.args if self.args is not None else []
+            kwargs = self.kwargs if self.kwargs is not None else {}
+            return self.fn(*args, **kwargs)
+        except:
+            log.exception("Failed to execute Job (%s %s)", self.description,
+                          self.fn)
+
+    __call__ = run
+
+
+def handle_serial_success(serial):
+    if serial.accept and not serial.pending:
+        quotas.accept_serial(serial)
+
+
+def handle_serial_fail(serial):
+    if serial.pending:
+        quotas.reject_serial(serial)
+
+
+class DeferredJobContext(object):
+    def __init__(self, *args, **kwargs):
+        self._serial = None
+        self._deferred_jobs = []
+        self._on_success = []
+        self._on_failure = []
+
+    def set_serial(self, serial):
+        if self._serial is not None:
+            raise ValueError("Cannot set multiple serials")
+        self._serial = serial
+        self.add_on_success_job(
+            Job(handle_serial_success, args=(serial,)))
+        self.add_on_failure_job(Job(handle_serial_fail, args=(serial,)))
+
+    def add_deferred_job(self, def_job):
+        self.add_on_success_job(def_job)
+        self.add_on_failure_job(def_job)
+
+    def add_deferred_jobs(self, def_jobs):
+        self.add_on_success_jobs(def_jobs)
+        self.add_on_failure_jobs(def_jobs)
+
+    def add_on_success_job(self, def_job):
+        self._on_success.append(def_job)
+
+    def add_on_success_jobs(self, def_jobs):
+        self._on_success += def_jobs
+
+    def add_on_failure_job(self, def_job):
+        self._on_failure.append(def_job)
+
+    def add_on_failure_jobs(self, def_jobs):
+        self._on_failure += def_jobs
+
+    def _run_jobs(self, jobs):
+        # Run each job independently and let jobs declare/run their dependecies
+        for job in jobs:
+            try:
+                job.run()
+            except:
+                log.exception("Failed to execute job (%s)", job)
+
+    def handle(self, success):
+        if success:
+            self._run_jobs(self._on_success)
+        else:
+            self._run_jobs(self._on_failure)
 
 
 def atomic_context(func):

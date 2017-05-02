@@ -39,3 +39,6 @@ SESSION_SERIALIZER = 'synnefo.webproject.session_serializer.DateTimeAwareJSON'
 # The testing framework should be explicitly set in the test settings.
 # It is here set to empty string to silence Django's upgrade warning.
 TEST_RUNNER = ''
+
+SNF_MANAGE_USER = 'synnefo'
+SNF_MANAGE_GROUP = 'synnefo'

@@ -812,8 +812,13 @@
         has_status: true,
         proxy_attrs: {
           'disk_template': [
-            ['flavor'], function() {
+            ['flavor', 'is_ghost'], function() {
+              if (this.get('is_ghost')) { return undefined }
               var flv = synnefo.storage.flavors.get(this.get('flavor'));
+              if (!flv) {
+                storage.flavors.update_unknown_id(this.get('flavor'));
+                flv = storage.flavors.get(this.get('flavor'));
+              }
               return flv && flv.get('disk_template');
             }
           ],

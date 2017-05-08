@@ -16,13 +16,16 @@
 import logging
 from django.test import TransactionTestCase
 
-from synnefo.db.models import VirtualMachine, Network, BackendNetwork
+from synnefo.db.models import (VirtualMachine, Network, BackendNetwork,
+                               RescueImage)
 from synnefo.db import models_factory as mfactory
 from synnefo.logic import reconciliation
 from mock import patch
 from snf_django.utils.testing import mocked_quotaholder
 from time import time
 from synnefo import settings
+
+import os
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
@@ -36,7 +39,8 @@ class ServerReconciliationTest(TransactionTestCase):
                    "fix_orphans": True,
                    "fix_unsynced_nics": True,
                    "fix_unsynced_disks": True,
-                   "fix_unsynced_flavors": True}
+                   "fix_unsynced_flavors": True,
+                   "fix_unsynced_rescue": True}
         self.reconciler = reconciliation.BackendReconciler(self.backend,
                                                            options=options,
                                                            logger=log)
@@ -145,6 +149,137 @@ class ServerReconciliationTest(TransactionTestCase):
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
         self.assertEqual(vm1.operstate, "STARTED")
+
+    def test_unsynced_rescue_with_known_image(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             rescue=False,
+                                             rescue_image=None,
+                                             operstate="STOPPED")
+        rescue_image = mfactory.RescueImageFactory(
+                location="test.iso", location_type=RescueImage.FILETYPE_FILE)
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "hvparams": {
+                  "cdrom_image_path": os.path.join(settings.RESCUE_IMAGE_PATH,
+                                                   "test.iso"),
+                  "boot_order": "cdrom"
+              },
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.rescue, True)
+        self.assertEqual(vm1.rescue_image, rescue_image)
+
+    def test_unsynced_rescue_with_different_image(self, mrapi):
+        ganeti_image = mfactory.RescueImageFactory(
+            location="gnt-test.iso", location_type=RescueImage.FILETYPE_FILE)
+        cyclades_image = mfactory.RescueImageFactory(
+            location="snf-test.iso", location_type=RescueImage.FILETYPE_FILE)
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             rescue=True,
+                                             rescue_image=cyclades_image,
+                                             operstate="STOPPED")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "hvparams": {
+                  "cdrom_image_path": os.path.join(settings.RESCUE_IMAGE_PATH,
+                                                   "gnt-test.iso"),
+                  "boot_order": "cdrom"
+              },
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.rescue, True)
+        self.assertEqual(vm1.rescue_image, ganeti_image)
+
+    def test_unsynced_rescue_with_unknown_image(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             rescue=False,
+                                             rescue_image=None,
+                                             operstate="STOPPED")
+        rescue_image = mfactory.RescueImageFactory(
+            location="known.iso", location_type=RescueImage.FILETYPE_FILE)
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "hvparams": {"cdrom_image_path": "/some/path/unknown.iso",
+                           "boot_order": "cdrom"},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.rescue, True)
+        self.assertEqual(vm1.rescue_image, None)
+
+    def test_unsynced_unrescue(self, mrapi):
+        rescue_image = mfactory.RescueImageFactory(location="known.iso")
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             rescue=True,
+                                             rescue_image=rescue_image,
+                                             operstate="STOPPED")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "hvparams": {"cdrom_image_path": "",
+                           "boot_order": "disk"},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.rescue, False)
+        self.assertEqual(vm1.rescue_image, None)
 
     def test_unsynced_flavor(self, mrapi):
         flavor1 = mfactory.FlavorFactory(cpu=2, ram=1024, disk=1,

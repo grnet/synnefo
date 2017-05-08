@@ -109,6 +109,20 @@ class OfflineBackend(BackendFactory):
     offline = True
 
 
+class RescuePropertiesFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.RescueProperties
+
+
+class RescueImageFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.RescueImage
+
+    location = 'foo-rescue.iso'
+    os_family = 'linux'
+    os = 'debian'
+    name = "test_rescue_image"
+    is_default = False
+
+
 class VirtualMachineFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.VirtualMachine
 
@@ -123,6 +137,9 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     # operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
     project = factory.LazyAttribute(lambda a: a.userid)
+    rescue = False
+    rescue_image = factory.SubFactory(RescueImageFactory)
+    rescue_properties = factory.SubFactory(RescuePropertiesFactory)
 
 
 class VolumeFactory(factory.DjangoModelFactory):
@@ -166,7 +183,6 @@ class VirtualMachineMetadataFactory(factory.DjangoModelFactory):
     meta_key = factory.Sequence(prefix_seq('key'))
     meta_value = factory.Sequence(prefix_seq('pass'))
     vm = factory.SubFactory(VirtualMachineFactory)
-
 
 class NetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Network

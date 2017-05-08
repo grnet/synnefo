@@ -156,6 +156,8 @@ class VirtualMachineTest(TestCase):
         self.assertEqual(vm.backendjobstatus, None)
         self.assertEqual(vm.backendopcode, None)
         self.assertEqual(vm.backendlogmsg, None)
+        self.assertFalse(vm.rescue)
+        self.assertEqual(vm.rescue_image, None)
         self.assertEqual(vm.operstate, 'BUILD')
 
 

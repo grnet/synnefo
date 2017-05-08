@@ -21,7 +21,8 @@ from random import randint
 from django.test import TransactionTestCase
 
 from synnefo.db.models import (VirtualMachine, IPAddress, BackendNetwork,
-                               Network, BridgePoolTable, MacPrefixPoolTable)
+                               Network, BridgePoolTable, MacPrefixPoolTable,
+                               RescueImage)
 from synnefo.db import models_factory as mfactory
 from synnefo.lib.utils import split_time
 from datetime import datetime
@@ -32,10 +33,12 @@ from synnefo.logic.callbacks import (update_db, update_network,
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.db import transaction
+from synnefo import settings
 
 now = datetime.now
 from time import time
 import json
+import os
 
 
 # Test Callbacks
@@ -256,6 +259,105 @@ class UpdateDBTest(TransactionTestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, vm.operstate)
         self.assertEqual(db_vm.backendtime, vm.backendtime)
+
+    def test_rescue_with_known_image(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm.operstate = "STOPPED"
+        status = "success"
+        vm.save()
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': os.path.join(
+                                    settings.RESCUE_IMAGE_PATH, 'test.iso'),
+                                'boot_order': 'cdrom,disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_rescue_with_unknown_image(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        rescue_image = mfactory.RescueImageFactory(
+            location='known.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm.operstate = "STOPPED"
+        status = "success"
+        vm.save()
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': os.path.join(
+                                    settings.RESCUE_IMAGE_PATH, 'none.iso'),
+                                'boot_order': 'cdrom,disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertTrue(db_vm.rescue)
+        self.assertTrue(db_vm.rescue_image is None)
+
+    def test_start_rescued_vm(self, client):
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm = mfactory.VirtualMachineFactory(rescue=True,
+                                            rescue_image=rescue_image)
+        msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
+                              instance=vm.backend_vm_id)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        # VM should start normally and the rescue flag
+        # should remain true
+        self.assertEqual(db_vm.operstate, "STARTED")
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_shutdown_rescued_vm(self, client):
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm = mfactory.VirtualMachineFactory(rescue=True,
+                                            rescue_image=rescue_image)
+        msg = self.create_msg(operation='OP_INSTANCE_SHUTDOWN',
+                              instance=vm.backend_vm_id)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, 'STOPPED')
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_unrescue(self, client):
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED", rescue=True)
+        status = "success"
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': '',
+                                'boot_order': 'disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertFalse(db_vm.rescue)
+        self.assertTrue(db_vm.rescue_image is None)
 
     def test_resize_msg(self, client):
         vm = mfactory.VirtualMachineFactory()

@@ -113,6 +113,22 @@
                     <div class="action-container resize">
                         <a class="single-action action-resize">{% trans "Resize" %}</a>
                     </div>
+                    {% if rescue_enabled %}
+                    <div class="action-container rescue">
+                        <a class="single-action action-rescue">{% trans "Rescue" %}</a>
+                        <div class="confirm_single">
+                            <button class="yes">{% trans "Confirm" %}</button>
+                            <button class="no">X</button>
+                        </div>
+                    </div>
+                    <div class="action-container unrescue">
+                        <a class="single-action action-unrescue">{% trans "Unrescue" %}</a>
+                        <div class="confirm_single">
+                            <button class="yes">{% trans "Confirm" %}</button>
+                            <button class="no">X</button>
+                        </div>
+                    </div>
+                    {% endif %}
                     <div class="action-container destroy">
                         <a class="single-action action-destroy">{% trans "Destroy" %}</a>
                         <div class="confirm_single">

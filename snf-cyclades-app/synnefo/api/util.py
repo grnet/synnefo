@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -246,7 +246,7 @@ def get_image_dict(image_id, user_id):
     return image
 
 
-def get_flavor(flavor_id, include_deleted=False):
+def get_flavor(flavor_id, include_deleted=False, for_project=None, user=None):
     """Return a Flavor instance or raise ItemNotFound."""
 
     try:
@@ -254,11 +254,33 @@ def get_flavor(flavor_id, include_deleted=False):
         flavors = Flavor.objects.select_related("volume_type")
         if not include_deleted:
             flavors = flavors.filter(deleted=False)
-        return flavors.get(id=flavor_id)
+        flavor = flavors.get(id=flavor_id)
+        if not has_access_to_flavor(flavor, project=for_project, user=user):
+            raise faults.Forbidden("Insufficient access")
+        return flavor
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
     except Flavor.DoesNotExist:
         raise faults.ItemNotFound('Flavor not found.')
+
+
+def has_access_to_flavor(flavor, project=None, user=None):
+    """Return True if the flavor is public or a project has access to the
+       flavor or the specified user has VMs using this flavor.
+    """
+    if flavor.public:
+        return True
+    if project is not None:
+        if not isinstance(project, list):
+            project = [project]
+        if flavor.access.filter(project__in=project).count() > 0:
+            return True
+    if user is not None:
+        # XXX: Should this include also the case where the VM is shared to the
+        # project, in which it is not owned by the particular user ?
+        if flavor.virtual_machines.filter(userid=user).count() > 0:
+            return True
+    return False
 
 
 def get_network(network_id, user_id, projects, for_update=False,

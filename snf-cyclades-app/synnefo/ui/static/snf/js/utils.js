@@ -236,6 +236,14 @@
     synnefo.util.IP_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
     synnefo.i18n.API_ERROR_MESSAGES = {
+        '403': {
+            'non_critical': true,
+            'allow_report': false,
+            'allow_reload': false,
+            'allow_details': false,
+            'details': false,
+            'title': 'API error'
+        },
         'timeout': {
             'title': 'API error',
             'message': 'TIMEOUT', 

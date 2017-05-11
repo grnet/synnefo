@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,6 +46,13 @@ class Command(SynnefoCommand):
             choices=["True", "False"],
             default=None,
             help="Set if users can create servers with this flavor"),
+        make_option(
+            '--public',
+            dest='public',
+            choices=["True", "False"],
+            metavar="True|False",
+            default=None,
+            help="Mark the flavor as public")
     )
 
     @transaction.commit_on_success
@@ -55,18 +62,25 @@ class Command(SynnefoCommand):
 
         flavor = get_resource("flavor", args[0], for_update=True)
 
-        deleted = options['deleted']
-
+        deleted = options.get('deleted')
         if deleted:
             deleted = parse_bool(deleted)
             log.info("Marking flavor %s as deleted=%s", flavor, deleted)
             flavor.deleted = deleted
-            flavor.save()
 
-        allow_create = options['allow_create']
+        public = options.get('public')
+        if public:
+            public = parse_bool(public, strict=True)
+            log.info("Marking flavor %s as public=%s", flavor, public)
+            flavor.public = public
+
+        allow_create = options.get('allow_create')
         if allow_create:
             allow_create = parse_bool(allow_create)
             log.info("Marking flavor %s as allow_create=%s", flavor,
                      allow_create)
             flavor.allow_create = allow_create
+
+        if deleted is not None or public is not None\
+           or allow_create is not None:
             flavor.save()

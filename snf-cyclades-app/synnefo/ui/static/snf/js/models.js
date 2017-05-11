@@ -1478,7 +1478,7 @@
 
         get_resize_flavors: function() {
           var vm_flavor = this.get_flavor();
-          var flavors = synnefo.storage.flavors.filter(function(f){
+          var flavors = synnefo.storage.flavors.active(this.get('project')).filter(function(f){
               return f.get('disk_template') ==
               vm_flavor.get('disk_template') && f.get('disk') ==
               vm_flavor.get('disk');
@@ -2278,8 +2278,15 @@
             return data;
         },
 
-        active: function() {
-            return this.filter(function(flv){return flv.get('status') != "DELETED"});
+        active: function(project) {
+            return this.filter(function(flv) {
+                is_active = flv.get('status') != "DELETED";
+                if(project !== undefined) {
+                    is_active &= flv.get('os-flavor-access:is_public') |
+                                 flv.get('SNF:flavor-access').indexOf(project.get('id')) >= 0;
+                }
+                return is_active;
+            });
         }
             
     })

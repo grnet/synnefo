@@ -70,6 +70,14 @@ class FlavorFactory(factory.DjangoModelFactory):
     disk = factory.Sequence(lambda n: n * 1, type=int)
     volume_type = factory.SubFactory(VolumeTypeFactory)
     deleted = False
+    public = True
+
+
+class FlavorAccessFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.FlavorAccess
+
+    project = factory.Sequence(prefix_seq("project"))
+    flavor = factory.SubFactory(FlavorFactory)
 
 
 class BackendFactory(factory.DjangoModelFactory):
@@ -112,7 +120,7 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     deleted = False
     suspended = False
     key_names = []
-    #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
+    # operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
     project = factory.LazyAttribute(lambda a: a.userid)
 

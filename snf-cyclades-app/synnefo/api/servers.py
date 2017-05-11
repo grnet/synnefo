@@ -30,7 +30,6 @@ from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
-from synnefo import cyclades_settings
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -57,6 +56,7 @@ VOLUME_SOURCE_TYPES = [
     "volume",
     "blank"
 ]
+
 
 def demux(request):
     if request.method == 'GET':
@@ -221,7 +221,8 @@ def vm_to_dict(vm, detail=False):
         d['attachments'] = attachments
         d['addresses'] = attachments_to_addresses(attachments)
 
-        d['volumes'] = [v.id for v in vm.volumes.filter(deleted=False).order_by('id')]
+        d['volumes'] = [v.id for v in vm.volumes.filter(deleted=False)
+                                                .order_by('id')]
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
@@ -293,7 +294,7 @@ def get_server_port_forwarding(vm, vm_nics, fqdn):
         msg = ("Invalid setting: CYCLADES_PORT_FOWARDING."
                " Value must be a tuple of two elements (host, port).")
         if not isinstance(to_dest, tuple) or len(to_dest) != 2:
-                raise faults.InternalServerError(msg)
+            raise faults.InternalServerError(msg)
         else:
             try:
                 host, port = to_dest
@@ -414,7 +415,7 @@ def create_server(request):
         if networks is not None:
             assert isinstance(networks, list)
         project = server.get("project")
-        shared_to_project=server.get("shared_to_project", False)
+        shared_to_project = server.get("shared_to_project", False)
         key_name = server.get('key_name')
         SNF_key_names = server.get('SNF:key_names', [])
         assert isinstance(SNF_key_names, list)
@@ -429,10 +430,15 @@ def create_server(request):
             allowed_types.append('snapshot')
         volumes = parse_block_device_mapping(dev_map, allowed_types)
 
+    # If no project is provided, use the user's system project as default.
+    if project is None:
+        project = user_id
+
     # Verify that personalities are well-formed
     util.verify_personality(personality)
-    # Get flavor (ensure it is active)
-    flavor = util.get_flavor(flavor_id, include_deleted=False)
+    # Get flavor (ensure it is active and project has access)
+    flavor = util.get_flavor(flavor_id, include_deleted=False,
+                             for_project=project)
     if not util.can_create_flavor(flavor, request.user):
         msg = ("It is not allowed to create a server from flavor with id '%d',"
                " see 'allow_create' flavor attribute")
@@ -606,7 +612,7 @@ def update_server_name(request, server_id):
 
     req = utils.get_json_body(request)
     log.debug("User: %s, VM: %s, Action: rename, Request: %s",
-               request.user_uniq, server_id, req)
+              request.user_uniq, server_id, req)
 
     req = utils.get_attribute(req, "server", attr_type=dict, required=True)
     name = utils.get_attribute(req, "name", attr_type=basestring,
@@ -676,7 +682,7 @@ def demux_server_action(request, server_id):
 
     # Do not allow any action on deleted or suspended VMs
     vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
-                     for_update=True,  non_deleted=True, non_suspended=True)
+                     for_update=True, non_deleted=True, non_suspended=True)
 
     try:
         action = req.keys()[0]
@@ -777,8 +783,8 @@ def update_metadata(request, server_id):
     log.debug("User: %s, VM: %s, Action: update_metadata, Request: %s",
               request.user_uniq, server_id, req)
 
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
-                     non_deleted=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     non_suspended=True, non_deleted=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
 
@@ -896,8 +902,8 @@ def delete_metadata_item(request, server_id, key):
 
     log.debug("User: %s, VM: %s, Action: delete_metadata, Key: %s",
               request.user_uniq, server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
-                     non_deleted=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     non_suspended=True, non_deleted=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()
@@ -1049,7 +1055,8 @@ def resize(request, vm, args):
     flavor_id = args.get("flavorRef")
     if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
-    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
+    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
+                             for_project=vm.project)
     servers.resize(vm, flavor=flavor)
 
     log.info("User %s resized VM %s to flavor %s",
@@ -1223,7 +1230,7 @@ def reassign(request, vm, args):
 
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
         raise faults.Forbidden("Sharing resource to the members of the project"
-                                " is not permitted")
+                               " is not permitted")
 
     project = args.get("project")
     if project is None:
@@ -1258,7 +1265,7 @@ def add(request, net, args):
     servers.connect(vm, network=net)
 
     log.info("User %s connected VM %s to network %s",
-             request.user_uniq, vm.id, network.id)
+             request.user_uniq, vm.id, net)
 
     return HttpResponse(status=202)
 
@@ -1285,13 +1292,13 @@ def remove(request, net, args):
 
     nic = util.get_nic(nic_id=nic_id)
     server_id = nic.machine_id
-    vm = util.get_vm(server_id, request.user_uniq, request.user_projects, non_suspended=True,
-                     for_update=True, non_deleted=True)
+    vm = util.get_vm(server_id, request.user_uniq, request.user_projects,
+                     non_suspended=True, for_update=True, non_deleted=True)
 
     servers.disconnect(vm, nic)
 
     log.info("User %s disconnected VM %s to network %s, port: %s",
-             request.user_uniq, vm.id, network.id, nic.id)
+             request.user_uniq, vm.id, net, nic.id)
 
     return HttpResponse(status=202)
 
@@ -1304,7 +1311,8 @@ def add_floating_ip(request, vm, args):
 
     userid = vm.userid
     floating_ip = util.get_floating_ip_by_address(userid,
-            request.user_projects, address, for_update=True)
+                                                  request.user_projects,
+                                                  address, for_update=True)
 
     servers.create_port(userid, floating_ip.network, machine=vm,
                         use_ipaddress=floating_ip)
@@ -1323,7 +1331,8 @@ def remove_floating_ip(request, vm, args):
         raise faults.BadRequest("Missing 'address' attribute")
 
     floating_ip = util.get_floating_ip_by_address(vm.userid,
-            request.user_projects, address, for_update=True)
+                                                  request.user_projects,
+                                                  address, for_update=True)
     if floating_ip.nic is None:
         raise faults.BadRequest("Floating IP %s not attached to instance"
                                 % address)

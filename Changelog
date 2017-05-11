@@ -17,6 +17,7 @@ Synnefo-wide
 ------------
 
 * snf-manage now records the synnefo logs to synnefo.log, similar to gunicorn.
+* snf-manage now drops priviledges to 'synnefo:synnefo' user by default.
 
 Cyclades
 --------

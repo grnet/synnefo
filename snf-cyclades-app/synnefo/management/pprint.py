@@ -518,3 +518,27 @@ def pprint_floating_ip(ip, display_mails=False, stdout=None, title=None):
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)
+
+
+def pprint_flavor(flavor, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "Flavor %s" % flavor.name
+
+    flavor_specs = ', '.join([str(spec) for spec in flavor.specs.all()])
+
+    flavor_info = OrderedDict([
+        ("id", flavor.id),
+        ("name", flavor.name),
+        ("cpu", flavor.cpu),
+        ("ram", flavor.ram),
+        ("disk", flavor.disk),
+        ("volume_type", flavor.volume_type_id),
+        ("template", flavor.volume_type.disk_template),
+        ("allow_create", flavor.allow_create),
+        ("public", flavor.public),
+        ("specs", flavor_specs),
+    ])
+
+    pprint_table(stdout, flavor_info.items(), separator=" | ", title=title)

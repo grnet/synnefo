@@ -30,6 +30,7 @@ Cyclades
   storage scripts.
 * Add 'public' flag to Flavors and FlavorAccess to assign access to flavors
   only to specific projects.
+* Add Flavor specs which provide extra Key-Value based specs to flavors
 
 Astakos
 -------

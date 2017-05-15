@@ -85,3 +85,59 @@ class NetworkInterfacePolicy(Policy):
 
 class VolumePolicy(Policy):
     model = models.Volume
+
+
+class FlavorPolicy(Policy):
+    model = models.Flavor
+
+    @classmethod
+    def filter_list(cls, credentials, for_project=None,
+                    include_for_user=False):
+        queryset = cls.model.objects.all()
+        if credentials.is_admin:
+            return queryset
+
+        projects = credentials.user_projects
+        if for_project is not None:
+            if not isinstance(for_project, list):
+                for_project = [for_project]
+            projects = for_project
+
+        _filter = (
+            Q(access__project__in=projects) |
+            Q(public=True))
+
+        if include_for_user:
+            _filter |= Q(virtual_machines__userid=credentials.userid)
+
+        return queryset.filter(_filter).distinct()
+
+    @classmethod
+    def access_to_flavor(cls, flavor, project=None, user=None):
+        """Return True if the flavor is public or a project has access to the
+           flavor or the specified user has VMs using this flavor.
+        """
+        if flavor.public:
+            return True
+        if project is not None:
+            if not isinstance(project, list):
+                project = [project]
+            if flavor.access.filter(project__in=project).count() > 0:
+                return True
+        if user is not None:
+            # XXX: Should this include also the case where the VM is shared to
+            # the project, in which it is not owned by the particular user ?
+            if flavor.virtual_machines.filter(userid=user).count() > 0:
+                return True
+        return False
+
+    @classmethod
+    def has_access_to_flavor(cls, flavor, credentials, project=None,
+                             include_for_user=False):
+        """Return True if the flavor is public or a project has access to the
+           flavor or the specified user has VMs using this flavor.
+        """
+        user = credentials.userid if include_for_user else None
+        project = credentials.user_projects if project is None else project
+        return FlavorPolicy.access_to_flavor(flavor, project=project,
+                                             user=user)

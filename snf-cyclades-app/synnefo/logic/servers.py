@@ -36,6 +36,7 @@ from synnefo.volume.volumes import _create_volume
 from synnefo.volume.util import get_volume, assign_volume_to_server
 from synnefo.logic import commands
 from synnefo.logic import server_attachments
+from synnefo.logic.policy import FlavorPolicy
 from synnefo import quotas
 from snf_django.lib import api
 
@@ -346,7 +347,7 @@ def reboot(server_id, reboot_type, shutdown_timeout=None, credentials=None,
 def resize(server_id, flavor_id, credentials=None, atomic_context=None):
     vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True, non_suspended=True)
-    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False,
+    flavor = util.get_flavor(flavor_id, credentials, include_deleted=False,
                              for_project=vm.project)
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
@@ -395,7 +396,8 @@ def reassign(server_id, project, shared_to_project, credentials=None,
                 vm.backend.projects.filter(project=project).exists()):
             raise faults.Forbidden("Cannot reassign VM. Target project "
                                    "doesn't have access to the VM's backend.")
-        if not util.has_access_to_flavor(vm.flavor, project=project):
+        if not FlavorPolicy.has_access_to_flavor(vm.flavor, credentials,
+                                                 project=project):
             raise faults.Forbidden("Cannot reassign VM. Target project "
                                    "doesn't have access to the VM's flavor.")
         vm.project = project

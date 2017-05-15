@@ -439,7 +439,7 @@ def create_server(request):
     # Verify that personalities are well-formed
     util.verify_personality(personality)
     # Get flavor (ensure it is active and project has access)
-    flavor = util.get_flavor(flavor_id, include_deleted=False,
+    flavor = util.get_flavor(flavor_id, credentials, include_deleted=False,
                              for_project=project)
     if not util.can_create_flavor(flavor, request.user):
         msg = ("It is not allowed to create a server from flavor with id '%d',"

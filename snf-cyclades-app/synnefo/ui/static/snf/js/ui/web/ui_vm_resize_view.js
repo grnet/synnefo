@@ -182,7 +182,7 @@
         },
         flavor_is_valid: function(flavor) {
             var quotas = this.project.quotas.get_available_for_vm({'active': true});
-            var extra_quotas = this.extra_quotas;
+            var extra_quotas = this.extra_quotas || {'cpu': 0, 'ram': 0, 'disk': 0};
 
             return (quotas['cpu'] + extra_quotas.cpu >= flavor.get('cpu') &&
                     quotas['ram'] + extra_quotas.ram * 1024 * 1024 >= flavor.ram_to_bytes() &&

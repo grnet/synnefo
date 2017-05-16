@@ -186,7 +186,7 @@
 
             return (quotas['cpu'] + extra_quotas.cpu >= flavor.get('cpu') &&
                     quotas['ram'] + extra_quotas.ram * 1024 * 1024 >= flavor.ram_to_bytes() &&
-                    quotas['disk'] + extra_quotas.disk * 1024 * 1024 >= flavor.disk_to_bytes())
+                    quotas['disk'] + extra_quotas.disk * 1024 * 1024 * 1024 >= flavor.disk_to_bytes())
         },
 
         set_flavor: function(flavor) {

@@ -2224,10 +2224,10 @@
                 var cpu = flv.get('cpu');
                 var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
                 var ram = flv.ram_to_bytes()
-                var disk_available = quotas['disk'] + extra.disk;
+                var disk_available = quotas['disk'] + extra.disk * 1024 * 1024 * 1024;
                 var disk = flv.disk_to_bytes();
 
-                return cpu_available > cpu & ram_available > ram & disk_available > disk;
+                return cpu_available >= cpu & ram_available >= ram & disk_available >= disk;
             }
 
             var available_values = {}

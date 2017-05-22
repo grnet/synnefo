@@ -45,12 +45,13 @@ import itertools
 import bitarray
 import json
 from datetime import datetime, timedelta
+import os
 
 from synnefo.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                pooled_rapi_client, Network,
                                BackendNetwork, BridgePoolTable,
-                               MacPrefixPoolTable)
+                               MacPrefixPoolTable, RescueImage)
 from synnefo.db import pools
 from synnefo.logic import utils, rapi, backend as backend_mod
 from synnefo.lib.utils import merge_time
@@ -207,6 +208,7 @@ class BackendReconciler(object):
                                            gnt_server)
             self.reconcile_unsynced_nics(server_id, db_server, gnt_server)
             self.reconcile_unsynced_disks(server_id, db_server, gnt_server)
+            self.reconcile_unsynced_rescue(server_id, gnt_server, db_server)
             if db_server.task is not None:
                 self.reconcile_pending_task(server_id, db_server)
 
@@ -393,6 +395,62 @@ class BackendReconciler(object):
                 self.log.info("Cleared pending task for server '%s", server_id)
 
     @transaction.atomic
+    def reconcile_unsynced_rescue(self, server_id, gnt_server, db_server):
+        # Find servers that are using a cdrom as their primary boot device,
+        # an check if these servers are in rescue mode in cyclades.
+        hvparams = gnt_server.get("hvparams")
+        if hvparams is None:
+            return
+
+        cdrom_image_path = hvparams.get('cdrom_image_path', '')
+        boot_order = hvparams.get('boot_order', '')
+
+        changed = False
+        # If both cdrom_image_path is set and boot_order has cdrom priority,
+        # then the VM is in rescue mode. We just have to figure out if the
+        # rescue image is set correctly
+        if boot_order.startswith('cdrom') and len(cdrom_image_path) > 0:
+            # The server is not in rescue mode in cyclades
+            if not db_server.rescue or db_server.rescue_image is None:
+                changed = True
+            else:
+                location = db_server.rescue_image.location
+                if (db_server.rescue_image.location_type ==
+                        RescueImage.FILETYPE_FILE):
+                    # The location of the image in Ganeti is always a fullpath,
+                    # while in cyclades only the filename is stored.
+                    location = os.path.join(settings.RESCUE_IMAGE_PATH,
+                                            location)
+                # The VM in Ganeti is in rescue mode with a different image
+                # than Ganeti
+                if location != cdrom_image_path:
+                    changed = True
+        else:
+            # The server is not on rescue mode in Ganeti but it is on cyclades
+            if db_server.rescue or db_server.rescue_image is not None:
+                changed = True
+
+        if changed:
+            self.log.info("Found unsynced rescue state for server %s: "
+                          "VM rescue: %s, VM rescue image location: %s "
+                          "boot_order: %s, cdrom_image_path: %s", db_server.id,
+                          db_server.rescue,
+                          db_server.rescue_image.location
+                          if db_server.rescue_image else None,
+                          boot_order, cdrom_image_path)
+            if self.options["fix_unsynced_rescue"]:
+                hvparams = {
+                    'boot_order': boot_order,
+                    'cdrom_image_path': cdrom_image_path
+                }
+                vm = get_locked_server(server_id)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    hvparams=hvparams)
+
+    @transaction.atomic
     def reconcile_unsynced_snapshots(self):
         # Find the biggest ID of the retrieved Ganeti jobs. Reconciliation
         # will be performed for IDs that are smaller from this.
@@ -552,7 +610,6 @@ def parse_gnt_instance(instance):
         'ram': ram,
         'disk': disk
     }
-
     return {
         "id": instance_id,
         "state": state,  # FIX
@@ -560,6 +617,7 @@ def parse_gnt_instance(instance):
         "disks": disks,
         "nics": nics_from_instance(instance),
         "flavor": flavor,
+        "hvparams": instance.get("hvparams"),
         "tags": instance["tags"]
     }
 

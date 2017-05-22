@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,6 +68,9 @@ class Command(SynnefoCommand):
         make_option('--fix-unsynced-snapshots', action='store_true',
                     dest='fix_unsynced_snapshots', default=False,
                     help='Fix unsynced snapshots.'),
+        make_option('--fix-unsynced-rescue', action='store_true',
+                    dest='fix_unsynced_rescue', default=False,
+                    help='Fix unsynced rescue.'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
     )

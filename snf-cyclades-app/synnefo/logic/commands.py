@@ -71,9 +71,17 @@ def validate_server_action(vm, action):
           and not settings.GANETI_USE_HOTPLUG) or \
          (action in ["ATTACH_VOLUME", "DETACH_VOLUME", "DELETE_VOLUME"]
           and operstate != "STOPPED"
-          and not settings.GANETI_USE_HOTPLUG):
+          and not settings.GANETI_USE_HOTPLUG) or \
+         (action == "RESCUE" and operstate != "STOPPED") or\
+         (action == "UNRESCUE" and operstate != "STOPPED"):
         raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
+    elif action == "RESCUE" and vm.rescue:
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
+                                " in rescue mode." % action)
+    elif action == "UNRESCUE" and not vm.rescue:
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
+                                " not in rescue mode." % action)
     return
 
 

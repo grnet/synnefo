@@ -123,7 +123,8 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields,
 
 
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
-                      disks=None, job_fields=None, atomic_context=None):
+                      disks=None, job_fields=None, atomic_context=None,
+                      hvparams=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -1248,6 +1249,42 @@ def disconnect_from_network(vm, nic):
                                       dry_run=settings.TEST)
 
         return job_id
+
+
+def rescue_instance(vm, rescue_image_ref):
+    log.debug("Rescuing instance %d with image %s", vm, rescue_image_ref)
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "hvparams": {
+            "boot_order": "cdrom",
+            "cdrom_image_path": rescue_image_ref,
+        }
+    }
+
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
+def unrescue_instance(vm):
+    log.debug("Unrescuing instance %d", vm)
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "hvparams": {
+            "cdrom_image_path": "",
+            "boot_order": "disk"
+        }
+    }
+
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
 
 
 def set_firewall_profile(vm, profile, nic):

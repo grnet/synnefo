@@ -68,6 +68,8 @@ class NotAllowed(Fault):
 class ItemNotFound(Fault):
     code = 404
 
+class FeatureNotEnabled(Fault):
+    code = 404
 
 class Conflict(Fault):
     code = 409

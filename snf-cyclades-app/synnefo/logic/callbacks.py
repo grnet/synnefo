@@ -212,9 +212,8 @@ def update_db(vm, msg, event_time, atomic_context=None):
 
     backend_mod.process_op_status(vm, event_time, jobID,
                                   operation, status,
-                                  logmsg, nics=nics,
-                                  disks=disks,
-                                  job_fields=job_fields,
+                                  logmsg, nics=nics, disks=disks,
+                                  hvparams=hvparams, job_fields=job_fields,
                                   atomic_context=atomic_context)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",

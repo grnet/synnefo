@@ -27,6 +27,7 @@ from Crypto.Cipher import AES
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.db.models import Q
 import json
 from django.core.cache import caches
 
@@ -34,7 +35,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
-                               IPPoolTable)
+                               IPPoolTable, RescueImage)
 from synnefo.userdata.models import PublicKeyPair
 from synnefo.plankton.backend import PlanktonBackend
 
@@ -87,6 +88,25 @@ def build_version_object(url, version_id, path, status, **extra_args):
         ],
     }
     return dict(base_version, **extra_args)
+
+
+class feature_enabled(object):
+    """
+    Decorator for toggling functions that are part of a feature.
+    """
+    def __init__(self, feature_name):
+        self.feature_name = feature_name
+
+    def __call__(self, func):
+
+        def decorator(*args, **kwargs):
+            feature_flag = getattr(settings, "%s_ENABLED"
+                                        % self.feature_name.upper(), False)
+            if feature_flag:
+                return func(*args, **kwargs)
+            else:
+                raise faults.FeatureNotEnabled()
+        return decorator
 
 
 def random_password():
@@ -245,6 +265,75 @@ def get_image_dict(image_id, user_id):
                              for key, val in properties.items())
 
     return image
+
+
+def get_rescue_image(properties=None, image_id=None):
+    """
+    Return a rescue image based on either a rescue image ID or
+    VM specific properties.
+
+    If properties are provided, the function will select the image based on the
+    importance of each property. For example, a VM has properties
+    OS-Family=Linux and OS=Debian, the system will attempt to find a Linux
+    Debian rescue image, if it fails to do so, it will attempt to select a
+    Linux image etc. If no image is suiting for the provided properties, a
+    default image will be used.
+    """
+    if image_id is not None:
+        try:
+            return RescueImage.objects.get(id=image_id)
+        except RescueImage.DoesNotExist:
+            raise faults.ItemNotFound('Rescue image %d not found' % image_id)
+
+    if properties is None:
+        try:
+            return RescueImage.objects.get(is_default=True, deleted=False)
+        except RescueImage.DoesNotExist:
+            raise faults.ItemNotFound('Rescue image not found')
+
+    os_family = properties.os_family
+    os = properties.os
+
+    candidate_images = RescueImage.objects.filter(deleted=False)
+    # Attempt to find an image that satisfies all properties
+    if os_family is not None and os is not None:
+        rescue_image = candidate_images.filter(
+                target_os_family__iexact=os_family,
+                target_os__iexact=os).first()
+        if rescue_image is not None:
+            return rescue_image
+
+    # In case none are found, we should select based on the OS Family
+    if os_family is not None:
+        rescue_image = candidate_images.filter(
+                target_os_family__iexact=os_family).first()
+        if rescue_image is not None:
+            return rescue_image
+    try:
+        # If we didn't find any images matching the criteria, fallback to
+        # a default image
+        return RescueImage.objects.get(is_default=True)
+    except RescueImage.DoesNotExist:
+        raise faults.ItemNotFound('Rescue image with properties: OS-Family %s '
+                                  ' and OS %s not found' % (os_family, os))
+
+
+def get_vms_using_rescue_image(rescue_image):
+    """
+    Return a list with the VMs that are using a specific rescue image
+
+    This function will return a list of VirtualMachine models that are either
+    in rescue mode with the underlying `rescue_image` or have a pending rescue
+    request with that `rescue_image`.
+    """
+    if rescue_image is None:
+        return []
+
+    return VirtualMachine.objects.filter(rescue_image=rescue_image).filter(
+                                         deleted=False).filter(
+                                         (Q(rescue=True)) |
+                                         (Q(rescue=False) &
+                                          Q(action="RESCUE")))
 
 
 def get_flavor(flavor_id, credentials, include_deleted=False, for_project=None,

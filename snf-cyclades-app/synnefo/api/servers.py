@@ -26,7 +26,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
-from synnefo.api.util import VM_PASSWORD_CACHE
+from synnefo.api.util import VM_PASSWORD_CACHE, feature_enabled
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
@@ -245,6 +245,7 @@ def vm_to_dict(vm, detail=False):
         d["SNF:port_forwarding"] = get_server_port_forwarding(vm, active_nics,
                                                               fqdn)
         d['deleted'] = vm.deleted
+        d['SNF:rescue'] = vm.rescue
     return d
 
 
@@ -1047,6 +1048,41 @@ def resize(request, server_id, args):
 
     log.info("User %s resized VM %s to flavor %s",
              credentials.userid, server_id, flavor_id)
+
+    return HttpResponse(status=202)
+
+
+@server_action('rescue')
+@feature_enabled('RESCUE')
+def rescue(request, server_id, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       serverCapacityUnavailable (503),
+    log.info("User %s initiated rescue mode on VM %s", request.user_uniq,
+             server_id)
+    credentials = request.credentials
+    rescue_image_ref = args.get("rescue_image_ref")
+    servers.rescue(server_id, rescue_image_ref, credentials=credentials)
+
+    return HttpResponse(status=202)
+
+
+@server_action('unrescue')
+@feature_enabled('RESCUE')
+def unrescue(request, server_id, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       serverCapacityUnavailable (503),
+    log.info("User %s initiated unrescue mode on VM %s", request.user_uniq,
+             server_id)
+    credentials = request.credentials
+    servers.unrescue(server_id, credentials=credentials)
 
     return HttpResponse(status=202)
 

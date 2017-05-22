@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from os import path
 
 from datetime import datetime
 from socket import getfqdn
@@ -29,7 +30,8 @@ from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Volume,
                                VirtualMachineMetadata, IPAddressHistory,
-                               IPAddress, Network, Image, pooled_rapi_client)
+                               IPAddress, Network, Image, RescueImage,
+                               RescueProperties, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -106,6 +108,7 @@ def create(credentials, name, password, flavor, image_id, metadata={},
             img.os = image["metadata"].get("OS", "unknown")
             img.osfamily = image["metadata"].get("OSFAMILY", "unknown")
             img.save()
+
     except Exception as e:
         # Image info is not critical. Continue if it fails for any reason
         log.warning("Failed to store image info: %s", e)
@@ -124,6 +127,7 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         util.get_keypair(key_name, userid).content for key_name in key_names
     ])
 
+
     vm_id, port_ids, volume_ids, origin_sizes = _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
         project, volumes, helper, shared_to_project,
@@ -138,6 +142,15 @@ def _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
         project, volumes, helper, shared_to_project, key_names,
         atomic_context=None):
+
+    rescue_properties = RescueProperties()
+    try:
+        rescue_properties.os = image["metadata"].get("OSFAMILY", '')
+        rescue_properties.os_family = image["metadata"].get("OS", '')
+    except KeyError as e:
+        log.error("Failed to parse iamge info: %s", e)
+
+    rescue_properties.save()
 
     # Create the ports for the server
     ports = create_instance_ports(credentials, networks)
@@ -154,6 +167,7 @@ def _db_create_server(
                                        key_names=json.dumps(key_names),
                                        flavor=flavor,
                                        operstate="BUILD",
+                                       rescue_properties=rescue_properties,
                                        helper=helper)
     log.info("Created entry in DB for VM '%s'", vm)
 
@@ -443,6 +457,43 @@ def disconnect_port(vm, nic):
     with commands.ServerCommand("DISCONNECT", vm):
         log.info("Removing NIC %s from VM %s", nic, vm)
         job_id = backend.disconnect_from_network(vm, nic)
+        vm.record_job(job_id)
+        return vm
+
+
+@transaction.atomic
+def rescue(server_id, rescue_image_ref=None, credentials=None):
+
+    with commands.ServerCommand(
+            "RESCUE", server_id, credentials=credentials) as vm:
+        if rescue_image_ref is None:
+            # If the user does not provide an image, the system should decide
+            # one based on the VM rescue properties
+            rescue_properties = vm.rescue_properties
+            rescue_image = util.get_rescue_image(properties=rescue_properties)
+        else:
+            rescue_image = util.get_rescue_image(image_id=rescue_image_ref)
+
+        # Rescue image field acts a 'RESCUING' state and should be assigned
+        # when a rescue action is issued
+        location = rescue_image.location
+
+        if rescue_image.location_type == RescueImage.FILETYPE_FILE:
+            location = path.join(settings.RESCUE_IMAGE_PATH, location)
+
+        vm.rescue_image = rescue_image
+        log.info("Rescuing VM %s with image %s", vm, location)
+        job_id = backend.rescue_instance(vm, location)
+        vm.record_job(job_id)
+        return vm
+
+
+@transaction.atomic
+def unrescue(server_id, credentials=None):
+    with commands.ServerCommand(
+            "UNRESCUE", server_id, credentials=credentials) as vm:
+        log.info("Unrescuing VM %s", vm)
+        job_id = backend.unrescue_instance(vm)
         vm.record_job(job_id)
         return vm
 

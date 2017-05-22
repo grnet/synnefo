@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -146,6 +146,8 @@ TASK_STATE_FROM_ACTION = {
     "REBOOT": "REBOOTING",
     "DESTROY": "DESTROYING",
     "RESIZE": "RESIZING",
+    "RESCUE": "RESCUING",
+    "UNRESCUE": "UNRESCUING",
     "CONNECT": "CONNECTING",
     "DISCONNECT": "DISCONNECTING",
     "ATTACH_VOLUME": "ATTACHING_VOLUME",

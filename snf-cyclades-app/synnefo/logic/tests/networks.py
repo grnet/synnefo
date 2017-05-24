@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Provides automated tests for logic module
-from django.test import TestCase
+from django.test import TransactionTestCase
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import networks
@@ -26,7 +26,7 @@ from copy import copy
 
 
 #@patch("synnefo.logic.rapi_pool.GanetiRapiClient")
-class NetworkTest(TestCase):
+class NetworkTest(TransactionTestCase):
     def test_create(self):
         kwargs = {
             "name": "test",

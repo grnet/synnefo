@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,6 +52,9 @@ class Command(SynnefoCommand):
             'project': server.project,
             'shared_to_project': server.shared_to_project,
             'created': utils.format_date(server.created),
+            'rescue': server.rescue,
+            'rescue_image': (server.rescue_image.id if server.rescue_image is
+                             not None else None),
             'updated': utils.format_date(server.updated),
             'image': image,
             'host id': server.hostid,

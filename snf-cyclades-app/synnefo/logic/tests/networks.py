@@ -23,6 +23,7 @@ from synnefo.db import models_factory as mfactory
 from synnefo.db.models import BridgePoolTable, MacPrefixPoolTable
 from synnefo import settings
 from copy import copy
+from synnefo.db import transaction
 
 
 #@patch("synnefo.logic.rapi_pool.GanetiRapiClient")
@@ -60,8 +61,9 @@ class NetworkTest(TransactionTestCase):
         self.assertEqual(net.mac_prefix, "aa:bb:1")
         self.assertEqual(net.link, settings.DEFAULT_MAC_FILTERED_BRIDGE)
         self.assertEqual(net.backend_tag, ["private-filtered"])
-        pool = MacPrefixPoolTable.get_pool()
-        self.assertFalse(pool.is_available("aa:bb:1"))
+        with transaction.atomic():
+            pool = MacPrefixPoolTable.get_pool()
+            self.assertFalse(pool.is_available("aa:bb:1"))
 
         # PHYSICAL_VLAN
         kwargs["flavor"] = "PHYSICAL_VLAN"
@@ -74,8 +76,9 @@ class NetworkTest(TransactionTestCase):
         self.assertEqual(net.mac_prefix, settings.DEFAULT_MAC_PREFIX)
         self.assertEqual(net.link, "prv1")
         self.assertEqual(net.backend_tag, ["physical-vlan"])
-        pool = BridgePoolTable.get_pool()
-        self.assertFalse(pool.is_available(net.link))
+        with transaction.atomic():
+            pool = BridgePoolTable.get_pool()
+            self.assertFalse(pool.is_available(net.link))
 
         # IP_LESS_ROUTED
         kwargs["flavor"] = "IP_LESS_ROUTED"

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -983,7 +983,7 @@ class IPAddressHistory(models.Model):
     def __unicode__(self):
         return u"<Address: %s, Server: %s, Network: %s, User: %s,"\
             " Date: %s Action: %s>"\
-            % (self.address, self.network_id, self.server_id, self.user_id,
+            % (self.address, self.server_id, self.network_id, self.user_id,
                self.action_date, self.action)
 
 

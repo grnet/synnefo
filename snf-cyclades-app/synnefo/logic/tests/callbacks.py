@@ -18,7 +18,7 @@
 
 from random import randint
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from synnefo.db.models import (VirtualMachine, IPAddress, BackendNetwork,
                                Network, BridgePoolTable, MacPrefixPoolTable)
@@ -39,7 +39,7 @@ import json
 
 # Test Callbacks
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateDBTest(TestCase):
+class UpdateDBTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-eventd message"""
         msg = {'event_time': split_time(time())}
@@ -358,7 +358,7 @@ class UpdateDBTest(TestCase):
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateNetTest(TestCase):
+class UpdateNetTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-hook message"""
         msg = {'event_time': split_time(time())}
@@ -442,7 +442,7 @@ class UpdateNetTest(TestCase):
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateNetworkTest(TestCase):
+class UpdateNetworkTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-eventd message"""
         msg = {'event_time': split_time(time())}
@@ -683,7 +683,7 @@ class UpdateNetworkTest(TestCase):
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateBuildProgressTest(TestCase):
+class UpdateBuildProgressTest(TransactionTestCase):
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
 

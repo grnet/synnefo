@@ -315,11 +315,12 @@ class ServerCommandTest(TransactionTestCase):
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         network = mfactory.NetworkFactory(state="ACTIVE")
         with override_settings(settings, GANETI_USE_HOTPLUG=False):
+            port = servers._create_port(vm.userid, network)
             self.assertRaises(
-                faults.BadRequest, servers.connect_port, vm, network)
+                faults.BadRequest, servers.connect_port, vm, network, port)
             self.assertRaises(faults.BadRequest, servers.disconnect_port,
                               vm, network)
-        #test valid
+        # test valid
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder():
@@ -483,21 +484,26 @@ class ServerCommandTest(TransactionTestCase):
     def test_reassign_vm_flavors(self, mrapi):
         volume = mfactory.VolumeFactory()
         vm = volume.machine
+        vm_id = vm.id
         original_project = vm.project
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, False)
+            servers.reassign(vm_id, another_project, False,
+                             credentials=self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertNotEqual(vol.project, another_project)
 
+        vm = models.VirtualMachine.objects.get(id=vm_id)
         flavor = vm.flavor
         flavor.public = False
         flavor.save()
         with mocked_quotaholder():
-            self.assertRaises(faults.Forbidden, servers.reassign, vm,
-                              original_project, False)
+            self.assertRaises(faults.Forbidden, servers.reassign, vm_id,
+                              original_project, False, self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -506,7 +512,9 @@ class ServerCommandTest(TransactionTestCase):
         mfactory.FlavorAccessFactory(project=original_project,
                                      flavor=flavor)
         with mocked_quotaholder():
-            servers.reassign(vm, original_project, False)
+            servers.reassign(vm_id, original_project, False,
+                             credentials=self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
             self.assertEqual(vm.project, original_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)

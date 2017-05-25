@@ -967,8 +967,8 @@ class IPAddressHistory(models.Model):
 
     address = models.CharField("IP Address", max_length=64, null=False,
                                db_index=True)
-    server_id = models.IntegerField("Server", null=False)
-    network_id = models.IntegerField("Network", null=False)
+    server_id = models.IntegerField("Server", null=False, db_index=True)
+    network_id = models.IntegerField("Network", null=False, db_index=True)
     user_id = models.CharField("IP user", max_length=128, null=False,
                               db_index=True)
     action = models.CharField("Action", max_length=255, null=False)

@@ -17,6 +17,7 @@ import django.test
 from django.test.utils import override_settings
 from snf_django.utils.testing import (mocked_quotaholder, MurphysLaw)
 from synnefo.db import models_factory as mf
+from synnefo.db import transaction
 from synnefo.db.models import Volume, VirtualMachine
 from synnefo.volume import volumes
 from synnefo.cyclades_settings import cyclades_services
@@ -211,7 +212,7 @@ class VolumesTestCommon(django.test.TestCase):
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 @override_settings(CYCLADES_DETACHABLE_DISK_TEMPLATES=("ext_archipelago",))
-class VolumesTest(QuotaAssertions, django.test.TestCase):
+class VolumesTest(QuotaAssertions, django.test.TransactionTestCase):
     def setUp(self):
         # Volume types
         self.archip_vt = mf.VolumeTypeFactory(name="archipelago",
@@ -451,7 +452,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         message = "Volume type '{}' is not detachable".format(
             self.file_vt.disk_template)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm, vol.id)
+            volumes.attach(self.archip_vm.id, vol.id, self.credentials)
 
         # Fail to attach a volume that is in use
         vol.volume_type = self.archip_vt
@@ -461,23 +462,24 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         message = "Cannot attach volume while volume is in '{}' status".format(
             vol.status)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.attach(self.archip_vm, vol.id)
+            volumes.attach(self.archip_vm.id, vol.id, self.credentials)
 
         # Fail to attach a volume to a server with a different volume type
         message = "Volume and server must have the same volume type"
         vol.status = "AVAILABLE"
         vol.save()
         with self.assertRaises(faults.BadRequest) as e:
-            volumes.attach(self.file_vm, vol.id)
+            volumes.attach(self.file_vm.id, vol.id, self.credentials)
         self.assertIn(message, e.exception.message)
 
         # Attach a volume to a server
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
-            vol = volumes.attach(self.archip_vm, vol.id)
+            volumes.attach(self.archip_vm.id, vol.id, self.credentials)
         # Assert that the volume is assigned to the VM, it has an appropriate
         # status and that no commission was sent.
         self.archip_vm = VirtualMachine.objects.get(pk=self.archip_vm.id)
+        vol = Volume.objects.get(pk=vol.id)
         self.assertEqual(vol.machine, self.archip_vm)
         self.assertEqual(vol.volume_type, self.archip_vm.flavor.volume_type)
         self.assertEqual(self.archip_vm.volumes.filter().count(), 1)
@@ -501,14 +503,14 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         message = "Volume type '{}' is not detachable".format(
             self.file_vt.disk_template)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.detach(vol.id)
+            volumes.detach(vol.id, self.credentials)
 
         # Fail to detach a volume that has never been attached to any server
         vol = mf.VolumeFactory(userid=self.userid, volume_type=self.archip_vt,
                                machine=None)
         message = "Volume is already detached"
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.detach(vol.id)
+            volumes.detach(vol.id, self.credentials)
 
         # Fail to detach a volume that is not in use
         vol = mf.VolumeFactory(userid=self.userid, volume_type=self.archip_vt)
@@ -518,7 +520,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         message = "Cannot detach volume while volume is in '{}' status".format(
             vol.status)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.detach(vol.id)
+            volumes.detach(vol.id, self.credentials)
 
         # Fail to detach the root volume of a vm
         vol.status = "IN_USE"
@@ -527,7 +529,7 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         message = "Cannot detach the root volume of server {}.".format(
             self.archip_vm)
         with self.assertRaisesMessage(faults.BadRequest, message):
-            volumes.detach(vol.id)
+            volumes.detach(vol.id, self.credentials)
 
         # Detach a volume from a server
         vol.userid = self.userid
@@ -535,10 +537,11 @@ class VolumesTest(QuotaAssertions, django.test.TestCase):
         vol.save()
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder() as m:
-            vol = volumes.detach(vol.id)
+            volumes.detach(vol.id, self.credentials)
         # Assert that the VM has just one volume, the volume has an appropriate
         # status and that no commission was sent.
         self.assertEqual(self.archip_vm.volumes.all().count(), 1)
+        vol = Volume.objects.get(pk=vol.id)
         self.assertEqual(vol.status, "DETACHING")
         self.assertNoCommission(m)
         # Assert that Ganeti was instructed to keep the disks and that the

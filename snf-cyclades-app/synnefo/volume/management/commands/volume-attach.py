@@ -19,7 +19,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management.utils import parse_bool
 from synnefo.volume import volumes
 from synnefo.management import common
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 HELP_MSG = """Attach an existing volume to a server."""
 
@@ -43,7 +43,6 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete."),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
@@ -52,12 +51,13 @@ class Command(SynnefoCommand):
         server_id = options.get("server_id")
         wait = parse_bool(options["wait"])
 
+        credentials = Credentials("snf-manage", is_admin=True)
         if not server_id:
             raise CommandError("Please provide a server ID")
 
         for volume_id in args:
             try:
-                volume = volumes.attach(server_id, volume_id)
+                volume = volumes.attach(server_id, volume_id, credentials)
 
                 if volume.machine is None:
                     volume.machine.task_job_id = volume.backendjobid

@@ -21,14 +21,14 @@ from synnefo.volume import volumes
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import SynnefoCommand
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 HELP_MSG = "Detach a volume from a server"
 
 
 class Command(SynnefoCommand):
-    #umask = 0o007
+    # umask = 0o007
     can_import_settings = True
     args = "<Volume ID> [<Volume ID> ...]"
     option_list = SynnefoCommand.option_list + (
@@ -62,7 +62,6 @@ class Command(SynnefoCommand):
             raise CommandError("Unaccepted input value. Please choose yes/no"
                                " (y/n).")
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
@@ -71,11 +70,12 @@ class Command(SynnefoCommand):
         force = options['force']
         message = "volumes" if len(args) > 1 else "volume"
         self.confirm_detachment(force, message, args)
+        credentials = Credentials("snf-manage", is_admin=True)
 
         for volume_id in args:
             self.stdout.write("\n")
             try:
-                volume = volumes.detach(volume_id)
+                volume = volumes.detach(volume_id, credentials)
 
                 wait = parse_bool(options["wait"])
                 if volume.machine is not None:

@@ -124,13 +124,13 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         util.get_keypair(key_name, userid).content for key_name in key_names
     ])
 
-    vm_id, port_ids, volume_ids = _db_create_server(
+    vm_id, port_ids, volume_ids, origin_sizes = _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
         project, volumes, helper, shared_to_project,
         key_names)
 
     return _create_server(vm_id, port_ids, volume_ids, flavor, image,
-                          personality, password, auth_keys)
+                          personality, password, auth_keys, origin_sizes)
 
 
 @transaction.atomic_context
@@ -203,7 +203,8 @@ def _db_create_server(
                                        atomic_context=atomic_context)
     return (vm.id,
             [port.id for port in ports],
-            [volume.id for volume in server_volumes])
+            [volume.id for volume in server_volumes],
+            {v.id: v.origin_size for v in server_volumes})
 
 
 @transaction.commit_on_success
@@ -228,7 +229,7 @@ def allocate_new_server(userid, project, flavor):
 
 @transaction.commit_on_success
 def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
-                   password, auth_keys):
+                   password, auth_keys, origin_sizes):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -238,6 +239,9 @@ def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
         id__in=port_ids)
     volumes = Volume.objects.select_for_update().filter(
         id__in=volume_ids)
+
+    for v in volumes:
+        v.origin_size = origin_sizes.get(v.id)
 
     # If the root volume has a provider, then inform snf-image to not fill
     # the volume with data

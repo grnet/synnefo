@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from synnefo.db.models import VirtualMachine, Network, BackendNetwork
 from synnefo.db import models_factory as mfactory
@@ -26,7 +26,7 @@ from synnefo import settings
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
-class ServerReconciliationTest(TestCase):
+class ServerReconciliationTest(TransactionTestCase):
     @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
     def setUp(self, mrapi):
         self.backend = mfactory.BackendFactory()
@@ -217,7 +217,7 @@ class ServerReconciliationTest(TestCase):
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
-class NetworkReconciliationTest(TestCase):
+class NetworkReconciliationTest(TransactionTestCase):
     def setUp(self):
         self.backend = mfactory.BackendFactory()
         log = logging.getLogger()
@@ -278,8 +278,8 @@ class NetworkReconciliationTest(TestCase):
         self.reconciler.reconcile_networks()
         self.assertEqual(len(mrapi().CreateNetwork.mock_calls), 1)
 
-    #def test_hanging_networks(self, mrapi):
-    #    pass
+    # def test_hanging_networks(self, mrapi):
+    #     pass
 
     def test_unsynced_networks(self, mrapi):
         net = mfactory.NetworkWithSubnetFactory(public=False, state="PENDING",

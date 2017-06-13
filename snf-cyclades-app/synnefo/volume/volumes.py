@@ -29,11 +29,6 @@ from synnefo.db import transaction
 log = logging.getLogger(__name__)
 
 
-def get_volume(volume_id):
-    """Simple function to get and lock a Volume."""
-    return Volume.objects.select_for_update().get(id=volume_id, deleted=False)
-
-
 def get_vm(vm_id):
     """Simple function to get and lock a Virtual Machine."""
     vms = VirtualMachine.objects.select_for_update()
@@ -281,10 +276,14 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
     return volume
 
 
-def attach(server, volume_id):
+@transaction.atomic_context
+def attach(server_id, volume_id, credentials, atomic_context=None):
     """Attach a volume to a server."""
-    volume = get_volume(volume_id)
-    server_attachments.attach_volume(server, volume)
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
+    server_attachments.attach_volume(vm, volume, atomic_context)
 
     return volume
 
@@ -315,7 +314,8 @@ def delete_detached_volume(volume, atomic_context):
     return volume
 
 
-def delete_volume_from_helper(volume, helper_vm):
+@transaction.atomic_context
+def delete_volume_from_helper(volume, helper_vm, atomic_context=None):
     """Delete a volume that has been attached to a helper VM.
 
     This special-purpose function should be called only by the dispatcher, when
@@ -378,17 +378,29 @@ def delete(volume_id, credentials, atomic_context=None):
     return volume
 
 
-def detach(volume_id):
+@transaction.atomic_context
+def detach(volume_id, credentials, atomic_context=None):
     """Detach a Volume"""
-    volume = get_volume(volume_id)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=False, non_deleted=True,
+                             exception=faults.BadRequest)
     server_id = volume.machine_id
-    if server_id is not None:
-        server = get_vm(server_id)
-        server_attachments.detach_volume(server, volume)
-        log.info("Detaching volume '%s' from server '%s', job: %s",
-                 volume.id, server_id, volume.backendjobid)
-    else:
+    if server_id is None:
         raise faults.BadRequest("Volume is already detached")
+
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
+
+    server_id = volume.machine_id
+    if server_id is None:
+        raise faults.BadRequest("Volume is already detached")
+
+    server_attachments.detach_volume(vm, volume)
+    log.info("Detaching volume '%s' from server '%s', job: %s",
+             volume.id, server_id, volume.backendjobid)
+
     return volume
 
 

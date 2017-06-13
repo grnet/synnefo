@@ -240,7 +240,7 @@ class Log(object):
         if curr_time is None:
             curr_time = datetime.datetime.now()
         timestamp = datetime.datetime.strftime(
-            curr_time, "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
+            curr_time, "%Y%m%d%H%M%S")
         file_name = timestamp + ".log"
         self.file_location = os.path.join(output_dir, file_name)
 

@@ -145,7 +145,7 @@ class NetworkTestSuite(CycladesTests):
         self.info(msg, server_a_public_ip, server_b_private_ip)
 
         cmd = "for i in {1..7}; do if ping -c 3 -w 20 %s > /dev/null; " \
-            "then echo 'True'; break; fi; done" % server_b_private_ip
+            "then echo 'True'; break; fi; /bin/false; done" % server_b_private_ip
         lines, status = self._ssh_execute(
             server_a_public_ip, self.server_a['username'],
             self.server_a['password'], cmd)

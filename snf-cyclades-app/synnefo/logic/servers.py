@@ -800,6 +800,9 @@ def remove_floating_ip(server_id, address, credentials):
                      for_update=True, non_deleted=True, non_suspended=True)
 
     # This must be replaced by proper permission handling
+    # This is currently needed to allow the user to remove a shared IP from a
+    # VM that does not belong to the user, nor it is shared to a common
+    # project.
     ip_credentials = api.Credentials(vm.userid, credentials.user_projects)
     floating_ip = util.get_floating_ip_by_address(
         ip_credentials, address, for_update=True)

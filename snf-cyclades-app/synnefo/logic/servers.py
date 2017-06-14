@@ -695,7 +695,9 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
 
     ipaddress = None
     if isinstance(use_ipaddress, IPAddress):
-        ipaddress = use_ipaddress
+        # Lock IPAddress instance
+        ipaddress = IPAddress.objects\
+                .select_for_update().get(id=use_ipaddress.id)
         if ipaddress.network_id != network.id:
             msg = "IP Address %s does not belong to network %s"
             raise faults.Conflict(msg % (ipaddress.address, network.id))

@@ -25,11 +25,7 @@ from synnefo.util import units
 log = logging.getLogger(__name__)
 
 
-@transaction.commit_on_success
-def check_and_record(volume_id, credentials):
-    volume = util.get_volume(credentials, volume_id,
-                             for_update=True, non_deleted=True,
-                             exception=faults.BadRequest)
+def _check(volume):
     # Check that taking a snapshot is feasible
     if volume.machine is None:
         raise faults.BadRequest("Cannot snapshot a detached volume!")
@@ -44,6 +40,13 @@ def check_and_record(volume_id, credentials):
                (volume_type.id, volume_type.disk_template))
         raise faults.BadRequest(msg)
 
+
+@transaction.commit_on_success
+def check_and_record(volume_id, credentials):
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
+    _check(volume)
     # Increase the snapshot counter of the volume that is used in order to
     # generate unique snapshot names
     volume.snapshot_counter += 1
@@ -56,6 +59,7 @@ def do_create(user_id, volume_id, name, description, metadata, force=False,
     volume = util.get_volume(credentials, volume_id,
                              for_update=True, non_deleted=True,
                              exception=faults.BadRequest)
+    _check(volume)
     snapshot_metadata = {
         "name": name,
         "disk_format": "diskdump",

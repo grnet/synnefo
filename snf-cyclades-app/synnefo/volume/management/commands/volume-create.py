@@ -20,7 +20,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management.utils import parse_bool
 from synnefo.management import common, pprint
 from synnefo.volume import volumes
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 HELP_MSG = """Create a new volume."""
 
@@ -83,7 +83,6 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete."),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
@@ -95,6 +94,7 @@ class Command(SynnefoCommand):
         server_id = options.get("server_id")
         volume_type_id = options.get("volume_type_id")
         wait = parse_bool(options["wait"])
+        credentials = Credentials(user_id)
 
         display_name = options.get("name", "")
         display_description = options.get("description", "")
@@ -103,7 +103,7 @@ class Command(SynnefoCommand):
             raise CommandError("Please specify the size of the volume")
 
         if server_id:
-            vm = common.get_resource("server", server_id, for_update=True)
+            vm = common.get_resource("server", server_id)
             if project_id is None:
                 project_id = vm.project
 
@@ -139,7 +139,7 @@ class Command(SynnefoCommand):
                 raise CommandError("Unknown volume source type '%s'"
                                    % source_type)
 
-        volume = volumes.create(user_id, size, server_id,
+        volume = volumes.create(credentials, size, server_id,
                                 name=display_name,
                                 description=display_description,
                                 source_image_id=source_image_id,

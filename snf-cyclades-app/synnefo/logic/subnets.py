@@ -161,7 +161,7 @@ def update_subnet(sub_id, name, user_id):
     log.info('Update subnet %s, name %s' % (sub_id, name))
 
     try:
-        subnet = Subnet.objects.get(id=sub_id)
+        subnet = Subnet.objects.select_for_update().get(id=sub_id)
     except:
         raise api.faults.ItemNotFound("Subnet not found")
 

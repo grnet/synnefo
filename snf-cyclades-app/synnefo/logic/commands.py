@@ -89,7 +89,7 @@ class ServerCommand(object):
         if not isinstance(vm, models.VirtualMachine):
             vm = util.get_vm(vm, credentials,
                              for_update=True, non_deleted=True,
-                             non_suspended=True)
+                             non_suspended=not credentials.is_admin)
         self.vm = vm
         user_id = for_user
         if user_id is None:

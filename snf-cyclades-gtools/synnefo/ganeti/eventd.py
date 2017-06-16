@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -97,35 +97,41 @@ def get_time_from_status(op, job):
     raise InvalidBackendStatus(status, job)
 
 
-def get_instance_attachments(instance, logger):
-    """Query Ganeti to a get the instance's attachments (NICs and Disks)
+def get_instance_info(instance, logger):
+    """Query Ganeti to a get the instance's info(NICs, Disks, and hvparams)
 
-    Get instance's attachments from Ganeti configuration data. If running on
-    master, query Ganeti via Ganeti CLI client. Otherwise, get attachments
+    Get instance's info from Ganeti configuration data. If running on
+    master, query Ganeti via Ganeti CLI client. Otherwise, get info
     straight from Ganeti's configuration file.
 
     @type instance: string
     @param instance: the name of the instance
-    @rtype: instance's NICs and Disks
-    @return: Dictionary containing the 'nics' and 'disks' of the instance.
+    @rtype: instance's info (NICs, Disks, and hvparms)
+    @return: Dictionary containing the 'nics', 'disks' and 'hvparms' of the
+             instance.
 
     """
     try:
         client = cli.GetClient()
         q_fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
                     "nic.modes", "nic.links", "nic.uuids", "tags",
-                    "disk.names", "disk.sizes", "disk.uuids"]
+                    "disk.names", "disk.sizes", "disk.uuids",
+                    "hv/boot_order", 'hv/cdrom_image_path']
         info = client.QueryInstances([instance], q_fields, use_locking=False)
         # Parse NICs
-        names, networks, ips, macs, modes, links, uuids, tags = info[0][:-3]
+        names, networks, ips, macs, modes, links, uuids, tags = info[0][:-5]
         nic_keys = ["name", "network", "ip", "mac", "mode", "link", "uuid"]
         nics = zip(names, networks, ips, macs, modes, links, uuids)
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
         # Parse Disks
-        names, sizes, uuids = info[0][-3:]
+        names, sizes, uuids = info[0][-5:-2]
         disk_keys = ["name", "size", "uuid"]
         disks = zip(names, sizes, uuids)
         disks = map(lambda x: dict(zip(disk_keys, x)), disks)
+
+        hvparams = {'boot_order': info[0][-2],
+                    'cdrom_image_path': info[0][-1]}
+
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
         raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
@@ -147,6 +153,9 @@ def get_instance_attachments(instance, logger):
                           "uuid": disk["uuid"],
                           "index": index})
         tags = i.get("tags", [])
+
+        hvparams = {"boot_order": i["hvparams"]["boot_order"],
+                    "cdrom_image_path": i["hvparams"]["cdrom_image_path"]}
     # Get firewall from instance Tags
     # Tags are of the form synnefo:network:N:firewall_mode
     for tag in tags:
@@ -160,7 +169,8 @@ def get_instance_attachments(instance, logger):
             [nic.setdefault("firewall", firewall)
              for nic in nics if nic["name"] == nic_name]
     attachments = {"nics": nics,
-                   "disks": disks}
+                   "disks": disks,
+                   "hvparams": hvparams}
     return attachments
 
 
@@ -351,6 +361,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
         if op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_CREATE"]:
             job_fields = {"nics": get_field(input, "nics"),
                           "disks": get_field(input, "disks"),
+                          "hvparams": get_field(input, "hvparams"),
                           "beparams": get_field(input, "beparams")}
         elif op_id == "OP_INSTANCE_SNAPSHOT":
             # Cyclades store the UUID of the snapshot as the 'reason' attribute
@@ -382,10 +393,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
              op.status == "success") or
             (op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_GROW_DISK"] and
              op.status in ["success", "error", "cancelled"])):
-                attachments = get_instance_attachments(msg["instance"],
-                                                       self.logger)
-                msg["instance_nics"] = attachments["nics"]
-                msg["instance_disks"] = attachments["disks"]
+                instance_info = get_instance_info(msg["instance"], self.logger)
+                msg["instance_nics"] = instance_info["nics"]
+                msg["instance_disks"] = instance_info["disks"]
+                msg["instance_hvparams"] = instance_info["hvparams"]
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 
@@ -603,6 +614,7 @@ def main():
         # destroy the inotify's instance on this interrupt (stop monitoring)
         notifier.stop()
         raise
+
 
 if __name__ == "__main__":
     sys.exit(main())

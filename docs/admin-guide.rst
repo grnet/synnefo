@@ -935,6 +935,74 @@ owner uuid is listed in the ``UI_IMAGE_LISTING_USERS`` Cyclades setting (in
 section in the installation wizard. The name of the new section will be the
 value of the ``LISTING_SECTION`` image property.
 
+Rescue Images
+~~~~~~~~~~~~~
+
+Rescue Images are a special kind of images that can be used when a user wants
+to rescue their VM. Conceptually, they are different to Images used to create
+servers, since they are used as bootable CD-ROMs in Ganeti instances and also
+the storage mechanism is more flexible. For example a rescue image can be
+either an HTTP link or an ISO file in a node. Alongside with the URI of the
+image, Cyclades store properties of the image such the Operating System and the
+Operating System family. In order to create a new rescue image, the
+administrator has to provide either a valid HTTP link or a filename that maps
+to an image file under a pre-configured directory.
+
+When rescuing a VM, Cyclades issue an `InstanceModify` command that mounts a
+CDROM with the rescue image's location to the instance. In case the location
+provided is a filepath Ganeti will make sure the file exists. In case it is an
+HTTP link, Ganeti will make sure the link is working, but it will not verify if
+it links to a valid image. After the rescue operation is successful, the user
+can start their VM which will always boot from the rescue image, while being in
+rescue mode.
+
+The properties of the image are used while a rescue action is issued, in order
+to optimally select the rescue image for the specified VM. In case the user has
+not selected a specific image or the system is unable to intelligently
+determine an image, Cyclades will use a fallback default image.
+
+Rescue images, can be manipulated (list, create, modify, remove) though the
+`snf-manage` interface.
+
+Examples:
+`````````
+
+- Create a Rescue Image
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-create --name "Linux Rescue Image" --default True \
+                                --location "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-8.8.0-amd64-cinnamon-desktop.iso"
+                                --target-os-family "Linux" \
+                                --target-os "Debian"
+
+Note that the above command will fail in case there already exists a default
+rescue image. In case it succeeds, the above command will create a new rescue
+image with the name "Linux Rescue Image". Since the default flag is set to
+True, the system will use this image in case it cannot determine a better fit,
+as explained in the rescue functionality above. The --target-os-family and
+`--target-os` parameters, mean that this image is best fitting for Debian
+servers and a good fit for Linux servers in general.
+
+- Make an existing Rescue Image default
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-modify 2 --default True
+
+Note that **only one rescue image can be default**.
+
+- Delete an Image
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-remove 2
+
+The above example will work only if there are no active VMs using the image. If
+an administrator wants to delete an image and is unsure whether the image is in
+use or not, they can either use the `snf-manage rescue-image-list` command
+which provides the number of VMs currently using an image.
+
 
 Virtual Servers
 ~~~~~~~~~~~~~~~

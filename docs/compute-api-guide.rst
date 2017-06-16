@@ -1648,6 +1648,8 @@ Operations                                      Cyclades OS/Compute
 `Change Admin Password <#os-compute-specific>`_ **✘**    ✔
 `Rebuild <#os-compute-specific>`_               **✘**    ✔
 `Resize <#resize-server>`_                      ✔        ✔
+`Rescue <#rescue-server>`_                      ✔        ✔
+`Unrescue <#unrescue-server>`_                  ✔        ✔
 `Confirm Resized <#os-compute-specific>`_       **✘**    ✔
 `Revert Resized <#os-compute-specific>`_        **✘**    ✔
 `Create Image <#os-compute-specific>`__         **✘**    ✔
@@ -1742,6 +1744,45 @@ Request body contents::
 .. code::
 
   {"resize" : { "flavorRef": 153}}
+
+Rescue Server
+.............
+
+This operation transitions a server into rescue mode. Synnefo and OS/Compute
+APIs offer an option `rescue_image_ref` parameter which can be used to rescue
+a server with a specific rescue image.
+
+This action requires that the server is shutoff.
+
+Request body contents::
+
+  rescue: {rescue_image_ref: <rescue image ID>}
+
+Note: The `rescue_image_ref` parameter expects an integer ID of the rescue
+image, whereas OS/Compute expects an OS/Glance Image ID.
+
+*Example Resize Server: JSON*
+
+.. code-block:: javascript
+
+  {"rescue" : { "rescue_image_ref": 3}}
+
+Unrescue Server
+...............
+
+This operation transitions a server out of rescue mode.
+
+This action requires that the server is shutoff.
+
+Request body contents::
+
+  unrescue: {}
+
+*Example Resize Server: JSON*
+
+.. code-block:: javascript
+
+  {"unrescue": {}}
 
 Shutdown server
 ...............

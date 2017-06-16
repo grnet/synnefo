@@ -37,6 +37,9 @@ Cyclades
   context to schedule external operations on transaction exit.
 * Move transactions to the logic level, so that all clients (API,
   snf-manage, admin app) consistently run the same operations.
+* Add mechanism for creating, listing, updating and deleting rescue images
+* Add support for rescuing and unrescuing VMs using system defined rescue
+  images.
 
 Astakos
 -------

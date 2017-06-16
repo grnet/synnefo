@@ -172,6 +172,7 @@ def update_db(vm, msg, event_time, atomic_context=None):
     logmsg = msg["logmsg"]
     nics = msg.get("instance_nics", None)
     disks = msg.get("instance_disks", None)
+    hvparams = msg.get("instance_hvparams", None)
     job_fields = msg.get("job_fields", {})
     result = msg.get("result", [])
 

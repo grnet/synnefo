@@ -19,7 +19,8 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, IPAddress, IPAddressHistory)
+                               Flavor, IPAddress, IPAddressHistory,
+                               RescueImage)
 from synnefo.logic import utils, ips
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -195,6 +196,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             disk_changes, deferred_jobs = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
             atomic_context.add_on_success_jobs(deferred_jobs)
+        if hvparams is not None:
+            update_hvparams(vm, hvparams)
 
     vm_deleted = False
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
@@ -217,6 +220,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                 remove_nic_ips(nic)
                 nic.delete()
             vm.deleted = True
+            vm.rescue = False
+            vm.rescue_image = None
             new_operstate = state_for_success
             vm.backendtime = etime
             status = rapi.JOB_STATUS_SUCCESS
@@ -385,6 +390,52 @@ def update_vm_nics(vm, nics, etime=None):
                                        version=6)
 
     return []
+
+
+def update_hvparams(vm, hvparams):
+    """Update VM's state to match the hypervisor parameters of Ganeti.
+
+    This function will parse the hypervisor parameters of the Ganeti
+    instance and will update the fields of the VirtualMachine object
+    accordingly. For example if `cdrom_image_path` is set and
+    `boot_order` is set to disk priority, the field rescue will be
+    set to True.
+
+    @param vm: The VirtualMachine the disks belong to
+    @type vm: VirtualMachine object
+    @param hvparams: The hypervisor parameters of the Ganeti instance
+    @type hvparams: Dictionary with key-value hypervisor parameters
+    """
+    log.info("Updating hvparams %s for vm %s" % (hvparams, vm))
+
+    boot_order = hvparams['boot_order']
+    cdrom_image_path = hvparams['cdrom_image_path']
+
+    if (len(cdrom_image_path) > 0 and boot_order.startswith('cdrom')):
+        # Server is on rescue state in ganeti
+        vm.rescue = True
+
+        if (vm.rescue_image is None or
+                vm.rescue_image.location != cdrom_image_path):
+            # Server is on rescue mode with a different location
+            # find the image with the corresponding location and
+            # assign it to the VM model.
+            try:
+                location = cdrom_image_path
+                if location.startswith(settings.RESCUE_IMAGE_PATH):
+                    # If the location is cyclades prefixed, remove
+                    # the prefix
+                    location = location[
+                            (len(settings.RESCUE_IMAGE_PATH) + 1):]
+                rescue_image = RescueImage.objects.get(
+                    deleted=False, location=location)
+                vm.rescue_image = rescue_image
+            except RescueImage.DoesNotExist:
+                # If the image is not found
+                vm.rescue_image = None
+    else:
+        vm.rescue = False
+        vm.rescue_image = None
 
 
 def remove_nic_ips(nic, version=None):

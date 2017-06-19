@@ -757,7 +757,7 @@ def list_metadata(request, server_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -826,7 +826,7 @@ def get_metadata_item(request, server_id, key):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def create_metadata_item(request, server_id, key):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -882,7 +882,7 @@ def create_metadata_item(request, server_id, key):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),

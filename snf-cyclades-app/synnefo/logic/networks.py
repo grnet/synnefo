@@ -126,7 +126,7 @@ def create_network_in_backends(network):
     return job_ids
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def rename(network_id, name, credentials):
     network = util.get_network(network_id, credentials,
                                for_update=True, non_deleted=True)

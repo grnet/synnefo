@@ -29,7 +29,7 @@ logger.propagate = False
 DESCRIPTION = """Tool to convert public IPv4 addresses to floating IPs."""
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def main():
     parser = OptionParser(description=DESCRIPTION,
                           formatter=TitledHelpFormatter())

@@ -404,7 +404,7 @@ def detach(volume_id, credentials, atomic_context=None):
     return volume
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def update(volume_id, name=None, description=None, delete_on_termination=None,
            credentials=None):
     volume = util.get_volume(credentials,

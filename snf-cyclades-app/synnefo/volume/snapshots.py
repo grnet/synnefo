@@ -41,7 +41,7 @@ def _check(volume):
         raise faults.BadRequest(msg)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def check_and_record(volume_id, credentials):
     volume = util.get_volume(credentials, volume_id,
                              for_update=True, non_deleted=True,
@@ -53,7 +53,7 @@ def check_and_record(volume_id, credentials):
     volume.save()
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def do_create(user_id, volume_id, name, description, metadata, force=False,
               credentials=None):
     volume = util.get_volume(credentials, volume_id,

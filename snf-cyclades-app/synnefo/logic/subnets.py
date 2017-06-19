@@ -35,14 +35,14 @@ log = getLogger(__name__)
 def subnet_command(action):
     def decorator(func):
         @wraps(func)
-        @transaction.commit_on_success()
+        @transaction.atomic()
         def wrapper(subnet, *args, **kwargs):
             return func(subnet, *args, **kwargs)
         return wrapper
     return decorator
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def create_subnet(*args, **kwargs):
     return _create_subnet(*args, **kwargs)
 
@@ -152,7 +152,7 @@ def delete_subnet():
     raise api.faults.BadRequest("Deletion of a subnet is not supported")
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def update_subnet(sub_id, name, user_id):
     """Update the fields of a subnet
     Only the name can be updated

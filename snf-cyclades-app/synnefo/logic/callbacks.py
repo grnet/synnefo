@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -311,7 +311,7 @@ def update_build_progress(vm, msg, event_time, atomic_context=None):
 
 
 @handle_message_delivery
-@transaction.commit_on_success()
+@transaction.atomic()
 def update_cluster(msg):
     operation = msg.get("operation")
     clustername = msg.get("cluster")

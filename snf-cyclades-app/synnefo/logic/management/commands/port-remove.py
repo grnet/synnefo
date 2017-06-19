@@ -49,7 +49,7 @@ class Command(RemoveCommand):
         for port_id in args:
             self.stdout.write("\n")
             try:
-                with transaction.commit_on_success():
+                with transaction.atomic():
                     port = common.get_resource(
                         "port", port_id, for_update=True)
                     machine = port.machine

@@ -105,7 +105,7 @@ def list_keypairs(request):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def create_new_keypair(request):
     """Generates or imports a keypair.
 
@@ -178,7 +178,7 @@ def get_keypair(request, keypair_name):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_keypair(request, keypair_name):
     """Deletes a keypair.
 

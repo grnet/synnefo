@@ -73,7 +73,7 @@ class Command(SynnefoCommand):
             help="Remove a network from a Ganeti backend."),
     )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a network ID")

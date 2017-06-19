@@ -207,7 +207,7 @@ def _db_create_server(
             {v.id: v.origin_size for v in server_volumes})
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def allocate_new_server(userid, project, flavor):
     """Allocate a new server to a Ganeti backend.
 
@@ -227,7 +227,7 @@ def allocate_new_server(userid, project, flavor):
     return use_backend
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
                    password, auth_keys, origin_sizes):
     # dispatch server created signal needed to trigger the 'vmapi', which
@@ -447,7 +447,7 @@ def disconnect_port(vm, nic):
         return vm
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def console(server_id, console_type, credentials=None):
     """Arrange for an OOB console of the specified type
 
@@ -541,7 +541,7 @@ def console(server_id, console_type, credentials=None):
     return console
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def rename(server_id, new_name, credentials=None):
     """Rename a VirtualMachine."""
     server = util.get_vm(server_id, credentials,
@@ -557,7 +557,7 @@ def rename(server_id, new_name, credentials=None):
     return server
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def suspend(server_id, suspended, credentials):
     """Set server's suspended flag."""
     server = util.get_vm(server_id, credentials,
@@ -573,7 +573,7 @@ def show_owner_change(vmid, from_user, to_user):
         vmid, from_user, to_user)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def change_owner(server_id, new_owner, credentials):
     server = util.get_vm(server_id, credentials,
                          for_update=True, non_deleted=True)
@@ -620,7 +620,7 @@ def change_owner(server_id, new_owner, credentials):
             action_reason=show_owner_change(server.id, old_owner, new_owner))
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def add_floating_ip(server_id, address, credentials):
     vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True, non_suspended=True)
@@ -635,7 +635,7 @@ def add_floating_ip(server_id, address, credentials):
              floating_ip.address, floating_ip.network_id)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def create_port(credentials, network_id, machine_id=None,
                 address=None, name="", security_groups=None,
                 device_owner=None):
@@ -748,7 +748,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     return port
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def update_port(port_id, credentials, name=None, security_groups=None):
     port = util.get_port(port_id, credentials, for_update=True)
     if name:
@@ -794,7 +794,7 @@ def associate_port_with_machine(port, machine):
     return port
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def remove_floating_ip(server_id, address, credentials):
     vm = util.get_vm(server_id, credentials,
                      for_update=True, non_deleted=True, non_suspended=True)
@@ -816,7 +816,7 @@ def remove_floating_ip(server_id, address, credentials):
              credentials.userid, floating_ip.id, vm.id)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def delete_port(port_id, credentials):
     user_id = credentials.userid
     port = util.get_port(port_id, credentials, for_update=True)
@@ -1058,7 +1058,7 @@ def attach_volume(server_id, volume_id, credentials, atomic_context=None):
     return volume
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def detach_volume(server_id, volume_id, credentials):
     user_id = credentials.userid
     vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)

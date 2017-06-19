@@ -246,7 +246,7 @@ def list_volume_metadata(request, volume_id):
 
 
 @api.api_method(user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def update_volume_metadata(request, volume_id, reset=False):
     credentials = request.credentials
     req = utils.get_json_body(request)
@@ -298,7 +298,7 @@ def update_volume_metadata(request, volume_id, reset=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_volume_metadata_item(request, volume_id, key):
     credentials = request.credentials
     log.debug("User: %s, Volume: %s Action: delete_metadata, Key: %s",
@@ -436,7 +436,7 @@ def list_snapshots(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_snapshot(request, snapshot_id):
     credentials = request.credentials
     util.assert_snapshots_enabled(request)
@@ -499,7 +499,7 @@ def list_snapshot_metadata(request, snapshot_id):
 
 
 @api.api_method(user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def update_snapshot_metadata(request, snapshot_id, reset=False):
     credentials = request.credentials
     util.assert_snapshots_enabled(request)
@@ -518,7 +518,7 @@ def update_snapshot_metadata(request, snapshot_id, reset=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_snapshot_metadata_item(request, snapshot_id, key):
     credentials = request.credentials
     util.assert_snapshots_enabled(request)

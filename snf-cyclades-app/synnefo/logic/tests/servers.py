@@ -160,7 +160,7 @@ class ServerTest(TransactionTestCase):
             mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
             mrapi().ModifyInstance.return_value = 42
             with override_settings(settings, GANETI_USE_HOTPLUG=True):
-                with transaction.commit_on_success():
+                with transaction.atomic():
                     port = servers._create_port(vm.userid, net)
                     servers.connect_port(vm, net, port)
             pool = net.get_ip_pools(locked=False)[0]
@@ -180,7 +180,7 @@ class ServerTest(TransactionTestCase):
         net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         with override_settings(settings, GANETI_USE_HOTPLUG=True):
-            with transaction.commit_on_success():
+            with transaction.atomic():
                 port = servers._create_port(vm.userid, net)
                 servers.connect_port(vm, net, port)
         args, kwargs = mrapi().ModifyInstance.call_args

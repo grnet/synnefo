@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -830,7 +830,7 @@ class PoolReconciler(object):
                 if subnet.ipversion == 4 and subnet.dhcp:
                     self.reconcile_ip_pool(network)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_bridges(self):
         networks = Network.objects.filter(deleted=False,
                                           flavor="PHYSICAL_VLAN")
@@ -847,7 +847,7 @@ class PoolReconciler(object):
                               used_values=used_bridges, fix=self.fix,
                               logger=self.log)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_mac_prefixes(self):
         networks = Network.objects.filter(deleted=False, flavor="MAC_FILTERED")
         check_unique_values(objects=networks, field='mac_prefix',
@@ -864,7 +864,7 @@ class PoolReconciler(object):
                               used_values=used_mac_prefixes, fix=self.fix,
                               logger=self.log)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_ip_pool(self, network):
         # Check that all NICs have unique IPv4 address
         nics = network.ips.exclude(address__isnull=True).all()

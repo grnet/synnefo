@@ -31,7 +31,7 @@ class Command(SynnefoCommand):
         make_option('--flavor', dest='flavor'),
     )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         write = self.stdout.write
         project = options['project']

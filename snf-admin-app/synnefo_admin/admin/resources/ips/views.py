@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from collections import OrderedDict
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 from synnefo.db.models import IPAddress, IPAddressHistory
 from astakos.im.models import AstakosUser, Project
 
@@ -153,20 +153,17 @@ class IPJSONView(AdminJSONView):
 JSON_CLASS = IPJSONView
 
 
-@transaction.commit_on_success
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id, data):
     """Apply the requested action on the specified ip."""
-    if op == "contact":
-        user = get_user_or_404(id)
-    else:
-        ip = get_ip_or_404(id, for_update=True)
     actions = get_permitted_actions(cached_actions, request.user)
 
-    if op == 'contact':
+    if op == "contact":
+        user = get_user_or_404(id)
         actions[op].apply(user, request)
     else:
-        actions[op].apply(ip)
+        credentials = Credentials("admin-app", is_admin=True)
+        actions[op].apply(id, credentials=credentials)
 
 
 def catalog(request):

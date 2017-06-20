@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -83,15 +83,8 @@ class AdminAction(object):
         return res
 
     def apply(self, t, *args, **kwargs):
-        """Apply an action to a target.
-
-        This function will ensure that the requested action can apply to a
-        target before actually applying it.
-        """
-        if self.can_apply(t):
-            return self.f(t, *args, **kwargs)
-        else:
-            raise AdminActionCannotApply
+        """Apply an action to a target."""
+        return self.f(t, *args, **kwargs)
 
     def is_user_allowed(self, user):
         """Check if a user can author an action."""

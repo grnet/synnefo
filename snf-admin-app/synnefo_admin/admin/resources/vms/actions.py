@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,25 +36,8 @@ class VMAction(AdminAction):
         AdminAction.__init__(self, name=name, target='vm', f=f, **kwargs)
 
 
-def vm_suspend(vm):
-    """Suspend a VM."""
-    vm.suspended = True
-    vm.save()
-
-
-def vm_suspend_release(vm):
-    """Release previous VM suspension."""
-    vm.suspended = False
-    vm.save()
-
-
 def check_vm_action(action):
-    if action == 'SUSPEND':
-        return lambda vm: not vm.suspended and not vm.deleted
-    elif action == 'UNSUSPEND':
-        return lambda vm: vm.suspended and not vm.deleted
-    else:
-        return lambda vm: validate_server_action(vm, action)
+    return lambda vm: validate_server_action(vm, action)
 
 
 def generate_actions():
@@ -99,11 +82,12 @@ def generate_actions():
                                  c=check_vm_action('REMOVEFLOATINGIP'),
                                  karma='bad',)
 
-    actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
+    actions['suspend'] = VMAction(name='Suspend', f=servers_backend.suspend,
                                   c=check_vm_action('SUSPEND'),
                                   karma='bad', caution_level='warning',)
 
-    actions['unsuspend'] = VMAction(name='Unsuspend', f=vm_suspend_release,
+    actions['unsuspend'] = VMAction(name='Unsuspend',
+                                    f=servers_backend.unsuspend,
                                     c=check_vm_action('UNSUSPEND'),
                                     karma='good',)
 

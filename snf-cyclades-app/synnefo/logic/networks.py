@@ -33,6 +33,13 @@ log = getLogger(__name__)
 def validate_network_action(network, action):
     if network.deleted:
         raise faults.BadRequest("Network has been deleted.")
+    if action in ["DRAIN", "UNDRAIN"]:
+        if not network.public:
+            raise faults.BadRequest("Network is not public.")
+        if action == "DRAIN" and network.drained:
+            raise faults.BadRequest("Network is drained.")
+        if action == "UNDRAIN" and not network.drained:
+            raise faults.BadRequest("Network is not drained.")
 
 
 def network_command(action):
@@ -124,6 +131,30 @@ def create_network_in_backends(network):
                                           connect=True)
         job_ids.extend(jobs)
     return job_ids
+
+
+@transaction.atomic
+def drain(network_id, credentials):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot set network's drained flag.")
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    validate_network_action(network, "DRAIN")
+    log.info("Draining %s", network)
+    network.drained = True
+    network.save()
+
+
+@transaction.atomic
+def undrain(network_id, credentials):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot unset network's drained flag.")
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    validate_network_action(network, "UNDRAIN")
+    log.info("Undraining %s", network)
+    network.drained = False
+    network.save()
 
 
 @transaction.atomic

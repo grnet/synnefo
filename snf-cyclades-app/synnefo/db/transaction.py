@@ -13,50 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Astakos-specific support for transactions in multiple databases. This file
-# provides the entry points for the "commit_on_success"/"commit_manually"
-# Django transaction functions.
-
 """Cyclades-specific support for transactions in multiple databases.
-
-This file provides the entry points for the following Django transaction
-functions:
- * commit_on_success
- * commit_manually
- * commit
- * rollback
 """
 
 import logging
 from functools import wraps
-from django.db import transaction
 
-from snf_django.utils.transaction import _transaction_func
 from snf_django.utils.transaction import atomic as snf_atomic
-from snf_django.utils.db import select_db
 from synnefo import quotas
 
 log = logging.getLogger(__name__)
-
-
-def commit(using=None):
-    using = select_db("db") if using is None else using
-    transaction.commit(using=using)
-
-
-def rollback(using=None):
-    using = select_db("db") if using is None else using
-    transaction.rollback(using=using)
-
-
-def commit_on_success(using=None):
-    method = transaction.commit_on_success
-    return _transaction_func("db", method, using)
-
-
-def commit_manually(using=None):
-    method = transaction.commit_manually
-    return _transaction_func("db", method, using)
 
 
 def atomic(using=None, savepoint=True):

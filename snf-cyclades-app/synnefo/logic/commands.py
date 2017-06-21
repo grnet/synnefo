@@ -30,6 +30,16 @@ def validate_server_action(vm, action):
     if vm.deleted:
         raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
 
+    if action == "SUSPEND":
+        if vm.suspended:
+            raise faults.BadRequest("Server already suspended.")
+        return
+
+    if action == "UNSUSPEND":
+        if not vm.suspended:
+            raise faults.BadRequest("Server already unsuspended.")
+        return
+
     # Destroying a server should always be permitted
     if action == "DESTROY":
         return

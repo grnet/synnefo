@@ -557,15 +557,28 @@ def rename(server_id, new_name, credentials=None):
     return server
 
 
-@transaction.atomic
-def suspend(server_id, suspended, credentials):
-    """Set server's suspended flag."""
-    server = util.get_vm(server_id, credentials,
-                         for_update=True, non_deleted=True)
-    server.suspended = suspended
-    server.save()
-    log.info("Set suspended flag of server '%s' to %s", server, suspended)
-    return server
+@transaction.atomic_context
+def suspend(server_id, credentials=None, atomic_context=None):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot suspend vm.")
+    with commands.ServerCommand("SUSPEND", server_id,
+                                credentials, atomic_context) as vm:
+        vm.suspended = True
+        vm.save()
+        log.info("Suspended %s", vm)
+        return vm
+
+
+@transaction.atomic_context
+def unsuspend(server_id, credentials=None, atomic_context=None):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot unsuspend vm.")
+    with commands.ServerCommand("UNSUSPEND", server_id,
+                                credentials, atomic_context) as vm:
+        vm.suspended = False
+        vm.save()
+        log.info("Unsuspended %s", vm)
+        return vm
 
 
 def show_owner_change(vmid, from_user, to_user):

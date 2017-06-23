@@ -16,7 +16,7 @@
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 
-from synnefo.lib.dictconfig import dictConfig
+from logging.config import dictConfig
 
 import logging
 

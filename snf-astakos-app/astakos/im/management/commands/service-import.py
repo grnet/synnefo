@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ from optparse import make_option
 
 from astakos.im import transaction
 from snf_django.management.commands import SynnefoCommand, CommandError
-from django.utils import simplejson as json
+import json
 
 from astakos.im.register import add_service, add_resource, RegisterException
 from astakos.im.models import Component

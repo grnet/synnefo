@@ -2,7 +2,7 @@
 #
 
 # Copyright (C) 2010, 2011 Google Inc.
-# Copyright (C) 2013, GRNET S.A.
+# Copyright (C) 2013-2016 GRNET S.A.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@
 
 import requests
 import logging
-import simplejson
+import json
 import time
+import warnings
+from urllib3.exceptions import InsecureRequestWarning
 
 GANETI_RAPI_PORT = 5080
 GANETI_RAPI_VERSION = 2
@@ -164,7 +166,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
   """
   USER_AGENT = "Ganeti RAPI Client"
-  _json_encoder = simplejson.JSONEncoder(sort_keys=True)
+  _json_encoder = json.JSONEncoder(sort_keys=True)
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
                username=None, password=None, logger=logging):
@@ -232,13 +234,15 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                        method, url, query, encoded_content)
 
     req_method = getattr(requests, method.lower())
-    r = req_method(url, auth=self._auth, headers=headers, params=query,
-                   data=encoded_content, verify=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+        r = req_method(url, auth=self._auth, headers=headers, params=query,
+                       data=encoded_content, verify=False)
 
 
     http_code = r.status_code
     if r.content is not None:
-        response_content = simplejson.loads(r.content)
+        response_content = json.loads(r.content)
     else:
         response_content = None
 

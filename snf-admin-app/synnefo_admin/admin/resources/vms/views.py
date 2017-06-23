@@ -21,7 +21,7 @@ from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
 from synnefo.db import transaction
-from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
+from synnefo.db.models import (VirtualMachine, Network, IPAddressHistory,
                                IPAddress)
 from astakos.im.models import AstakosUser, Project
 
@@ -221,7 +221,7 @@ def details(request, query):
     ip_list = IPAddress.objects.filter(nic__in=vm.nics.all())
     associations.append(IPAssociation(request, ip_list,))
 
-    ip_log_list = IPAddressLog.objects.filter(server_id=vm.pk)
+    ip_log_list = IPAddressHistory.objects.filter(server_id=vm.pk)
     associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {

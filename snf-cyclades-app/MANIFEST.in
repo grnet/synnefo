@@ -1,6 +1,16 @@
-recursive-include synnefo *.json *.html *.json *.xml *.txt
+include README.md
 recursive-include synnefo/admin/static *
+recursive-include synnefo/api/fixtures *
+recursive-include synnefo/api/templates *
+recursive-include synnefo/db/fixtures *
+recursive-include synnefo/helpdesk/static *
+recursive-include synnefo/helpdesk/templates *
+recursive-include synnefo/locale *
+recursive-include synnefo/ui/locale *
+recursive-include synnefo/ui/templates *
 recursive-include synnefo/ui/static *
-recursive-include docs *.rst
+recursive-include synnefo/userdata/templates *
+recursive-include synnefo/tools *
+recursive-include docs *
+prune docs/_build
 
-include distribute_setup.py README.md

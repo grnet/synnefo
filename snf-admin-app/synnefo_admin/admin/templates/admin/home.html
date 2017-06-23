@@ -10,7 +10,7 @@
 			</a>
 			<ul class="dropdown-menu align-right">
 				<li>
-					<a href="{% url admin-logout %}"  class="sign-out">
+					<a href="{% url 'admin-logout' %}"  class="sign-out">
 						<span class="snf-sign-out"></span>
 						Sign Out
 					</a>
@@ -24,7 +24,7 @@
 {% block main-area %}
 <div class="app-list">
     <a href="" data-toggle="tooltip" data-placement="bottom" title="Under construction" class="disabled"><span>Infrastructure</span></a>
-    <a href="{% url admin-default %}"><span>Service</span></a>
+    <a href="{% url 'admin-default' %}"><span>Service</span></a>
 </div>
 
 {% endblock main-area%}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ class TestPermissions(PithosAPITest):
             if user in authorized:
                 r = self.get(url)
                 self.assertEqual(r.status_code, 200)
-                initial_data = r.content
+                initial_data = "".join(r.streaming_content)
 
                 # test write access
                 data = get_random_data()
@@ -105,7 +105,7 @@ class TestPermissions(PithosAPITest):
                 # test read access
                 r = self.get(url, user=user)
                 self.assertEqual(r.status_code, 200)
-                server_data = r.content
+                server_data = "".join(r.streaming_content)
                 self.assertEqual(server_data, initial_data + data)
             else:
                 # test write access
@@ -133,7 +133,7 @@ class TestPermissions(PithosAPITest):
                     # get initial data
                     r = self.get(url)
                     self.assertEqual(r.status_code, 200)
-                    initial_data = r.content
+                    initial_data = "".join(r.streaming_content)
 
                     # test write access
                     data = get_random_data()
@@ -146,7 +146,7 @@ class TestPermissions(PithosAPITest):
                     # test read access
                     r = self.get(url, user=user)
                     self.assertEqual(r.status_code, 200)
-                    server_data = r.content
+                    server_data = "".join(r.streaming_content)
                     self.assertEqual(server_data, initial_data + data)
                     initial_data = server_data
                 else:

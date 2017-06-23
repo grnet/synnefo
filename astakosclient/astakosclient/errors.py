@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ class BadValue(AstakosClientException):
 
 
 class InvalidResponse(AstakosClientException):
-    """Return simplejson parse Exception as AstakosClient one"""
+    """Return json parse Exception as AstakosClient one"""
 
 
 class BadRequest(AstakosClientException):

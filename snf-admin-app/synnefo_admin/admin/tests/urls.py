@@ -78,9 +78,8 @@ class TestAdminUrls(django.test.TestCase):
         # If we try to resolve the BASE_PATH without the slash, then we should
         # get redirected to the correct ('/admin/') URL.
         r = resolve('/admin')
-        self.assertEqual(r.url_name, 'django.views.generic.simple.redirect_to')
+        self.assertEqual(r.url_name, 'django.views.generic.base.RedirectView')
         self.assertEqual(r.args, ())
-        self.assertEqual(r.kwargs, {'url': 'admin/'})
 
         # Any URL that starts with the '/admin' string but has extra characters
         # should return 404.
@@ -109,9 +108,8 @@ class TestAdminUrls(django.test.TestCase):
             # properly.
             r = resolve('/rand0m')
             self.assertEqual(r.url_name,
-                             'django.views.generic.simple.redirect_to')
+                             'django.views.generic.base.RedirectView')
             self.assertEqual(r.args, ())
-            self.assertEqual(r.kwargs, {'url': 'rand0m/'})
 
             # Check if extra characters return 404.
             with self.assertRaises(Resolver404):

@@ -3,7 +3,7 @@
  
 {% load astakos_tags filters django_tables2 %}
 
-{% block bottom_link %}<a href="{% url project_detail object.uuid %}" title="Back to project ">&lt; Back to Project</a>{% endblock bottom_link %}
+{% block bottom_link %}<a href="{% url 'project_detail' object.uuid %}" title="Back to project ">&lt; Back to Project</a>{% endblock bottom_link %}
 {% block inner_project %} 
   {% if owner_mode or admin_mode %}
     {% if object.is_alive %}
@@ -14,9 +14,9 @@
           MEMBERS  
  
           <div class="project-actions">
-            <a href="{% url project_members project.uuid %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
-            <a href="{% url project_approved_members project.uuid %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
-            <a href="{% url project_pending_members project.uuid %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
+            <a href="{% url 'project_members' project.uuid %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
+            <a href="{% url 'project_approved_members' project.uuid %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
+            <a href="{% url 'project_pending_members' project.uuid %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
 
           </div>
         </h3>

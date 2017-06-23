@@ -16,9 +16,10 @@
 from django.conf.urls import include, patterns
 
 from snf_django.lib.api import api_endpoint_not_found
-from synnefo.api import (servers, flavors, images, extensions)
-from synnefo.api.versions import versions_list, version_details
 
+from synnefo.api import (servers, flavors, images, extensions, keypairs,
+                         floating_ips)
+from synnefo.api.compute_versions import versions_list, version_details
 
 #
 # The OpenStack Compute API v2.0
@@ -29,6 +30,8 @@ compute_api20_patterns = patterns(
     (r'^flavors', include(flavors)),
     (r'^images', include(images)),
     (r'^extensions', include(extensions)),
+    (r'^os-keypairs', include(keypairs)),
+    (r'^os-floating-ips', include(floating_ips.compute_urlpatterns))
 )
 
 

@@ -58,7 +58,7 @@ class Command(SynnefoCommand):
                 continue
             view_functions = \
                 extract_views_from_urlpatterns(urlconf.urlpatterns)
-            for (func, regex) in view_functions:
+            for (func, regex, namespace, name) in view_functions:
                 func_name = hasattr(func, '__name__') and \
                     func.__name__ or repr(func)
                 views.append("%(url)s\t%(module)s.%(name)s"

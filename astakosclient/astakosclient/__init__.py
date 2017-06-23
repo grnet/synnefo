@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ from base64 import b64encode
 from copy import copy
 
 try:
-    import simplejson as json
+    import json
 except ImportError:
     import json
 
@@ -66,8 +66,8 @@ class AstakosClient(object):
     # Too many arguments. pylint: disable-msg=R0913
     # Too many local variables. pylint: disable-msg=R0914
     # Too many statements. pylint: disable-msg=R0915
-    def __init__(self, token, auth_url,
-                 retry=0, use_pool=False, pool_size=8, logger=None):
+    def __init__(self, token, auth_url, retry=0, use_pool=False, pool_size=8,
+                 logger=None, headers=None):
         """Initialize AstakosClient Class
 
         Keyword arguments:
@@ -107,6 +107,10 @@ class AstakosClient(object):
         self.astakos_base_url = parsed_auth_url.netloc
         self.scheme = parsed_auth_url.scheme
         self.conn_class = conn_class
+        if headers is not None:
+            self.headers = copy(headers)
+        else:
+            self.headers = None
 
         # Initialize astakos api prefixes
         # API urls under auth_url
@@ -250,9 +254,15 @@ class AstakosClient(object):
             method, request_path, hashed_token.hexdigest(), headers,
             body if log_body else "(not logged)")
 
+        if self.headers:
+            request_headers = copy(self.headers)
+        else:
+            request_headers = {}
+
+        if headers is not None:
+            request_headers.update(headers)
+
         # Check Input
-        if headers is None:
-            headers = {}
         if body is None:
             body = {}
         # Initialize log_request and log_response attributes
@@ -261,7 +271,7 @@ class AstakosClient(object):
 
         # Build request's header and body
         kwargs = {}
-        kwargs['headers'] = copy(headers)
+        kwargs['headers'] = request_headers
         kwargs['headers']['X-Auth-Token'] = self.token
         if body:
             kwargs['body'] = copy(body)
@@ -311,7 +321,7 @@ class AstakosClient(object):
             else:
                 return None
         except Exception as err:
-            msg = "Cannot parse response \"%r\" with simplejson: %s"
+            msg = "Cannot parse response \"%r\" with json: %s"
             self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(message=str(err), response=data)
 

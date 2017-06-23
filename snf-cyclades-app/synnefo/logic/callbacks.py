@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -66,6 +66,7 @@ def instance_from_msg(func):
 
     """
     @handle_message_delivery
+    @transaction.commit_on_success
     @wraps(func)
     def wrapper(msg):
         try:
@@ -90,6 +91,7 @@ def network_from_msg(func):
 
     """
     @handle_message_delivery
+    @transaction.commit_on_success
     @wraps(func)
     def wrapper(msg):
         try:

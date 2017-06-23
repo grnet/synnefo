@@ -76,7 +76,7 @@ Status  Description
 
 **Example Successful Response**:
 
-.. code-block:: javascript
+.. code::
 
   {
       "id": proj_id,
@@ -113,7 +113,7 @@ X-Auth-Token          User authentication token
 
 **Example Request**:
 
-.. code-block:: javascript
+.. code::
 
   {
       "name": name,
@@ -203,7 +203,7 @@ X-Auth-Token          User authentication token
 
 **Example Request**:
 
-.. code-block:: javascript
+.. code::
 
   {
       <action>: {"reason": reason,

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,12 +25,12 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
-from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
 from astakos.im import transaction
 from django.template import RequestContext
 from django.db.models import Q
+from synnefo.webproject.views import ListViewExtra, DetailViewExtra
 
 import astakos.im.messages as astakos_messages
 
@@ -48,8 +48,8 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     ProjectForbidden
 from astakos.im import settings
 from astakos.im.util import redirect_back
-from astakos.im.views.util import render_response, _create_object, \
-    _update_object, _resources_catalog, ExceptionHandler, \
+from astakos.im.views.util import render_response, \
+    _resources_catalog, ExceptionHandler, \
     get_user_projects_table, handle_valid_members_form, redirect_to_next
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
     valid_astakos_user_required, login_required
@@ -58,6 +58,7 @@ from astakos.api import projects as api
 from astakos.im import functions as project_actions
 
 logger = logging.getLogger(__name__)
+
 
 
 def no_transaction(func):
@@ -128,8 +129,8 @@ def project_list(request, template_name="im/projects/project_list.html"):
                                         prefix="my_projects_", request=request)
 
     context = {'is_search': False, 'table': table}
-    return object_list(request, projects, template_name=template_name,
-                       extra_context=context)
+    return ListViewExtra.as_view(template_name=template_name, queryset=projects,
+                                  extra_context=context)(request)
 
 
 @project_view(post=True)
@@ -326,10 +327,8 @@ def project_or_app_detail(request, project_uuid, app_id=None):
                                                                and not app_id:
         display_usage = True
 
-    return object_detail(
-        request,
+    return DetailViewExtra.as_view(
         queryset=queryset,
-        object_id=object_id,
         template_name=template_name,
         extra_context={
             'project': project,
@@ -352,7 +351,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
             'resources_set': resources_set,
             'last_app': None if application else project.last_application,
             'remaining_memberships_count': remaining_memberships_count
-        })
+        })(request, pk=object_id)
 
 
 MEMBERSHIP_STATUS_FILTER = {
@@ -390,16 +389,15 @@ def project_search(request):
     else:
         table.caption = _('ALL PROJECTS')
 
-    return object_list(
-        request,
-        projects,
+    return ListViewExtra.as_view(
+        queryset=projects,
         template_name='im/projects/project_list.html',
         extra_context={
             'form': form,
             'is_search': True,
             'q': q,
             'table': table
-        })
+        })(request)
 
 
 @project_view(get=False, post=True)
@@ -539,10 +537,8 @@ def project_members(request, project_uuid, members_status_filter=None,
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
 
-    return object_detail(
-        request,
+    return DetailViewExtra.as_view(
         queryset=Project.objects.select_related(),
-        object_id=project.id,
         template_name='im/projects/project_members.html',
         extra_context={
             'addmembers_form': addmembers_form,
@@ -558,7 +554,7 @@ def project_members(request, project_uuid, members_status_filter=None,
             'members_status_filter': members_status_filter,
             'project': project,
             'remaining_memberships_count': remaining_memberships_count,
-        })
+        })(request, pk=project.id)
 
 
 @project_view(get=False, post=True)

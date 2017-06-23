@@ -1,4 +1,7 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,25 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import distribute_setup
-distribute_setup.use_setuptools()
+"""Packaging module for snf-admin-app"""
 
 import os
 
-# from distutils.util import convert_path
-# from fnmatch import fnmatchcase
+from imp import load_source
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from synnefo_tools.version import __version__
+VERSION_FILE = os.path.join(HERE, 'synnefo_tools', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_FILE), "__version__")
 SHORT_DESCRIPTION = 'Integration testing tool for a running Synnefo deployment'
-
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
@@ -58,8 +55,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 

@@ -8,7 +8,7 @@
     <li class="create">
     <div>
       <div class="wrap">
-          <p class="centered"><a href="{% url project_add %}">
+          <p class="centered"><a href="{% url 'project_add' %}">
               <img alt="THINK ABOUT IT" 
               src="{{ IM_STATIC_URL }}images/create.png"></a>
           </p>
@@ -20,14 +20,14 @@
   you and your colleagues are ready to deploy!<br/><br/>
         {% endblocktrans %}
   </p>
-        <p><a href="{% url project_add %}">create a project ></a></p>
+        <p><a href="{% url 'project_add' %}">create a project ></a></p>
       </div>
     </div>
     </li>
     <li class="join">
     <div>
       <div class="wrap">
-          <p class="centered"><a href="{% url project_search %}">
+          <p class="centered"><a href="{% url 'project_search' %}">
               <img alt="THINK ABOUT IT" src="{{ IM_STATIC_URL }}images/join.png"></a>
           </p>
         <p class="txt">
@@ -39,7 +39,7 @@
   In short: try to Join now.
         {% endblocktrans %}
   </p>
-        <p><a href="{% url project_search %}">join a project ></a></p>
+        <p><a href="{% url 'project_search' %}">join a project ></a></p>
       </div>
     </div>
     </li>

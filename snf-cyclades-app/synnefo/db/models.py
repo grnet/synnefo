@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -119,6 +119,7 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
+    public = models.BooleanField('Public', null=False)
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),
@@ -183,7 +184,8 @@ class Backend(models.Model):
         super(Backend, self).__init__(*args, **kwargs)
         if not self.pk:
             # Generate a unique index for the Backend
-            indexes = Backend.objects.all().values_list('index', flat=True)
+            indexes = list(Backend.objects.all().values_list('index',
+                                                             flat=True))
             try:
                 first_free = [x for x in xrange(0, 16) if x not in indexes][0]
                 self.index = first_free
@@ -259,7 +261,7 @@ class VirtualMachineManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class VirtualMachine(models.Model):
@@ -360,6 +362,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
+    key_name = models.CharField(max_length=100, null=True)
     image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
@@ -527,7 +530,7 @@ class NetworkManager(models.Manager):
         if public:
             _filter |= models.Q(public=True)
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class Network(models.Model):
@@ -739,7 +742,7 @@ class SubnetManager(models.Manager):
 
         networks = Network.objects.for_user(userid, projects, public=public)
 
-        return self.get_query_set().filter(network__in=networks)
+        return self.get_queryset().filter(network__in=networks)
 
 
 class Subnet(models.Model):
@@ -878,7 +881,7 @@ class IPAddressManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class IPAddress(models.Model):
@@ -958,6 +961,32 @@ class IPAddressLog(models.Model):
                   self.allocated_at)
 
 
+class IPAddressHistory(models.Model):
+    ASSOCIATE = "associate"
+    DISASSOCIATE = "disassociate"
+
+    address = models.CharField("IP Address", max_length=64, null=False,
+                               db_index=True)
+    server_id = models.IntegerField("Server", null=False, db_index=True)
+    network_id = models.IntegerField("Network", null=False, db_index=True)
+    user_id = models.CharField("IP user", max_length=128, null=False,
+                              db_index=True)
+    action = models.CharField("Action", max_length=255, null=False)
+    action_date = models.DateTimeField("Datetime of IP action",
+                                       default=datetime.datetime.now)
+    action_reason = models.CharField("Action reason", max_length=1024,
+                                     default="")
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<Address: %s, Server: %s, Network: %s, User: %s,"\
+            " Date: %s Action: %s>"\
+            % (self.address, self.server_id, self.network_id, self.user_id,
+               self.action_date, self.action)
+
+
 class NetworkInterfaceManager(models.Manager):
     """Custom manager for :class:`NetworkInterface` model."""
 
@@ -985,7 +1014,7 @@ class NetworkInterfaceManager(models.Manager):
         _filter |= models.Q(network__in=networks)
         _filter |= models.Q(ips__in=ips)
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class NetworkInterface(models.Model):
@@ -1167,7 +1196,7 @@ class VirtualMachineDiagnosticManager(models.Manager):
         self.create_for_vm(vm, 'DEBUG', **kwargs)
 
     def since(self, vm, created_since, **kwargs):
-        return self.get_query_set().filter(vm=vm, created__gt=created_since,
+        return self.get_queryset().filter(vm=vm, created__gt=created_since,
                                            **kwargs)
 
 
@@ -1218,7 +1247,7 @@ class VolumeManager(models.Manager):
             _filter |= (models.Q(shared_to_project=True) &\
                         models.Q(project__in=projects))
 
-        return self.get_query_set().filter(_filter)
+        return self.get_queryset().filter(_filter)
 
 
 class Volume(models.Model):
@@ -1367,3 +1396,18 @@ class VolumeMetadata(Metadata):
     class Meta:
         unique_together = (("volume", "key"),)
         verbose_name = u"Key-Value pair of Volumes metadata"
+
+
+class ProjectBackend(models.Model):
+    project = models.CharField(max_length=255)
+    backend = models.ForeignKey(Backend, related_name='projects')
+
+    class Meta:
+        unique_together = (('project', 'backend'),)
+        verbose_name = u'Project-backend mappings.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.project, self.backend_id)

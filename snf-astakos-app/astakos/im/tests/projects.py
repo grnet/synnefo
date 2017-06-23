@@ -937,7 +937,7 @@ class TestProjects(TestCase):
         form.is_valid()
         self.assertEqual(r.context['form'].is_valid(), True)
 
-        application_data['limit_on_members_number'] = 5
+        application_data['limit_on_members_number_0'] = 5
         r = self.user_client.post(post_url, data=application_data, follow=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['form'].is_valid(), True)
@@ -988,7 +988,7 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
-            'limit_on_members_number_0': '5',
+            'limit_on_members_number_0': '6',
             'service1.resource_m_uplimit': 300,
             'service1.resource_p_uplimit': 100,
             'is_selected_service1.resource': "1",
@@ -1011,7 +1011,9 @@ class TestProjects(TestCase):
 
         app = ProjectApplication.objects.get(state=ProjectApplication.PENDING,
                                              chain=app1.chain)
-        self.assertEqual(app.limit_on_members_number, 5)
+        self.assertEqual(app.limit_on_members_number, 6)
+        # member_join_policy remains the same, application contains no change
+        self.assertEqual(app.member_join_policy, None)
 
         # login
         self.member_client.get(reverse("edit_profile"))

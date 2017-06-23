@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@ from synnefo.plankton.backend import PlanktonBackend
 
 class Command(SynnefoCommand):
     help = "List images."
+    umask = 0o007
+
     option_list = SynnefoCommand.option_list + (
         make_option(
             '--user',

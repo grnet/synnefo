@@ -14,7 +14,7 @@ GRAPH_PREFIX = getattr(settings, 'GRAPH_PREFIX', "/var/cache/snf-stats-app/")
 
 # Font settings
 FONT = getattr(settings, 'FONT',
-               "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf")
+               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 
 # Bar settings
 BAR_BORDER_COLOR = getattr(settings, 'BAR_BORDER_COLOR', (0x5c, 0xa1, 0xc0))

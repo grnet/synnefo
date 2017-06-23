@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.views.decorators.http import require_http_methods
-from django.utils import simplejson as json
+import json
 from django.template import RequestContext
 
 from synnefo_branding import utils as branding
@@ -585,9 +585,7 @@ def logout(request, template='registration/logged_out.html',
         email = request.user.email
         auth_logout(request)
     else:
-        response['Location'] = reverse('index')
-        response.status_code = 302
-        return response
+        return HttpResponseRedirect(reverse('index'))
 
     next = restrict_next(
         request.GET.get('next'),
@@ -595,11 +593,9 @@ def logout(request, template='registration/logged_out.html',
     )
 
     if next:
-        response['Location'] = next
-        response.status_code = 302
+        return HttpResponseRedirect(next)
     elif settings.LOGOUT_NEXT:
-        response['Location'] = settings.LOGOUT_NEXT
-        response.status_code = 302
+        return HttpResponseRedirect(settings.LOGOUT_NEXT)
     else:
         last_provider = request.COOKIES.get(
             'astakos_last_login_method', 'local')
@@ -614,9 +610,7 @@ def logout(request, template='registration/logged_out.html',
         if extra:
             message += "<br />" + extra
         messages.success(request, message)
-        response['Location'] = reverse('index')
-        response.status_code = 302
-    return response
+        return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET", "POST"])
@@ -1003,7 +997,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
         mimetype = 'application/javascript'
         data = '%s(%s)' % (callback, data)
 
-    return HttpResponse(content=data, mimetype=mimetype)
+    return HttpResponse(content=data, content_type=mimetype)
 
 
 class MenuItem(dict):
@@ -1059,4 +1053,4 @@ def get_services(request):
         mimetype = 'application/javascript'
         data = '%s(%s)' % (callback, data)
 
-    return HttpResponse(content=data, mimetype=mimetype)
+    return HttpResponse(content=data, content_type=mimetype)

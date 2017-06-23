@@ -21,26 +21,25 @@ from hashlib import sha256
 from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
-from time import time
 
 from Crypto.Cipher import AES
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
-from django.db.models import Q
-from django.core.cache import cache
+import json
+from django.core.cache import caches
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
+from synnefo.userdata.models import PublicKeyPair
 from synnefo.plankton.backend import PlanktonBackend
-from synnefo.webproject.memory_cache import MemoryCache
 
-from synnefo.cyclades_settings import cyclades_services, BASE_HOST
+from synnefo.cyclades_settings import cyclades_services, BASE_HOST,\
+    PUBLIC_STATS_CACHE_NAME, VM_PASSWORD_CACHE_NAME
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
@@ -66,6 +65,26 @@ FLOATING_IPS_URL = join_urls(NETWORK_URL, "floatingips/")
 PITHOSMAP_PREFIX = "pithosmap://"
 
 log = getLogger('synnefo.api')
+
+
+def build_version_object(url, version_id, path, status, **extra_args):
+    """Generates a version object
+
+    The version object is structured based on the OpenStack
+    API. `extra_args` is for supporting extra information about
+    the version such as media types, extra links etc
+    """
+    base_version = {
+        'id': 'v%s' % version_id,
+        'status': status,
+        'links': [
+            {
+                'rel': 'self',
+                'href': '%s/%s/' % (url, path),
+            },
+        ],
+    }
+    return dict(base_version, **extra_args)
 
 
 def random_password():
@@ -188,6 +207,19 @@ def get_image(image_id, user_id):
             return backend.get_image(image_id)
         except faults.ItemNotFound:
             raise faults.ItemNotFound("Image '%s' not found" % image_id)
+
+
+def get_keypair(keypair_name, user_id, for_update=False):
+    try:
+        keypairs = PublicKeyPair.objects
+        if for_update:
+            keypairs = keypairs.select_for_update()
+        keypair = keypairs.get(name=keypair_name, user=user_id)
+        if keypair.deleted:
+            raise faults.BadRequest("Keypair has been deleted.")
+        return keypair
+    except PublicKeyPair.DoesNotExist:
+        raise faults.ItemNotFound('Keypair %s not found.' % keypair_name)
 
 
 def get_image_dict(image_id, user_id):
@@ -498,36 +530,37 @@ def start_action(vm, action, jobId):
     vm.backendlogmsg = None
     vm.save()
 
-class PublicStatsCache(MemoryCache):
-    POPULATE_INTERVAL = getattr(
-        settings,
-        'PUBLIC_STATS_CACHE_POPULATE_INTERVAL',
-        60
-    )
 
-    def populate(self):
-        spawned_servers = VirtualMachine.objects.exclude(operstate="ERROR")
-        active_servers = VirtualMachine.objects.exclude(
-            operstate__in=["DELETED", "ERROR"]
-        )
-        spawned_networks = Network.objects.exclude(state__in=["ERROR", "PENDING"])
+STATS_CACHE_VALUES = {
+    'spawned_servers':
+    lambda: VirtualMachine.objects.exclude(operstate="ERROR").count(),
+    'active_servers':
+    lambda:
+    VirtualMachine.objects.exclude(operstate__in=["DELETED", "ERROR"]).count(),
+    'spawned_networks':
+    lambda: Network.objects.exclude(state__in=["ERROR", "PENDING"]).count(),
+}
 
-        self.set(
-            spawned_servers=len(spawned_servers),
-            active_servers=len(active_servers),
-            spawned_networks=len(spawned_networks)
-        )
 
-class VMPasswordCache(MemoryCache):
-    TIMEOUT = None
+def get_or_set_cache(cache, key, func):
+    value = cache.get(key)
+    if value is None:
+        value = func()
+        cache.set(key, value)
+    return value
 
-    def populate(self):
-        """No need to initialize the cache. If the password doesn't exist in
-        the cache, `None` will be returned.
 
-        """
-        pass
+public_stats_cache = caches[PUBLIC_STATS_CACHE_NAME]
 
+
+def get_cached_public_stats():
+    results = {}
+    for key, func in STATS_CACHE_VALUES.iteritems():
+        results[key] = get_or_set_cache(public_stats_cache, key, func)
+    return results
+
+
+VM_PASSWORD_CACHE = caches[VM_PASSWORD_CACHE_NAME]
 
 
 def can_create_flavor(flavor, user):

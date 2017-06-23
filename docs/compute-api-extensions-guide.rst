@@ -91,7 +91,7 @@ The volume attachment attributes are listed `here <#volume-attachment-ref>`_.
 
 *Example List Volumes: JSON (regular)*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/1134/os-volume_attachments
 
@@ -162,7 +162,7 @@ volumeId    The volume id        ✔        ✔
 
 *Example Attach Volume Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     "volumeAttachment": {
@@ -201,7 +201,7 @@ The volume attachment attributes are listed `here <#volume-attachment-ref>`_.
 
 *Example Attach Volume Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers/1134/os-volume_attachments
 
@@ -280,7 +280,7 @@ The volume attachment attributes are listed `here <#volume-attachment-ref>`_.
 
 *Example Show Volume Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers/1134/os-volume_attachments/9
 

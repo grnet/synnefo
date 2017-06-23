@@ -72,13 +72,13 @@
 <script>
 $(document).ready(function(){
   var usageView = new UsageView({
-    'url': '{% url astakos-api-quotas %}',
-    'projects_url': '{% url astakos.api.projects.projects %}',
+    'url': '{% url 'astakos-api-quotas' %}',
+    'projects_url': '{% url 'astakos.api.projects.projects' %}',
     'cookie_name': '{{ token_cookie_name|safe }}',
     'dataType': 'json',
     'container': '#quota-container',
     'quotas': {{ user_quotas|safe }},
-    'project_url_tpl': '{% url project_detail project_uuid="UUID" %}',
+    'project_url_tpl': '{% url 'project_detail' project_uuid="UUID" %}',
     'meta': {
       'resources': {{ resource_catalog|safe }},
       'groups': {{ resource_groups|safe }},

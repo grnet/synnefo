@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@ import re
 import logging
 
 from django.shortcuts import redirect
-from django.views.generic.simple import direct_to_template
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from synnefo.webproject.views import TemplateViewExtra
 
 from urllib import unquote
 
@@ -36,6 +36,8 @@ from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
 
+# migrate to class-based views
+direct_to_template = TemplateViewExtra.as_view
 HELPDESK_MEDIA_URL = getattr(settings, 'HELPDESK_MEDIA_URL',
                              settings.MEDIA_URL + 'helpdesk/')
 
@@ -150,9 +152,9 @@ def index(request):
                         search_query=account)
 
     # show index template
-    return direct_to_template(request, "helpdesk/index.html",
+    return direct_to_template(template_name="helpdesk/index.html",
                               extra_context={'HELPDESK_MEDIA_URL':
-                                             HELPDESK_MEDIA_URL})
+                                             HELPDESK_MEDIA_URL})(request)
 
 
 @helpdesk_user_required
@@ -253,8 +255,8 @@ def account(request, search_query):
         'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
-    return direct_to_template(request, "helpdesk/account.html",
-                              extra_context=user_context)
+    return direct_to_template(template_name="helpdesk/account.html",
+                              extra_context=user_context)(request)
 
 
 def search_by_ip(request, search_query):
@@ -290,8 +292,8 @@ def search_by_ip(request, search_query):
         'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
-    return direct_to_template(request, "helpdesk/ip.html",
-                              extra_context=user_context)
+    return direct_to_template(template_name="helpdesk/ip.html",
+                              extra_context=user_context)(request)
 
 
 @helpdesk_user_required

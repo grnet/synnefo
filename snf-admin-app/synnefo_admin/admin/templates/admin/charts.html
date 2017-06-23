@@ -14,8 +14,8 @@ class="active"
 
 {% block content %}
 <div class="charts" id="charts"
-    data-astakos-stats={% url admin-stats-component-details 'astakos' %}
-    data-cyclades-stats={% url admin-stats-component-details 'cyclades' %}>
+    data-astakos-stats={% url 'admin-stats-component-details' 'astakos' %}
+    data-cyclades-stats={% url 'admin-stats-component-details' 'cyclades' %}>
 <div class="sidebar actionbar">
     <div id="sticker">
         <a href="" data-chart="resource-usage" class="active"><span>Resource Usage</span></a>

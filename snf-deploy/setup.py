@@ -1,4 +1,7 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,25 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import distribute_setup
-distribute_setup.use_setuptools()
+"""Packaging module for snf-deploy"""
 
 import os
-import sys
 
+from imp import load_source
 from setuptools import setup, find_packages
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-# Add snfdeploy to sys.path and load version module
-sys.path.insert(0, "snfdeploy")
-from version import __version__
+HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+VERSION_PY = os.path.join(HERE, 'snfdeploy', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_PY), "__version__")
 SHORT_DESCRIPTION = 'Deployment tool for synnefo from scratch'
-
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
@@ -40,7 +37,6 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'argparse',
-    'simplejson',
     'ipaddr',
     'fabric>=1.3',
 ]
@@ -59,8 +55,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 

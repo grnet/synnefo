@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #coding=utf8
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ from urllib import unquote
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
+import json
 
 from pithos.api.test import (PithosAPITest, DATE_FORMATS, TEST_BLOCK_SIZE,
                              TEST_HASH_ALGORITHM)
@@ -78,7 +78,7 @@ class TestPublic(PithosAPITest):
         r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
         content_disposition = unquote(r['Content-Disposition'])
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
@@ -134,7 +134,7 @@ class TestPublic(PithosAPITest):
         r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
         content_disposition = unquote(r['Content-Disposition'])
         self.assertEqual(content_disposition, user_defined_disposition)
 
@@ -368,7 +368,7 @@ class TestPublic(PithosAPITest):
 
         r = self.get(public_url, HTTP_RANGE='bytes=0-499')
         self.assertEqual(r.status_code, 206)
-        data = r.content
+        data = "".join(r.streaming_content)
         self.assertEqual(data, odata[:500])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'], 'bytes 0-499/%s' % len(odata))
@@ -390,7 +390,7 @@ class TestPublic(PithosAPITest):
 
         r = self.get(public_url, HTTP_RANGE='bytes=-500')
         self.assertEqual(r.status_code, 206)
-        self.assertEqual(r.content, odata[-500:])
+        self.assertEqual("".join(r.streaming_content), odata[-500:])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'],
                          'bytes %s-%s/%s' % (size - 500, size - 1, size))
@@ -413,7 +413,7 @@ class TestPublic(PithosAPITest):
 
         r = self.get(public_url, HTTP_RANGE='bytes=%s-' % offset)
         self.assertEqual(r.status_code, 206)
-        self.assertEqual(r.content, odata[offset:])
+        self.assertEqual("".join(r.streaming_content), odata[offset:])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'],
                          'bytes %s-%s/%s' % (offset, size - 1, size))
@@ -463,7 +463,7 @@ class TestPublic(PithosAPITest):
         if m is None:
             self.fail('Invalid multiple range content type')
         boundary = m.groupdict()['boundary']
-        cparts = r.content.split('--%s' % boundary)[1:-1]
+        cparts = "".join(r.streaming_content).split('--%s' % boundary)[1:-1]
 
         # assert content parts length
         self.assertEqual(len(cparts), len(l))
@@ -532,7 +532,7 @@ class TestPublic(PithosAPITest):
             self.assertEqual(r.status_code, 200)
 
             # assert response content
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
         # perform get with If-Match
         if pithos_settings.UPDATE_MD5:
@@ -559,7 +559,7 @@ class TestPublic(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_public_get_multiple_if_match(self):
         cname = self.create_container()[0]
@@ -582,7 +582,7 @@ class TestPublic(PithosAPITest):
             self.assertEqual(r.status_code, 200)
 
             # assert response content
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
         # perform get with If-Match
         if pithos_settings.UPDATE_MD5:
@@ -693,7 +693,7 @@ class TestPublic(PithosAPITest):
             r = self.get(public, user='user2', HTTP_IF_MODIFIED_SINCE=t,
                          token=None)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata + appended_data)
+            self.assertEqual("".join(r.streaming_content), odata + appended_data)
 
     def test_public_if_modified_since_invalid_date(self):
         cname = self.create_container()[0]
@@ -709,7 +709,7 @@ class TestPublic(PithosAPITest):
 
         r = self.get(public_url, HTTP_IF_MODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, odata)
+        self.assertEqual("".join(r.streaming_content), odata)
 
     def test_public_if_public_not_modified_since(self):
         cname = self.create_container()[0]
@@ -731,7 +731,7 @@ class TestPublic(PithosAPITest):
         for t in t1_formats:
             r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
         # modify object
         _time.sleep(2)
@@ -782,7 +782,7 @@ class TestPublic(PithosAPITest):
         for tf in t_formats:
             r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=tf)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, odata)
+            self.assertEqual("".join(r.streaming_content), odata)
 
     def test_public_if_unmodified_since_precondition_failed(self):
         cname = self.create_container()[0]

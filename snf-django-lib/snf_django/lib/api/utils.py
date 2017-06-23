@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 import datetime
 from dateutil.parser import parse as date_parse
-from django.utils import simplejson as json
+import json
 
 from django.conf import settings
 from snf_django.lib.api import faults
@@ -93,12 +93,14 @@ def get_json_body(request):
                                 content_type)
 
 
-def prefix_pattern(prefix, append_slash=True):
+def prefix_pattern(prefix, append_slash=True, end_here=False):
     """Return a reliable urls.py pattern from a prefix"""
     prefix = prefix.strip('/')
     if prefix and append_slash:
         prefix += '/'
     pattern = '^' + prefix
+    if end_here:
+        pattern += '$'
     return pattern
 
 

@@ -48,7 +48,7 @@ runAstakosclientTests () {
 }
 
 createSnfManageTest () {
-    TEST="$SNF_MANAGE test $* --traceback --noinput --settings=synnefo.settings.test"
+    TEST="$SNF_MANAGE test $* --verbosity=2 --traceback --noinput --settings=synnefo.settings.test"
 }
 
 createNoseTest () {
@@ -144,7 +144,7 @@ export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 astakos_all_tests="astakos.im astakos.quotaholder_app astakos.oa2"
 cyclades_all_tests="synnefo.api synnefo.db synnefo.logic synnefo.plankton synnefo.quotas synnefo.vmapi synnefo.helpdesk synnefo.userdata synnefo.volume"
 admin_all_tests="synnefo_admin.admin"
-pithos_all_tests="pithos.api.tests"
+pithos_all_tests="pithos.api.tests pithos.backends"
 astakosclient_all_tests="astakosclient"
 ALL_COMPONENTS="astakos cyclades admin pithos astakosclient"
 

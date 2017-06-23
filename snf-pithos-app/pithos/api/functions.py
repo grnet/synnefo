@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.utils.http import parse_etags
 from django.views.decorators.csrf import csrf_exempt
 

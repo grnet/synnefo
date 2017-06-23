@@ -191,8 +191,21 @@ CYCLADES_DETACHABLE_DISK_TEMPLATES = ("ext_archipelago", "ext_vlmc")
 # The maximmum allowed metadata items for a Cyclades Virtual Machine
 CYCLADES_VM_MAX_METADATA = 10
 
-# The time it takes for the public stats to be updated in the cache
-PUBLIC_STATS_CACHE_POPULATE_INTERVAL = 60
+# Define cache for public stats
+PUBLIC_STATS_CACHE = {
+    "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    "LOCATION": "",
+    "KEY_PREFIX": "publicstats",
+    "TIMEOUT": 300,
+}
 
 # Permit users of specific groups to override the flavor allow_create policy
 CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE = {}
+
+# Define cache for VM password
+VM_PASSWORD_CACHE = {
+    "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    "LOCATION": "",
+    "KEY_PREFIX": "vmpassword",
+    "TIMEOUT": None,
+}

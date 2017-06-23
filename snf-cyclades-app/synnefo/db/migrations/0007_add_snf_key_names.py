@@ -21,7 +21,7 @@ def backward(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('db', '0006_add_projectbackend'),
+        ('db', '0006a_ipaddresshistory_indices'),
     ]
 
     operations = [

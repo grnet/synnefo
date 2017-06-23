@@ -62,6 +62,8 @@ class SynnefoOutputWrapper(object):
         if self.logger is not None:
             self.logger.info(msg)
         if self.django_wrapper is not None:
+            if 'ending' not in kwargs:
+                kwargs['ending'] = b'\n'
             self.django_wrapper.write(msg, *args, **kwargs)
 
 

@@ -22,6 +22,7 @@ jessie.
    service must upgrade their ``Kamaki`` client to ``Kamaki >= 0.15``. For more
    information regarding the changes, refer to the Changelog.
 
+
 Upgrade Steps
 =============
 
@@ -36,6 +37,7 @@ Upgrade Ganeti nodes
 
 To achieve an upgrade with no VM downtime, you have to upgrade one ganeti node
 at a time.
+
 
 1. Evacuate ganeti node
 -----------------------
@@ -53,6 +55,7 @@ You must first evacuate the node in order to upgrade Archipelago.
 
 3. Upgrade node
 ---------------
+
 * Change all APT repos to jessie, including apt.dev.grnet.gr and also ceph's if
   they exist.
 * Upgrade all packages to jessie
@@ -70,9 +73,9 @@ After rebooting, the upgrade is complete and you can migrate VMs back to the
 node, to proceed with the rest of the cluster.
 
 
-
 Upgrade Service nodes
 =====================
+
 
 1. Change repos to Jessie
 -------------------------
@@ -124,9 +127,8 @@ Shutdown snf-ganeti-eventd on ganeti master candidates:
 
 .. warning::
 
-   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, we
-   have backported gevent 1.1.1 and greenlet 0.4.9 from stretch. Make sure you
-   use these packages found on GRNet's Jessie repo.
+   Due to two bugs in gevent related to SSL found in debian's gevent 1.0.1, you
+   should use the gevent 1.1.1-2 and greenlet 0.4.10-1 from jessie-backports.
 
 .. warning::
 
@@ -153,15 +155,18 @@ Shutdown snf-ganeti-eventd on ganeti nodes:
 
   # service snf-ganeti-eventd stop
 
+
 3. Run database migrations
 --------------------------
 
-Run database migrations in all nodes. This will upgrade from old south
-migrations.
+Run database migrations in all service nodes (i.e. if a service consists of
+multiple nodes/workers, you must run the migrations **only in one** of them).
+This will upgrade from old south migrations:
 
 .. code-block:: console
 
   # snf-manage migrate
+
 
 Fix IP history inconsistencies
 """"""""""""""""""""""""""""""
@@ -186,6 +191,14 @@ The tool will print the needed fixes. Use option ``--fix`` to apply.
 
 4. Adjust configuration files
 -----------------------------
+
+As always, the following settings might need further adjustments depending on
+your previous setup.
+
+.. note::
+
+  Do not forget to add ".conf" suffix on apache's conf files.
+
 
 Change gunicorn configuration file
 """"""""""""""""""""""""""""""""""
@@ -218,6 +231,25 @@ Example:
      'synnefo.webproject.wsgi',
    ),
   }
+
+.. note::
+
+  Since 0.19, Synnefo logs in a dedicated file ``/var/log/synnefo/synnefo.log``,
+  separately from gunicorn's logs.
+
+
+Update webserver's configuration file
+"""""""""""""""""""""""""""""""""""""
+
+Up until now, we used the ``X-Forwarded-Protocol = 'https'`` header to notify the
+proxied django application that it was behind a secure proxy. This worked
+because on gunicorn's version 0.9 a patch was introduced that specifically
+looked for this header and value and adjusted the ``wsgi.url_scheme`` variable to
+'https'. In gunicorn's 19 it now looks for headers defined in the ``secure_scheme_headers``
+config variable which defaults to
+``{ "X-FORWARDED-PROTOCOL": "ssl", "X-FORWARDED-PROTO": "https", "X-FORWARDED-SSL":"on"  }``.
+
+You should change the header's key from ``X-FORWARDED-PROTOCOL`` to ``X-FORWARDED-PROTO``.
 
 
 New ALLOWED_HOSTS setting
@@ -265,21 +297,14 @@ If you want to use memcache, you will need to set ``BACKEND`` to
 `here <https://docs.djangoproject.com/en/1.7/topics/cache/>`_ for more
 information.
 
-Please adjust the new settings to match your previous setup.
-
-
-.. note::
-
-  Do not forget to add '.conf' suffix on apache's conf files.
-
-.. note::
-
-  Notice that Synnefo now logs in a dedicated file
-  ``/var/log/synnefo/synnefo.log``, separately from gunicorn's logs.
+Please adjust the new settings to match your previous setup. You might want to
+remove settings like ``VMAPI_CACHE_BACKEND`` and ``CACHE_BACKEND`` that are
+obsolete since 0.19.
 
 
 Backend Allocator Module
 """"""""""""""""""""""""
+
 Synnefo v0.19 introduces a new FilterAllocator to replace the previous
 DefaultAllocator module. Synnefo v0.19 uses the new module by default, unless
 you have explicitly set the `BACKEND_ALLOCATOR_MODULE` in your settings. In that
@@ -287,6 +312,7 @@ case, it is advised to switch the setting value to the new default setting
 `synnefo.logic.allocators.filter_allocator.FilterAllocator`. The default
 filters include the newly introduced Project-Backend association policy, while
 retaining the previous functionality for picking backends.
+
 
 Re-register service and resource definitions
 """"""""""""""""""""""""""""""""""""""""""""

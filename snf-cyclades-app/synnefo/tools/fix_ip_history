@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,16 @@ from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import IPAddressHistory
 
 SEP = '|'
+
+
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
 
 
 def show_owner_change(vmid, from_user, to_user, date):
@@ -83,9 +93,10 @@ line in the following format:
             iplogs = IPAddressHistory.objects.filter(
                 server_id=vmid, action_date__lt=date).\
                 order_by('-action_date').select_for_update()
-            if len(iplogs):
+            for _, sameIPLogs in _partition_by(
+                    lambda iplog: iplog.address, iplogs).iteritems():
                 latest_log = True
-                for iplog in iplogs:
+                for iplog in sameIPLogs:
                     if iplog.user_id != to_user:
                         self.stdout.write(
                             "IP log user: '%s' and dest user: '%s' differ;"

@@ -93,7 +93,7 @@ Status  Description
 
 **Example Successful Response**:
 
-.. code-block:: javascript
+.. code::
 
   {
       "system_project_id": {
@@ -165,7 +165,7 @@ Status  Description
 
 **Example Successful Response**:
 
-.. code-block:: javascript
+.. code::
 
   {
       "1a6165d0-5020-4b6d-a4ad-83476632a584": {

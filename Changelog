@@ -43,7 +43,7 @@ Astakos
 v0.19
 =====
 
-Released: UNRELEASED
+Released: Fri Jun 23 10:45:02 EEST 2017
 
 Synnefo-wide
 ------------
@@ -58,9 +58,6 @@ Synnefo-wide
 * Use a date-aware JSON session serializer instead of Pickle.
 * Change default logging setup to log Synnefo's log messages to a separate
   logfile.
-
-Astakos
--------
 
 Pithos
 ------

@@ -54,6 +54,7 @@
             this.model_actions = this.$(".model-actions");
             this.form_actions_cont = this.$(".form-actions");
             this.form_actions = this.$(".form-actions .form-action");
+            this.form_file = this.$(".public-key .fromfile-field");
 
             this.input_name = this.form.find(".input-name");
             this.input_key = this.form.find("textarea");
@@ -94,18 +95,23 @@
           var error = false;
 
           if (!name) {
-            this.input_name.parent().addClass("error");
+            this.input_name.parent().find(".errors").append("<span class='error'>Key name cannot be blank.</span>");
             error = true;
           }
 
+          var key_exists = !!snf.storage.keys.matching_keys(name).length
+          if (key_exists) {
+              this.input_name.parent().find(".errors").append("<span class='error'>Key name already in use.</span>");
+              error = true;
+          }
+
           if (!key) {
-            this.input_key.parent().addClass("error");
+            this.input_key.parent().find(".errors").append("<span class='error'>Key content cannot be blank.</span>");
             error = true;
           } else {
             try {
               key = snf.util.validatePublicKey(key);
             } catch (err) {
-              this.input_key.parent().addClass("error");
               this.input_key.parent().find(".errors").append("<span class='error'>"+err+"</span>");
               error = true;
             }
@@ -124,6 +130,7 @@
           this.form.show();
           this.generate_msg.hide();
           this.form_actions.show();
+          this.form_file.show();
           this.input_file.show();
           this.close.hide();
           this.error.hide();
@@ -170,7 +177,10 @@
 
         submit_key: function(cb) {
           var data = this.validate_form();
-          if (!data) { return }
+          if (!data) {
+              return false;
+          }
+
           this.set_in_progress();
           var params = {
             complete: _.bind(function() {
@@ -180,8 +190,8 @@
             }, this)
           };
 
-          synnefo.storage.keys.create({
-            content: data.key, 
+          return synnefo.storage.keys.create({
+            content: data.key,
             name: data.name
           }, params);
         },
@@ -226,17 +236,22 @@
           this.generate_action.addClass("in-progress");
           
           var success = _.bind(function(key) {
-            this.generating = false;
-            this.generate_action.removeClass("in-progress");
             this.input_name.val(this._generated_key_name());
             this.input_key.val(key.public);
-            this.generate_msg.show();
             this.private_key = key.private;
-            this.form.hide();
-            this.form_actions.hide();
-            this.close.show();
-            this.model_actions.hide();
-            this.submit_key();
+
+            this.form_file.hide();
+            this.generating = false;
+            this.generate_action.removeClass("in-progress");
+            this.generate_msg.show();
+
+            var submitWasSuccessful = !!this.submit_key();
+            if (submitWasSuccessful) {
+                this.form.hide();
+                this.form_actions.hide();
+                this.close.show();
+                this.model_actions.hide();
+            }
           }, this);
           var error = _.bind(function() {
             this.generating = false;

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,11 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 
 from astakos.im import settings
 from astakos.im.models import AstakosUser, Resource
 from astakos.quotaholder_app.models import Holding
+from synnefo.util import units
 
 
 def get_public_stats():
@@ -25,6 +26,21 @@ def get_public_stats():
     active = users.filter(is_active=True)
     return {"users": {"total": users.count(),
                       "active": active.count()}}
+
+
+def get_resource_stats(query):
+    limits = Holding.objects.filter(query)\
+                            .values("resource")\
+                            .exclude(limit=units.PRACTICALLY_INFINITE)\
+                            .annotate(value=Sum("limit"))
+
+    limits = dict((h["resource"], h["value"]) for h in limits)
+
+    usages = Holding.objects.filter(query)\
+                            .values("resource")\
+                            .annotate(value=Sum("usage_max"))
+    usages = dict((h["resource"], h["value"]) for h in usages)
+    return limits, usages
 
 
 def get_astakos_stats():
@@ -40,20 +56,16 @@ def get_astakos_stats():
     stats["users"]["all"] = {"total": users.count(),
                              "verified": verified.count(),
                              "active": active.count()}
-    # Get all holdings from DB. Filter with 'source=None' in order to get
-    # only the (base and user) projects, and not the user per project holdings
-    holdings = Holding.objects.filter(source=None)\
-                              .values("resource")\
-                              .annotate(usage_sum=Sum("usage_max"),
-                                        limit_sum=Sum("limit"))
-    holdings = dict([(h["resource"], h) for h in holdings])
+
+    # Filter with 'source=None' in order to get only the (base and user)
+    # projects, and not the user per project holdings
+    limits, usages = get_resource_stats(Q(source=None))
 
     resources_stats = {}
     for resource in Resource.objects.all():
-        res_holdings = holdings.get(resource.name, {})
         resources_stats[resource.name] = {
-            "used": res_holdings.get("usage_sum") or 0,
-            "allocated": res_holdings.get("limit_sum") or 0,
+            "used": usages.get(resource.name) or 0,
+            "allocated": limits.get(resource.name) or 0,
             "unit": resource.unit,
             "description": resource.desc
         }
@@ -83,15 +95,12 @@ def get_astakos_stats():
         # The 'holder' attribute contains user UUIDs prefixed with 'user:'
         users_uuids = ["user:" + uuid for uuid in users_uuids]
         resources_stats = {}
+
+        limits, usages = get_resource_stats(Q(holder__in=users_uuids))
         for resource in Resource.objects.all():
-            info = Holding.objects\
-                          .filter(holder__in=users_uuids,
-                                  resource=resource.name)\
-                          .aggregate(usage_sum=Sum("usage_max"),
-                                     limit_sum=Sum("limit"))
             resources_stats[resource.name] = {
-                "used": info.get("usage_sum") or 0,
-                "allocated": info.get("limit_sum") or 0,
+                "used": usages.get(resource.name) or 0,
+                "allocated": limits.get(resource.name) or 0,
                 "unit": resource.unit,
                 "description": resource.desc}
         stats["resources"][provider] = resources_stats

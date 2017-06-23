@@ -8,6 +8,9 @@ cd "$cwd"/..
 # Do common tasks for install/uninstall purposes
 . ./ci/develop-common.sh
 
+pip install -U pip setuptools
+hash -r
+
 # Update version
 devflow-update-version
 

@@ -5,6 +5,24 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.19:
+
+v0.19
+=====
+
+Released: UNRELEASED
+
+The Synnefo 0.19 release brings an upgrade to Debian Jessie. All users are
+strongly encouraged to upgrade. Please see the Synnefo documentation for
+upgrade instructions to v0.19.
+
+Apart from the platform upgrade, the most notable changes are:
+
+* Enhancements in VM allocation policy
+* Support for the keypairs API for ssh key management
+* Improved OpenStack compatibility
+* Improved IP usage history
+
 .. _NEWS-0.18.1:
 
 v0.18.1

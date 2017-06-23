@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 import operator
 
-from django.utils import simplejson as json
+import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db.models import Q
@@ -547,6 +547,8 @@ APP_ACTION_FUNCS = APPLICATION_ACTION.values()
 def project_action(request, project_id):
     user = request.user
     input_data = utils.get_json_body(request)
+    if not isinstance(input_data, dict):
+        raise faults.BadRequest("Invalid input data")
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
     with ExceptionHandler():

@@ -397,7 +397,7 @@ $(document).ready(function() {
          $('.hidden-submit .form-row.submit').slideDown(500);
     });
       
-    var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="password"]');
+    var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="email"], form.innerlabels input[type="password"]');
     _.each(innerInputs, function(val, key, list){
         var txt =  $(val).siblings('label').text();
         $(val).attr('placeholder',txt);

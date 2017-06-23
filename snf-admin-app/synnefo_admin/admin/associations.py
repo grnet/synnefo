@@ -140,7 +140,7 @@ class IPAssociation(AdminQuerySetAssociation):
 
 class IPLogAssociation(AdminQuerySetAssociation):
 
-    order_by = 'allocated_at'
+    order_by = 'action_date'
 
     def __init__(self, request, items, **kwargs):
         AdminAssociation.__init__(self, request, items, type='ip_log', **kwargs)

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,7 +48,9 @@ ADMIN_PREFIX = cyclades_services['cyclades_admin']['prefix']
 VOLUME_PREFIX = cyclades_services['cyclades_volume']['prefix']
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
-
+NETWORK_ROOT_URL = join_urls(BASE_URL, NETWORK_PREFIX)
+BLOCKSTORAGE_ROOT_URL = join_urls(BASE_URL, VOLUME_PREFIX)
+IMAGE_ROOT_URL = join_urls(BASE_URL, PLANKTON_PREFIX)
 # --------------------------------------------------------------------
 # Process Astakos settings
 
@@ -98,3 +100,13 @@ ASTAKOS_UI_PREFIX = join_urls('/', ASTAKOS_PROXY_PREFIX, 'ui')
 ASTAKOS_AUTH_PROXY_PATH = join_urls(BASE_PATH, ASTAKOS_AUTH_PREFIX)
 ASTAKOS_ACCOUNT_PROXY_PATH = join_urls(BASE_PATH, ASTAKOS_ACCOUNT_PREFIX)
 ASTAKOS_UI_PROXY_PATH = join_urls(BASE_PATH, ASTAKOS_UI_PREFIX)
+
+# --------------------------------------
+# Cache settings
+PUBLIC_STATS_CACHE_NAME = "PublicStats"
+PUBLIC_STATS_CACHE = settings.PUBLIC_STATS_CACHE
+settings.CACHES[PUBLIC_STATS_CACHE_NAME] = PUBLIC_STATS_CACHE
+
+VM_PASSWORD_CACHE_NAME = "VMPassword"
+VM_PASSWORD_CACHE = settings.VM_PASSWORD_CACHE
+settings.CACHES[VM_PASSWORD_CACHE_NAME] = VM_PASSWORD_CACHE

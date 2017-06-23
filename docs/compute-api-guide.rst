@@ -124,6 +124,28 @@ Description                                  URI                                
 `Delete Metadata <#delete-image-metadata>`_  ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
 ============================================ ===================================== ====== ======== ==========
 
+.. rubric:: Keypairs
+
+================================================= =============================== ====== ======== ==========
+Description                                       URI                             Method Cyclades OS/Compute
+================================================= =============================== ====== ======== ==========
+`List <#list-keypairs>`__                         ``/os-keypairs``                GET    ✔        ✔
+`Create Or Import <#create-or-import-keypairs>`__ ``/os-keypairs``                POST   ✔        ✔
+`Get Details <#get-keypair-details>`__            ``/os-keypairs/<keypair-name>`` GET    ✔        ✔
+`Delete <#delete-keypair>`__                      ``/os-keypairs/<keypair-name>`` DELETE ✔        ✔
+================================================= =============================== ====== ======== ==========
+
+.. rubric:: Floating IPs
+
+========================================== ======================================= ====== ================ ==========
+Description                                URI                                     Method Cyclades/Compute OS/Compute
+========================================== ======================================= ====== ================ ==========
+`List <#list-floating-ips>`__              ``/os-floating-ips``                    GET    ✔                ✔
+`Get details <#get-floating-ip-details>`__ ``/os-floating-ips/<floatingip-id>``    GET    ✔                ✔
+`Create <#create-floating-ip>`__           ``/os-floating-ips``                    POST   ✔                ✔
+`Delete <#delete-floating-ip>`__           ``/os-floating-ips/<floatingip id>``    DELETE ✔                ✔
+========================================== ======================================= ====== ================ ==========
+
 List Servers
 ------------
 
@@ -167,7 +189,7 @@ limit             Page size                           **✘**    ✔
 ================= =================================== ======== ==========
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the
-  response will be formated in json.
+  response will be formatted in json.
 
 * **status** refers to the `server status <#status-ref>`_
 
@@ -203,20 +225,19 @@ The server attributes are listed `here <#server-ref>`__.
 
 *Example List Servers: JSON (regular)*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers
-
 
   {
     "servers": [
       {
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "bookmark"
           }
         ],
@@ -225,10 +246,10 @@ The server attributes are listed `here <#server-ref>`__.
       }, {
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/43", 
+            "href": "https://example.org/compute/v2.0/servers/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/43", 
+            "href": "https://example.org/compute/v2.0/servers/43",
             "rel": "bookmark"
           }
         ],
@@ -240,10 +261,9 @@ The server attributes are listed `here <#server-ref>`__.
 
 *Example List Servers: JSON (detail)*
 
+.. code::
+
   GET https://example.org/compute/v2.0/servers/detail
-
-
-.. code-block:: javascript
 
   {
     "servers": [
@@ -285,10 +305,10 @@ The server attributes are listed `here <#server-ref>`__.
         ],
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/42", 
+            "href": "https://example.org/compute/v2.0/servers/42",
             "rel": "bookmark"
           }
         ],
@@ -296,13 +316,13 @@ The server attributes are listed `here <#server-ref>`__.
           "id": "im4g3-1d",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "bookmark"
             }, {
-              "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+              "href": "https://example.org/image/v1.0/images/im4g3-1d",
               "rel": "alternate"
             }
           ]
@@ -313,10 +333,10 @@ The server attributes are listed `here <#server-ref>`__.
           "id": 1",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/flavors/1", 
+              "href": "https://example.org/compute/v2.0/flavors/1",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/flavors/1", 
+              "href": "https://example.org/compute/v2.0/flavors/1",
               "rel": "bookmark"
             }
           ]
@@ -391,10 +411,10 @@ The server attributes are listed `here <#server-ref>`__.
         ],
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/servers/84", 
+            "href": "https://example.org/compute/v2.0/servers/84",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/servers/84", 
+            "href": "https://example.org/compute/v2.0/servers/84",
             "rel": "bookmark"
           }
         ],
@@ -402,13 +422,13 @@ The server attributes are listed `here <#server-ref>`__.
           "id": "im4g3-1d",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+              "href": "https://example.org/compute/v2.0/images/im4g3-1d",
               "rel": "bookmark"
             }, {
-              "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+              "href": "https://example.org/image/v1.0/images/im4g3-1d",
               "rel": "alternate"
             }
           ]
@@ -419,10 +439,10 @@ The server attributes are listed `here <#server-ref>`__.
           "id": 3",
           "links": [
             {
-              "href": "https://example.org/compute/v2.0/flavors/3", 
+              "href": "https://example.org/compute/v2.0/flavors/3",
               "rel": "self"
             }, {
-              "href": "https://example.org/compute/v2.0/flavors/3", 
+              "href": "https://example.org/compute/v2.0/flavors/3",
               "rel": "bookmark"
             }
           ]
@@ -569,7 +589,7 @@ Return Code                 Description
 403 (Forbidden)             User is not allowed to perform this operation
 404 (Not Found)             Image or Flavor not found
 413 (Over Limit)            Exceeded some resource limit
-415 (Bad Media Type)        
+415 (Bad Media Type)
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   No available backends or service currently
@@ -592,10 +612,9 @@ Server attributes are listed `here <#server-ref>`__.
 
 *Example Create Server Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers
-
 
   {
     "server": {
@@ -645,9 +664,10 @@ owner                  File owner          ✔        **✘**
 
 *Example Create Server Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/servers
+
   {
     "server": {
       "name": "My Password-less Server",
@@ -702,9 +722,10 @@ private network (9876) on the virtual server under construction:
 
 * Example Connect server on various networks*
 
-.. code-block:: python
+.. code::
 
   POST https://example.org/compute/v2.0/servers
+
   {
     "server": {
       "networks": [
@@ -742,14 +763,14 @@ X-Auth-Token    User authentication token required required
 |
 
 ================= ===============
-Request Parameter Value          
+Request Parameter Value
 ================= ===============
 json              Respond in json
-xml               Respond in xml 
+xml               Respond in xml
 ================= ===============
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the
-  response will be formated in json.
+  response will be formatted in json.
 
 .. rubric:: Response
 
@@ -787,9 +808,10 @@ netTimeSeries Network load / time graph URL
 
 *Example Get Server Stats Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/5678/stats
+
   {
     "stats": {
       "serverRef": 5678,
@@ -856,7 +878,7 @@ Diagnostic attribute Description
 ==================== ===========
 level                Debug level
 created              Log entry timestamp
-source               Log source proccess
+source               Log source process
 source_date          Log source date
 message              Log description
 details              Detailed log description
@@ -864,9 +886,10 @@ details              Detailed log description
 
 *Example Get Server Diagnostics Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/5678/diagnostics
+
   [
     {
       "level": "DEBUG",
@@ -935,10 +958,9 @@ Server attributes are explained `here <#server-ref>`__.
 
 *Example get server Details*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84
-
 
   {
     "server": {
@@ -979,10 +1001,10 @@ Server attributes are explained `here <#server-ref>`__.
       ],
       "links": [
         {
-          "href": "https://example.org/compute/v2.0/servers/84", 
+          "href": "https://example.org/compute/v2.0/servers/84",
           "rel": "self"
         }, {
-          "href": "https://example.org/compute/v2.0/servers/84", 
+          "href": "https://example.org/compute/v2.0/servers/84",
           "rel": "bookmark"
         }
       ],
@@ -990,13 +1012,13 @@ Server attributes are explained `here <#server-ref>`__.
         "id": "im4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d",
             "rel": "bookmark"
           }, {
-            "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+            "href": "https://example.org/image/v1.0/images/im4g3-1d",
             "rel": "alternate"
           }
         ]
@@ -1007,10 +1029,10 @@ Server attributes are explained `here <#server-ref>`__.
         "id": 3",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "href": "https://example.org/compute/v2.0/flavors/3",
             "rel": "self"
           }, {
-            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "href": "https://example.org/compute/v2.0/flavors/3",
             "rel": "bookmark"
           }
         ]
@@ -1094,7 +1116,7 @@ accessIPv6  IP v6 address        **✘**    ✔
 
 *Example Rename Server Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"server": {"name": "New name"}}
 
@@ -1222,7 +1244,7 @@ Attachment attributes are explained `here <#attachments-ref>`__.
 
 *Example List Addresses: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84/ips/
 
@@ -1315,10 +1337,9 @@ Response body contents::
 
 **Example**
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/servers/84/ips/2718
-
 
   "network": {
     "2718": [
@@ -1378,7 +1399,7 @@ Response body contents::
 
 *Example List Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     ""metadata": {
@@ -1429,7 +1450,7 @@ Request body contents::
 
 *Example Request Set / Update Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "webmail", "users": "root,maild"}}
 
@@ -1458,7 +1479,7 @@ Response body contents::
 
 *Example Response Set / Update Server Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"OS": "Linux", "role": "webmail", "users": "root,maild"}}
 
@@ -1504,14 +1525,14 @@ Response body content::
 
 *Example Get Server Metadata for Item 'role', JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "webmail"}}
 
 Update Server Metadata Item
 ---------------------------
 
-Set a new or update an existing a metadum value for a virtual server.
+Set a new or update an existing a metadata value for a virtual server.
 
 .. rubric:: Request
 
@@ -1537,7 +1558,7 @@ Request body content::
 
 *Example Request to Set or Update Server Metadata "role": JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "gateway"}}
 
@@ -1563,7 +1584,7 @@ Response body content::
 
 *Example Set or Update Server Metadata "role":"gateway": JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"role": "gateway"}}
 
@@ -1676,7 +1697,7 @@ Request body contents::
 
 *Example Start Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"start": {}}
 
@@ -1699,7 +1720,7 @@ Request body contents::
 
 *Example (SOFT) Reboot Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"reboot" : { "type": "SOFT"}}
 
@@ -1715,7 +1736,7 @@ Request body contents::
 
 *Example Resize Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"resize" : { "flavorRef": 153}}
 
@@ -1730,7 +1751,7 @@ Request body contents::
 
 *Example Shutdown Server: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"shutdown": {}}
 
@@ -1752,7 +1773,7 @@ Request body contents::
 
 *Example Get Server Console: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"console": {"type": "vnc" }
 
@@ -1774,7 +1795,7 @@ type           Connection type (only VNC)
 
 *Example Action Console Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     "console": {
@@ -1799,7 +1820,7 @@ Request body contents::
 
 *Example Action firewallProfile: JSON**
 
-.. code-block:: javascript
+.. code::
 
   {"firewallProfile": {"profile": "ENABLED", "nic": 123}}
 
@@ -1810,7 +1831,7 @@ Reassign Server
 
 This operation assigns the VM to a different project.
 Each resource is assigned to a project. A Synnefo project is a set of resource
-limits e.g., maximum number of CPU cores per user, maximum ammount of RAM, etc.
+limits e.g., maximum number of CPU cores per user, maximum amount of RAM, etc.
 
 Although its resource is assigned exactly one project, a user may be a member
 of more, so that different resources are registered to different projects.
@@ -1821,7 +1842,7 @@ Request body contents::
 
 *Example Action reassign: JSON**
 
-.. code-block:: javascript
+.. code::
 
   {"reassign": {"project": "9969f2fd-86d8-45d6-9106-5e251f7dd92f"}}
 
@@ -1901,7 +1922,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (regular): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/flavors
 
@@ -1912,11 +1933,11 @@ only ``id`` and ``name`` attributes.
         "name": "One code",
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -1925,11 +1946,11 @@ only ``id`` and ``name`` attributes.
         "name": "Four core",
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "bookmark"
             }
         ]
@@ -1940,7 +1961,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (regular): XML*
 
-.. code-block:: xml
+.. code:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
   <flavors xmlns="http://docs.openstack.org/compute/api/v1"
@@ -1951,7 +1972,7 @@ only ``id`` and ``name`` attributes.
 
 *Example List Flavors (detail): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/flavors/detail
 
@@ -1966,11 +1987,11 @@ only ``id`` and ``name`` attributes.
         "vcpus": 1,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -1983,11 +2004,11 @@ only ``id`` and ``name`` attributes.
         "vcpus": 4,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "href": "https://example.org/compute/v2.0/flavors/3",
                 "rel": "bookmark"
             }
         ]
@@ -2032,7 +2053,7 @@ Return Code                 Description
 400 (Bad Request)           Malformed flavor ID
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Forbidden to use this flavor
-404 (Not Found)             Flavor id not founmd
+404 (Not Found)             Flavor id not found
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
@@ -2049,9 +2070,9 @@ All flavor attributes are listed `here <#flavor-ref>`__.
 
 *Example Flavor Details: JSON*
 
-  GET https://example.org/compute/v2.0/flavors/1
+.. code::
 
-.. code-block:: javascript
+  GET https://example.org/compute/v2.0/flavors/1
 
   {
     "flavor": {
@@ -2064,11 +2085,11 @@ All flavor attributes are listed `here <#flavor-ref>`__.
         "vcpus": 1,
         "links": [
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "self"
-            }, 
+            },
             {
-                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "href": "https://example.org/compute/v2.0/flavors/1",
                 "rel": "bookmark"
             }
         ]
@@ -2152,7 +2173,7 @@ a collections of the image attributes listed `here <#image-ref>`__.
 
 *Example List Image (detail): JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images
 
@@ -2166,11 +2187,11 @@ a collections of the image attributes listed `here <#image-ref>`__.
         "id": "s0m3-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2189,11 +2210,11 @@ a collections of the image attributes listed `here <#image-ref>`__.
         "id": "07h3r-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2258,7 +2279,7 @@ Image attributes are listed `here <#image-ref>`__.
 
 *Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d
 
@@ -2272,11 +2293,11 @@ Image attributes are listed `here <#image-ref>`__.
         "id": "s0m3-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "self"
-          }, 
+          },
           {
-            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d",
             "rel": "bookmark"
           }
         ],
@@ -2371,7 +2392,7 @@ Response body content::
 
 *Example List Image Metadata: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
 
@@ -2430,7 +2451,7 @@ Request body content::
 
 *Example Update Image Metadata Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   POST https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
 
@@ -2461,7 +2482,7 @@ Response body content::
 
 *Example Update Image Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {
     "metadata": {
@@ -2513,7 +2534,7 @@ Response body content::
 
 *Example Get Image Metadata Item: JSON*
 
-.. code-block:: javascript
+.. code::
 
   GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
 
@@ -2550,9 +2571,10 @@ Request body content::
 
 *Example Update Image Metadata Item Request: JSON*
 
-.. code-block:: javascript
+.. code::
 
   PUT https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
+
   {
     "metadata": {"OS": "Kubuntu"}
   }
@@ -2579,7 +2601,7 @@ Request body content::
 
 *Example Update Image Metadata Item Response: JSON*
 
-.. code-block:: javascript
+.. code::
 
   {"metadata": {"OS": "Kubuntu"}}
 
@@ -2620,6 +2642,480 @@ Return Code                 Description
 =========================== =====================
 
 .. note:: In case of a 204 code, the response body should be empty.
+
+List Keypairs
+-------------
+
+List keypairs that are associated with the account.
+
+.. rubric:: Request
+
+================ ====== ======== ==========
+URI              Method Cyclades OS/Compute
+================ ====== ======== ==========
+``/os-keypairs`` GET    ✔        ✔
+================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =============================
+Return Code                 Description
+=========================== =============================
+204 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =============================
+
+Response body contents::
+
+  {
+    "keypairs": [
+      {
+        "keypair": {
+          "fingerprint": <value>,
+          "name": <value>,
+          "public_key": <value>
+        }
+      }
+      {
+        ...
+      }
+  }
+
+*Example List Keypairs: JSON*
+
+.. code::
+
+  GET https://example.org/compute/v2.0/ok-keypairs
+
+  {
+    "keypairs": [
+      {
+        "keypair": {
+          "fingerprint": "36:cf:5c:98:0e:19:b1:08:1e:33:5d:be:ce:10:86:9d",
+          "name": "vagrant-generated-mzrdphj8",
+          "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDYaQNb+fWT+U6BI8g0MQIBDArZ8iBfVN9TW9duNbz7jm5dcPNvKSrCfOlPtjxw+Te7FPZqJYrslYtpoLcvIuUn6lnTlNxtdrENi5bviQlVzEDzlzfGfceWLnh4B2IrtUOoEHYRhvw+hxOO7Fj8QjJJIOWXSbL2StXTlIz106ChIR8QVK1UR3PMssmFvQZw0AQMyS1V8Olb5IOXJADbM15Q6d/rAkohTtbQanFdaF2L2d+VYrqMoyFAOJSbTLJ0zVU4KrmPV0s9jN8uZkADjA/3SUXEebwbUSy3nFv0bPlvH0lwuO/wHvA4amavmqF/QJoWy//N+Oezj7+kGPLS22Hd"
+        }
+      }
+    ]
+  }
+
+Create or Import Keypairs
+-------------------------
+
+Generates or import a keypair
+
+.. rubric:: Request
+
+================ ====== ======== ==========
+URI              Method Cyclades OS/Compute
+================ ====== ======== ==========
+``/os-keypairs`` POST   ✔        ✔
+================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+Request body contents::
+
+ {
+   "keypair": {
+     "<parameter>": "<value>",
+     ...
+   }
+ }
+
+========== ========= ==========
+Parameter  Cyclades  OS/Compute
+========== ========= ==========
+name       ✔         ✔
+public_key ✔         ✔
+========== ========= ==========
+
+* **name** a name for the newly imported or created keypair (must be
+  unique)
+
+* **public_key** (optional) the public ssh key to import. If you omit this
+  value, a keypair is generated for you.
+
+.. rubric:: Responce
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request data
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+409 (Conflict)              A keypair with the same name already exists
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+=========================== =====================
+
+|
+
+Response body contents::
+
+  {
+    keypair: {
+      <keypair attribute>: <value>,
+      ...
+    }
+  }
+
+*Example Create Keypair Response: JSON*
+
+.. code::
+
+  POST https://example.org/compute/v2.0/os-keypairs
+
+  {
+    "keypair": {
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "name": "create_key",
+      "private_key": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAoJNyQl+fXwELe7GTX5cITl98FhyJjXp4tLMb2hmjFMc3DQVT\n0Xmx6CMGT2fvGMhlBTz0oaxRkudGe7Ys8GEvKeqDkcwFZQRkg845UkzkPXfbOGOE\n5pnmuG4gP88wBmFIbJ0gIqxAt+c1K1kJaqYkhAVq71VCR7F+tUACou1U9Tm08a4+\nlnQEUAXed/xhxPXwaCWf7BLUEsH/lcxALeUzn7t/F+o+duGMpmje/Qxnzpop5l5c\nUvVvB9tUdrCn4RO2bsOi8Qkhjr1fzNvsJRlpFm/AvwCRtomY5T1radorL19otmrP\nFaoevA3LHuyp5ZFcKp6oYRqGcnWwKflaKwi+kQIDAQABAoIBAAm/ygEjox52hsb0\nyhjUp6lyfKsvAl73n5qBAWDli5Q4YCxHNYaTV+zbK4forIiZqiB+SfAC8VT0+7+J\nGQNjMyTdWy2f8Hfoo12pSKuphXYB7+pliG0jzPFHpmeZYbYRc/88LvZL9QX1YLII\nDt1NxwvI9GwhhguqSCIjB8XymOTmimXLnMmA1XZF8C6LLRMnH0wqs2b1kwEbxCjo\nLRLN4RC03hE/AgvhorcgBgKKlKKbWTNRXqP2fpdLV39UH3/Bcf/VFQ7gDTjL1JFJ\nOFZoinE+F4BRwHAx/wOzVbMMgLzNJj+nCpjAuJxRyNGd3D6pydrs9o5fS0eCe8QC\nyu9HCdECgYEAw07frTC4JuNJ88VpEiXWB6GEPumkbNzk5cQCqSPaaDX5QYnwnpro\nFhH1O4moLQct84k//GMfX3hDx4UJW4Pf0P9HcJ8Ksn7iiuxiADsWWl56i2CIz8qd\n7dNdCgHNKmKiU6UatEUiFe0Z26RhmN94YlDRc6Y/e5I2TaLthVdeJH0CgYEA0nmQ\n1J94HpeOqHaGd8/AVrXnFaCjrVvm7WITUoVQ/th9Bw2dy64vudQIw8a8O3mCvjPG\n8UEmgv8X+27hFa9NIeUnV5MYveKvs6vMGueTLwezyx7zPL7rp513jGx6IjxfNdQL\ncLf/jPShH7TKIF3qnpLpva72eQjsoPe65d8vQqUCgYEAnprd0EKBOatYces9oWwy\nfG3w/Do2ueVEyUY9NugTxI8YRN3lFpgLo2if8uKePTrYWS57VNWWM6xxtoRWDghw\n6MN2W4H8aOnbxR+jkjZpt6eD8s3JLJ2JVQpRQwAlgacp1a19mymNPasXVaQPUdsg\nYw7omPdIFGyvRqrqIl/J5u0CgYAI+RnNlsbeNwPj9rmg3gCLMdIaP/D6cRKVSDse\np4ReeQhLhq8VgeWS/JErF4vq1TFXvolau7ZSm2GAXKfH7uNQ8J4Ow7yoS8PF2ysm\ncnz54lAt9rHUAye0y6fPGsjSMNS2TMX4FkAU2FEOMvzzCE36WLUSWyUy38iGzEjx\nh+RR6QKBgCg69DlCF+IpqnC8NoklfU2q7wUOYAAqwKEXLCxOMpbqMrHhyO97rDN/\ntEjWDOxdobljtZfMQV2/4xWbEGCv0/sybN+bknnCfz4UnE5u5p9LnSTyR9UhE+1E\nwSZMLWxUjOjSGztBg2uSf2bTocTwdMLXkYqEidjjC6DBLZTB3WUg\n-----END RSA PRIVATE KEY-----",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R"
+    }
+  }
+
+
+*Example Import Keypair Response: JSON*
+
+.. code::
+
+  POST https://example.org/compute/v2.0/os-keypairs
+
+  {
+    "keypair": {
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "name": "import_key",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R"
+    }
+  }
+
+
+Get Keypair Details
+-------------------
+
+Show Keypair Details
+
+.. rubric:: Request
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS/Compute
+=============================== ====== ======== ==========
+``/os-keypairs/<keypair_name>`` GET    ✔        ✔
+=============================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+==================== =============================
+Return Code          Description
+==================== =============================
+204 (OK)             Request succeeded
+401 (Unauthorized)   Missing or expired user token
+404 (Item Not Found) Keypair not found
+==================== =============================
+
+Response body contents::
+
+  {
+    "keypair": {
+      "created_at": <value>,
+      "deleted": <value>,
+      "deleted_at": <value>,
+      "fingerprint": <value>,
+      "id": <value>,
+      "name": <value>,
+      "public_key": <value>,
+      "updated_at": <value>
+    }
+  }
+
+*Example List Keypair Details Response: JSON*
+
+.. code::
+
+  GET https://example.org/compute/v2.0/os-keypairs/my_key
+
+  {
+    "keypair": {
+      "created_at": "2016-12-20T10:14:07.988431",
+      "deleted": false,
+      "deleted_at": null,
+      "fingerprint": "e0:29:a7:c2:47:6e:d3:e6:68:3f:71:62:6b:c8:17:93",
+      "id": 1,
+      "name": "my_key",
+      "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgk3JCX59fAQt7sZNflwhOX3wWHImNeni0sxvaGaMUxzcNBVPRebHoIwZPZ+8YyGUFPPShrFGS50Z7tizwYS8p6oORzAVlBGSDzjlSTOQ9d9s4Y4Tmmea4biA/zzAGYUhsnSAirEC35zUrWQlqpiSEBWrvVUJHsX61QAKi7VT1ObTxrj6WdARQBd53/GHE9fBoJZ/sEtQSwf+VzEAt5TOfu38X6j524YymaN79DGfOminmXlxS9W8H21R2sKfhE7Zuw6LxCSGOvV/M2+wlGWkWb8C/AJG2iZjlPWtp2isvX2i2as8Vqh68Dcse7KnlkVwqnqhhGoZydbAp+VorCL6R",
+      "updated_at": "2016-12-20T10:14:07.988548"
+    }
+  }
+
+
+Delete Keypair
+--------------
+
+Deletes A Keypair
+
+.. rubric:: Request
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS/Compute
+=============================== ====== ======== ==========
+``/os-keypairs/<keypair_name>`` DELETE ✔        ✔
+=============================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+==================== =============================
+Return Code          Description
+==================== =============================
+204 (OK)             Request succeeded
+401 (Unauthorized)   Missing or expired user token
+404 (Item Not Found) Keypair not found
+==================== =============================
+
+
+List floating ips
+-----------------
+
+List the floating ips which are reserved by the user
+
+.. rubric:: Request
+
+==================== ====== ======== ==========
+URI                  Method Cyclades OS/Compute
+==================== ====== ======== ==========
+``/os-floating-ips`` GET    ✔        ✔
+==================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =====================
+
+Response body contents::
+
+  floating_ips: [
+    {
+      <floating ip attribute>: <value>,
+      ...
+    }, ...
+  ]
+
+*Example List Floating IPs: JSON*
+
+.. code::
+
+  GET https://example.org/compute/v2.0/os-floating-ips
+
+  {
+    floating_ips": [
+      {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      },
+      {
+        "instance_id": null,
+        "ip": "10.2.1.3",
+        "fixed_ip": null,
+        "id": 17,
+        "pool": null
+      }
+    ]
+  }
+
+Get floating ip details
+-----------------------
+
+.. rubric:: Request
+
+============================ ====== ======== ==========
+URI                          Method Cyclades OS/Compute
+============================ ====== ======== ==========
+``/os-floating-ips/<ip-id>`` GET    ✔        ✔
+============================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (itemNotFound)          Floating IP not found
+=========================== =====================
+
+Response body contents::
+
+  floating_ip: {
+      <floating ip attribute>: <value>,
+      ...
+    }
+
+*Example get floating IP details: JSON*
+
+.. code::
+
+  GET https://example.org/compute/v2.0/os-floating-ips/42
+
+  {
+    floating_ip: {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      }
+  }
+
+Create (Allocate) floating ip
+-----------------------------
+
+List the floating ips which are reserved by the user
+
+.. rubric:: Request
+
+==================== ====== ======== ==========
+URI                  Method Cyclades OS/Compute
+==================== ====== ======== ==========
+``/os-floating-ips`` POST   ✔        ✔
+==================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+401 (Unauthorized)          Missing or expired user token
+=========================== =====================
+
+Response body contents::
+
+  floating_ip: {
+      <floating ip attribute>: <value>,
+      ...
+    }
+
+*Example Allocation of a floating IP: JSON*
+
+.. code::
+
+  POST https://example.org/compute/v2.0/os-floating-ips
+
+  {
+    floating_ip: {
+        "instance_id": null,
+        "ip": "10.2.1.2",
+        "fixed_ip": null,
+        "id": 42,
+        "pool": null
+      }
+  }
+
+Delete (Deallocate) floating ip
+-------------------------------
+
+.. rubric:: Request
+
+============================ ====== ======== ==========
+URI                          Method Cyclades OS/Compute
+============================ ====== ======== ==========
+``/os-floating-ips/<ip-id>`` DELETE ✔        ✔
+============================ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+202 (Accepted)              Floating IP deleted
+401 (Unauthorized)          Missing or expired user token
+404 (itemNotFound)          Floating IP not found
+=========================== =====================
+
+*Example dallocation of a floating IP: JSON*
+
+.. code::
+
+  DELETE https://example.org/compute/v2.0/os-floating-ips/42
 
 Index of Attributes
 -------------------
@@ -2662,7 +3158,7 @@ deleted             ✔        **✘**
 =================== ======== ==========
 
 * **addresses** Networks related to this server. All information in this field
-  is redundant, since it can be infered from the ``attachments`` field, but
+  is redundant, since it can be inferred from the ``attachments`` field, but
   it is used for compatibility with OS/Compute
 
 * **user_id** The UUID of the owner of the virtual server
@@ -2677,7 +3173,7 @@ deleted             ✔        **✘**
 
 * **status** values are described `here <#status-ref>`__
 
-* **updated** and **created** are date-formated
+* **updated** and **created** are date-formatted
 
 * **adminPass** is shown only once (in ``create server`` response). This
   information is not preserved in a clear text form, so it is not recoverable
@@ -2732,10 +3228,10 @@ Ports can be handled separately through the Cyclades/Network API.
 In a virtual server context, a port may contain the following information:
 
 ================= ======================
-Port Attributes    Description          
+Port Attributes    Description
 ================= ======================
-id                Port id            
-mac_address       NIC's mac address     
+id                Port id
+mac_address       NIC's mac address
 network_id        Network ID
 OS-EXT-IPS:type   ``fixed`` or ``floating``
 firewallProfile   ``ENABLED``, ``DISABLED``, ``PROTECTED``
@@ -2767,7 +3263,7 @@ links rel         Atom link rel field  ✔        ✔
 links href        Atom link href field ✔        ✔
 ================= ==================== ======== ==========
 
-* **id** is the flavor unique id (a possitive integer)
+* **id** is the flavor unique id (a positive integer)
 * **name** is the flavor name (a string)
 * **ram** is the server RAM size in MB
 * **SNF:disk_template** is a reference to the underlying storage mechanism

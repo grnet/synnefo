@@ -15,8 +15,7 @@
 
 import json
 import logging
-import urllib
-import oauth2 as oauth
+from requests_oauthlib import OAuth2Session
 
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -33,7 +32,6 @@ from astakos.im.views.target import get_pending_key, \
 from astakos.im.views.decorators import cookie_fix, requires_auth_provider
 
 logger = logging.getLogger(__name__)
-signature_method = oauth.SignatureMethod_HMAC_SHA1()
 
 OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
 OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
@@ -45,7 +43,7 @@ def django_setting(key, default):
 default_token_scopes = ['https://www.googleapis.com/auth/userinfo.profile',
                         'https://www.googleapis.com/auth/userinfo.email']
 
-token_scope = django_setting('token_scope', ' '.join(default_token_scopes))
+token_scope = django_setting('token_scope', u' '.join(default_token_scopes))
 authenticate_url = django_setting(
     'authenticate_url',
     'https://accounts.google.com/o/oauth2/auth')
@@ -66,12 +64,10 @@ def get_redirect_uri():
 @require_http_methods(["GET", "POST"])
 def login(request):
     init_third_party_session(request)
-    params = {
-        'scope': token_scope,
-        'response_type': 'code',
-        'redirect_uri': get_redirect_uri(),
-        'client_id': settings.GOOGLE_CLIENT_ID
-    }
+    oauth = OAuth2Session(settings.GOOGLE_CLIENT_ID,
+                          redirect_uri=get_redirect_uri(), scope=token_scope)
+
+    params = {}
     force_login = request.GET.get('force_login', request.GET.get('from_login',
                                                                  True))
     if force_login:
@@ -83,8 +79,8 @@ def login(request):
     if request.GET.get('next', None):
         request.session['next_url'] = request.GET.get('next')
 
-    url = "%s?%s" % (authenticate_url, urllib.urlencode(params))
-    return HttpResponseRedirect(url)
+    auth_url, state = oauth.authorization_url(authenticate_url, **params)
+    return HttpResponseRedirect(auth_url)
 
 
 @requires_auth_provider('google')
@@ -104,27 +100,23 @@ def authenticated(
 
     # TODO: Handle errors, e.g. error=access_denied
     try:
-        consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY,
-                                  secret=OAUTH_CONSUMER_SECRET)
-        client = oauth.Client(consumer)
+        oauth = OAuth2Session(settings.GOOGLE_CLIENT_ID,
+                              redirect_uri=get_redirect_uri(),
+                              scope=token_scope)
 
         code = request.GET.get('code', None)
-        params = {
-            'code': code,
-            'client_id': settings.GOOGLE_CLIENT_ID,
-            'client_secret': settings.GOOGLE_SECRET,
-            'redirect_uri': get_redirect_uri(),
-            'grant_type': 'authorization_code'
-        }
-        get_token_url = "%s" % (request_token_url,)
-        resp, content = client.request(get_token_url, "POST",
-                                       body=urllib.urlencode(params))
-        token = json.loads(content).get('access_token', None)
+        token = oauth.fetch_token(request_token_url, code=code,
+                                  client_secret=settings.GOOGLE_SECRET)
+        access_token = token.get('access_token', None)
 
-        resp, content = client.request("%s?access_token=%s" %
-                                       (access_token_url, token), "GET")
-        access_token_data = json.loads(content)
-    except Exception:
+        # Simply validating the token should return user_id
+        # This probably does not need to be performed via the oauth.request
+        # method
+        resp = oauth.request(url="%s?access_token=%s" %
+                             (access_token_url, access_token), method="GET")
+        access_token_data = json.loads(resp.content)
+    except Exception as e:
+        logger.exception(e)
         messages.error(request, _('Invalid Google response. Please '
                                   'contact support'))
         return HttpResponseRedirect(reverse('edit_profile'))

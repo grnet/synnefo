@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ import recaptcha.client.captcha as captcha
 
 from django import forms
 from django.utils.safestring import mark_safe
-from django.utils import simplejson as json
+import json
 from synnefo_branding.utils import render_to_string
 
 from astakos.im import settings

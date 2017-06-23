@@ -19,6 +19,7 @@ from django.http import HttpResponseNotAllowed
 from snf_django.lib.api import api_endpoint_not_found
 
 from synnefo.plankton import views
+from synnefo.plankton.versions import versions_list
 
 
 def demux(request):
@@ -73,6 +74,9 @@ image_v1_patterns = patterns(
 
 urlpatterns = patterns(
     '',
+    (r'^(?:.json)?$', versions_list),
+    (r'^versions', versions_list),
     (r'^v1.0/', include(image_v1_patterns)),
+    (r'^v1/', include(image_v1_patterns)),
     (r'^.*', api_endpoint_not_found),
 )

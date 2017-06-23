@@ -144,7 +144,7 @@ if 'local' in settings.IM_MODULES:
             'password_reset_form': ExtendedPasswordResetForm,
             'post_reset_redirect': 'password_reset/done'}),
         url(r'^local/password_reset_done/?$', 'password_reset_done'),
-        url(r'^local/reset/confirm/(?P<uidb36>[0-9A-Za-z]+)-(?P<token>.+)/?$',
+        url(r'^local/reset/confirm/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>.+)/$',
             'password_reset_confirm', {
                 'set_password_form': ExtendedSetPasswordForm,
                 'post_reset_redirect': 'done'}),

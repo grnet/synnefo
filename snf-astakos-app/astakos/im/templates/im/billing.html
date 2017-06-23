@@ -120,7 +120,7 @@
 	{% endif %}
 	
 	
-	 <form action={% url astakos.im.views.billing %} class="withlabels"  method="POST">{% csrf_token %}
+	 <form action={% url 'astakos.im.views.billing' %} class="withlabels"  method="POST">{% csrf_token %}
 		<div class="form-row">
 			<label for="month">Choose another month</label>
 			<select name="datefrom">

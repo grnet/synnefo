@@ -33,7 +33,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from django.db.models import Q
 from django.core.urlresolvers import reverse
-from django.utils.http import int_to_base36
+from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
@@ -764,7 +764,7 @@ class AstakosUser(User):
     def get_password_reset_url(self, token_generator=default_token_generator):
         return reverse('astakos.im.views.target.local.password_reset_confirm',
                        urlconf="synnefo.webproject.urls",
-                       kwargs={'uidb36': int_to_base36(self.id),
+                       kwargs={'uidb64': urlsafe_base64_encode(str(self.id)),
                                'token': token_generator.make_token(self)})
 
     def get_inactive_message(self, provider_module, identifier=None):
@@ -1358,8 +1358,7 @@ class ProjectApplication(models.Model):
                               related_name='chained_apps',
                               db_column='chain')
     name = models.CharField(max_length=MAX_NAME_LENGTH, null=True)
-    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True,
-                               verify_exists=False)
+    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
     end_date = models.DateTimeField(null=True)
@@ -1702,8 +1701,7 @@ class Project(models.Model):
         db_index=True)
     realname = models.CharField(max_length=ProjectApplication.MAX_NAME_LENGTH)
     homepage = models.URLField(
-        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH,
-        verify_exists=False)
+        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH)
     description = models.TextField(blank=True)
     end_date = models.DateTimeField()
     member_join_policy = models.IntegerField()

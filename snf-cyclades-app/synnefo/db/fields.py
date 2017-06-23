@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.db import models
-from south.modelsinspector import add_introspection_rules
 
 
 class SeparatedValuesField(models.TextField):
@@ -25,6 +24,12 @@ class SeparatedValuesField(models.TextField):
     def __init__(self, *args, **kwargs):
         self.delimiter = kwargs.pop('delimiter', ',')
         super(SeparatedValuesField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(SeparatedValuesField, self).deconstruct()
+        if self.delimiter != ",":
+            kwargs['delimiter'] = self.delimiter
+        return name, path, args, kwargs
 
     def to_python(self, value):
         if not value:
@@ -42,14 +47,3 @@ class SeparatedValuesField(models.TextField):
     def value_to_string(self, obj):
         value = self._get_val_from_obj(obj)
         return self.get_prep_value(value)
-
-
-add_introspection_rules([
-    (
-        [SeparatedValuesField],  # Class(es) these apply to
-        [],         # Positional arguments (not used)
-        {           # Keyword argument
-            "delimiter": ["delimiter", {"default": ","}],
-        },
-    ),
-], ["^synnefo\.db\.fields\.SeparatedValuesField"])

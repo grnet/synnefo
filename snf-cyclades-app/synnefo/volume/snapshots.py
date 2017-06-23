@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import simplejson as json
+import json
 from synnefo.db import transaction
 from snf_django.lib.api import faults
 from synnefo.plankton.backend import PlanktonBackend, OBJECT_ERROR
@@ -25,7 +25,6 @@ from synnefo.util import units
 log = logging.getLogger(__name__)
 
 
-@transaction.commit_on_success
 def create(user_id, volume, name, description, metadata, force=False):
     """Create a snapshot from a given volume
 
@@ -137,7 +136,6 @@ def generate_mapfile_name(volume):
                                volume.snapshot_counter)
 
 
-@transaction.commit_on_success
 def delete(snapshot):
     """Delete a snapshot.
 

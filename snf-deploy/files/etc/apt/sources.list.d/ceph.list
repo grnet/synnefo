@@ -1,2 +1,2 @@
 # Ceph repo - LTS (April 2015) Hammer release
-deb http://eu.ceph.com/debian-hammer/     wheezy  main
+deb http://eu.ceph.com/debian-hammer/     jessie  main

@@ -213,3 +213,4 @@ class AdminTestCase(ProjectAPITest):
     # Override the test_projects function of ProjectAPITest class so that it
     # doesn't get called.
     test_projects = None
+    test_suspend_deactivated = None

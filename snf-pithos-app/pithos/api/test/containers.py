@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ from pithos.api.test.util import strnextling, get_random_data, get_random_name
 
 from synnefo.lib import join_urls
 
-import django.utils.simplejson as json
-from django.http import urlencode
+import json
+from django.utils.http import urlencode
 
 from xml.dom import minidom
 from urllib import quote

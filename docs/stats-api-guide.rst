@@ -36,7 +36,7 @@ used.
 
 Example Response:
 
-.. code-block:: javascript
+.. code::
 
  {
      "providers": [          # List of available authentication providers
@@ -114,7 +114,7 @@ Specifically the response contains the following fields:
  * `images`: Information about the images are used by Cyclades Virtual Servers
 
 
-.. code-block:: javascript
+.. code::
 
  {
     "clusters": {

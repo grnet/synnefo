@@ -32,6 +32,11 @@ from synnefo.cyclades_settings import (
 from functools import partial
 
 
+from synnefo.api.compute_versions import versions_list as compute_versions_list
+from synnefo.api.network_versions import versions_list as network_versions_list
+from synnefo.plankton.versions import versions_list as plankton_versions_list
+from synnefo.volume.versions import versions_list as volume_versions_list
+
 urlpatterns = []
 
 # Redirects should be first, otherwise they may get overridden by wildcards
@@ -43,11 +48,19 @@ extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_userdata')
 cyclades_patterns = api_patterns(
     '',
     (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
+    (prefix_pattern(PLANKTON_PREFIX, append_slash=False, end_here=True),
+     plankton_versions_list),
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
+    (prefix_pattern(COMPUTE_PREFIX, append_slash=False, end_here=True),
+     compute_versions_list),
     (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.compute_urls')),
+    (prefix_pattern(NETWORK_PREFIX, append_slash=False, end_here=True),
+     network_versions_list),
     (prefix_pattern(NETWORK_PREFIX), include('synnefo.api.network_urls')),
     (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
     (prefix_pattern(ADMIN_PREFIX), include('synnefo.admin.urls')),
+    (prefix_pattern(VOLUME_PREFIX, append_slash=False, end_here=True),
+     volume_versions_list),
     (prefix_pattern(VOLUME_PREFIX), include('synnefo.volume.urls')),
 )
 

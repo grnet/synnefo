@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ class AuthorizationCode(models.Model):
     redirect_uri = models.TextField(null=True, default=None)
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
-    created_at = models.DateTimeField(default=datetime.datetime.now())
+    created_at = models.DateTimeField(default=datetime.datetime.now)
 
     access_token = models.CharField(max_length=100, choices=ACCESS_TOKEN_TYPES,
                                     default='online')
@@ -111,7 +111,7 @@ class AuthorizationCode(models.Model):
 
 class Token(models.Model):
     code = models.TextField()
-    created_at = models.DateTimeField(default=datetime.datetime.now())
+    created_at = models.DateTimeField(default=datetime.datetime.now)
     expires_at = models.DateTimeField()
     token_type = models.CharField(max_length=100, choices=TOKEN_TYPES,
                                   default='Bearer')

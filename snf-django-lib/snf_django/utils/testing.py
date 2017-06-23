@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 
 
 from contextlib import contextmanager
-from django.test import TestCase
-from django.utils import simplejson as json
+from django.test import TransactionTestCase
+import json
 from django.utils.encoding import smart_unicode
 from mock import patch
 import functools
@@ -242,7 +242,7 @@ def mocked_quotaholder(success=True):
         yield astakos.return_value
 
 
-class BaseAPITest(TestCase):
+class BaseAPITest(TransactionTestCase):
     def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user, kwargs.pop('_projects', None),
                           kwargs.pop('_roles', None)):
@@ -293,8 +293,20 @@ class BaseAPITest(TestCase):
         self.assertTrue(response.status_code in [200, 202, 203, 204],
                         msg=response.content)
 
+    def assertSuccess200(self, response):
+        self.assertEqual(response.status_code, 200, msg=response.content)
+
     def assertSuccess201(self, response):
         self.assertEqual(response.status_code, 201, msg=response.content)
+
+    def assertSuccess202(self, response):
+        self.assertEqual(response.status_code, 202, msg=response.content)
+
+    def assertSuccess203(self, response):
+        self.assertEqual(response.status_code, 203, msg=response.content)
+
+    def assertSuccess204(self, response):
+        self.assertEqual(response.status_code, 204, msg=response.content)
 
     def assertFault(self, response, status_code, name, msg=''):
         self.assertEqual(response.status_code, status_code,

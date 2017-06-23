@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ from snf_django.management.commands import SynnefoCommand, CommandError
 
 from snf_django.management import utils
 from astakos.im.models import Resource
-from astakos.im import register
+from astakos.im import register, transaction
 from ._common import style_options, check_style, units
 
 
@@ -45,6 +45,7 @@ class Command(SynnefoCommand):
                     help="Control visibility of this resource in the UI"),
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         resource_name = args[0] if len(args) > 0 else None
         if resource_name is None:

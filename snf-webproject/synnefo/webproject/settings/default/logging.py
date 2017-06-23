@@ -31,6 +31,11 @@ LOGGING_SETUP = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose'
         },
+        'file': {
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': '/var/log/synnefo/synnefo.log',
+            'formatter': 'verbose'
+        },
         'syslog': {
             'class': 'logging.handlers.SysLogHandler',
             'address': '/dev/log',
@@ -48,7 +53,7 @@ LOGGING_SETUP = {
 
     'loggers': {
         '': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO'
         },
         'django.request': {
@@ -57,7 +62,7 @@ LOGGING_SETUP = {
             'propagate': True,
         },
         'synnefo': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
             'propagate': 0
         },
@@ -76,12 +81,19 @@ SNF_MANAGE_LOGGING_SETUP = {
     'version': 1,
     'disable_existing_loggers': False,
 
+    'filters': {
+        'suppress_deprecated': {
+            '()': 'synnefo.webproject.logging_filter.SuppressDeprecated'
+        }
+    },
+
     'formatters': FORMATTERS,
 
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose'
+            'formatter': 'verbose',
+            'filters': ['suppress_deprecated']
         },
     },
 

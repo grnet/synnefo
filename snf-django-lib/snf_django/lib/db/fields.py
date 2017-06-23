@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@ from django.core import exceptions
 from django.db.models import DecimalField, SubfieldBase
 from django import forms
 from django.utils.translation import ugettext_lazy as _
-from south.modelsinspector import add_introspection_rules
 import decimal
 
 DECIMAL_DIGITS = 38
@@ -28,6 +27,19 @@ class IntDecimalField(DecimalField):
     __metaclass__ = SubfieldBase
 
     description = _("Integer number as decimal")
+
+    # def __init__(self, *args, **kwargs):
+    #     self.max_digits=DECIMAL_DIGITS
+    #     self.decimal_places=0,
+    #     super(IntDecimalField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(IntDecimalField, self).deconstruct()
+        # del kwargs['max_digits']
+        # del kwargs['decimal_places']
+
+        return name, path, args, kwargs
+
 
     def to_python(self, value):
         if value is None:
@@ -56,9 +68,6 @@ class IntDecimalField(DecimalField):
         defaults = {'form_class': forms.IntegerField}
         defaults.update(kwargs)
         return super(IntDecimalField, self).formfield(**defaults)
-
-add_introspection_rules(
-    [], ["^snf_django\.lib\.db\.fields\.IntDecimalField"])
 
 
 def intDecimalField(verbose_name=None, name=None, **kwargs):

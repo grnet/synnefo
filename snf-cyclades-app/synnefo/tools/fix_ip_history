@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2010-2017 GRNET S.A.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+import sys
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "synnefo.settings")
+import django
+django.setup()
+
+from optparse import make_option
+from datetime import datetime
+
+from synnefo.db import transaction
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
+from synnefo.db.models import IPAddressHistory
+
+SEP = '|'
+
+
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
+
+
+def show_owner_change(vmid, from_user, to_user, date):
+    return "[OWNER CHANGE vm: %s, from: %s, to: %s, date: %s]" % (
+        vmid, from_user, to_user, date)
+
+
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+
+
+class Command(SynnefoCommand):
+    args = "<changelog_file>"
+    help = """Fix IP history due to VM owner changes.
+
+The VM owner changelog file should describe each owner change in a separate
+line in the following format:
+  <vmid>|<from_uuid>|<to_uuid>|<%Y-%m-%d %H:%M:%S.%f>
+(date should be in UTC)
+"""
+
+    option_list = SynnefoCommand.option_list + (
+        make_option(
+            "--fix",
+            action="store_true",
+            default=False,
+            help="Apply actions"),
+    )
+
+    @transaction.commit_on_success
+    def handle(self, *args, **options):
+        if len(args) != 1:
+            raise CommandError("Please provide an ownership changelog file")
+        self.fix = options["fix"]
+        if not self.fix:
+            self.stdout.write("Running in dry run mode.\n")
+        with open(args[0]) as f:
+            lines = f.read().splitlines()
+            lines = [line.split(SEP) for line in lines]
+            for line in lines:
+                date = line[3]
+                line[3] = datetime.strptime(date, DATE_FORMAT)
+            lines = sorted(lines, key=lambda line: line[3], reverse=True)
+            self.fix_history(lines)
+
+    def fix_history(self, vmlogs):
+        # Assume sorted reverse chronologically
+        for vmlog in vmlogs:
+            self.stdout.write("Processing change %s\n" % vmlog)
+            vmid, from_user, to_user, date = vmlog
+            iplogs = IPAddressHistory.objects.filter(
+                server_id=vmid, action_date__lt=date).\
+                order_by('-action_date').select_for_update()
+            for _, sameIPLogs in _partition_by(
+                    lambda iplog: iplog.address, iplogs).iteritems():
+                latest_log = True
+                for iplog in sameIPLogs:
+                    if iplog.user_id != to_user:
+                        self.stdout.write(
+                            "IP log user: '%s' and dest user: '%s' differ;"
+                            " skipping.\n" % (iplog.user_id, to_user))
+                        continue
+                    if latest_log and \
+                       iplog.action == IPAddressHistory.ASSOCIATE:
+                        newlog1 = IPAddressHistory(
+                            address=iplog.address,
+                            server_id=iplog.server_id,
+                            network_id=iplog.network_id,
+                            user_id=from_user,
+                            action=IPAddressHistory.DISASSOCIATE,
+                            action_date=date,
+                            action_reason=show_owner_change(*vmlog))
+                        self.stdout.write("Creating %s\n" % newlog1)
+                        newlog2 = IPAddressHistory(
+                            address=iplog.address,
+                            server_id=iplog.server_id,
+                            network_id=iplog.network_id,
+                            user_id=to_user,
+                            action=IPAddressHistory.ASSOCIATE,
+                            action_date=date,
+                            action_reason=show_owner_change(*vmlog))
+                        self.stdout.write("Creating %s\n" % newlog2)
+                        IPAddressHistory.objects.bulk_create(
+                            [newlog1, newlog2])
+
+                    iplog.user_id = from_user
+                    iplog.action_reason = " ".join(
+                        [iplog.action_reason, show_owner_change(*vmlog)])
+                    iplog.save()
+                    self.stdout.write("Updating %s\n" % iplog)
+                    latest_log = False
+        if not self.fix:
+            raise CommandError("Aborting due to dry run mode.")
+
+
+command = Command()
+args = sys.argv[:]
+args.insert(1, 'fix-ip-history')
+command.run_from_argv(args)

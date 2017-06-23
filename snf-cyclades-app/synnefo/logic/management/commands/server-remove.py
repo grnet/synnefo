@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ from synnefo.logic import servers
 from snf_django.management.commands import RemoveCommand
 from snf_django.management.utils import parse_bool
 from snf_django.lib.api import faults
+from synnefo.db import transaction
 
 
 class Command(RemoveCommand):
@@ -38,6 +39,7 @@ class Command(RemoveCommand):
             help="Wait for Ganeti job to complete. [Default: True]"),
     )
 
+    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if not args:

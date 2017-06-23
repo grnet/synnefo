@@ -15,7 +15,6 @@ import sys
 
 
 EXCLUDE = [
-    "distribute_setup.py",
     "setup.py",
     "rapi.py",
     "dictconfig.py",

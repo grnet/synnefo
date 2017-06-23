@@ -7,7 +7,7 @@
 	</div>
 	 
 	 {% if inviter.invitations %}
-	  <form action="{% url astakos.im.views.invite %}" method="post"
+	  <form action="{% url 'astakos.im.views.invite' %}" method="post"
 	    class="innerlabels overflow-hidden">{% csrf_token %}
 	
 	    {% with invitation_form as form %}

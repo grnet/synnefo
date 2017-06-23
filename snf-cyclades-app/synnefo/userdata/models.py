@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 import base64
 import binascii
 import re
+import datetime
 
 from hashlib import md5
 
@@ -57,9 +58,17 @@ class PublicKeyPair(ProfileModel):
     content = models.TextField(validators=[
         MaxLengthValidator(SSH_KEY_MAX_CONTENT_LENGTH)])
     fingerprint = models.CharField(max_length=100, null=False, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    # Type field should take values between ssh and x509
+    # Django does not currently support
+    # SQL ENUM type so we wiil just use
+    # a plain CharField
+    type = models.CharField(max_length=10, null=False, default='ssh')
 
     class Meta:
         app_label = 'userdata'
+        unique_together = ('user', 'name')
 
     def full_clean(self, *args, **kwargs):
         # update fingerprint before clean
@@ -78,8 +87,10 @@ class PublicKeyPair(ProfileModel):
 
         if key_type == "ssh-rsa":
             key = rsakey.RSAKey(data=data)
+            self.type = 'ssh'
         elif key_type == "ssh-dss":
             key = dsskey.DSSKey(data=data)
+            self.type = 'x509'
         else:
             raise Exception("Invalid key type")
 
@@ -106,6 +117,18 @@ class PublicKeyPair(ProfileModel):
     def save(self, *args, **kwargs):
         self.update_fingerprint()
         super(PublicKeyPair, self).save(*args, **kwargs)
+
+    # NOTE: `deleted` and `deleted_at` properties will not affect the database
+    # for now since, they are False and null respectively. For the sake of
+    # compatibility, we will trivially return these properties in the
+    # object layer. If changes are to be made, we can change them into fields
+    @property
+    def deleted(self):
+        return False
+
+    @property
+    def deleted_at(self):
+        return None
 
     @classmethod
     def user_limit_exceeded(cls, user):

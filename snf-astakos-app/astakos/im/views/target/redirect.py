@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,13 +18,14 @@ from django.utils.translation import ugettext as _
 from django.utils.http import urlencode
 from django.contrib.auth import authenticate
 from django.http import (
-    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden)
+    HttpResponse, HttpResponseBadRequest, HttpResponseForbidden,
+    HttpResponseRedirect)
 from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_http_methods
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from astakos.im.util import restrict_next
+from astakos.im.util import restrict_next, WebloginHttpResponseRedirect
 from astakos.im.user_utils import login as auth_login, logout
 from astakos.im.views.decorators import cookie_fix
 
@@ -76,9 +77,7 @@ def login(request):
             params = {'next': next}
             parts[3] = urlencode(params)
             url = urlunsplit(parts)
-            response['Location'] = url
-            response.status_code = 302
-            return response
+            return WebloginHttpResponseRedirect(url)
         renew = request.GET.get('renew', None)
         if renew == '':
             request.user.renew_token(
@@ -88,7 +87,7 @@ def login(request):
             try:
                 request.user.save()
             except ValidationError, e:
-                return HttpResponseBadRequest(e)
+                return WebloginHttpResponseBadRequest(e)
             # authenticate before login
             user = authenticate(
                 username=request.user.username,
@@ -102,9 +101,7 @@ def login(request):
             'token': request.user.auth_token
         })
         url = urlunsplit(parts)
-        response['Location'] = url
-        response.status_code = 302
-        return response
+        return WebloginHttpResponseRedirect(url)
     else:
         # redirect to login with next the request path
 
@@ -122,6 +119,4 @@ def login(request):
         params = {'next': next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)
-        response['Location'] = url
-        response.status_code = 302
-        return response
+        return WebloginHttpResponseRedirect(url)

@@ -16,7 +16,7 @@
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
     {% comment %}
-    <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
+    <script type="text/javascript" src="{% url 'javascript_catalog' %}"></script> 
     {% endcomment %}
 
     <link rel="stylesheet" type="text/css" 
@@ -660,7 +660,7 @@
             };
 
             synnefo.config.api_urls = {
-                'userdata': '{% url ui_userdata %}', 
+                'userdata': '{% url 'ui_userdata' %}', 
                 'compute':  {{ compute_api_url|safe }}, 
                 'network':  {{ network_api_url|safe }}, 
                 'volume':  {{ volume_api_url|safe }}, 
@@ -669,7 +669,7 @@
             };
             
             // TODO: configurable userdata urls in models.js
-            synnefo.config.userdata_keys_url = '{% url ui_keys_collection %}';
+            synnefo.config.userdata_keys_url = '{% url 'ui_keys_collection' %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
             
             // media config
@@ -682,8 +682,8 @@
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
-            synnefo.config.ui_console_url = '{% url ui_machines_console %}';
-            synnefo.config.ui_connect_url = '{% url ui_machines_connect %}';
+            synnefo.config.ui_console_url = '{% url 'ui_machines_console' %}';
+            synnefo.config.ui_connect_url = '{% url 'ui_machines_connect' %}';
             synnefo.config.ssh_support_osfamily_exclude_list = {{ ssh_support_osfamily_exclude_list|safe }};
             synnefo.config.unknown_os = {{ unknown_os|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,17 +19,18 @@ from django.conf.urls import patterns
 from synnefo.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import simplejson as json
+import json
 from django.core.urlresolvers import reverse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
-from synnefo.api.util import VMPasswordCache
+from synnefo.api.util import VM_PASSWORD_CACHE
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
+from synnefo import cyclades_settings
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -56,9 +57,6 @@ VOLUME_SOURCE_TYPES = [
     "volume",
     "blank"
 ]
-
-VM_PASSWORD_CACHE = VMPasswordCache()
-
 
 def demux(request):
     if request.method == 'GET':
@@ -233,7 +231,7 @@ def vm_to_dict(vm, detail=False):
             d['diagnostics'] = []
         # Fixed
         d["security_groups"] = [{"name": "default"}]
-        d["key_name"] = None
+        d["key_name"] = vm.key_name
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
@@ -415,6 +413,7 @@ def create_server(request):
             assert isinstance(networks, list)
         project = server.get("project")
         shared_to_project=server.get("shared_to_project", False)
+        key_name = server.get('key_name')
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -441,7 +440,8 @@ def create_server(request):
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
-                        user_projects=request.user_projects)
+                        user_projects=request.user_projects,
+                        key_name=key_name)
 
     log.info("User %s created VM %s, shared: %s", user_id, vm.id,
              shared_to_project)
@@ -460,7 +460,7 @@ def create_server(request):
 def set_password_in_cache(server_id, password):
     server_id = str(server_id)
 
-    VM_PASSWORD_CACHE.set(**{server_id: password})
+    VM_PASSWORD_CACHE.set(server_id, password)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -602,6 +602,7 @@ def update_server_name(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -625,15 +626,17 @@ def delete_server(request, server_id):
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign',
+ARBITRARY_ACTIONS = ('console', 'firewallProfile', 'reassign',
                      'os-getVNCConsole', 'os-getRDPConsole',
-                     'os-getSPICEConsole']
+                     'os-getSPICEConsole')
 
 
 def key_to_action(key):
     """Map HTTP request key to a VM Action"""
-    if key == "shutdown":
+    if key in ("shutdown", "os-stop"):
         return "STOP"
+    if key == "os-start":
+        return "START"
     if key == "delete":
         return "DESTROY"
     if key in ARBITRARY_ACTIONS:
@@ -668,9 +671,8 @@ def demux_server_action(request, server_id):
     if key_to_action(action) not in [x[0] for x in VirtualMachine.ACTIONS]:
         if action not in ARBITRARY_ACTIONS:
             raise faults.BadRequest("Action %s not supported" % action)
-    action_args = utils.get_attribute(req, action, required=True,
+    action_args = utils.get_attribute(req, action, required=False,
                                       attr_type=dict)
-
     return server_actions[action](request, vm, action_args)
 
 
@@ -917,13 +919,14 @@ server_actions = {}
 network_actions = {}
 
 
-def server_action(name):
+def server_action(*names):
     '''Decorator for functions implementing server actions.
-    `name` is the key in the dict passed by the client.
+    `names` are keys in the dict passed by the client.
     '''
 
     def decorator(func):
-        server_actions[name] = func
+        for n in names:
+            server_actions[n] = func
         return func
     return decorator
 
@@ -939,7 +942,7 @@ def network_action(name):
     return decorator
 
 
-@server_action('start')
+@server_action('start', 'os-start')
 def start(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
@@ -951,7 +954,7 @@ def start(request, vm, args):
     return HttpResponse(status=202)
 
 
-@server_action('shutdown')
+@server_action('shutdown', 'os-stop')
 def shutdown(request, vm, args):
     # Normal Response Code: 202
     # Error Response Codes: serviceUnavailable (503),
@@ -1123,7 +1126,7 @@ def os_get_vnc_console(request, vm, args):
 
     log.info("User %s got VNC console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('console')
@@ -1161,7 +1164,7 @@ def get_console(request, vm, args):
 
     log.info("User %s got console for VM %s", request.user_uniq, vm.id)
 
-    return HttpResponse(data, mimetype=mimetype, status=200)
+    return HttpResponse(data, content_type=mimetype, status=200)
 
 
 @server_action('changePassword')
@@ -1182,6 +1185,11 @@ def confirm_resize(request, vm, args):
 @server_action('revertResize')
 def revert_resize(request, vm, args):
     raise faults.NotImplemented('Resize not supported.')
+
+
+@server_action('suspend')
+def suspend(request, vm, args):
+    raise faults.Forbidden('User is not allowed to suspend his server')
 
 
 @server_action('reassign')
@@ -1278,7 +1286,7 @@ def add_floating_ip(request, vm, args):
             request.user_projects, address, for_update=True)
 
     servers.create_port(userid, floating_ip.network, machine=vm,
-                        user_ipaddress=floating_ip)
+                        use_ipaddress=floating_ip)
 
     log.info("User %s attached floating IP %s to VM %s, address: %s,"
              " network %s", request.user_uniq, floating_ip.id, vm.id,
@@ -1343,6 +1351,7 @@ def get_volume_info(request, server_id, volume_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     user_id = request.user_uniq
@@ -1370,6 +1379,7 @@ def attach_volume(request, server_id):
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
 def detach_volume(request, server_id, volume_id):
     log.debug("User %s, VM: %s, Action: detach_volume, Volume: %s",
               request.user_uniq, server_id, volume_id)

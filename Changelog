@@ -6,6 +6,79 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.19:
+
+v0.19rc2
+========
+
+Released: UNRELEASED
+
+Cyclades
+--------
+
+* Fix keypair name conflicts in UI
+
+
+v0.19rc1
+=========
+
+Released: Wed 18 Jan 12:34:50 EET 2017
+
+Synnefo-wide
+------------
+
+* Add support for Debian Jessie. This is the only platform targeted for this
+  release.
+* Migrate all components to newer version of Django (1.7) and update
+  dependencies versions.
+* Remove South in favor of native Django migrations.
+* Drop 'django' mode in gunicorn in favor of 'wsgi'.
+* Fix instances of select_for_update that occurred outside transactions.
+* Use a date-aware JSON session serializer instead of Pickle.
+* Change default logging setup to log Synnefo's log messages to a separate
+  logfile.
+
+Astakos
+-------
+
+Pithos
+------
+
+* Use new django class StreamingHttpResponse to stream responses.
+* Fix execution of backend tests.
+
+Cyclades
+--------
+
+* Adapt setting caches to the new django format. Introduce settings
+  PUBLIC_STATS_CACHE, VM_PASSWORD_CACHE, VMAPI_CACHE. Remove settings
+  PUBLIC_STATS_CACHE_POPULATE_INTERVAL, VMAPI_CACHE_BACKEND,
+  VMAPI_CACHE_KEY_PREFIX.
+* Propagate VM owner change to the VM's NICs and attached IPs.
+* Fix recording associated user to the IP history. Provide a script to fix
+  IP history inconsistencies due to prior VM owner changes.
+* Add 'public' flag for Ganeti backends and Project-Backend mappings used in
+  VM allocation policy.
+* Add new default FilterAllocator for choosing appropriate VM backends
+* Add an Allocator's filter to place servers on backends based on
+  Project-Backend association.
+* Implement keypairs API for management of SSH keys and support 'key_name'
+  parameter in server creation.
+* For OpenStack compatibility, advertise the 'image', 'network', and 'volume'
+  endpoint URLs without a version suffix. The clients should take care to
+  construct the proper versioned URL.
+* Expose /os-floating-ips under compute for compatibility with older
+  OpenStack clients.
+* Provide version listing and details for endpoints.
+
+Deploy
+------
+* Upgrade to target Debian Jessie.
+
+CI
+--
+* Target Debian Jessie as CI base platform.
+
 .. _Changelog-0.18.1:
 
 v0.18.1

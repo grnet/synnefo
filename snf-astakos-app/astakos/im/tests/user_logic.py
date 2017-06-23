@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ class TestUserActions(TestCase):
         # Test if accept action works properly for unmoderated user.
         res = accept(self.user1)
         self.assertFalse(res.is_error())
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(mail.outbox), 1)
 
         # Test if check function fails properly for moderated user.
         ok, _ = validate_user_action(self.user1, "ACCEPT")
@@ -87,7 +87,7 @@ class TestUserActions(TestCase):
         # Test if accept action fails properly for moderated user.
         res = accept(self.user1)
         self.assertTrue(res.is_error())
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(mail.outbox), 1)
 
         # Test if the rest of the actions can apply on a moderated user.
         # User cannot be rejected.
@@ -138,7 +138,7 @@ class TestUserActions(TestCase):
         # Test if accept action works on rejected users.
         res = accept(self.user1)
         self.assertFalse(res.is_error())
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_reactivation(self):
         """Test activation/deactivation logic."""

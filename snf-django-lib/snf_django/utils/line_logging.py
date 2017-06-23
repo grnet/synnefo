@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from django.utils.encoding import force_str
 
 
 class NewlineStreamHandler(logging.StreamHandler):
@@ -58,8 +59,8 @@ class NewlineStreamHandler(logging.StreamHandler):
         try:
             msg = self.format(record)
             stream = self.stream
-            stream.write(msg)
-            stream.write(self.terminator)
+            stream.write(force_str(msg))
+            stream.write(force_str(self.terminator))
             self.flush()
         except (KeyboardInterrupt, SystemExit):
             raise

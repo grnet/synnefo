@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template import loader
 from django.http import HttpResponse
 from django.utils.translation import get_language
-from django.utils import simplejson as json
+import json
 from synnefo_branding.utils import render_to_string
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
@@ -412,7 +412,8 @@ def machines_connect(request):
         }
 
         rdp_file_data = render_to_string("synnefo-windows.rdp", rdp_context)
-        response = HttpResponse(rdp_file_data, mimetype='application/x-rdp')
+        response = HttpResponse(rdp_file_data,
+                                content_type='application/x-rdp')
 
         # proper filename, use server id and ip address
         filename = "%d-%s.rdp" % (int(server_id), hostname)
@@ -480,6 +481,6 @@ def machines_connect(request):
         }
         response = \
             HttpResponse(json.dumps(response_object),
-                         mimetype='application/json')  # no windows, no rdp
+                         content_type='application/json')  # no windows, no rdp
 
     return response

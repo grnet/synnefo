@@ -1,4 +1,7 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +17,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import distribute_setup
-distribute_setup.use_setuptools()
+"""Packaging module for snf-stats-app"""
 
 import os
 
+from imp import load_source
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-from synnefo_stats.version import __version__
+VERSION_FILE = os.path.join(HERE, 'synnefo_stats', 'version.py')
 
 # Package info
-VERSION = __version__
+VERSION = getattr(load_source('version', VERSION_FILE), "__version__")
 SHORT_DESCRIPTION = 'Synnefo graphic statistics component'
-
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
 
 # Package meta
 CLASSIFIERS = []
@@ -39,7 +38,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
-    'Django>=1.4, <1.5',
+    'Django>=1.7, <1.8',
     'snf-django-lib',
     'pycrypto>=2.1.0',
 ]
@@ -57,8 +56,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
 
@@ -67,9 +65,9 @@ setup(
     dependency_links=['http://www.synnefo.org/packages/pypi'],
     entry_points={
         'synnefo': [
-             'default_settings = synnefo_stats.synnefo_settings',
-             'web_apps = synnefo_stats.synnefo_settings:installed_apps',
-             'urls = synnefo_stats.urls:urlpatterns',
+            'default_settings = synnefo_stats.synnefo_settings',
+            'web_apps = synnefo_stats.synnefo_settings:installed_apps',
+            'urls = synnefo_stats.urls:urlpatterns',
         ]
     }
 )

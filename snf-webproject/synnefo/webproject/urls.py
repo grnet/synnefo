@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,23 +17,21 @@ import os
 
 
 # Import * in order to import the http exception handlers: handler*
-try:
-    from django.conf.urls.defaults import *
-except ImportError:  # Django==1.4
-    from django.conf.urls import *
+from django.conf.urls import *
 
 from synnefo.util.entry_points import extend_urls
 from django.utils.importlib import import_module
 from django.template import Context, loader, RequestContext
 from django import http
 from django.conf import settings
+from django.views.generic.base import RedirectView
 
 urlpatterns = patterns('')
 
 ROOT_REDIRECT = getattr(settings, 'WEBPROJECT_ROOT_REDIRECT', None)
 if ROOT_REDIRECT:
-    urlpatterns += patterns('django.views.generic.simple',
-                            url(r'^$', 'redirect_to', {'url': ROOT_REDIRECT}))
+    urlpatterns += patterns('',
+                            url(r'^$', RedirectView.as_view(url=ROOT_REDIRECT)))
 
 urlpatterns += patterns(
     '',

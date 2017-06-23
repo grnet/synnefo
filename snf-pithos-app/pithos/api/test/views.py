@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2016 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ from synnefo.lib import join_urls
 #from mock import patch
 from urllib import quote, unquote
 
-import django.utils.simplejson as json
+import json
 
 import re
 import datetime
@@ -114,7 +114,7 @@ class ObjectGetView(PithosAPITest):
         r = self.get(add_url_params(self.view_url, code='valid_code'),
                      follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content, self.odata)
+        self.assertTrue("".join(r.streaming_content), self.odata)
         intermidiate_url = r.redirect_chain[0][0]
         p = urlparse.urlparse(intermidiate_url)
         params = urlparse.parse_qs(p.query)
@@ -124,7 +124,7 @@ class ObjectGetView(PithosAPITest):
 
         r = self.get(add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content, self.odata)
+        self.assertTrue("".join(r.streaming_content), self.odata)
         self.assertTrue('Content-Disposition' in r)
         content_disposition = unquote(r['Content-Disposition'])
         m = p.match(content_disposition)
@@ -137,7 +137,7 @@ class ObjectGetView(PithosAPITest):
         r = self.get('%s&disposition-type=inline' %
                      add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content, self.odata)
+        self.assertTrue("".join(r.streaming_content), self.odata)
         self.assertTrue('Content-Disposition' in r)
         content_disposition = unquote(r['Content-Disposition'])
         m = p.match(content_disposition)
@@ -150,7 +150,7 @@ class ObjectGetView(PithosAPITest):
         r = self.get('%s&disposition-type=attachment' %
                      add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content, self.odata)
+        self.assertTrue("".join(r.streaming_content), self.odata)
         self.assertTrue('Content-Disposition' in r)
         content_disposition = unquote(r['Content-Disposition'])
         m = p.match(content_disposition)
@@ -163,7 +163,7 @@ class ObjectGetView(PithosAPITest):
         r = self.get('%s&disposition-type=ajdladjla' %
                      add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.content, self.odata)
+        self.assertTrue("".join(r.streaming_content), self.odata)
         self.assertTrue('Content-Disposition' in r)
         content_disposition = unquote(r['Content-Disposition'])
         m = p.match(content_disposition)
@@ -237,12 +237,12 @@ class ObjectGetView(PithosAPITest):
         url = join_urls(self.view_path, 'alice', container, obj)
         r = self.view(url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual("".join(r.streaming_content), data)
 
     def test_view(self):
         r = self.view(self.view_url)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, self.odata)
+        self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_not_existing(self):
         url = self.view_url[:-1]
@@ -316,7 +316,7 @@ class ObjectGetView(PithosAPITest):
         limit = pithos_settings.BACKEND_BLOCK_SIZE
         r = self.view(self.view_url, HTTP_RANGE='bytes=0-%d' % limit)
         self.assertEqual(r.status_code, 206)
-        self.assertEqual(r.content, self.odata[:limit + 1])
+        self.assertEqual("".join(r.streaming_content), self.odata[:limit + 1])
         self.assertTrue('Content-Range' in r)
         self.assertEqual(r['Content-Range'], 'bytes 0-%d/%d' % (
             limit, len(self.odata)))
@@ -345,7 +345,7 @@ class ObjectGetView(PithosAPITest):
         if m is None:
             self.fail('Invalid multiple range content type')
         boundary = m.groupdict()['boundary']
-        cparts = r.content.split('--%s' % boundary)[1:-1]
+        cparts = "".join(r.streaming_content).split('--%s' % boundary)[1:-1]
 
         # assert content parts length
         self.assertEqual(len(cparts), len(l))
@@ -396,7 +396,7 @@ class ObjectGetView(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, self.odata)
+        self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_get_if_match_star(self):
         r = self.view(self.view_url, HTTP_IF_MATCH='*')
@@ -405,7 +405,7 @@ class ObjectGetView(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, self.odata)
+        self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_get_multiple_if_match(self):
         if pithos_settings.UPDATE_MD5:
@@ -421,7 +421,7 @@ class ObjectGetView(PithosAPITest):
         self.assertEqual(r.status_code, 200)
 
         # assert response content
-        self.assertEqual(r.content, self.odata)
+        self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_if_match_precondition_failed(self):
         r = self.view(self.view_url, HTTP_IF_MATCH=get_random_name())
@@ -475,12 +475,12 @@ class ObjectGetView(PithosAPITest):
         for t in t1_formats:
             r = self.view(self.view_url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, self.odata + appended_data)
+            self.assertEqual("".join(r.streaming_content), self.odata + appended_data)
 
     def test_if_modified_since_invalid_date(self):
         r = self.view(self.view_url, HTTP_IF_MODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, self.odata)
+        self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_if_not_modified_since(self):
         object_info = self.get_object_info(self.cname, self.oname)
@@ -493,7 +493,7 @@ class ObjectGetView(PithosAPITest):
         for t in t1_formats:
             r = self.view(self.view_url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, self.odata)
+            self.assertEqual("".join(r.streaming_content), self.odata)
 
         # modify object
         _time.sleep(2)
@@ -535,7 +535,7 @@ class ObjectGetView(PithosAPITest):
         for tf in t_formats:
             r = self.view(self.view_url, HTTP_IF_UNMODIFIED_SINCE=tf)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(r.content, self.odata)
+            self.assertEqual("".join(r.streaming_content), self.odata)
 
     def test_if_unmodified_since_precondition_failed(self):
         object_info = self.get_object_info(self.cname, self.oname)

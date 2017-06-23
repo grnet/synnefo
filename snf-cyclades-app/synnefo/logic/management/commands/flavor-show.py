@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from snf_django.management.commands import SynnefoCommand
+from django.core.management.base import CommandError
 
 from synnefo.management.common import convert_api_faults
 from synnefo.management import pprint, common

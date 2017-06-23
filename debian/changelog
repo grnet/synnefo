@@ -1,3 +1,9 @@
+synnefo (0.19-1~jessie) jessie; urgency=medium
+
+  * New upstream version
+
+ -- Giorgos Korfiatis <gkorf@grnet.gr>  Fri, 23 Jun 2017 11:36:37 +0300
+
 synnefo (0.19~rc1-1~jessie) jessie; urgency=medium
 
   * New upstream version
@@ -253,6 +259,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

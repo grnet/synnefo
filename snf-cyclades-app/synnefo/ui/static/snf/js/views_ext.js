@@ -833,10 +833,27 @@
 
       rename: function() {
         var value = _.trim(this.input.val());
-        if (value) {
-          this.model.rename(value);
-          this.unset_edit();
+        this.input.parent().find(".error").remove()
+
+        if (!value) {
+          this.input.parent().append("<div class='error'>Name cannot be blank.</div>");
+          return false;
         }
+
+        var model_is_key = this.model.collection.path === synnefo.storage.keys.path;
+        var key_exists = model_is_key && !!synnefo.storage.keys.matching_keys(value).filter(
+          function(k) {
+            return k.cid !== this.model.cid;
+          }.bind(this)
+        ).length;
+        if (model_is_key && key_exists) {
+          this.input.parent().append("<div class='error'>Name already in use.</div>");
+          return false;
+        }
+
+        this.model.rename(value);
+        this.unset_edit();
+        return true;
       }
     });
 

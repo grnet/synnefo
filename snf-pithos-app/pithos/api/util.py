@@ -784,11 +784,12 @@ class SaveToBackendHandler(FileUploadHandler):
             self.data = self.data[length:]
 
     def new_file(self, field_name, file_name, content_type,
-                 content_length, charset=None):
+                 content_length, charset=None, content_type_extra=None):
         self.checksum_compute = NoChecksum() if not UPDATE_MD5 else Checksum()
         self.data = ''
         self.file = UploadedFile(
-            name=file_name, content_type=content_type, charset=charset)
+            name=file_name, content_type=content_type, charset=charset,
+            content_type_extra=content_type_extra)
         self.file.size = 0
         self.file.hashmap = []
 

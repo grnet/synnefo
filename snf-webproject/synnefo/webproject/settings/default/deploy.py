@@ -36,5 +36,8 @@ MAIL_MAX_LEN = 100 * 1024  # (100KB)
 #Synnefo endpoints we prefer to disable this behaviour by default.
 APPEND_SLASH = False
 
-#Serve requests for the hosts/domains specified. A value of '*' matches anything.
+# Serve requests for the hosts/domains specified. A value of '*' matches anything.
 ALLOWED_HOSTS = ['*']
+
+# Silence invalid django warnings
+SILENCED_SYSTEM_CHECKS = ["1_6.W002"]

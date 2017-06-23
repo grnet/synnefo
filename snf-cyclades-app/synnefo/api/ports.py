@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -183,6 +183,7 @@ def get_port_details(request, port_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_port(request, port_id):
     '''
     You can update only name, security_groups

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ class SynnefoOutputWrapper(object):
         if self.logger is not None:
             self.logger.info(msg)
         if self.django_wrapper is not None:
+            if 'ending' not in kwargs:
+                kwargs['ending'] = b'\n'
             self.django_wrapper.write(msg, *args, **kwargs)
 
 

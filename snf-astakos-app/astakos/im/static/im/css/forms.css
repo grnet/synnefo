@@ -7,8 +7,10 @@ input, textarea, .form-widget 				{ background-color: #ffffff; color: #000;borde
 #forms input:focus label 					{ z-index: 300; }
 form.withlabels label 						{ width: 224px; display: block; float: left; padding-top: 0.8em; }
 form.withlabels input[type=text],
+form.withlabels input[type=email],
 form.withlabels input[type=password] 		{ width: 228px; }
 form.withlabels input[type=text].long,
+form.withlabels input[type=email].long,
 form.withlabels input[type=password].long,
 form.withlabels textarea.long 				{ width: 224px; }
 form.withlabels textarea					{ width:228px; }

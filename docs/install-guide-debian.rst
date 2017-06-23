@@ -251,7 +251,7 @@ following:
 
       AllowEncodedSlashes On
 
-      RequestHeader set X-Forwarded-Protocol "https"
+      RequestHeader set X-Forwarded-Proto "https"
 
    <Proxy * >
        Order allow,deny
@@ -571,7 +571,7 @@ containing the following:
        SetEnv dont-vary
        AllowEncodedSlashes On
 
-       RequestHeader set X-Forwarded-Protocol "https"
+       RequestHeader set X-Forwarded-Proto "https"
 
        <Proxy * >
            Order allow,deny
@@ -1741,8 +1741,8 @@ To upload the file using Kamaki to pithos default container, run:
    # kamaki file upload debian_base-8.0-x86_64.diskdump
 
 Once the Image is uploaded successfully, download the Image's `metadata file
-<https://cdn.synnefo.org/debian_base-7.0-x86_64.diskdump.meta>`_. You will need
-it, for spawning a VM from Ganeti, in the next section.
+<https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta>`__. You will
+need it, for spawning a VM from Ganeti, in the next section.
 
 Of course, you can repeat the procedure to upload more images, available from
 the `official snf-image page
@@ -1757,7 +1757,7 @@ Now, it is time to test our installation so far. So, we have Astakos and
 Pithos installed, we have a working Ganeti installation, the snf-image
 definition installed on all VM-capable nodes, a Debian Jessie Image on
 Pithos and Kamaki installed and configured. Make sure you also have the
-`metadata file <https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta>`_
+`metadata file <https://cdn.synnefo.org/debian_base-8.0-x86_64.diskdump.meta>`__
 for this image.
 
 To spawn a VM from a Pithos file, we need to know:

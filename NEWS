@@ -10,7 +10,7 @@ Since v0.13 all Synnefo components have been merged into a single repository.
 v0.19
 =====
 
-Released: UNRELEASED
+Released: Fri Jun 23 10:45:02 EEST 2017
 
 The Synnefo 0.19 release brings an upgrade to Debian Jessie. All users are
 strongly encouraged to upgrade. Please see the Synnefo documentation for

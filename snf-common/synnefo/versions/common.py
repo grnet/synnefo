@@ -1,8 +1,8 @@
 
-__version__ = "0.19rc1"
+__version__ = "0.19"
 __version_vcs_info__ = {
-    'branch': 'release-0.19',
-    'revid': '6183a32',
-    'revno': 12967}
-__version_user_email__ = "skalkoto@grnet.gr"
-__version_user_name__ = "Nikos Skalkotos"
+    'branch': 'master',
+    'revid': 'ae6eb5c',
+    'revno': 13000}
+__version_user_email__ = "gkorf@grnet.gr"
+__version_user_name__ = "Giorgos Korfiatis"

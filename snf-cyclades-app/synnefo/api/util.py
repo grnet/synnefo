@@ -70,26 +70,6 @@ PITHOSMAP_PREFIX = "pithosmap://"
 log = getLogger('synnefo.api')
 
 
-def build_version_object(url, version_id, path, status, **extra_args):
-    """Generates a version object
-
-    The version object is structured based on the OpenStack
-    API. `extra_args` is for supporting extra information about
-    the version such as media types, extra links etc
-    """
-    base_version = {
-        'id': 'v%s' % version_id,
-        'status': status,
-        'links': [
-            {
-                'rel': 'self',
-                'href': '%s/%s/' % (url, path),
-            },
-        ],
-    }
-    return dict(base_version, **extra_args)
-
-
 class feature_enabled(object):
     """
     Decorator for toggling functions that are part of a feature.
@@ -101,7 +81,7 @@ class feature_enabled(object):
 
         def decorator(*args, **kwargs):
             feature_flag = getattr(settings, "%s_ENABLED"
-                                        % self.feature_name.upper(), False)
+                                   % self.feature_name.upper(), False)
             if feature_flag:
                 return func(*args, **kwargs)
             else:

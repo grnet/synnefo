@@ -19,7 +19,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 import json
 from synnefo.cyclades_settings import NETWORK_ROOT_URL
-from synnefo.api.util import build_version_object
+from synnefo.util.api import build_version_object
 
 from snf_django.lib import api
 

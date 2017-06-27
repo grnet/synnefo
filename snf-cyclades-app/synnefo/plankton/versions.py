@@ -19,7 +19,7 @@ from django.http import HttpResponse
 import json
 
 from synnefo.cyclades_settings import IMAGE_ROOT_URL
-from synnefo.api.util import build_version_object
+from synnefo.util.api import build_version_object
 
 from snf_django.lib import api
 

@@ -16,7 +16,7 @@
 from logging import getLogger
 from django.conf.urls import patterns
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
 import json
 
@@ -33,7 +33,13 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'list_flavors'),
     (r'^/detail(?:.json|.xml)?$', 'list_flavors', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'get_flavor_details'),
+    (r'^/(\d+)/os-extra_specs(?:.json)?$', 'list_os_extra_specs')
 )
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def list_os_extra_specs(request, flavor_id):
+    return JsonResponse({'extra_specs': {}})
 
 
 def flavor_to_dict(flavor, detail=True, projects=[]):

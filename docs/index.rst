@@ -131,6 +131,14 @@ There are also the following tools:
 Design
 ======
 
+v0.19
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   VM allocation to backends per project <design/backends-per-project>
+
 v0.17
 ------
 
@@ -149,6 +157,7 @@ v0.16
    Resource-pool projects design <design/resource-pool-projects>
    Volumes design <design/volumes>
    Volume Snapshots design <design/volume-snapshots>
+   Multi-DB transactions in Django <design/multi-db-transactions>
 
 v0.15
 -----
@@ -160,13 +169,6 @@ v0.15
    Cyclades networking <design/cyclades-networking>
    Astakos resource defaults <design/resource-defaults>
 
-Drafts
-------
-
-.. toctree::
-   :maxdepth: 1
-
-   Multi-DB transactions in Django <design/multi-db-transactions>
 
 
 Contact

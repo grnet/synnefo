@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -238,9 +238,9 @@ def handle_third_party_login(request, provider_module, identifier,
 
         # If all attributes are set by the provider, the signup form is not
         # required. Continue by creating the AstakosUser object.
-        user = handle_third_party_auto_signup(request, provider_module,
-                                              provider_info,
-                                              identifier, user_info)
+        user = _handle_third_party_auto_signup(request, provider_module,
+                                               provider_info,
+                                               identifier, user_info)
 
     if not third_party_key:
         third_party_key = get_pending_key(request)
@@ -281,8 +281,8 @@ def handle_third_party_login(request, provider_module, identifier,
         return HttpResponseRedirect(login_url(request))
 
 
-def handle_third_party_auto_signup(request, provider, provider_info,
-                                   identifier, user_info):
+def _handle_third_party_auto_signup(request, provider, provider_info,
+                                    identifier, user_info):
     """Create AstakosUser for third party user without requiring signup form.
 
     Handle third party signup by automatically creating an AstakosUser. This
@@ -315,8 +315,6 @@ def handle_third_party_auto_signup(request, provider, provider_info,
     result = activation_backend.handle_registration(user)
     activation_backend.send_result_notifications(result, user)
 
-    # Commit user entry
-    transaction.commit()
     return user
 
 

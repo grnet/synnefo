@@ -4,7 +4,7 @@ Synnefo Developer's Guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The suggested method of setting up an environment for development purposes is
-first to install Synnefo on a Debian Wheezy system and then to use Python's
+first to install Synnefo on a Debian Jessie system and then to use Python's
 `development mode
 <http://www.ewencp.org/blog/a-brief-introduction-to-packaging-python/>`_ to run
 Synnefo from a cloned repo and see your changes instantly.
@@ -15,13 +15,13 @@ Synnefo installation
 There are two main ways of installing Synnefo, each of which will be described
 below:
 
-* `Existing Debian Wheezy system (snf-deploy)`_: This method requires that you
-  have setup a Debian Wheezy system. On this setup, you can install Synnefo
+* `Existing Debian Jessie system (snf-deploy)`_: This method requires that you
+  have setup a Debian Jessie system. On this setup, you can install Synnefo
   using ``snf-deploy``.
 * `Synception (snf-ci)`_: This method builds Synnefo within Synnefo (you read
   right), which means that you need to have an account in an existing Synnefo
   installation. Then, using ``snf-ci`` in conjunction with ``kamaki``, you can
-  create a new Debian Wheezy VM in that installation. The rest is handled
+  create a new Debian Jessie VM in that installation. The rest is handled
   automatically by ``snf-ci``, which uses ``snf-deploy`` to install Synnefo in
   that VM.
 
@@ -33,7 +33,7 @@ below:
     or install new packages.
 
 
-Existing Debian Wheezy system (snf-deploy)
+Existing Debian Jessie system (snf-deploy)
 ------------------------------------------
 
 **1. Install Synnefo**
@@ -125,12 +125,12 @@ common usage of ``snf-ci`` is the following:
     $ ./ci/snf-ci create,build,deploy --cloud <cloud>
 
 The above command will use your ``kamaki`` *cloud* that you have setup in
-**Step 1**. In this cloud, ``snf-ci`` will create a Debian Wheezy VM, checkout
+**Step 1**. In this cloud, ``snf-ci`` will create a Debian Jessie VM, checkout
 the **develop** branch from the official Synnefo repo, build the Synnefo
 packages from source and install them using ``snf-deploy``. Of course, all the
 previous actions can be tweaked with command-line arguments or configuration
 files. To see a list of possible command-line arguments, you can use ``snf-ci
--h``. Also, you can edit the ``ci_wheezy.conf`` configuration file for more
+-h``. Also, you can edit the ``ci_jessie.conf`` configuration file for more
 permanent changes.
 
 .. tip::

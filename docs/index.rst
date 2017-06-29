@@ -75,7 +75,7 @@ in less than 10 minutes using the `snf-deploy` tool. This kind of installation
 is targeted for testing and demo environments rather than production usage
 deployments. It is the perfect way, even for an inexperienced user to have the
 whole Synnefo stack up and running and allows for a quick preview of the basic
-Synnefo features. This installation method is only available for Debian Jessie.
+Synnefo features.
 
 The Admin's Installation guide describes how to install the whole Synnefo stack
 in just two physical nodes. This guide is useful to those interested in
@@ -100,8 +100,12 @@ external world. Also documents all Synnefo external REST APIs.
 .. extend/modify/change Synnefo itself, so describes Synnefo's indepth
 .. architecture and the internals of Synnefo components (currently out-of-date!).
 
-* Quick Installation Guide on single node [:ref:`Debian Jessie <quick-install-guide>`]
-* Installation Guide on two nodes [:ref:`Debian Jessie <install-guide-debian>` ]
+
+.. toctree::
+   :maxdepth: 1
+
+   Quick Installation Guide on single node (Debian Jessie) <quick-install-guide>
+   Installation Guide on two nodes (Debian Jessie) <install-guide-debian>
 
 .. toctree::
    :maxdepth: 1

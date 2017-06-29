@@ -1,13 +1,13 @@
 .. _quick-install-guide:
 
-Quick Installation Guide on Debian Wheezy
+Quick Installation Guide on Debian Jessie
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is the Synnefo Quick Installation guide.
 
 It describes how to install the whole Synnefo stack on one (1) physical node,
 in less than 10 minutes. The installation uses the snf-deploy deployment tool
-and installs on a physical node that runs Debian Wheezy. After successful
+and installs on a physical node that runs Debian Jessie. After successful
 installation, you will have the following services running:
 
     * Identity Management (Astakos)
@@ -22,7 +22,7 @@ and a single unified Web UI to manage them all.
 Prerequisites
 =============
 
-To install Synnefo the only thing you need is a Debian Wheezy Base System that
+To install Synnefo the only thing you need is a Debian Jessie Base System that
 has access to the public Internet.
 
 Installation of snf-deploy
@@ -33,7 +33,7 @@ following line in your ``/etc/apt/sources.list`` file:
 
 .. code-block:: console
 
-   deb http://apt.dev.grnet.gr wheezy/
+   deb http://apt.dev.grnet.gr jessie/
 
 Then run:
 

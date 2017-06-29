@@ -8,7 +8,7 @@ reload(synnefo.versions)
 from synnefo.versions.app import __version__
 
 project = u'synnefo'
-copyright = u'2012-2016, GRNET'
+copyright = u'2010-2017, GRNET S.A.'
 version = __version__
 release = __version__
 html_title = 'synnefo ' + version

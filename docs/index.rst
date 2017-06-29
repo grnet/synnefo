@@ -75,7 +75,7 @@ in less than 10 minutes using the `snf-deploy` tool. This kind of installation
 is targeted for testing and demo environments rather than production usage
 deployments. It is the perfect way, even for an inexperienced user to have the
 whole Synnefo stack up and running and allows for a quick preview of the basic
-Synnefo features. This installation method is only available for Debian Wheezy.
+Synnefo features.
 
 The Admin's Installation guide describes how to install the whole Synnefo stack
 in just two physical nodes. This guide is useful to those interested in
@@ -100,9 +100,12 @@ external world. Also documents all Synnefo external REST APIs.
 .. extend/modify/change Synnefo itself, so describes Synnefo's indepth
 .. architecture and the internals of Synnefo components (currently out-of-date!).
 
-* Quick Installation Guide on single node [:ref:`Debian Wheezy <quick-install-guide>`]
-* Installation Guide on two nodes [:ref:`Debian Wheezy <install-guide-debian>` |
-  :ref:`CentOS 6.5 <install-guide-centos>`]
+
+.. toctree::
+   :maxdepth: 1
+
+   Quick Installation Guide on single node (Debian Jessie) <quick-install-guide>
+   Installation Guide on two nodes (Debian Jessie) <install-guide-debian>
 
 .. toctree::
    :maxdepth: 1
@@ -132,6 +135,14 @@ There are also the following tools:
 Design
 ======
 
+v0.19
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   VM allocation to backends per project <design/backends-per-project>
+
 v0.17
 ------
 
@@ -150,6 +161,7 @@ v0.16
    Resource-pool projects design <design/resource-pool-projects>
    Volumes design <design/volumes>
    Volume Snapshots design <design/volume-snapshots>
+   Multi-DB transactions in Django <design/multi-db-transactions>
 
 v0.15
 -----
@@ -161,13 +173,6 @@ v0.15
    Cyclades networking <design/cyclades-networking>
    Astakos resource defaults <design/resource-defaults>
 
-Drafts
-------
-
-.. toctree::
-   :maxdepth: 1
-
-   Multi-DB transactions in Django <design/multi-db-transactions>
 
 
 Contact

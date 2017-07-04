@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ had grown too much.
 """
 
 import time
+import re
 import IPy
 import base64
 import socket
@@ -62,6 +63,41 @@ class CycladesTests(BurninTests):
 
         self.info("Found %s flavors to choose from", len(avail_flavors))
         return avail_flavors
+
+    def _parse_volume_flavors(self, detachable_vlm_t, non_detachable_vlm_t):
+        """
+        Parse flavors given from the command line. This function will subset
+        the flavors based on the given detachable and non detachable volume
+        types.
+        """
+        flavors = self._get_list_of_flavors(detail=True)
+
+        # Flavor names are in a C{cores}R{ram_size}D{disk_size}{disk_template}
+        # format. Therefore we can subset them by checking if the given
+        # volume type is contained in the flavor name
+        d_regex = re.compile("^C\d+R\d+D\d+%s$" %
+                detachable_vlm_t['SNF:disk_template'])
+        detachable_flavors = [f for f in flavors if d_regex.match(f['name'])
+                                                    is not None]
+
+        nd_regex = re.compile("^C\d+R\d+D\d+%s$" %
+                non_detachable_vlm_t['SNF:disk_template'])
+        non_detachable_flavors = [f for f in flavors if
+            nd_regex.match(f['name']) is not None]
+
+        if self.volume_flavors is not None:
+            detachable_flavors = self._find_flavors(
+                    self.volume_flavors, flavors=detachable_flavors)
+            non_detachable_flavors = self._find_flavors(
+                    self.volume_flavors, flavors=non_detachable_flavors)
+        else:
+            self.info("No --volume-flavors given. Will use all of them")
+
+        self.info("Found %s flavors with detachable volume type to choose "
+                  "from", len(detachable_flavors))
+        self.info("Found %s flavors with non detachable volume type to choose "
+                  "from", len(non_detachable_flavors))
+        return detachable_flavors, non_detachable_flavors
 
     def _try_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
@@ -829,6 +865,74 @@ class CycladesTests(BurninTests):
         #
         # return random.choice(results)
 
+    # ----------------------------------
+    # Volumes
+
+    def _insist_on_volume_transition(self, volume, curr_statuses, new_status):
+        """Insist on volume transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check volume status"""
+            vlm = self._get_volume_details(volume)
+            if vlm['status'] in curr_statuses:
+                raise Retry()
+            elif vlm['status'] == new_status:
+                return
+            else:
+                msg = "Volume %s went to unexpected status %s"
+                self.error(msg, vlm['id'], vlm['status'])
+                self.fail(msg % (vlm['id'], vlm['status']))
+        opmsg = "Waiting for volume %s to become %s"
+        self.info(opmsg, volume['id'], new_status)
+        opmsg = opmsg % (volume['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _create_detachable_volume(self, volume_type, size=5):
+        volume = self.clients.block_storage.create_volume(
+                size=size, display_name="%s" % self.run_id,
+                volume_type=volume_type['id'])
+        self._insist_on_volume_transition(volume, ["creating"], "available")
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QADD, size, GB)]
+        }
+        self._check_quotas(changes)
+        return volume
+
+    def _create_non_detachable_volume(self, volume_type, size=5,
+                                      server_id=None):
+        volume = self.clients.block_storage.create_volume(
+                size=size, display_name="%s" % self.run_id,
+                volume_type=volume_type['id'], server_id=server_id)
+        self._insist_on_volume_transition(volume, ["creating"], "in_use")
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QADD, size, GB)]
+        }
+        self._check_quotas(changes)
+        return volume
+
+    def _destroy_volume(self, volume):
+        self.clients.block_storage.delete_volume(volume['id'])
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QREMOVE, volume['size'], GB)]
+        }
+        self._insist_on_volume_transition(volume,
+                                          ["available", "deleting"], "deleted")
+        self._check_quotas(changes)
+
+    def _attach_volume(self, server, volume):
+        self.clients.cyclades.attach_volume(server['id'], volume['id'])
+        self._insist_on_volume_transition(volume, ["attaching"], "in_use")
+
+    def _detach_volume(self, server, volume):
+        self.clients.cyclades.delete_volume_attachment(server['id'],
+                                                       volume['id'])
+        self._insist_on_volume_transition(volume, ["in-use", "detaching"],
+                                          "available")
+
+    def _get_attached_volumes(self, server):
+        return self.clients.cyclades.list_volume_attachments(server['id'])
 
 
 class Retry(Exception):

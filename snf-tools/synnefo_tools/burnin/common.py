@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import unittest
 import datetime
 import tempfile
 import traceback
+import random
 from tempfile import NamedTemporaryFile
 from os import urandom
 from string import ascii_letters
@@ -32,7 +33,8 @@ from StringIO import StringIO
 from binascii import hexlify
 
 from kamaki.cli import config as kamaki_config
-from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
+from kamaki.clients.cyclades import (CycladesClient, CycladesNetworkClient,
+                                     CycladesBlockStorageClient)
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
@@ -50,6 +52,7 @@ success = None  # pylint: disable=invalid-name
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
+
 KB = 2**10
 MB = 2**20
 GB = 2**30
@@ -190,9 +193,9 @@ class Clients(object):
         self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
 
         self.block_storage_url = self.astakos.get_endpoint_url(
-            BlockStorageClient.service_type)
-        self.block_storage = BlockStorageClient(self.block_storage_url,
-                                                self.token)
+            CycladesBlockStorageClient.service_type)
+        self.block_storage = CycladesBlockStorageClient(self.block_storage_url,
+                                                        self.token)
         self.block_storage.CONNECTION_RETRY_LIMIT = self.retry
 
         self.network_url = self.astakos.get_endpoint_url(
@@ -584,7 +587,88 @@ class BurninTests(unittest.TestCase):
         return ret_flavors
 
     # ----------------------------------
+    # Volumes
+
+    def _get_volume_list(self, detail=True):
+        return self.clients.block_storage.list_volumes(detail=detail)
+
+    def _get_volume_details(self, volume):
+        return self.clients.block_storage.get_volume_details(volume['id'])
+
+    def _get_volume_types(self):
+        return self.clients.block_storage.list_volume_types()
+
+    def _filter_volume_types(self, vlm_t_option, volume_types=None):
+        if volume_types is None:
+            volume_types = self._get_volume_types()
+
+        try:
+            option_type, option_value = parse_typed_option(vlm_t_option)
+        except ValueError:
+            msg = "Invalid volume type format: %s. Must be [id|name]:.+"
+            self.warning(msg, vlm_t_option)
+
+        if option_type == "name":
+            # Filter flavor by name
+            msg = "Trying to find a volume type with name %s"
+            self.info(msg, option_value)
+            filtered_vlms = \
+                [vlm_t for vlm_t in volume_types if
+                 re.search(option_value, vlm_t['name'], flags=re.I)
+                 is not None]
+        elif option_type == "id":
+            filtered_vlms = \
+                [vlm_t for vlm_t in volume_types if
+                 re.search(option_value, str(vlm_t['id']), flags=re.I)
+                 is not None]
+        else:
+            self.error("Unrecognized option type %s", option_type)
+        return filtered_vlms
+
+    def _parse_volume_types(self):
+        """
+        Find the suitable volume types to use for the volume tests.
+
+        There are two categories of volumes, detachable and non detachable. The
+        former can be freely attached and detached from one server to another
+        and the latter can only be attached on one server.
+        """
+        volume_types = self._get_volume_types()
+        # Divide the volume types into detachable and non detachable
+        self.detachable_volume_types = [vlm_t for vlm_t in volume_types if
+                                        vlm_t['SNF:detachable']]
+        self.non_detachable_volume_types = [vlm_t for vlm_t in volume_types if
+                                            not vlm_t['SNF:detachable']]
+        # If the use has not provided a volume type for either case, select
+        # one randomly from the available ones
+        if self.det_volume_type is None:
+            self.warning("--detachable-volume-type not set. Will use one of %s"
+                         " instead" % self.detachable_volume_types)
+        else:
+            self.detachable_volume_types = self._filter_volume_types(
+                self.det_volume_type,
+                volume_types=self.detachable_volume_types)
+            if len(self.detachable_volume_types) == 0:
+                self.error("Could not fild detacahble volume types matching %s"
+                           % self.det_volume_type)
+
+        if self.non_det_volume_type is None:
+            self.warning("--non-detachable-volume-type not set. Will use one "
+                         "of %s instead" %
+                         self.non_detachable_volume_types)
+        else:
+            self.non_detachable_volume_types = self._filter_volume_types(
+                self.non_det_volume_type,
+                volume_types=self.non_detachable_volume_types)
+            if len(self.non_detachable_volume_types) == 0:
+                self.error("Could not fild non detacahble volume types "
+                           "matching %s" % self.non_det_volume_type)
+
+        return (random.choice(self.detachable_volume_types),
+                random.choice(self.non_detachable_volume_types))
+    # ----------------------------------
     # Images
+
     def _get_list_of_images(self, detail=False):
         """Get (detailed) list of images"""
         if detail:
@@ -788,6 +872,9 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.query_interval = opts.query_interval
     BurninTests.system_user = opts.system_user
     BurninTests.flavors = opts.flavors
+    BurninTests.volume_flavors = opts.volume_flavors
+    BurninTests.det_volume_type = opts.detachable_volume_type
+    BurninTests.non_det_volume_type = opts.non_detachable_volume_type
     BurninTests.images = opts.images
     BurninTests.delete_stale = opts.delete_stale
     BurninTests.temp_directory = opts.temp_directory

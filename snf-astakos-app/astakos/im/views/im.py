@@ -491,9 +491,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
             message = result.message
             activation_backend.send_result_notifications(result, user)
 
-            # commit user entry
-            transaction.commit()
-
             if user and user.is_active:
                 # activation backend directly activated the user
                 # log him in

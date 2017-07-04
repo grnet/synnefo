@@ -146,7 +146,7 @@ def handle_third_party_signup(request, userid, provider_module,
     return HttpResponseRedirect(extra_context['signup_url'])
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def handle_third_party_login(request, provider_module, identifier,
                              provider_info=None, affiliation=None,
                              third_party_key=None, user_info=None):

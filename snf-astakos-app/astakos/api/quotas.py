@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 
 #
 # This program is free software: you can redistribute it and/or modify
@@ -191,7 +191,7 @@ def issue_commission(request):
     return json_response(data, status_code=status_code)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def _issue_commission(clientkey, provisions, name, force, accept):
     serial = qh.issue_commission(clientkey=clientkey,
                                  provisions=provisions,
@@ -220,7 +220,7 @@ def conflictingCF(serial):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def resolve_pending_commissions(request):
     input_data = utils.get_json_body(request)
     check_is_dict(input_data)
@@ -273,7 +273,7 @@ def get_commission(request, serial):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def serial_action(request, serial):
     input_data = utils.get_json_body(request)
     check_is_dict(input_data)

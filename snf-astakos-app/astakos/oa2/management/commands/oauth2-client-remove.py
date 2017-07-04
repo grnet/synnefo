@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ class Command(SynnefoCommand):
     args = "<client ID or identifier>"
     help = "Remove an oauth2 client along with its registered redirect urls"
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a client ID or identifier")

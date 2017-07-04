@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class Command(SynnefoCommand):
         userid = None if all_users else args[0]
         self.suspend_projects(userid, fix)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def suspend_projects(self, userid, fix):
         count = 0
         deactivated = AstakosUser.objects.accepted().filter(

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,17 +23,17 @@ from astakos.im.functions import (join_project, leave_project,
                                   ProjectForbidden)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def join(proj_id, user):
     return join_project(proj_id, user)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def leave(memb_id, request_user):
     return leave_project(memb_id, request_user)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def submit(name, user_id, project_id=None):
     try:
         owner = AstakosUser.objects.get(id=user_id)
@@ -62,6 +62,6 @@ def submit(name, user_id, project_id=None):
     return app.id, app.chain_id
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def approve(app_id):
     approve_application(app_id)

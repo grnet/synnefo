@@ -131,7 +131,7 @@ def index(request, authenticated_redirect='landing',
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-@transaction.commit_on_success
+@transaction.atomic
 def update_token(request):
     """
     Update api token view.
@@ -146,7 +146,7 @@ def update_token(request):
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @valid_astakos_user_required
-@transaction.commit_on_success
+@transaction.atomic
 def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
@@ -274,7 +274,7 @@ def api_access(request, template_name='im/api_access.html',
 @login_required
 @cookie_fix
 @signed_terms_required
-@transaction.commit_on_success
+@transaction.atomic
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
@@ -364,7 +364,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                                                         extra_context))
 
 
-@transaction.commit_on_success
+@transaction.atomic
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def signup(request, template_name='im/signup.html', on_success='index',
@@ -612,7 +612,7 @@ def logout(request, template='registration/logged_out.html',
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
@@ -722,7 +722,7 @@ def approval_terms(request, term_id=None,
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def request_change_email(request,
                  email_to_new_template_name='registration/email_change_email_new_email.txt',
                  form_template_name='registration/email_change_form.html',
@@ -782,7 +782,7 @@ def change_email(request, activation_key=None):
         return HttpResponseRedirect(reverse('index'))
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def _change_email(request, activation_key=None):
 
     if not activation_key:
@@ -812,7 +812,7 @@ def _change_email(request, activation_key=None):
 
 
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 

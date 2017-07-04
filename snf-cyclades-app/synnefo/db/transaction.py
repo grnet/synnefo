@@ -20,7 +20,6 @@ import logging
 from functools import wraps
 
 from snf_django.utils.transaction import atomic as snf_atomic
-from synnefo import quotas
 
 log = logging.getLogger(__name__)
 
@@ -29,29 +28,12 @@ def atomic(using=None, savepoint=True):
     return snf_atomic("db", using, savepoint)
 
 
-class SerialContext(object):
-    def __init__(self, *args, **kwargs):
-        self._serial = None
-
-    def set_serial(self, serial):
-        if self._serial is not None:
-            raise ValueError("Cannot set multiple serials")
-        self._serial = serial
-
-    def handle(self, success):
-        serial = self._serial
-        if success:
-            if not serial.pending:
-                if serial.accept:
-                    quotas.accept_serial(serial)
-                else:
-                    quotas.reject_serial(serial)
-        else:
-            if serial.pending:
-                quotas.reject_serial(serial)
-
-
 class Job(object):
+    """Generic Job Class
+
+    This class acts as helper to declare a deferred action, by specifying a
+    function and its arguments
+    """
     description = None
     fn = None
     args = None
@@ -75,30 +57,24 @@ class Job(object):
     __call__ = run
 
 
-def handle_serial_success(serial):
-    if serial.accept and not serial.pending:
-        quotas.accept_serial(serial)
-
-
-def handle_serial_fail(serial):
-    if serial.pending:
-        quotas.reject_serial(serial)
-
-
 class DeferredJobContext(object):
+    """Generic deferred job context.
+
+    It supports registering deferred actions to be called in case of
+    * success
+    * failure
+    * always
+
+    Each action should have a `run()` method, which will be called to execute
+    the deferred action.
+    Each action must be independent from other actions, and if one depends on
+    other actions, this dependency must be wrapped into a parent action which
+    will handle all the necessary logic. When running a deferred action, the
+    context expects no output and discards any exceptions by simply logging it.
+    """
     def __init__(self, *args, **kwargs):
-        self._serial = None
-        self._deferred_jobs = []
         self._on_success = []
         self._on_failure = []
-
-    def set_serial(self, serial):
-        if self._serial is not None:
-            raise ValueError("Cannot set multiple serials")
-        self._serial = serial
-        self.add_on_success_job(
-            Job(handle_serial_success, args=(serial,)))
-        self.add_on_failure_job(Job(handle_serial_fail, args=(serial,)))
 
     def add_deferred_job(self, def_job):
         self.add_on_success_job(def_job)

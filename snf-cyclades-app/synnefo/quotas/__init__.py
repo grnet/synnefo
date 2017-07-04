@@ -16,6 +16,7 @@
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
                                IPAddress, Volume)
+from synnefo.db.transaction import Job
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
@@ -306,7 +307,7 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None,
     serial.pending = False
     serial.accept = True
     serial.save()
-    atomic_context.set_serial(serial)
+    set_serial(atomic_context, serial)
     return serial
 
 
@@ -497,3 +498,29 @@ def resolve_resource_commission(resource, force=False):
         accept_resource_serial(resource)
     else:
         reject_resource_serial(resource)
+
+
+def handle_serial_success(serial):
+    """Helper function for handling a serial on transaction success"""
+    if serial.accept and not serial.pending:
+        accept_serial(serial)
+
+
+def handle_serial_fail(serial):
+    """Helper function for handling a serial on transaction failure"""
+    if serial.pending:
+        reject_serial(serial)
+
+
+def set_serial(atomic_context, serial):
+    """Set a serial object on an atomic context
+
+    This functions acts as a helper method to register the necessary actions
+    when an API transactions ends, either successfully or rollbacked.
+    """
+    if getattr(atomic_context, '_serial', None):
+        raise ValueError("Cannot set multiple serials")
+    atomic_context._serial = serial
+    atomic_context.add_on_success_job(
+        Job(handle_serial_success, args=(serial,)))
+    atomic_context.add_on_failure_job(Job(handle_serial_fail, args=(serial,)))

@@ -119,7 +119,7 @@ class ServerCommand(object):
             commission_name=commission_name,
             for_user=user_id)
         if serial is not None:
-            atomic_context.set_serial(serial)
+            quotas.set_serial(atomic_context, serial)
 
     def __enter__(self):
         return self.vm

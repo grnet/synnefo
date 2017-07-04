@@ -536,7 +536,9 @@ def volume_type_to_dict(volume_type):
         "id": volume_type.id,
         "name": volume_type.name,
         "deleted": volume_type.deleted,
-        "SNF:disk_template": volume_type.disk_template}
+        "SNF:disk_template": volume_type.disk_template,
+        "SNF:detachable": volume_type.name in
+            settings.CYCLADES_DETACHABLE_DISK_TEMPLATES}
     return vtype_info
 
 

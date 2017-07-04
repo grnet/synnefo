@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -778,10 +778,7 @@ def request_change_email(request,
 @require_http_methods(["GET"])
 @cookie_fix
 @transaction.commit_on_success
-def change_email(request, activation_key=None,
-                 confirm_template_name='registration/email_change_done.html',
-                 extra_context=None):
-    extra_context = extra_context or {}
+def change_email(request, activation_key=None):
 
     if not activation_key:
         return HttpResponseNotFound()
@@ -812,12 +809,6 @@ def change_email(request, activation_key=None,
         messages.error(request, e)
         transaction.rollback()
         return HttpResponseRedirect(reverse('index'))
-
-    return render_response(confirm_template_name,
-                           modified_user=user if 'user' in locals()
-                           else None,
-                           context_instance=get_context(request,
-                                                        extra_context))
 
 
 @cookie_fix

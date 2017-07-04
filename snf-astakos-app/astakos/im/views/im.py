@@ -777,38 +777,41 @@ def request_change_email(request,
 
 @require_http_methods(["GET"])
 @cookie_fix
-@transaction.commit_on_success
 def change_email(request, activation_key=None):
+    try:
+        return _change_email(request, activation_key)
+    except ValueError as e:
+        messages.error(request, e)
+        return HttpResponseRedirect(reverse('index'))
+
+
+@transaction.commit_on_success
+def _change_email(request, activation_key=None):
 
     if not activation_key:
         return HttpResponseNotFound()
 
     try:
-        try:
-            email_change = EmailChange.objects.get(
-                activation_key=activation_key)
-        except EmailChange.DoesNotExist:
-            logger.error("[change-email] Invalid or used activation "
-                         "code, %s", activation_key)
-            raise Http404
+        email_change = EmailChange.objects.get(
+            activation_key=activation_key)
+    except EmailChange.DoesNotExist:
+        logger.error("[change-email] Invalid or used activation "
+                     "code, %s", activation_key)
+        raise Http404
 
-        if (
-            request.user.is_authenticated() and
-            request.user == email_change.user or not
-            request.user.is_authenticated()
-        ):
-            user = EmailChange.objects.change_email(activation_key)
-            msg = _(astakos_messages.EMAIL_CHANGED)
-            messages.success(request, msg)
-            return HttpResponseRedirect(reverse('edit_profile'))
-        else:
-            logger.error("[change-email] Access from invalid user, %s %s",
-                         email_change.user, request.user.log_display)
-            raise PermissionDenied
-    except ValueError, e:
-        messages.error(request, e)
-        transaction.rollback()
-        return HttpResponseRedirect(reverse('index'))
+    if (
+        request.user.is_authenticated() and
+        request.user == email_change.user or not
+        request.user.is_authenticated()
+    ):
+        user = EmailChange.objects.change_email(activation_key)
+        msg = _(astakos_messages.EMAIL_CHANGED)
+        messages.success(request, msg)
+        return HttpResponseRedirect(reverse('edit_profile'))
+    else:
+        logger.error("[change-email] Access from invalid user, %s %s",
+                     email_change.user, request.user.log_display)
+        raise PermissionDenied
 
 
 @cookie_fix

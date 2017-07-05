@@ -13,40 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Astakos-specific support for transactions in multiple databases.
-
-This file provides the entry points for the following Django transaction
-functions:
- * commit_on_success
- * commit_manually
- * commit
- * rollback
-"""
-
-from django.db import transaction as django_transaction
+"""Astakos-specific support for transactions in multiple databases."""
 
 from snf_django.utils import transaction as snf_transaction
-from snf_django.utils.db import select_db
-
-
-def commit(using=None):
-    using = select_db("im") if using is None else using
-    django_transaction.commit(using=using)
-
-
-def rollback(using=None):
-    using = select_db("im") if using is None else using
-    django_transaction.rollback(using=using)
-
-
-def commit_on_success(using=None):
-    method = django_transaction.commit_on_success
-    return snf_transaction._transaction_func("im", method, using)
-
-
-def commit_manually(using=None):
-    method = django_transaction.commit_manually
-    return snf_transaction._transaction_func("im", method, using)
 
 
 def atomic(using=None, savepoint=True):

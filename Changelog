@@ -31,6 +31,12 @@ Cyclades
 * Add 'public' flag to Flavors and FlavorAccess to assign access to flavors
   only to specific projects.
 * Add Flavor specs which provide extra Key-Value based specs to flavors
+* Introduce a policy module to gradually collect all resource access
+  checks.
+* Migrate transaction handling to Django's atomic(). Use a transaction
+  context to schedule external operations on transaction exit.
+* Move transactions to the logic level, so that all clients (API,
+  snf-manage, admin app) consistently run the same operations.
 
 Astakos
 -------

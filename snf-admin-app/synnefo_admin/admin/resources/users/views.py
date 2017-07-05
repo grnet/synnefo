@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -170,7 +170,7 @@ JSON_CLASS = UserJSONView
 
 
 @has_permission_or_403(cached_actions)
-@transaction.commit_on_success
+@transaction.atomic
 def do_action(request, op, id, data):
     """Apply the requested action on the specified user."""
     user = get_user_or_404(id, for_update=True)

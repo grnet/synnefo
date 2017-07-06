@@ -66,7 +66,7 @@ class Command(SynnefoCommand):
 
     )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")

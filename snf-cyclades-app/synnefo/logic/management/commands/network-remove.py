@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ from snf_django.management.commands import RemoveCommand
 from snf_django.lib.api import faults
 from synnefo.logic import networks
 from synnefo.management import common
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(RemoveCommand):
@@ -27,7 +27,6 @@ class Command(RemoveCommand):
     args = "<network_id> [<network_id> ...]"
     help = "Remove a network from the Database, and Ganeti"
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
@@ -37,15 +36,15 @@ class Command(RemoveCommand):
         message = "networks" if len(args) > 1 else "network"
         self.confirm_deletion(force, message, args)
 
+        credentials = Credentials("snf-manage", is_admin=True)
         for network_id in args:
             self.stdout.write("\n")
             try:
-                network = common.get_resource("network", network_id,
-                                              for_update=True)
+                network = common.get_resource("network", network_id)
                 self.stdout.write('Removing network: %s\n' %
                                   network.backend_id)
 
-                networks.delete(network)
+                networks.delete(network_id, credentials)
 
                 self.stdout.write("Successfully submitted Ganeti jobs to"
                                   " remove network %s\n" % network.backend_id)

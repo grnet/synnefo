@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -73,17 +73,17 @@ class Command(SynnefoCommand):
             help="Remove a network from a Ganeti backend."),
     )
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a network ID")
 
-        network = get_resource("network", args[0])
+        network = get_resource("network", args[0], for_update=True)
 
         new_name = options.get("name")
         if new_name is not None:
             old_name = network.name
-            network = networks.rename(network, new_name)
+            network = networks._rename(network, new_name)
             self.stdout.write("Renamed network '%s' from '%s' to '%s'.\n" %
                               (network, old_name, new_name))
 

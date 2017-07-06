@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,13 +23,10 @@ from synnefo.logic import server_attachments, utils, commands
 from synnefo.plankton.backend import OBJECT_AVAILABLE
 from synnefo import quotas
 from synnefo.api.util import get_random_helper_vm
+from synnefo.api.util import get_vm as util_get_vm
+from synnefo.db import transaction
 
 log = logging.getLogger(__name__)
-
-
-def get_volume(volume_id):
-    """Simple function to get and lock a Volume."""
-    return Volume.objects.select_for_update().get(id=volume_id, deleted=False)
 
 
 def get_vm(vm_id):
@@ -41,10 +38,11 @@ def get_vm(vm_id):
         raise faults.BadRequest("Virtual machine '%s' does not exist" % vm_id)
 
 
-def create(user_id, size, server=None, name=None, description=None,
+@transaction.atomic_context
+def create(credentials, size, server_id=None, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
            source_image_id=None, volume_type_id=None, metadata=None,
-           project_id=None, shared_to_project=False):
+           project_id=None, shared_to_project=False, atomic_context=None):
     """Create a new volume and optionally attach it to a server.
 
     This function serves as the main entry-point for volume creation. It gets
@@ -54,9 +52,14 @@ def create(user_id, size, server=None, name=None, description=None,
     """
     volume_type = None
 
-    # If given a server id, assert that it exists and that it belongs to the
-    # user.
-    if server:
+    server = None
+    if server_id:
+        try:
+            server = util_get_vm(server_id, credentials,
+                                 for_update=True, non_deleted=True)
+        except faults.ItemNotFound:
+            raise faults.BadRequest("Server %s not found" % server_id)
+
         volume_type = server.flavor.volume_type
         # If the server's volume type conflicts with the provided volume type,
         # raise an exception.
@@ -76,7 +79,7 @@ def create(user_id, size, server=None, name=None, description=None,
     if server is None:
         util.assert_detachable_volume_type(volume_type)
 
-    volume = create_common(user_id, size, name=name,
+    volume = create_common(credentials.userid, size, name=name,
                            description=description,
                            source_image_id=source_image_id,
                            source_snapshot_id=source_snapshot_id,
@@ -86,9 +89,10 @@ def create(user_id, size, server=None, name=None, description=None,
                            shared_to_project=shared_to_project)
 
     if server is not None:
-        server_attachments.attach_volume(server, volume)
+        server_attachments.attach_volume(server, volume, atomic_context)
     else:
-        quotas.issue_and_accept_commission(volume, action="BUILD")
+        quotas.issue_and_accept_commission(volume, action="BUILD",
+                                           atomic_context=atomic_context)
         # If the volume has been created in the DB, consider it available.
         volume.status = "AVAILABLE"
         volume.save()
@@ -272,15 +276,19 @@ def _create_volume(user_id, project, size, source_type, source_uuid,
     return volume
 
 
-def attach(server, volume_id):
+@transaction.atomic_context
+def attach(server_id, volume_id, credentials, atomic_context=None):
     """Attach a volume to a server."""
-    volume = get_volume(volume_id)
-    server_attachments.attach_volume(server, volume)
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
+    server_attachments.attach_volume(vm, volume, atomic_context)
 
     return volume
 
 
-def delete_detached_volume(volume):
+def delete_detached_volume(volume, atomic_context):
     """Delete a detached volume.
 
     There is actually no way (that involves Ganeti) to delete a detached
@@ -299,14 +307,15 @@ def delete_detached_volume(volume):
 
     # Attach the volume to the helper server, in order to delete it
     # internally later.
-    server_attachments.attach_volume(server, volume)
+    server_attachments.attach_volume(server, volume, atomic_context)
     volume.status = "DELETING"
     volume.save()
 
     return volume
 
 
-def delete_volume_from_helper(volume, helper_vm):
+@transaction.atomic_context
+def delete_volume_from_helper(volume, helper_vm, atomic_context=None):
     """Delete a volume that has been attached to a helper VM.
 
     This special-purpose function should be called only by the dispatcher, when
@@ -317,12 +326,15 @@ def delete_volume_from_helper(volume, helper_vm):
                                 helper_vm.backend_vm_id)
     log.debug("Attempting to delete volume '%s' from helper server '%s'",
               volume.id, helper_vm.id)
-    server_attachments.delete_volume(helper_vm, volume)
+    # XXX: If another delete is already served, the helper_vm has a pending
+    # task which prohibits the code in server_command to issue another action
+    server_attachments.delete_volume(helper_vm, volume, atomic_context)
     log.info("Deleting volume '%s' from server '%s', job: %s",
              volume.id, helper_vm.id, volume.backendjobid)
 
 
-def delete(volume):
+@transaction.atomic_context
+def delete(volume_id, credentials, atomic_context=None):
     """Delete a Volume.
 
     The canonical way of deleting a volume is to send a command to Ganeti to
@@ -337,10 +349,13 @@ def delete(volume):
     safely, we must attach it to a helper VM, thereby handing the delete action
     to the dispatcher.
     """
+    volume = util.get_volume(credentials,
+                             volume_id, for_update=True, non_deleted=True)
+
     server_id = volume.machine_id
     if server_id is not None:
         server = get_vm(server_id)
-        server_attachments.delete_volume(server, volume)
+        server_attachments.delete_volume(server, volume, atomic_context)
         log.info("Deleting volume '%s' from server '%s', job: %s",
                  volume.id, server_id, volume.backendjobid)
     elif volume.backendjobid is None:
@@ -350,33 +365,51 @@ def delete(volume):
                                     volume.status)
         log.debug("Attempting to delete uninitialized volume %s.", volume)
         util.mark_volume_as_deleted(volume, immediate=True)
-        quotas.issue_and_accept_commission(volume, action="DESTROY")
+        quotas.issue_and_accept_commission(volume, action="DESTROY",
+                                           atomic_context=atomic_context)
         log.info("Deleting uninitialized volume '%s'", volume.id)
     else:
         # Case 2: Detached volume
         log.debug("Attempting to delete detached volume %s", volume)
-        delete_detached_volume(volume)
+        delete_detached_volume(volume, atomic_context)
         log.info("Deleting volume '%s' from helper server '%s', job: %s",
                  volume.id, volume.machine.id, volume.backendjobid)
 
     return volume
 
 
-def detach(volume_id):
+@transaction.atomic_context
+def detach(volume_id, credentials, atomic_context=None):
     """Detach a Volume"""
-    volume = get_volume(volume_id)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=False, non_deleted=True,
+                             exception=faults.BadRequest)
     server_id = volume.machine_id
-    if server_id is not None:
-        server = get_vm(server_id)
-        server_attachments.detach_volume(server, volume)
-        log.info("Detaching volume '%s' from server '%s', job: %s",
-                 volume.id, server_id, volume.backendjobid)
-    else:
+    if server_id is None:
         raise faults.BadRequest("Volume is already detached")
+
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = util.get_volume(credentials, volume_id,
+                             for_update=True, non_deleted=True,
+                             exception=faults.BadRequest)
+
+    server_id = volume.machine_id
+    if server_id is None:
+        raise faults.BadRequest("Volume is already detached")
+
+    server_attachments.detach_volume(vm, volume)
+    log.info("Detaching volume '%s' from server '%s', job: %s",
+             volume.id, server_id, volume.backendjobid)
+
     return volume
 
 
-def update(volume, name=None, description=None, delete_on_termination=None):
+@transaction.atomic
+def update(volume_id, name=None, description=None, delete_on_termination=None,
+           credentials=None):
+    volume = util.get_volume(credentials,
+                             volume_id, for_update=True, non_deleted=True)
+
     if name is not None:
         utils.check_name_length(name, Volume.NAME_LENGTH,
                                 "Volume name is too long")
@@ -393,7 +426,16 @@ def update(volume, name=None, description=None, delete_on_termination=None):
     return volume
 
 
-def reassign_volume(volume, project, shared_to_project):
+@transaction.atomic_context
+def reassign_volume(volume_id, project, shared_to_project, credentials,
+                    atomic_context=None):
+    volume = util.get_volume(credentials,
+                             volume_id, for_update=True, non_deleted=True)
+
+    if credentials.userid != volume.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the volume.")
+
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %
                               volume.id)
@@ -417,7 +459,8 @@ def reassign_volume(volume, project, shared_to_project):
         volume.shared_to_project = shared_to_project
         volume.save()
         quotas.issue_and_accept_commission(volume, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return volume
 
 

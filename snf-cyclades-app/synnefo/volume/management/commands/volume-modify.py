@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from snf_django.management.utils import parse_bool
 from synnefo.management.common import convert_api_faults
 from synnefo.management import pprint, common
 from synnefo.volume import volumes
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(SynnefoCommand):
@@ -46,13 +46,14 @@ class Command(SynnefoCommand):
                  " the volume is attached will be deleted"),
     )
 
-    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a volume ID")
 
-        volume = common.get_resource("volume", args[0], for_update=True)
+        credentials = Credentials("snf_manage", is_admin=True)
+
+        volume = common.get_resource("volume", args[0])
 
         name = options.get("name")
         description = options.get("description")
@@ -60,8 +61,10 @@ class Command(SynnefoCommand):
         if delete_on_termination is not None:
             delete_on_termination = parse_bool(delete_on_termination)
 
-        volume = volumes.update(volume, name, description,
-                                delete_on_termination)
+        volume = volumes.update(volume.id, name=name,
+                                description=description,
+                                delete_on_termination=delete_on_termination,
+                                credentials=credentials)
 
         pprint.pprint_volume(volume, stdout=self.stdout)
         self.stdout.write('\n\n')

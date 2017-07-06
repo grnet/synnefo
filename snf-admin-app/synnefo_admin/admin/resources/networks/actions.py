@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,39 +37,24 @@ class NetworkAction(AdminAction):
         AdminAction.__init__(self, name=name, target='network', f=f, **kwargs)
 
 
-def drain_network(network):
-    network.drained = True
-    network.save()
-
-
-def undrain_network(network):
-    network.drained = False
-    network.save()
-
-
 def check_network_action(action):
     if action == "CONTACT":
         # Contact action is allowed only on private networks. However, this
         # function may get called with an AstakosUser as a target. In this
         # case, we always confirm the action.
         return lambda n: not getattr(n, 'public', False)
-    elif action == "DRAIN":
-        return lambda n: not n.drained and not n.deleted and n.public
-    elif action == "UNDRAIN":
-        return lambda n: n.drained and not n.deleted and n.public
-    else:
-        return lambda n: validate_network_action(n, action)
+    return lambda n: validate_network_action(n, action)
 
 
 def generate_actions():
     """Create a list of actions on networks."""
     actions = OrderedDict()
 
-    actions['drain'] = NetworkAction(name='Drain', f=drain_network,
+    actions['drain'] = NetworkAction(name='Drain', f=networks.drain,
                                      c=check_network_action('DRAIN'),
                                      caution_level=True,)
 
-    actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
+    actions['undrain'] = NetworkAction(name='Undrain', f=networks.undrain,
                                        c=check_network_action('UNDRAIN'),
                                        karma='neutral',)
 

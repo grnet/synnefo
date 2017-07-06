@@ -42,6 +42,8 @@ from synnefo.cyclades_settings import cyclades_services, BASE_HOST,\
     PUBLIC_STATS_CACHE_NAME, VM_PASSWORD_CACHE_NAME
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
+from synnefo.logic import policy
+
 
 COMPUTE_URL = \
     join_urls(BASE_HOST,
@@ -159,15 +161,14 @@ def get_random_helper_vm(for_update=False, prefetch_related=None):
         raise faults.ItemNotFound('Helper server not found.')
 
 
-def get_vm(server_id, user_id, projects, for_update=False,
+def get_vm(server_id, credentials, for_update=False,
            non_deleted=False, non_suspended=False, prefetch_related=None):
     """Find a VirtualMachine instance based on ID and owner."""
 
     try:
         server_id = int(server_id)
 
-        servers = VirtualMachine.objects.for_user(userid=user_id,
-                                                  projects=projects)
+        servers = policy.VMPolicy.filter_list(credentials)
 
         if for_update:
             servers = servers.select_for_update()
@@ -246,16 +247,23 @@ def get_image_dict(image_id, user_id):
     return image
 
 
-def get_flavor(flavor_id, include_deleted=False, for_project=None, user=None):
+def get_flavor(flavor_id, credentials, include_deleted=False, for_project=None,
+               include_for_user=False):
     """Return a Flavor instance or raise ItemNotFound."""
 
     try:
         flavor_id = int(flavor_id)
-        flavors = Flavor.objects.select_related("volume_type")
+        flavors = policy.FlavorPolicy\
+            .filter_list(credentials, include_for_user=include_for_user)\
+            .select_related("volume_type")
         if not include_deleted:
             flavors = flavors.filter(deleted=False)
+
         flavor = flavors.get(id=flavor_id)
-        if not has_access_to_flavor(flavor, project=for_project, user=user):
+        if not policy.FlavorPolicy\
+           .has_access_to_flavor(flavor, credentials,
+                                 project=for_project,
+                                 include_for_user=include_for_user):
             raise faults.Forbidden("Insufficient access")
         return flavor
     except (ValueError, TypeError):
@@ -264,33 +272,14 @@ def get_flavor(flavor_id, include_deleted=False, for_project=None, user=None):
         raise faults.ItemNotFound('Flavor not found.')
 
 
-def has_access_to_flavor(flavor, project=None, user=None):
-    """Return True if the flavor is public or a project has access to the
-       flavor or the specified user has VMs using this flavor.
-    """
-    if flavor.public:
-        return True
-    if project is not None:
-        if not isinstance(project, list):
-            project = [project]
-        if flavor.access.filter(project__in=project).count() > 0:
-            return True
-    if user is not None:
-        # XXX: Should this include also the case where the VM is shared to the
-        # project, in which it is not owned by the particular user ?
-        if flavor.virtual_machines.filter(userid=user).count() > 0:
-            return True
-    return False
-
-
-def get_network(network_id, user_id, projects, for_update=False,
+def get_network(network_id, credentials, for_update=False,
                 non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
         network_id = int(network_id)
 
-        objects = Network.objects.for_user(user_id, projects)
+        objects = policy.NetworkPolicy.filter_list(credentials)
         if for_update:
             objects = objects.select_for_update()
 
@@ -305,12 +294,12 @@ def get_network(network_id, user_id, projects, for_update=False,
         raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
-def get_port(port_id, user_id, projects, for_update=False):
+def get_port(port_id, credentials, for_update=False):
     """
     Return a NetworkInteface instance or raise ItemNotFound.
     """
     try:
-        objects = NetworkInterface.objects.for_user(user_id, projects)
+        objects = policy.NetworkInterfacePolicy.filter_list(credentials)
         # if (port.device_owner != "vm") and for_update:
         #     raise faults.BadRequest('Cannot update non vm port')
         port = objects.get(id=port_id)
@@ -331,10 +320,10 @@ def get_security_group(sg_id):
         raise faults.ItemNotFound("Not valid security group")
 
 
-def get_floating_ip_by_address(userid, projects, address, for_update=False):
+def get_floating_ip_by_address(credentials, address, for_update=False):
     try:
-        objects = IPAddress.objects.for_user(userid, projects)\
-                                   .filter(floating_ip=True, deleted=False)
+        objects = policy.IPAddressPolicy.filter_list(
+            credentials).filter(floating_ip=True, deleted=False)
         if for_update:
             objects = objects.select_for_update()
 
@@ -343,12 +332,13 @@ def get_floating_ip_by_address(userid, projects, address, for_update=False):
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def get_floating_ip_by_id(userid, projects, floating_ip_id, for_update=False):
+def get_floating_ip_by_id(credentials, floating_ip_id, for_update=False):
     try:
         floating_ip_id = int(floating_ip_id)
 
-        objects = IPAddress.objects.for_user(userid, projects)\
-                                   .filter(floating_ip=True, deleted=False)
+        objects = policy.IPAddressPolicy.filter_list(credentials)\
+                                        .filter(floating_ip=True,
+                                                deleted=False)
         if for_update:
             objects = objects.select_for_update()
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from optparse import make_option
 
 from django.core.management.base import CommandError
 
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 from synnefo.management import common
 from synnefo.logic import servers
 from synnefo.db.models import Backend, VirtualMachine
@@ -33,6 +33,9 @@ Sync helper VMs in all Ganeti backends. If a Ganeti backend does not have a
 helper VM with a user-provided flavor, image and password, then a new one will
 be created and will be set immediately in STOPPED state.
 """
+
+
+credentials = Credentials("snf-manage", is_admin=True)
 
 
 class Command(server_create_mod.Command):
@@ -153,7 +156,6 @@ class Command(server_create_mod.Command):
                    (backend.clustername, i + 1, copies))
             self.create_server(options)
 
-    @transaction.commit_on_success
     def stop_server(self, vm, wait):
         """Stop a helper VM.
 
@@ -161,7 +163,7 @@ class Command(server_create_mod.Command):
         send a shutdown job to Ganeti and optionally wait once more.
         """
         vm = self.wait_building_server(vm)
-        servers.stop(vm)
+        vm = servers.stop(vm.id, credentials=credentials)
         common.wait_server_task(vm, wait, self.stdout)
 
     def stop_servers(self, backend, options):

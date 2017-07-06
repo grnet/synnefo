@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,12 +21,15 @@ from synnefo.logic import ips as logic_ips
 from synnefo.logic import backend
 from synnefo.volume import volumes as volumes_logic
 from synnefo.lib.ordereddict import OrderedDict
+from snf_django.lib.api import Credentials
 import logging
 logger = logging.getLogger(__name__)
 
 
 MiB = 2 ** 20
 GiB = 2 ** 30
+
+credentials = Credentials("enforce", is_admin=True)
 
 
 def _partition_by(f, l, convert=None):
@@ -344,8 +347,8 @@ VM_ACTION = {
 
 def apply_to_vm(action, vm_id, shutdown_timeout):
     try:
-        vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
-        VM_ACTION[action](vm, shutdown_timeout=shutdown_timeout)
+        VM_ACTION[action](
+            vm_id, shutdown_timeout=shutdown_timeout, credentials=credentials)
         return True
     except BaseException as e:
         logger.error(
@@ -379,11 +382,10 @@ def perform_vm_actions(actions, opcount, maxops=None, fix=False, options={}):
 
 def remove_volume(volume_id):
     try:
-        objs = Volume.objects.select_for_update()
-        volume = objs.get(id=volume_id)
+        volume = Volume.objects.get(id=volume_id)
         machine = volume.machine
         if not machine or not machine.deleted and machine.task != "DESTROY":
-            volumes_logic.delete(volume)
+            volumes_logic.delete(volume_id, credentials=credentials)
         return True
     except BaseException as e:
         logger.error(
@@ -411,28 +413,27 @@ def wait_for_ip(ip_id):
     for i in range(100):
         ip = IPAddress.objects.get(id=ip_id)
         if ip.nic_id is None:
-            objs = IPAddress.objects.select_for_update()
-            return objs.get(id=ip_id)
+            return
         time.sleep(1)
     raise ValueError(
         "Floating_ip %s: Waiting for port delete timed out." % ip_id)
 
 
 def delete_port(port_id):
-    port = NetworkInterface.objects.select_for_update().get(id=port_id)
-    servers.delete_port(port)
+    port = NetworkInterface.objects.get(id=port_id)
+    servers.delete_port(port_id, credentials)
     if port.machine:
         wait_server_job(port.machine)
 
 
 def remove_ip(ip_id):
     try:
-        ip = IPAddress.objects.select_for_update().get(id=ip_id)
+        ip = IPAddress.objects.get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
             delete_port(port_id)
-            ip = wait_for_ip(ip_id)
-        logic_ips.delete_floating_ip(ip)
+            wait_for_ip(ip_id)
+        logic_ips.delete_floating_ip(ip_id, credentials)
         return True
     except BaseException as e:
         logger.error(
@@ -443,7 +444,7 @@ def remove_ip(ip_id):
 
 def detach_ip(ip_id):
     try:
-        ip = IPAddress.objects.select_for_update().get(id=ip_id)
+        ip = IPAddress.objects.get(id=ip_id)
         port_id = ip.nic_id
         if port_id:
             delete_port(port_id)

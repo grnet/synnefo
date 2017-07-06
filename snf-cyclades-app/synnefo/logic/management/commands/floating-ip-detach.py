@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,14 +20,13 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import servers
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(SynnefoCommand):
     args = "<floating_ip_id>"
     help = "Detach a floating IP from a VM or router"
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args or len(args) > 1:
@@ -36,14 +35,14 @@ class Command(SynnefoCommand):
         floating_ip_id = args[0]
 
         #get the floating-ip
-        floating_ip = common.get_resource("floating-ip", floating_ip_id,
-                                          for_update=True)
+        floating_ip = common.get_resource("floating-ip", floating_ip_id)
 
         if not floating_ip.nic:
             raise CommandError('This floating IP is not attached to a device')
 
+        credentials = Credentials("snf-manage", is_admin=True)
         nic = floating_ip.nic
         vm = nic.machine
-        servers.delete_port(nic)
+        servers.delete_port(nic.id, credentials)
         self.stdout.write("Detached floating IP %s from  %s.\n"
                           % (floating_ip_id, vm))

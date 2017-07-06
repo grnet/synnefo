@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,16 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Provides automated tests for logic module
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.core.exceptions import ObjectDoesNotExist
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import ips
 from synnefo.db import models_factory as mfactory
 from synnefo.db.models import IPAddress
+from snf_django.lib.api import Credentials
 
 
-class IPTest(TestCase):
+class IPTest(TransactionTestCase):
 
     """Test suite for actions on IP addresses."""
 
@@ -36,11 +37,14 @@ class IPTest(TestCase):
         """
         self.subnet = mfactory.IPv4SubnetFactory(network__floating_ip_pool=True)
         self.network = self.subnet.network
+        self.credentials = Credentials("1134", is_admin=True)
+
 
     def test_create(self):
         """Test if a floating IP is created properly."""
         with mocked_quotaholder():
-            ip = ips.create_floating_ip("1134", network=self.network)
+            ip = ips.create_floating_ip(
+                self.credentials, network_id=self.network.id)
         self.assertEqual(len(self.network.ips.all()), 1)
         self.assertEqual(self.network.ips.all()[0], ip)
 
@@ -51,8 +55,10 @@ class IPTest(TestCase):
         nic = mfactory.NetworkInterfaceFactory(network=self.network,
                                                machine=vm)
         with mocked_quotaholder():
-            ip = ips.create_floating_ip("1134", network=self.network)
+            ip = ips.create_floating_ip(
+                self.credentials, network_id=self.network.id)
         ip.nic = nic
+        ip.save()
 
         # Test 1 - Check if we can delete an IP attached to a VM.
         #
@@ -73,13 +79,14 @@ class IPTest(TestCase):
         # Verify that the delete action fails with exception.
         with mocked_quotaholder():
             with self.assertRaises(faults.Conflict) as cm:
-                ips.delete_floating_ip(ip)
+                ips.delete_floating_ip(ip.id, self.credentials)
         self.assertEqual(cm.exception.message, expected_msg)
 
         # Test 2 - Check if we can delete a free IP.
         #
         # Force-detach IP from NIC.
         ip.nic = None
+        ip.save()
 
         # Verify that the validate function passes in silent mode.
         res, _ = ips.validate_ip_action(ip, "DELETE", silent=True)
@@ -87,6 +94,6 @@ class IPTest(TestCase):
 
         # Verify that the delete action succeeds.
         with mocked_quotaholder():
-            ips.delete_floating_ip(ip)
+            ips.delete_floating_ip(ip.id, self.credentials)
         with self.assertRaises(ObjectDoesNotExist):
             IPAddress.objects.get(id=ip.id)

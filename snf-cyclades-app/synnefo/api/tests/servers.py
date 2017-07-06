@@ -473,7 +473,7 @@ class ServerCreateAPITest(ComputeAPITest):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
-        self.assertForbidden(response)
+        self.assertItemNotFound(response)
 
         # Test with an flavor that it does not have access
         flavor = mfactory.FlavorFactory(public=False)
@@ -483,7 +483,7 @@ class ServerCreateAPITest(ComputeAPITest):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
-        self.assertForbidden(response)
+        self.assertItemNotFound(response)
 
         request["server"]["flavorRef"] = flavor.id
         request["server"]["project"] = 'proj'
@@ -491,9 +491,11 @@ class ServerCreateAPITest(ComputeAPITest):
         with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
-                                       json.dumps(request), 'json')
+                                       json.dumps(request), 'json',
+                                       _projects=['proj'])
         # The user is not a member of the 'proj' project, but since we
-        # mock quotaholder that perform this check, this call succeeds
+        # mock quotaholder that provides this info this check, this call
+        # succeeds
         self.assertSuccess202(response)
 
     @django_override_settings(
@@ -1082,7 +1084,7 @@ class ServerActionAPITest(ComputeAPITest):
         request = {'resize': {'flavorRef': flavor5.id}}
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
-        self.assertForbidden(response)
+        self.assertItemNotFound(response)
 
         # Check private flavor the user has access, but it is different
         # from the VM's project

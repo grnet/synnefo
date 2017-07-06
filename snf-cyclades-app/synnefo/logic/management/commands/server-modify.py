@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 from optparse import make_option
 
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 from django.core.management.base import CommandError
 
 from synnefo.management.common import (get_resource, convert_api_faults,
@@ -75,26 +75,26 @@ class Command(SynnefoCommand):
             help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
-    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_resource("server", args[0], for_update=True)
+        server_id = args[0]
+        server = get_resource("server", server_id)
 
+        credentials = Credentials("snf-manage", is_admin=True)
         new_name = options.get("name", None)
         if new_name is not None:
             old_name = server.name
-            server = servers.rename(server, new_name)
+            server = servers.rename(server_id, new_name, credentials)
             self.stdout.write("Renamed server '%s' from '%s' to '%s'\n" %
                               (server, old_name, new_name))
 
         suspended = options.get("suspended", None)
         if suspended is not None:
             suspended = parse_bool(suspended)
-            server.suspended = suspended
-            server.save()
+            server = servers.suspend(server_id, suspended, credentials)
             self.stdout.write("Set server '%s' as suspended=%s\n" %
                               (server, suspended))
 
@@ -105,7 +105,7 @@ class Command(SynnefoCommand):
             if new_owner == server.userid:
                 self.stdout.write("%s is already server owner.\n" % new_owner)
             else:
-                servers.change_owner(server, new_owner)
+                servers.change_owner(server_id, new_owner, credentials)
                 self.stdout.write(
                     "WARNING: User quotas should be out of sync now,"
                     " run `snf-manage reconcile-resources-cyclades'"
@@ -118,19 +118,21 @@ class Command(SynnefoCommand):
             old_flavor = server.flavor
             msg = "Resizing server '%s' from flavor '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_flavor, new_flavor))
-            server = servers.resize(server, new_flavor)
+            server = servers.resize(server_id, new_flavor, credentials)
             wait_server_task(server, wait, stdout=self.stdout)
 
         action = options.get("action")
         if action is not None:
             if action == "start":
-                server = servers.start(server)
+                server = servers.start(server_id, credentials=credentials)
             elif action == "stop":
-                server = servers.stop(server)
+                server = servers.stop(server_id, credentials=credentials)
             elif action == "reboot_hard":
-                server = servers.reboot(server, reboot_type="HARD")
+                server = servers.reboot(server_id, reboot_type="HARD",
+                                        credentials=credentials)
             elif action == "reboot_soft":
-                server = servers.reboot(server, reboot_type="SOFT")
+                server = servers.reboot(server_id, reboot_type="SOFT",
+                                        credentials=credentials)
             else:
                 raise CommandError("Unknown action.")
             wait_server_task(server, wait, stdout=self.stdout)

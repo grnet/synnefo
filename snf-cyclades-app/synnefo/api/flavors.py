@@ -18,12 +18,11 @@ from django.conf.urls import patterns
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.db.models import Q
 import json
 
 from snf_django.lib import api
 from synnefo.api import util
-from synnefo.db.models import Flavor
+from synnefo.logic.policy import FlavorPolicy
 
 
 log = getLogger('synnefo.api')
@@ -67,20 +66,18 @@ def list_flavors(request, detail=False):
     public = request.GET.get('is_public')
     project = request.GET.get('SNF:flavor-access')
 
-    active_flavors = Flavor.objects.select_related("volume_type")\
-                                   .exclude(deleted=True)
-    if detail:
-        active_flavors = active_flavors.prefetch_related("access")
-
+    credentials = request.credentials
     # This way of building the queryset, results in relative complex query,
     # having unnecessary 'WHERE' clauses but results on a much cleaner code.
     # The database should be able to efficiently evaluate the produced SQL
     # query.
     #
     # That's the maximum you can get, if you set no filters
-    active_flavors = active_flavors.filter(
-        Q(access__project__in=request.user_projects) |
-        Q(public=True))
+    active_flavors = FlavorPolicy.filter_list(credentials)\
+                                 .select_related("volume_type")\
+                                 .exclude(deleted=True)
+    if detail:
+        active_flavors = active_flavors.prefetch_related("access")
 
     if project is not None:  # restricting by project
         # if filtering by a project that the user does not belong to,
@@ -118,9 +115,9 @@ def get_flavor_details(request, flavor_id):
     #                       overLimit (413)
 
     log.debug('get_flavor_details %s', flavor_id)
-    flavor = util.get_flavor(flavor_id, include_deleted=True,
-                             for_project=request.user_projects,
-                             user=request.user_uniq)
+    credentials = request.credentials
+    flavor = util.get_flavor(flavor_id, credentials, include_deleted=True,
+                             include_for_user=True)
     flavordict = flavor_to_dict(flavor, detail=True,
                                 projects=request.user_projects)
 

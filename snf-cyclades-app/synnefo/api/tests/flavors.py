@@ -88,7 +88,8 @@ class FlavorAPITest(BaseAPITest):
 
         db_flavors = Flavor.objects.filter(deleted=False)\
                                    .filter(Q(access__project__in=self.projects)
-                                           | Q(public=True))
+                                           | Q(public=True))\
+                                   .order_by('id')
         api_flavors = json.loads(response.content)['flavors']
 
         self.assertEqual(len(db_flavors), len(api_flavors))
@@ -219,7 +220,7 @@ class FlavorAPITest(BaseAPITest):
 
         # try to get details of a non-public flavor with no access
         response = self.myget('flavors/%d' % self.flavor7.id)
-        self.assertForbidden(response)
+        self.assertItemNotFound(response)
 
         # try to get details of a flavor with no access, but with spawned VM
         vm = VirtualMachineFactory(flavor=self.flavor7)

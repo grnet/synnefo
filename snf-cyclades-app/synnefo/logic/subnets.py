@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.logic import utils
 from synnefo.api import util
+from synnefo.logic.policy import SubnetPolicy
 
 from synnefo.db.models import Subnet, Network, IPPoolTable
 
@@ -34,14 +35,14 @@ log = getLogger(__name__)
 def subnet_command(action):
     def decorator(func):
         @wraps(func)
-        @transaction.commit_on_success()
+        @transaction.atomic()
         def wrapper(subnet, *args, **kwargs):
             return func(subnet, *args, **kwargs)
         return wrapper
     return decorator
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def create_subnet(*args, **kwargs):
     return _create_subnet(*args, **kwargs)
 
@@ -129,11 +130,11 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     return sub
 
 
-def get_subnet(subnet_id, user_id, user_projects, for_update=False):
+def get_subnet(subnet_id, credentials, for_update=False):
     """Return a Subnet instance or raise ItemNotFound."""
 
     try:
-        objects = Subnet.objects.for_user(user_id, user_projects, public=True)
+        objects = SubnetPolicy.filter_list(credentials, include_public=True)
         if for_update:
             objects.select_for_update()
         return objects.get(id=subnet_id)
@@ -151,7 +152,7 @@ def delete_subnet():
     raise api.faults.BadRequest("Deletion of a subnet is not supported")
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def update_subnet(sub_id, name, user_id):
     """Update the fields of a subnet
     Only the name can be updated
@@ -160,7 +161,7 @@ def update_subnet(sub_id, name, user_id):
     log.info('Update subnet %s, name %s' % (sub_id, name))
 
     try:
-        subnet = Subnet.objects.get(id=sub_id)
+        subnet = Subnet.objects.select_for_update().get(id=sub_id)
     except:
         raise api.faults.ItemNotFound("Subnet not found")
 

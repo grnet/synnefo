@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Provides automated tests for logic module
-from django.test import TestCase
+from django.test import TransactionTestCase
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import networks
@@ -23,10 +23,11 @@ from synnefo.db import models_factory as mfactory
 from synnefo.db.models import BridgePoolTable, MacPrefixPoolTable
 from synnefo import settings
 from copy import copy
+from synnefo.db import transaction
 
 
 #@patch("synnefo.logic.rapi_pool.GanetiRapiClient")
-class NetworkTest(TestCase):
+class NetworkTest(TransactionTestCase):
     def test_create(self):
         kwargs = {
             "name": "test",
@@ -60,8 +61,9 @@ class NetworkTest(TestCase):
         self.assertEqual(net.mac_prefix, "aa:bb:1")
         self.assertEqual(net.link, settings.DEFAULT_MAC_FILTERED_BRIDGE)
         self.assertEqual(net.backend_tag, ["private-filtered"])
-        pool = MacPrefixPoolTable.get_pool()
-        self.assertFalse(pool.is_available("aa:bb:1"))
+        with transaction.atomic():
+            pool = MacPrefixPoolTable.get_pool()
+            self.assertFalse(pool.is_available("aa:bb:1"))
 
         # PHYSICAL_VLAN
         kwargs["flavor"] = "PHYSICAL_VLAN"
@@ -74,8 +76,9 @@ class NetworkTest(TestCase):
         self.assertEqual(net.mac_prefix, settings.DEFAULT_MAC_PREFIX)
         self.assertEqual(net.link, "prv1")
         self.assertEqual(net.backend_tag, ["physical-vlan"])
-        pool = BridgePoolTable.get_pool()
-        self.assertFalse(pool.is_available(net.link))
+        with transaction.atomic():
+            pool = BridgePoolTable.get_pool()
+            self.assertFalse(pool.is_available(net.link))
 
         # IP_LESS_ROUTED
         kwargs["flavor"] = "IP_LESS_ROUTED"

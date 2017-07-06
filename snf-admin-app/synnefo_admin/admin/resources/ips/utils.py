@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,11 +25,9 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_ip_or_404(query, for_update=False):
-    ip_object = IPAddress.objects.select_for_update() if for_update\
-            else IPAddress.objects
+def get_ip_or_404(query):
     try:
-        return ip_object.get(address=query)
+        return IPAddress.objects.get(address=query)
     except ObjectDoesNotExist:
         pass
     except MultipleObjectsReturned:
@@ -37,7 +35,7 @@ def get_ip_or_404(query, for_update=False):
                            entries for this address: %s""" % query)
 
     try:
-        return ip_object.get(pk=int(query))
+        return IPAddress.objects.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         # Check the IPAddressHistory and inform the user that the IP existed at
         # sometime.

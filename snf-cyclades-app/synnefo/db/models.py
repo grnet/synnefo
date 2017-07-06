@@ -278,28 +278,6 @@ class QuotaHolderSerial(models.Model):
         return u"<serial: %s>" % self.serial
 
 
-class VirtualMachineManager(models.Manager):
-    """Custom manager for :class:`VirtualMachine` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return VMs that are accessible by the user.
-
-        VMs that are accessible by the user are those that are owned by the
-        user and those that are shared to the projects that the user is member.
-
-        """
-
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
     ACTIONS = (
@@ -382,8 +360,6 @@ class VirtualMachine(models.Model):
 
     VIRTUAL_MACHINE_NAME_LENGTH = 255
 
-    objects = VirtualMachineManager()
-
     name = models.CharField('Virtual Machine Name',
                             max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
@@ -437,6 +413,13 @@ class VirtualMachine(models.Model):
     # by the API
     task = models.CharField(max_length=64, null=True)
     task_job_id = models.BigIntegerField(null=True)
+
+    def record_job(self, job_id):
+        if job_id is not None:
+            # Note that self.action is the current action
+            self.task = self.action
+            self.task_job_id = job_id
+            self.save()
 
     def get_client(self):
         if self.backend:
@@ -548,31 +531,6 @@ class Image(models.Model):
         unique_together = (('uuid', 'version'),)
 
 
-class NetworkManager(models.Manager):
-    """Custom manager for :class:`Network` model."""
-
-    def for_user(self, userid=None, projects=None, public=True):
-        """Return networks that are accessible by the user.
-
-        Networks that are accessible by the user are those that are owned by
-        the user, those that are shared to the projects that the user is
-        member, and public networks.
-
-        """
-
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &
-                        models.Q(project__in=projects))
-        if public:
-            _filter |= models.Q(public=True)
-
-        return self.get_queryset().filter(_filter)
-
-
 class Network(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),  # Unused because of lazy networks
@@ -631,8 +589,6 @@ class Network(models.Model):
     }
 
     NETWORK_NAME_LENGTH = 128
-
-    objects = NetworkManager()
 
     name = models.CharField('Network Name', max_length=NETWORK_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=128,
@@ -772,26 +728,8 @@ class Network(models.Model):
             return repr(str(self._action))
 
 
-class SubnetManager(models.Manager):
-    """Custom manager for :class:`Subnet` model."""
-
-    def for_user(self, userid=None, projects=None, public=True):
-        """Return subnets that are accessible by the user.
-
-        Subnets that are accessible by the user are those that belong
-        to a network that is accessible by the user.
-
-        """
-
-        networks = Network.objects.for_user(userid, projects, public=public)
-
-        return self.get_queryset().filter(network__in=networks)
-
-
 class Subnet(models.Model):
     SUBNET_NAME_LENGTH = 128
-
-    objects = SubnetManager()
 
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
@@ -906,30 +844,7 @@ class BackendNetwork(models.Model):
         return u'<BackendNetwork %s@%s>' % (self.network, self.backend)
 
 
-class IPAddressManager(models.Manager):
-    """Custom manager for :class:`IPAddress` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return IP addresses that are accessible by the user.
-
-        IP addresses that are accessible by the user are those that are owned
-        by the user or are shared to a project that the user is member.
-
-        """
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class IPAddress(models.Model):
-    objects = IPAddressManager()
-
     subnet = models.ForeignKey("Subnet", related_name="ips", null=False,
                                on_delete=models.PROTECT)
     network = models.ForeignKey(Network, related_name="ips", null=False,
@@ -1030,37 +945,6 @@ class IPAddressHistory(models.Model):
                self.action_date, self.action)
 
 
-class NetworkInterfaceManager(models.Manager):
-    """Custom manager for :class:`NetworkInterface` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return ports (NetworkInterfaces) that are accessible by the user.
-
-        Ports that are accessible by the user are those that:
-        * are owned by the user
-        * are attached to a VM that is accessible by the user
-        * are attached to a Network that is accessible by the user (but
-          not public)
-
-        """
-
-        vms = VirtualMachine.objects.for_user(userid, projects)
-        networks = Network.objects.for_user(userid, projects, public=False)\
-                                  .filter(public=False)
-        ips = IPAddress.objects.for_user(userid, projects)\
-                               .filter(floating_ip=True)
-
-        _filter = models.Q()
-        if userid:
-            _filter |= models.Q(userid=userid)
-
-        _filter |= models.Q(machine__in=vms)
-        _filter |= models.Q(network__in=networks)
-        _filter |= models.Q(ips__in=ips)
-
-        return self.get_queryset().filter(_filter)
-
-
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),
@@ -1076,8 +960,6 @@ class NetworkInterface(models.Model):
     )
 
     NETWORK_IFACE_NAME_LENGTH = 128
-
-    objects = NetworkInterfaceManager()
 
     name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
                             null=True, default="")
@@ -1272,28 +1154,6 @@ class VirtualMachineDiagnostic(models.Model):
         ordering = ['-created']
 
 
-class VolumeManager(models.Manager):
-    """Custom manager for :class:`Volume` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return volumes that are accessible by the user.
-
-        Volumes that are accessible by the user are those that are owned by the
-        user and those that are shared to the projects that the user is member.
-
-        """
-
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class Volume(models.Model):
     """Model representing a detachable block storage device."""
 
@@ -1319,7 +1179,6 @@ class Volume(models.Model):
     SOURCE_SNAPSHOT_PREFIX = "snapshot:"
     SOURCE_VOLUME_PREFIX = "volume:"
 
-    objects = VolumeManager()
     name = models.CharField("Name", max_length=NAME_LENGTH, null=True)
     description = models.CharField("Description",
                                    max_length=DESCRIPTION_LENGTH, null=True)

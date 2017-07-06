@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,7 +76,6 @@ class BackendReconciler(object):
     def close(self):
         self.backend.put_client(self.client)
 
-    @transaction.commit_on_success
     def reconcile(self):
         log = self.log
         backend = self.backend
@@ -134,7 +133,7 @@ class BackendReconciler(object):
                 build_status, end_timestamp = self.get_build_status(db_server)
                 if build_status == "ERROR":
                     # Special handling of BUILD eerrors
-                    self.reconcile_building_server(db_server)
+                    self.reconcile_building_server(db_server.id)
                 elif build_status != "RUNNING":
                     stale.append(server_id)
             elif (db_server.operstate == "ERROR" and
@@ -152,16 +151,21 @@ class BackendReconciler(object):
         else:
             self.log.debug("No stale servers at backend %s", self.backend)
 
+        @transaction.atomic_context
+        def _reconcile(server_id, atomic_context=None):
+            vm = get_locked_server(server_id)
+            backend_mod.process_op_status(
+                vm=vm,
+                etime=self.event_time,
+                jobid=-0,
+                opcode='OP_INSTANCE_REMOVE', status='success',
+                logmsg='Reconciliation: simulated Ganeti event',
+                atomic_context=atomic_context)
+
         # Fix them
         if stale and self.options["fix_stale"]:
             for server_id in stale:
-                vm = get_locked_server(server_id)
-                backend_mod.process_op_status(
-                    vm=vm,
-                    etime=self.event_time,
-                    jobid=-0,
-                    opcode='OP_INSTANCE_REMOVE', status='success',
-                    logmsg='Reconciliation: simulated Ganeti event')
+                _reconcile(server_id)
             self.log.debug("Simulated Ganeti removal for stale servers.")
 
     def reconcile_orphan_servers(self):
@@ -189,7 +193,7 @@ class BackendReconciler(object):
                     continue
                 elif build_status == "ERROR":
                     # Special handling of build errors
-                    self.reconcile_building_server(db_server)
+                    self.reconcile_building_server(db_server.id)
                     continue
                 elif end_timestamp >= self.event_time:
                     # Do not continue reconciliation for building server that
@@ -206,22 +210,26 @@ class BackendReconciler(object):
             if db_server.task is not None:
                 self.reconcile_pending_task(server_id, db_server)
 
-    def reconcile_building_server(self, db_server):
+    @transaction.atomic_context
+    def reconcile_building_server(self, server_id, atomic_context=None):
         self.log.info("Server '%s' is BUILD in DB, but 'ERROR' in Ganeti.",
-                      db_server.id)
+                      server_id)
         if self.options["fix_unsynced"]:
             fix_opcode = "OP_INSTANCE_CREATE"
-            vm = get_locked_server(db_server.id)
+            vm = get_locked_server(server_id)
             backend_mod.process_op_status(
                 vm=vm,
                 etime=self.event_time,
                 jobid=-0,
                 opcode=fix_opcode, status='error',
-                logmsg='Reconciliation: simulated Ganeti event')
+                logmsg='Reconciliation: simulated Ganeti event',
+                atomic_context=atomic_context)
             self.log.debug("Simulated Ganeti error build event for"
-                           " server '%s'", db_server.id)
+                           " server '%s'", server_id)
 
-    def reconcile_unsynced_operstate(self, server_id, db_server, gnt_server):
+    @transaction.atomic_context
+    def reconcile_unsynced_operstate(self, server_id, db_server, gnt_server,
+                                     atomic_context=None):
         if db_server.operstate != gnt_server["state"]:
             self.log.info("Server '%s' is '%s' in DB and '%s' in Ganeti.",
                           server_id, db_server.operstate, gnt_server["state"])
@@ -233,18 +241,22 @@ class BackendReconciler(object):
                     backend_mod.process_op_status(
                         vm=vm, etime=self.event_time, jobid=-0,
                         opcode="OP_INSTANCE_CREATE", status='success',
-                        logmsg='Reconciliation: simulated Ganeti event')
+                        logmsg='Reconciliation: simulated Ganeti event',
+                        atomic_context=atomic_context)
                 fix_opcode = "OP_INSTANCE_STARTUP"\
                     if gnt_server["state"] == "STARTED"\
                     else "OP_INSTANCE_SHUTDOWN"
                 backend_mod.process_op_status(
                     vm=vm, etime=self.event_time, jobid=-0,
                     opcode=fix_opcode, status='success',
-                    logmsg='Reconciliation: simulated Ganeti event')
+                    logmsg='Reconciliation: simulated Ganeti event',
+                    atomic_context=atomic_context)
                 self.log.debug("Simulated Ganeti state event for server '%s'",
                                server_id)
 
-    def reconcile_unsynced_flavor(self, server_id, db_server, gnt_server):
+    @transaction.atomic_context
+    def reconcile_unsynced_flavor(self, server_id, db_server, gnt_server,
+                                  atomic_context=None):
         db_flavor = db_server.flavor
         gnt_flavor = gnt_server["flavor"]
         if (db_flavor.ram != gnt_flavor["ram"] or
@@ -273,7 +285,8 @@ class BackendReconciler(object):
                     vm=vm, etime=self.event_time, jobid=-0,
                     opcode=opcode, status='success',
                     job_fields={"beparams": beparams},
-                    logmsg='Reconciliation: simulated Ganeti event')
+                    logmsg='Reconciliation: simulated Ganeti event',
+                    atomic_context=atomic_context)
                 # process_op_status with beparams will set the vmstate to
                 # shutdown. Fix this be returning it to old state
                 vm = VirtualMachine.objects.get(pk=server_id)
@@ -282,7 +295,9 @@ class BackendReconciler(object):
                 self.log.debug("Simulated Ganeti flavor event for server '%s'",
                                server_id)
 
-    def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
+    @transaction.atomic_context
+    def reconcile_unsynced_nics(self, server_id, db_server, gnt_server,
+                                atomic_context=None):
         building_time = self.event_time - BUILDING_NIC_TIMEOUT
         db_nics = db_server.nics.exclude(state="BUILD",
                                          created__lte=building_time) \
@@ -316,9 +331,11 @@ class BackendReconciler(object):
                     vm=vm, etime=self.event_time, jobid=-0,
                     opcode="OP_INSTANCE_SET_PARAMS", status='success',
                     logmsg="Reconciliation: simulated Ganeti event",
-                    nics=gnt_nics)
+                    nics=gnt_nics, atomic_context=atomic_context)
 
-    def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
+    @transaction.atomic_context
+    def reconcile_unsynced_disks(self, server_id, db_server, gnt_server,
+                                 atomic_context=None):
         building_time = self.event_time - BUILDING_NIC_TIMEOUT
         db_disks = db_server.volumes.exclude(status="CREATING",
                                              created__lte=building_time) \
@@ -349,8 +366,9 @@ class BackendReconciler(object):
                     vm=vm, etime=self.event_time, jobid=-0,
                     opcode="OP_INSTANCE_SET_PARAMS", status='success',
                     logmsg="Reconciliation: simulated Ganeti event",
-                    disks=gnt_disks)
+                    disks=gnt_disks, atomic_context=atomic_context)
 
+    @transaction.atomic
     def reconcile_pending_task(self, server_id, db_server):
         job_id = db_server.task_job_id
         pending_task = False
@@ -374,6 +392,7 @@ class BackendReconciler(object):
                 db_server.save()
                 self.log.info("Cleared pending task for server '%s", server_id)
 
+    @transaction.atomic
     def reconcile_unsynced_snapshots(self):
         # Find the biggest ID of the retrieved Ganeti jobs. Reconciliation
         # will be performed for IDs that are smaller from this.
@@ -431,6 +450,7 @@ def format_gnt_nic(nic):
     return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
                       nic["network"].id, nic["mac"], nic["index"],
                       nic["firewall_profile"])
+
 
 DISK_MSG = ": %s\t".join(["ID", "State", "Size", "Index"]) + ": %s"
 
@@ -589,7 +609,6 @@ class NetworkReconciler(object):
         self.log = logger
         self.fix = fix
 
-    @transaction.commit_on_success
     def reconcile_networks(self):
         # Get models from DB
         self.backends = Backend.objects.exclude(offline=True)
@@ -611,7 +630,6 @@ class NetworkReconciler(object):
         for network in self.networks:
             self._reconcile_network(network)
 
-    @transaction.commit_on_success
     def _reconcile_network(self, network):
         """Reconcile a network with corresponging Ganeti networks.
 
@@ -619,10 +637,6 @@ class NetworkReconciler(object):
         corresponding Ganeti networks in all Ganeti backends.
 
         """
-        if network.subnets.filter(ipversion=4, dhcp=True).exists():
-            ip_pools = network.get_ip_pools()  # X-Lock on IP pools
-        else:
-            ip_pools = None
         for bend in self.backends:
             bnet = get_backend_network(network, bend)
             gnet = self.ganeti_networks[bend].get(network.id)
@@ -663,26 +677,50 @@ class NetworkReconciler(object):
                 # active!
                 self.reconcile_unsynced_network(network, bend, bnet)
 
-            # Check that externally reserved IPs of the network in Ganeti are
-            # also externally reserved to the IP pool
+        self.reconcile_externally_reserved(network)
+        self.reconcile_network_state(network)
+
+    @transaction.atomic
+    def reconcile_externally_reserved(self, network):
+        if network.subnets.filter(ipversion=4, dhcp=True).exists():
+            ip_pools = network.get_ip_pools()  # X-Lock on IP pools
+        else:
+            ip_pools = None
+
+        if ip_pools is None:
+            return
+
+        for bend in self.backends:
+            gnet = self.ganeti_networks[bend].get(network.id)
+            if gnet is None:
+                continue
+            # Check that externally reserved IPs of the network in Ganeti
+            # are also externally reserved to the IP pool
             externally_reserved = gnet['external_reservations']
-            if externally_reserved and ip_pools is not None:
-                for ip in externally_reserved.split(","):
-                    ip = ip.strip()
-                    for ip_pool in ip_pools:
-                        if ip_pool.contains(ip):
-                            if not ip_pool.is_reserved(ip):
-                                msg = ("D: IP '%s' is reserved for network"
-                                       " '%s' in backend '%s' but not in DB.")
-                                self.log.info(msg, ip, network, bend)
-                                if self.fix:
-                                    ip_pool.reserve(ip, external=True)
-                                    ip_pool.save()
-                                    self.log.info("F: Reserved IP '%s'", ip)
+            if not externally_reserved:
+                continue
+            for ip in externally_reserved.split(","):
+                ip = ip.strip()
+                for ip_pool in ip_pools:
+                    if not ip_pool.contains(ip):
+                        continue
+                    if not ip_pool.is_reserved(ip):
+                        msg = ("D: IP '%s' is reserved for network"
+                               " '%s' in backend '%s' but not in DB.")
+                        self.log.info(msg, ip, network, bend)
+                        if self.fix:
+                            ip_pool.reserve(ip, external=True)
+                            ip_pool.save()
+                            self.log.info("F: Reserved IP '%s'", ip)
+
+    @transaction.atomic_context
+    def reconcile_network_state(self, network, atomic_context=None):
         if network.state != "ACTIVE":
             network = Network.objects.select_for_update().get(id=network.id)
-            backend_mod.update_network_state(network)
+            backend_mod.update_network_state(network,
+                                             atomic_context=atomic_context)
 
+    @transaction.atomic
     def reconcile_parted_network(self, network, backend):
         self.log.info("D: Missing DB entry for network %s in backend %s",
                       network, backend)
@@ -692,7 +730,8 @@ class NetworkReconciler(object):
             bnet = get_backend_network(network, backend)
             return bnet
 
-    def reconcile_stale_network(self, backend_network):
+    @transaction.atomic_context
+    def reconcile_stale_network(self, backend_network, atomic_context=None):
         self.log.info("D: Stale DB entry for network %s in backend %s",
                       backend_network.network, backend_network.backend)
         if self.fix:
@@ -702,9 +741,11 @@ class NetworkReconciler(object):
                 backend_network, self.event_time, 0,
                 "OP_NETWORK_REMOVE",
                 "success",
-                "Reconciliation simulated event")
+                "Reconciliation simulated event",
+                atomic_context=atomic_context)
             self.log.info("F: Reconciled event: OP_NETWORK_REMOVE")
 
+    @transaction.atomic
     def reconcile_missing_network(self, network, backend):
         self.log.info("D: Missing Ganeti network %s in backend %s",
                       network, backend)
@@ -712,6 +753,7 @@ class NetworkReconciler(object):
             backend_mod.create_network(network, backend)
             self.log.info("F: Issued OP_NETWORK_CONNECT")
 
+    @transaction.atomic
     def reconcile_hanging_groups(self, network, backend, hanging_groups):
         self.log.info('D: Network %s in backend %s is not connected to '
                       'the following groups:', network, backend)
@@ -723,7 +765,9 @@ class NetworkReconciler(object):
                 backend_mod.connect_network(network, backend, depends=[],
                                             group=group)
 
-    def reconcile_unsynced_network(self, network, backend, backend_network):
+    @transaction.atomic_context
+    def reconcile_unsynced_network(self, network, backend, backend_network,
+                                   atomic_context=None):
         self.log.info("D: Unsynced network %s in backend %s", network, backend)
         if self.fix:
             self.log.info("F: Issuing OP_NETWORK_CONNECT")
@@ -733,8 +777,10 @@ class NetworkReconciler(object):
                 backend_network, self.event_time, 0,
                 "OP_NETWORK_CONNECT",
                 "success",
-                "Reconciliation simulated eventd")
+                "Reconciliation simulated eventd",
+                atomic_context=atomic_context)
 
+    @transaction.atomic
     def _reconcile_orphan_networks(self):
         db_networks = self.networks
         ganeti_networks = self.ganeti_networks
@@ -784,7 +830,7 @@ class PoolReconciler(object):
                 if subnet.ipversion == 4 and subnet.dhcp:
                     self.reconcile_ip_pool(network)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_bridges(self):
         networks = Network.objects.filter(deleted=False,
                                           flavor="PHYSICAL_VLAN")
@@ -801,7 +847,7 @@ class PoolReconciler(object):
                               used_values=used_bridges, fix=self.fix,
                               logger=self.log)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_mac_prefixes(self):
         networks = Network.objects.filter(deleted=False, flavor="MAC_FILTERED")
         check_unique_values(objects=networks, field='mac_prefix',
@@ -818,7 +864,7 @@ class PoolReconciler(object):
                               used_values=used_mac_prefixes, fix=self.fix,
                               logger=self.log)
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def reconcile_ip_pool(self, network):
         # Check that all NICs have unique IPv4 address
         nics = network.ips.exclude(address__isnull=True).all()

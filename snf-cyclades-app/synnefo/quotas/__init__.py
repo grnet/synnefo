@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,11 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from synnefo.db import transaction
-
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
                                IPAddress, Volume)
+from synnefo.db.transaction import Job
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
@@ -159,6 +158,36 @@ def accept_resource_serial(resource, strict=True):
     return resource
 
 
+def mark_resource_serial_as_accepted(resource):
+    serial = resource.serial
+    mark_serial_as_accepted(serial)
+    resource.serial = None
+    resource.save()
+    return resource
+
+
+def mark_resource_serial_as_rejected(resource):
+    serial = resource.serial
+    mark_serial_as_rejected(serial)
+    resource.serial = None
+    resource.save()
+    return resource
+
+
+def mark_serial_as_accepted(serial):
+    log.debug("Marking serial %s as accepted" % serial)
+    serial.accept = True
+    serial.pending = False
+    serial.save()
+
+
+def mark_serial_as_rejected(serial):
+    log.debug("Marking serial %s as rejected" % serial)
+    serial.accept = False
+    serial.pending = False
+    serial.save()
+
+
 def accept_serial(serial, strict=True):
     assert serial.pending or serial.accept, "%s can't be accepted" % serial
     log.debug("Accepting serial %s", serial)
@@ -173,8 +202,10 @@ def reject_resource_serial(resource, strict=True):
     return resource
 
 
-def reject_serial(serial, strict=True):
-    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+def reject_serial(serial, strict=True, force=False):
+    if not force:
+        assert serial.pending or not serial.accept,\
+                "%s can't be rejected" % serial
     log.debug("Rejecting serial %s", serial)
     _resolve_commissions(reject=[serial.serial], strict=strict)
 
@@ -250,8 +281,8 @@ def get_quotaholder_pending():
     return pending_serials
 
 
-@transaction.commit_on_success
-def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
+def issue_and_accept_commission(resource, action="BUILD", action_fields=None,
+                                atomic_context=None):
     """Issue and accept a commission to Quotaholder.
 
     This function implements the Commission workflow, and must be called
@@ -260,8 +291,7 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     0) Resolve previous unresolved commission if exists
     1) Issue commission, get a serial and correlate it with the resource
     2) Store the serial in DB as a serial to accept
-    3) COMMIT!
-    4) Accept commission to QH
+    3) Mark the serial in the context to be accepted
 
     """
     commission_reason = ("client: api, resource: %s, action: %s"
@@ -277,16 +307,8 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     serial.pending = False
     serial.accept = True
     serial.save()
-    transaction.commit()
-
-    try:
-        # Accept the commission to quotaholder
-        accept_serial(serial)
-    except:
-        # Do not crash if we can not accept commission to Quotaholder. Quotas
-        # have already been reserved and the resource already exists in DB.
-        # Just log the error
-        log.exception("Failed to accept commission: %s", resource.serial)
+    set_serial(atomic_context, serial)
+    return serial
 
 
 def get_volume_resources(volumes):
@@ -476,3 +498,29 @@ def resolve_resource_commission(resource, force=False):
         accept_resource_serial(resource)
     else:
         reject_resource_serial(resource)
+
+
+def handle_serial_success(serial):
+    """Helper function for handling a serial on transaction success"""
+    if serial.accept and not serial.pending:
+        accept_serial(serial)
+
+
+def handle_serial_fail(serial):
+    """Helper function for handling a serial on transaction failure"""
+    if serial.pending:
+        reject_serial(serial)
+
+
+def set_serial(atomic_context, serial):
+    """Set a serial object on an atomic context
+
+    This functions acts as a helper method to register the necessary actions
+    when an API transactions ends, either successfully or rollbacked.
+    """
+    if getattr(atomic_context, '_serial', None):
+        raise ValueError("Cannot set multiple serials")
+    atomic_context._serial = serial
+    atomic_context.add_on_success_job(
+        Job(handle_serial_success, args=(serial,)))
+    atomic_context.add_on_failure_job(Job(handle_serial_fail, args=(serial,)))

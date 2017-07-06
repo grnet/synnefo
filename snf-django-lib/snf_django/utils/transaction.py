@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from snf_django.utils.db import select_db
+from django.db import transaction
 
 
 def _transaction_func(app, method, using):
@@ -86,3 +87,25 @@ def _transaction_func(app, method, using):
         return method(using=db)(using)
     else:
         return method(using=db)
+
+
+class NonNestedAtomic(transaction.Atomic):
+    def __enter__(self):
+        connection = transaction.get_connection(self.using)
+        connection.validate_no_atomic_block()
+        transaction.Atomic.__enter__(self)
+
+
+def atomic(app, using, savepoint):
+    """Synnefo wrapper for Django atomic transactions.
+
+    This function serves as a wrapper for Django atomic(). Its goal is to
+    assist in using transactions in a multi-database setup.
+
+    We explicitly forbid nested transactions --- we need to be sure that an
+    atomic block really commits to the database rather than acting as a
+    savepoint for an outer atomic block.
+    """
+    db = select_db(app) if not using or callable(using) else using
+    ctx = NonNestedAtomic(db, savepoint)
+    return ctx(using) if callable(using) else ctx

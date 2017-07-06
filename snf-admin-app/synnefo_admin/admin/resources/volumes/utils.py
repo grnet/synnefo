@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,11 +23,9 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_volume_or_404(query, for_update=False):
-    volume_obj = Volume.objects.select_for_update if for_update\
-        else Volume.objects
+def get_volume_or_404(query):
     try:
-        return volume_obj.get(pk=int(query))
+        return Volume.objects.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         raise AdminHttp404(
             "No Volume was found that matches this query: %s\n" % query)

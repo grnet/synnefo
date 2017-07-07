@@ -48,6 +48,12 @@ Astakos
 * Return only active project memberships when authenticating user token
 * Migrate transaction handling to Django's atomic().
 
+Tools
+-----
+
+* Extend snf-burnin to include testing of volumes.
+
+
 .. _Changelog-0.19:
 
 v0.19

@@ -3,7 +3,7 @@ Section: python
 Priority: optional
 Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
 Build-Depends: debhelper (>= 8), python-all (>= 2.5), dh-systemd (>=1.5),
- dh-python, python-libsass
+ dh-python, python-libsass, python-setuptools (>= 20.2.2)
 Standards-Version: 3.9.6
 X-Python-Version: >= 2.7
 Homepage: http://www.synnefo.org

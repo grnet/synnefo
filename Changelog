@@ -46,6 +46,7 @@ Astakos
 
 * Fix multiple local authentication providers in user accounts.
 * Return only active project memberships when authenticating user token
+* Migrate transaction handling to Django's atomic().
 
 .. _Changelog-0.19:
 

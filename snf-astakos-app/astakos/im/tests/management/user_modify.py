@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,9 @@
 
 from astakos.im.user_logic import (verify, accept, deactivate,)
 
-from .common import SynnefoManagementTestCase, call_synnefo_command
+from .common import SynnefoManagementTestCase, call_synnefo_command, \
+    transaction
+
 
 actions = {
     "reject": {"reject": True},
@@ -115,8 +117,9 @@ class TestUserModification(SynnefoManagementTestCase):
         out, err = snf_manage(self.user1, "activate")
         self.assertInLog("Failed to activate", err)
 
-        # Deactivate the user in order to reactivate him/her.
-        res = deactivate(self.user1)
+        with transaction.atomic():
+            # Deactivate the user in order to reactivate him/her.
+            res = deactivate(self.user1)
         self.assertFalse(res.is_error())
 
         # Activating the user should work.

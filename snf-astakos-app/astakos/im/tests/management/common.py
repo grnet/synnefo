@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 from StringIO import StringIO
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.core.management import call_command
 
 # Django has tests on user-defined management commands, which should be a good
@@ -26,9 +26,10 @@ from django.core.management import call_command
 
 from astakos.im.auth import make_local_user
 from astakos.im.models import AstakosUser
+from astakos.im import transaction
 
 
-class SynnefoManagementTestCase(TestCase):
+class SynnefoManagementTestCase(TransactionTestCase):
 
     """Base class for testing synnefo management commands.
 
@@ -46,7 +47,8 @@ class SynnefoManagementTestCase(TestCase):
 
     def setUp(self):
         """Common setup method for this test suite."""
-        self.user1 = make_local_user("user1@synnefo.org")
+        with transaction.atomic():
+            self.user1 = make_local_user("user1@synnefo.org")
 
     def tearDown(self):
         """Common teardown method for this test suite."""

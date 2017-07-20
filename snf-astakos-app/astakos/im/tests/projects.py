@@ -149,7 +149,8 @@ class ProjectAPITest(TransactionTestCase):
                        **h_owner)
         self.assertEqual(r.status_code, 404)
 
-        status = self.memb_action(1, "accept", h_admin)
+        memb_user1 = ProjectMembership.objects.filter(person=self.user1)[0].id
+        status = self.memb_action(memb_user1, "accept", h_admin)
         self.assertEqual(status, 409)
 
         app1 = {"name": "test.pr",

@@ -25,6 +25,10 @@ CYCLADES_SNAPSHOTS_ENABLED = True
 # project to which it belongs, at the API level.
 CYCLADES_SHARED_RESOURCES_ENABLED = False
 
+# Enable/Disable the of feature of rescuing a Virtual Machine at the API
+# level
+RESCUE_ENABLED = False
+
 #
 # Network Configuration
 #

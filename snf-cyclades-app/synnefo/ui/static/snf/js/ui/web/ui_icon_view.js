@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+// Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -943,7 +943,11 @@
 
             el.find('.fqdn').val(vm.get_hostname());
 
-            el.find("div.status").text(STATE_TEXTS[vm.state()]);
+            var status = STATE_TEXTS[vm.state()];
+            if (vm.get('SNF:rescue')) {
+                status += ' (Rescue)';
+            }
+            el.find("div.status").text(status);
             // set state class
             var cls = views.IconView.STATE_CLASSES[vm.state()] || ['state'];
             el.find("div.state").removeClass().addClass(cls.join(" "));

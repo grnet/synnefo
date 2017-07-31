@@ -519,3 +519,92 @@ class ServerCommandTest(TransactionTestCase):
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertEqual(vol.project, original_project)
+
+
+class ServerRescueTest(TransactionTestCase):
+
+    def setUp(self):
+        self.debian_rescue_image = mfactory.RescueImageFactory(
+            target_os_family='linux', target_os='debian',
+            location='test-path.iso', name='Test Rescue Image')
+        self.windows_rescue_image = mfactory.RescueImageFactory(
+            target_os_family='windows', target_os='windows',
+            location='test-path-win.iso', name='Test Windows Rescue Image',
+            is_default=True)
+        self.vm = mfactory.VirtualMachineFactory()
+        self.credentials = Credentials("test")
+
+    def test_rescue_started_vm(self):
+        """Test rescue a started VM"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STARTED"
+            print(self.credentials)
+            with self.assertRaises(faults.BadRequest):
+                servers.rescue(self.vm, credentials=self.credentials)
+
+    def test_rescue_stopped_rescued_vm(self):
+        """Test rescue a stopped VM while in rescue mode"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = True
+            with self.assertRaises(faults.BadRequest):
+                servers.rescue(self.vm, credentials=self.credentials)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_rescue_stopped_vm(self, mrapi):
+        """Test rescue a stopped VM"""
+        mrapi().ModifyInstance.return_value = 1
+        # Since we are not using rescue properties, the default
+        # image should be used.
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.rescue = False
+            self.vm.operstate = "STOPPED"
+            servers.rescue(self.vm, credentials=self.credentials)
+            self.assertEqual(self.vm.task_job_id, 1)
+            self.assertFalse(self.vm.rescue_image is None)
+            self.assertTrue(self.vm.rescue_image.is_default)
+
+    def test_unrescue_started_vm(self):
+        """Test unrescue a started VM"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STARTED"
+            with self.assertRaises(faults.BadRequest):
+                servers.unrescue(self.vm, credentials=self.credentials)
+
+    def test_unrescue_stopped_unrescued_vm(self):
+        """Test unrescue a VM that is not in rescue mode"""
+        with mocked_quotaholder():
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = False
+            with self.assertRaises(faults.BadRequest):
+                servers.unrescue(self.vm, credentials=self.credentials)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_unrescue_stopped_vm(self, mrapi):
+        """Test unrescue a stopped VM in rescue mode"""
+        mrapi().ModifyInstance.return_value = 1
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = True
+            self.vm.rescue_image = self.debian_rescue_image
+            servers.unrescue(self.vm, credentials=self.credentials)
+            self.assertEqual(self.vm.task_job_id, 1)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_rescue_vm_rescue_properties(self, mrapi):
+        """Test rescue a VM using rescue properties"""
+        mrapi().ModifyInstance.return_value = 1
+        vm = mfactory.VirtualMachineFactory(
+             rescue_properties__os_family='linux',
+             rescue_properties__os='debian')
+        with mocked_quotaholder():
+            vm.task = None
+            vm.operstate = "STOPPED"
+            servers.rescue(vm, credentials=self.credentials)
+            self.assertEqual(vm.task_job_id, 1)
+            self.assertEqual(vm.rescue_image, self.debian_rescue_image)

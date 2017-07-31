@@ -158,6 +158,7 @@ DETACHABLE_VOLUME_TYPES = getattr(settings,
 ASTAKOS_AUTH_URL = getattr(uisettings, 'AUTH_URL')
 FLAVOR_OVERRIDE_ALLOW_CREATE = getattr(settings, 'CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE', {})
 
+RESCUE_ENABLED = getattr(settings, 'RESCUE_ENABLED', False)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -240,6 +241,7 @@ def home(request):
         'volume_max_size': json.dumps(VOLUME_MAX_SIZE),
         'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED),
         'shared_resources_enabled': json.dumps(SHARED_RESOURCES_ENABLED),
+        'rescue_enabled': RESCUE_ENABLED,
         'astakos_auth_url': json.dumps(ASTAKOS_AUTH_URL),
         'flavor_override_allow_create': json.dumps(FLAVOR_OVERRIDE_ALLOW_CREATE),
         'detachable_volume_types': json.dumps(DETACHABLE_VOLUME_TYPES)
@@ -482,5 +484,6 @@ def machines_connect(request):
         response = \
             HttpResponse(json.dumps(response_object),
                          content_type='application/json')  # no windows, no rdp
+
 
     return response

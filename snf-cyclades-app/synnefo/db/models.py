@@ -290,6 +290,8 @@ class VirtualMachine(models.Model):
         ('RESIZE', 'Resize a VM'),
         ('ADDFLOATINGIP', 'Add floating IP to VM'),
         ('REMOVEFLOATINGIP', 'Add floating IP to VM'),
+        ('RESCUE', 'Rescue VM'),
+        ('UNRESCUE', 'Unrescue VM'),
     )
 
     # The internal operating state of a VM
@@ -408,6 +410,9 @@ class VirtualMachine(models.Model):
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
+    rescue_properties = models.ForeignKey('RescueProperties', null=True)
+    rescue = models.BooleanField('Rescue', default=False, db_index=True)
+    rescue_image = models.ForeignKey('RescueImage', null=True)
 
     # Latest action and corresponding Ganeti job ID, for actions issued
     # by the API
@@ -507,6 +512,12 @@ class VirtualMachineMetadata(models.Model):
         return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
 
 
+class RescueProperties(models.Model):
+
+    os = models.CharField(max_length=256, null=True)
+    os_family = models.CharField(max_length=256, null=True)
+
+
 class Image(models.Model):
     """Model representing Images of created VirtualMachines.
 
@@ -529,6 +540,29 @@ class Image(models.Model):
 
     class Meta:
         unique_together = (('uuid', 'version'),)
+
+
+class RescueImage(models.Model):
+
+    FILETYPE_HTTP = 'http'
+    FILETYPE_FILE = 'file'
+
+    name = models.CharField(max_length=256, null=False)
+    location = models.TextField()
+    location_type = models.CharField(max_length=32, default=FILETYPE_FILE)
+
+    deleted = models.BooleanField(default=False, null=False)
+    is_default = models.BooleanField(default=False, null=False)
+
+    os = models.CharField(max_length=256, null=True)
+    os_family = models.CharField(max_length=256, null=True)
+    # These fields will be used for determining the image that should be used
+    # once a user wants to rescue a VM. Conceptually, the os,os_family fields
+    # hold information about the image itself(e.g. for a Debian Live CD, these
+    # fields will be os_family=Linux, os=Debian whereas target{os,os_family}
+    # can be any arbitary value
+    target_os = models.CharField(max_length=256, null=True)
+    target_os_family = models.CharField(max_length=256, null=True)
 
 
 class Network(models.Model):

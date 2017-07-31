@@ -217,6 +217,51 @@ class CycladesTests(BurninTests):
         # Verify quotas
         self._verify_quotas_deleted(servers)
 
+    def _shutdown_if_active(self, server):
+        """Shutdown server if currently active"""
+        active = False
+        srv = self._get_server_details(server, quiet=True)
+        if srv['status'] == "ACTIVE":
+            active = True
+            self.info("Server %s is ACTIVE. Shuting down", server['id'])
+            self.clients.cyclades.shutdown_server(srv['id'])
+            self._insist_on_server_transition(
+                    self.server, ["ACTIVE"], "STOPPED")
+        return active
+
+    def _start_if_shutoff(self, server):
+        """Start the server if currently shutoff"""
+        stopped = False
+        srv = self._get_server_details(server, quiet=True)
+        if srv['status'] == "STOPPED":
+            stopped = True
+            self.info("Server %s is STOPPED. Starting", server['id'])
+            self.clients.cyclades.start_server(srv['id'])
+            self._insist_on_server_transition(
+                    self.server, ["STOPPED"], "ACTIVE")
+        return stopped
+
+    def _rescue_server(self, server, rescue_image_ref=None):
+        """Rescuing a server"""
+        self.info("Rescuing server %s", server['id'])
+
+        self._shutdown_if_active(server)
+        self.clients.compute.rescue_server(self.server['id'])
+        self._insist_on_server_field_transition(server, 'SNF:rescue',
+                                                False, True)
+        return
+
+    def _unrescue_server(self, server, start_server=False):
+        # If the server was initially, active, unrescue it and restart it
+        self.info("Unrescuing server %s", server['id'])
+
+        self._shutdown_if_active(server)
+        self.clients.compute.unrescue_server(self.server['id'])
+        self._insist_on_server_field_transition(server, 'SNF:rescue',
+                                                True, False)
+        if start_server:
+            self._start_if_shutoff(server)
+
     def _verify_quotas_deleted(self, servers):
         """Verify quotas for a number of deleted servers"""
         changes = dict()
@@ -276,6 +321,28 @@ class CycladesTests(BurninTests):
         opmsg = "Waiting for server \"%s\" with id %s to become %s"
         self.info(opmsg, server['name'], server['id'], new_status)
         opmsg = opmsg % (server['name'], server['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_server_field_transition(self, server, field,
+                                           old_val, new_val):
+        """Insist on server field transiting from old_val to new_val"""
+        def check_fun():
+            """Check server status"""
+            srv = self._get_server_details(server, quiet=True)
+            current_field_value = srv.get(field)
+            if current_field_value is None:
+                raise
+            if current_field_value == old_val:
+                raise Retry()
+            elif current_field_value == new_val:
+                return
+            else:
+                msg = "Server's %s field %s went to unexpected status %s"
+                self.error(msg, server['id'], field, current_field_value)
+                self.fail(msg, server['id'], field, current_field_value)
+        opmsg = "Waiting for server's %s field %s to become %s"
+        self.info(opmsg, server['id'], field, new_val)
+        opmsg = opmsg % (server['id'], field, new_val)
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_snapshot_transition(self, snapshot,
@@ -761,6 +828,7 @@ class CycladesTests(BurninTests):
         #     self.error(msg)
         #
         # return random.choice(results)
+
 
 
 class Retry(Exception):

@@ -25,7 +25,7 @@ from snf_django.management.utils import parse_bool
 from synnefo.logic import servers
 
 
-ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft"]
+ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft", "rescue", "unrescue"]
 
 
 class Command(SynnefoCommand):
@@ -133,6 +133,10 @@ class Command(SynnefoCommand):
             elif action == "reboot_soft":
                 server = servers.reboot(server_id, reboot_type="SOFT",
                                         credentials=credentials)
+            elif action == "rescue":
+                server = servers.rescue(server_id, credentials=credentials)
+            elif action == "unrescue":
+                server = servers.unrescue(server_id, credentials=credentials)
             else:
                 raise CommandError("Unknown action.")
             wait_server_task(server, wait, stdout=self.stdout)

@@ -172,6 +172,7 @@ def update_db(vm, msg, event_time, atomic_context=None):
     logmsg = msg["logmsg"]
     nics = msg.get("instance_nics", None)
     disks = msg.get("instance_disks", None)
+    hvparams = msg.get("instance_hvparams", None)
     job_fields = msg.get("job_fields", {})
     result = msg.get("result", [])
 
@@ -212,9 +213,8 @@ def update_db(vm, msg, event_time, atomic_context=None):
 
     backend_mod.process_op_status(vm, event_time, jobID,
                                   operation, status,
-                                  logmsg, nics=nics,
-                                  disks=disks,
-                                  job_fields=job_fields,
+                                  logmsg, nics=nics, disks=disks,
+                                  hvparams=hvparams, job_fields=job_fields,
                                   atomic_context=atomic_context)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",

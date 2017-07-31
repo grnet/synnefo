@@ -272,9 +272,18 @@ class GeneratedServerTestSuite(CycladesTests):
         """Destroy the floating IPs"""
         self._disconnect_from_network(self.server)
 
-    def test_023_submit_delete_request(self):
+    def test_023_rescue_server(self):
+        """Test rescue mode"""
+        self._rescue_server(self.server)
+
+    def test_024_unrescue_server(self):
+        """Test revert rescue mode"""
+        self._unrescue_server(self.server, start_server=True)
+
+    def test_025_submit_delete_request(self):
         """Test submit request to delete server"""
         self._delete_servers([self.server])
+
 
 
 # --------------------------------------------------------------------

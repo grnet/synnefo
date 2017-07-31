@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+// Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1279,6 +1279,14 @@
                                     !this.get('project').get('missing');
         },
 
+        can_rescue: function() {
+            return this.get('status') == 'STOPPED' &&
+                    !this.get('SNF:rescue');
+        },
+        can_unrescue: function() {
+            return this.get('status') == 'STOPPED' &&
+                    this.get('SNF:rescue');
+        },
         can_reassign: function() {
           return true;
         },
@@ -1551,7 +1559,16 @@
         // depending on the vm state/status
         get_available_actions: function() {
             if (this.get('suspended')) { return [] }
-            return models.VM.AVAILABLE_ACTIONS[this.state()];
+            // Copy the array since we might append something
+            var actions = models.VM.AVAILABLE_ACTIONS[this.state()].slice();
+            if(this.state() == "STOPPED") {
+                if(this.get('SNF:rescue')) {
+                    actions.push('unrescue');
+                } else {
+                    actions.push('rescue');
+                }
+            }
+            return actions;
         },
 
         set_profile: function(profile, net_id) {
@@ -1749,6 +1766,26 @@
                                          },  
                                          error, 'resize', params);
                     break;
+                case 'rescue':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {rescue: {}}, // payload
+                                         function() {
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },
+                                         error, 'rescue', params);
+                    break;
+                case 'unrescue':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {unrescue: {}}, // payload
+                                         function() {
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },
+                                         error, 'unrescue', params);
+                    break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
                                          "delete", // create so that sync later uses POST to make the call
@@ -1880,7 +1917,9 @@
         'destroy',
         'resize',
         'reassign',
-        'snapshot'
+        'snapshot',
+        'rescue',
+        'unrescue'
     ]
 
     models.VM.TASK_STATE_STATUS_MAP = {

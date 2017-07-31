@@ -298,6 +298,8 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
         ("deleted", server.deleted),
         ("action", server.action),
         ("task", server.task),
+        ("rescue", server.rescue),
+        ("rescue_image", server.rescue_image),
         ("task_job_id", server.task_job_id),
         ("backendjobid", server.backendjobid),
         ("backendopcode", server.backendopcode),
@@ -373,6 +375,15 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     pprint_table(stdout, server_dict.items(), None, separator=" | ",
                  title=title)
     stdout.write("\n")
+
+    hvparams = server_info.get('hvparams')
+    HVPARAMS_FIELDS = ('cdrom_image_path', 'boot_order')
+    if hvparams is not None:
+        hvparams_dict = OrderedDict([(k, hvparams.get(k))
+                                    for k in HVPARAMS_FIELDS])
+        pprint_table(stdout, hvparams_dict.items(), None, separator=" | ",
+                     title="Hypervisor parameters of Server %s in Ganeti" %
+                     server.id)
 
     nics = nics_from_instance(server_info)
     nics_keys = ["ip", "mac", "name", "network"]

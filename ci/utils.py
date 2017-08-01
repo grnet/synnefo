@@ -1036,9 +1036,11 @@ class SynnefoCI(object):
         """Build packages needed by Synnefo software"""
         self.logger.info("Install development packages")
         cmd = """
+        echo 'deb http://ftp.gr.debian.org/debian/ jessie-backports main' > /etc/apt/sources.list.d/backports.list
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
                 python-dev python-all python-pip dh-systemd --yes --force-yes
+        apt-get install -t jessie-backports python-setuptools --yes --force-yes
         pip install -U devflow
         """
         _run(cmd, False)

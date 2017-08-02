@@ -29,6 +29,9 @@ import random
 import paramiko
 import tempfile
 import subprocess
+import StringIO
+import binascii
+import json
 
 from kamaki.clients import ClientError
 
@@ -533,12 +536,18 @@ class CycladesTests(BurninTests):
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
     # pylint: disable=no-self-use
-    def _ssh_execute(self, hostip, username, password, command):
+    def _ssh_execute(self, hostip, command, username=None, password=None,
+                                            private_key=None):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(hostip, username=username, password=password)
+            if (private_key is not None and
+                    not isinstance(private_key, paramiko.PKey)):
+                private_key = paramiko.RSAKey.from_private_key(
+                    StringIO.StringIO(private_key))
+            ssh.connect(hostip, username=username, password=password,
+                        pkey=private_key)
         except (paramiko.SSHException, socket.error, EOFError) as err:
             self.warning("%s", err.message)
             raise Retry()
@@ -548,14 +557,16 @@ class CycladesTests(BurninTests):
         ssh.close()
         return output, status
 
-    def _insist_get_hostname_over_ssh(self, hostip, username, password,
+    def _insist_get_hostname_over_ssh(self, hostip, username=None,
+                                      password=None, private_key=None,
                                       should_fail=False):
         """Connect to server using ssh and get it's hostname"""
         def check_fun():
             """Get hostname"""
             try:
-                lines, status = self._ssh_execute(
-                    hostip, username, password, "hostname")
+                lines, status = self._ssh_execute(hostip, "hostname",
+                    username=username, password=password,
+                    private_key=private_key)
                 self.assertEqual(status, 0)
                 self.assertEqual(len(lines), 1)
                 # Remove new line

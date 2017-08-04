@@ -176,6 +176,10 @@ def update_db(vm, msg, event_time, atomic_context=None):
     job_fields = msg.get("job_fields", {})
     result = msg.get("result", [])
 
+    if status in rapi.JOB_STATUS_FINALIZED:
+        log.info("Processing ganeti-op-status jobId: %s, operation: %s, "
+                 "vm: %s, status: %s", jobID, operation, vm.id, status)
+
     # Special case: OP_INSTANCE_CREATE with opportunistic locking may fail
     # if all Ganeti nodes are already locked. Retry the job without
     # opportunistic locking..
@@ -236,6 +240,10 @@ def update_network(network, msg, event_time, atomic_context=None):
     jobid = msg['jobId']
     job_fields = msg.get('job_fields', {})
 
+    if status in rapi.JOB_STATUS_FINALIZED:
+        log.info("Processing ganeti-network-status jobId: %s, operation: %s, "
+                 "network: %s, status: %s", jobid, opcode, network.id, status)
+
     if opcode == "OP_NETWORK_SET_PARAMS":
         backend_mod.process_network_modify(network, event_time, jobid, opcode,
                                            status, job_fields)
@@ -257,6 +265,8 @@ def update_build_progress(vm, msg, event_time, atomic_context=None):
     """
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
+    log.info("Processing ganeti-create-progress type: %s, vm: %s",
+             msg['type'], vm.id)
     if msg['type'] not in ('image-copy-progress', 'image-error', 'image-info',
                            'image-warning', 'image-helper'):
         log.error("Message is of unknown type %s", msg['type'])
@@ -315,6 +325,7 @@ def update_build_progress(vm, msg, event_time, atomic_context=None):
 def update_cluster(msg):
     operation = msg.get("operation")
     clustername = msg.get("cluster")
+    log.info("Processing operation: %s, cluster: %s", operation, clustername)
     if clustername is None:
         return
     if operation != "OP_CLUSTER_SET_PARAMS":

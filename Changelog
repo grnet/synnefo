@@ -51,7 +51,7 @@ Astakos
 Tools
 -----
 
-* Extend snf-burnin to include testing of volumes.
+* Extend snf-burnin to include testing of volumes and keypairs
 
 
 .. _Changelog-0.19:

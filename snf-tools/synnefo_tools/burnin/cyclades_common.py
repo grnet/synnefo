@@ -179,7 +179,7 @@ class CycladesTests(BurninTests):
 
     # pylint: disable=too-many-arguments
     def _create_server(self, image, flavor, personality=None,
-                       network=False, project_id=None):
+                       network=False, project_id=None, key_name=None):
         """Create a new server"""
         if network:
             fip = self._create_floating_ip(project_id=project_id)
@@ -197,7 +197,7 @@ class CycladesTests(BurninTests):
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
             personality=personality, networks=networks,
-            project_id=project_id)
+            project_id=project_id, key_name=key_name)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -361,6 +361,23 @@ class CycladesTests(BurninTests):
         self.info(opmsg, server['name'], server['id'], new_status)
         opmsg = opmsg % (server['name'], server['id'], new_status)
         self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_ip_attached(self, server, version=4):
+        def check_fun():
+            ips = self._get_server_details(server)['attachments']
+            ips_v4 = [ip for ip in ips if ip['ipv4'] != '']
+            ips_v6 = [ip for ip in ips if ip['ipv6'] != '']
+            if version == 4 and len(ips_v4) > 0:
+                return
+            if version == 6 and len(ips_v6) > 0:
+                return
+            raise Retry()
+        opmsg = ("Waiting for server \"%s\" with id %s to have an IPv%s "
+                " attached")
+        self.info(opmsg, server['name'], server['id'], version)
+        opmsg = opmsg % (server['name'], server['id'], version)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
 
     def _insist_on_server_field_transition(self, server, field,
                                            old_val, new_val):
@@ -945,6 +962,20 @@ class CycladesTests(BurninTests):
     def _get_attached_volumes(self, server):
         return self.clients.cyclades.list_volume_attachments(server['id'])
 
+    # Keypairs
+    def _generate_keypair(self):
+        return self.clients.compute.create_key("%s-gen" % self.run_id)
+
+    def _upload_keypair(self, public_key=None):
+        return self.clients.compute.create_key("%s-uploaded" % self.run_id,
+                public_key=public_key)
+
+    def _get_keypairs(self):
+        keypairs_list = self.clients.compute.list_keypairs()
+        return [key['keypair'] for key in keypairs_list]
+
+    def _delete_keypair(self, keypair):
+        return self.clients.compute.delete_keypair(keypair['name'])
 
 class Retry(Exception):
     """Retry the action

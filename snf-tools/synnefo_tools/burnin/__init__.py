@@ -32,9 +32,10 @@ from synnefo_tools.burnin.network_tests import NetworkTestSuite
 from synnefo_tools.burnin.projects_tests import QuotasTestSuite
 from synnefo_tools.burnin.snapshots import SnapshotsTestSuite
 from synnefo_tools.burnin.volume_tests import VolumeTestSuite
+from synnefo_tools.burnin.keypairs_tests import KeypairsTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite, \
-    StaleVolumesTestSuite
+    StaleVolumesTestSuite, StaleKeypairsTestSuite
 
 
 # --------------------------------------------------------------------
@@ -48,7 +49,8 @@ TESTSUITES = [
     NetworkTestSuite,
     QuotasTestSuite,
     SnapshotsTestSuite,
-    VolumeTestSuite
+    VolumeTestSuite,
+    KeypairsTestSuite
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -58,6 +60,7 @@ STALE_TESTSUITES = [
     StaleFloatingIPsTestSuite,
     StaleNetworksTestSuite,
     StaleVolumesTestSuite,
+    StaleKeypairsTestSuite
 ]
 STALE_TSUITES_NAMES = [tsuite.__name__ for tsuite in STALE_TESTSUITES]
 

@@ -26,7 +26,7 @@ HELPDESK = (('Helpdesk', 'helpdesk@synnefo.org'),)
 ADMINS = (('Admin', 'admin@synnefo.org'),)
 
 
-class ShibbolethTests(TestCase):
+class ShibbolethTests(TransactionTestCase):
     """
     Testing shibboleth authentication.
     """
@@ -122,8 +122,9 @@ class ShibbolethTests(TestCase):
         r = client.post(signup_url, post_data)
         self.assertContains(r, token)
 
-        # existing email
-        existing_user = get_local_user('test@test.com')
+        with transaction.atomic():
+            # existing email
+            existing_user = get_local_user('test@test.com')
         post_data['email'] = 'test@test.com'
         r = client.post(signup_url, post_data)
         self.assertContains(r, messages.EMAIL_USED)
@@ -235,18 +236,19 @@ class ShibbolethTests(TestCase):
         Test adding of third party login to an existing account
         """
 
-        # this is our existing user
-        existing_user = get_local_user('kpap@synnefo.org')
-        existing_inactive = get_local_user('kpap-inactive@synnefo.org')
-        existing_inactive.is_active = False
-        existing_inactive.save()
+        with transaction.atomic():
+            # this is our existing user
+            existing_user = get_local_user('kpap@synnefo.org')
+            existing_inactive = get_local_user('kpap-inactive@synnefo.org')
+            existing_inactive.is_active = False
+            existing_inactive.save()
 
-        existing_unverified = get_local_user('kpap-unverified@synnefo.org')
-        existing_unverified.is_active = False
-        existing_unverified.activation_sent = None
-        existing_unverified.email_verified = False
-        existing_unverified.is_verified = False
-        existing_unverified.save()
+            existing_unverified = get_local_user('kpap-unverified@synnefo.org')
+            existing_unverified.is_active = False
+            existing_unverified.activation_sent = None
+            existing_unverified.email_verified = False
+            existing_unverified.is_verified = False
+            existing_unverified.save()
 
         client = ShibbolethClient()
         # shibboleth logged us in, notice that we use different email
@@ -421,9 +423,10 @@ class ShibbolethTests(TestCase):
 
         client.reset_tokens()
 
-        # we cannot take over another shibboleth identifier
-        user2 = get_local_user('another@synnefo.org')
-        user2.add_auth_provider('shibboleth', identifier='existingeppn')
+        with transaction.atomic():
+            # we cannot take over another shibboleth identifier
+            user2 = get_local_user('another@synnefo.org')
+            user2.add_auth_provider('shibboleth', identifier='existingeppn')
         # login
         client.set_tokens(mail="kpap@shibboleth.gr", remote_user="kpapeppn",
                           cn="Kostas Papadimitriou")
@@ -436,7 +439,7 @@ class ShibbolethTests(TestCase):
         self.assertContains(r, "is already in use")
 
 
-class TestLocal(TestCase):
+class TestLocal(TransactionTestCase):
 
     def setUp(self):
         settings.ADMINS = ADMINS
@@ -501,14 +504,15 @@ class TestLocal(TestCase):
 
         form = forms.LocalUserCreationForm(data)
         self.assertTrue(form.is_valid())
-        user = form.create_user()
+        with transaction.atomic():
+            user = form.create_user()
 
-        u = AstakosUser.objects.get()
-        self.assertEqual(u.email, 'kPap@synnefo.org')
-        self.assertEqual(u.username, 'kpap@synnefo.org')
-        u.is_active = True
-        u.email_verified = True
-        u.save()
+            u = AstakosUser.objects.get()
+            self.assertEqual(u.email, 'kPap@synnefo.org')
+            self.assertEqual(u.username, 'kpap@synnefo.org')
+            u.is_active = True
+            u.email_verified = True
+            u.save()
 
         data = {'username': 'kpap@synnefo.org', 'password': '1234'}
         login = forms.LoginForm(data=data)
@@ -615,7 +619,8 @@ class TestLocal(TestCase):
         self.assertEqual(len(get_mailbox('KPAP@synnefo.org')), 3)
 
         # logged in user cannot activate another account
-        tmp_user = get_local_user("test_existing_user@synnefo.org")
+        with transaction.atomic():
+            tmp_user = get_local_user("test_existing_user@synnefo.org")
         tmp_client = Client()
         tmp_client.login(username="test_existing_user@synnefo.org",
                          password="password")
@@ -733,26 +738,32 @@ class TestLocal(TestCase):
                                 is_superuser=True)
         User.objects.create(username="dummy2", email="email2@example.org",
                             first_name="Other", last_name="User")
-        fixed = auth_functions.fix_superusers()
+        with transaction.atomic():
+            fixed = auth_functions.fix_superusers()
+
         self.assertEqual(len(fixed), 1)
         fuser = fixed[0]
         self.assertEqual(fuser.email, fuser.username)
 
     @im_settings(IM_MODULES=['shibboleth', 'local'])
     def test_multiple_providers(self):
-        local_user = get_local_user('kpelelis@synnefo.org')
+        with transaction.atomic():
+            local_user = get_local_user('kpelelis@synnefo.org')
         self.assertEqual(len(local_user.get_auth_providers()), 1)
 
-        # Make sure we can add third party providers
-        local_user.add_auth_provider('shibboleth', identifier='12345')
+        with transaction.atomic():
+            # Make sure we can add third party providers
+            local_user.add_auth_provider('shibboleth', identifier='12345')
+
         self.assertEqual(len(local_user.get_auth_providers()), 2)
 
         # Make sure we are unable to add a second local provier
         with self.assertRaises(Exception):
-            local_user.add_auth_provider('local')
+            with transaction.atomic():
+                local_user.add_auth_provider('local')
 
 
-class UserActionsTests(TestCase):
+class UserActionsTests(TransactionTestCase):
 
     def tearDown(self):
         AstakosUser.objects.all().delete()
@@ -783,10 +794,11 @@ class UserActionsTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_request_change_email(self):
-        # to test existing email validation
-        get_local_user('existing@synnefo.org')
+        with transaction.atomic():
+            # to test existing email validation
+            get_local_user('existing@synnefo.org')
 
-        user = get_local_user('kpap@synnefo.org')
+            user = get_local_user('kpap@synnefo.org')
 
         # login as kpap
         self.user_login(username='kpap@synnefo.org', password='password')
@@ -833,11 +845,12 @@ class UserActionsTests(TestCase):
         self.assertEqual(len(get_mailbox('kpap@yahoo.com')), 1)
 
     def test_change_email(self):
-        # to test existing email validation
-        get_local_user('existing@synnefo.org')
+        with transaction.atomic():
+            # to test existing email validation
+            get_local_user('existing@synnefo.org')
 
-        # local user
-        user = get_local_user('kpap@synnefo.org')
+            # local user
+            user = get_local_user('kpap@synnefo.org')
 
         # login as kpap
         self.user_login(username='kpap@synnefo.org', password='password')
@@ -891,7 +904,7 @@ TEST_TARGETED_ID3 = \
     "https://idp.synnefo.org/idp/shibboleth!"
 
 
-class TestAuthProviderViews(TestCase):
+class TestAuthProviderViews(TransactionTestCase):
 
     def tearDown(self):
         AstakosUser.objects.all().delete()
@@ -932,11 +945,12 @@ class TestAuthProviderViews(TestCase):
         Pending = PendingThirdPartyUser
         User = AstakosUser
 
-        auth_functions.make_user("newuser@synnefo.org")
-        get_local_user("olduser@synnefo.org")
+        with transaction.atomic():
+            auth_functions.make_user("newuser@synnefo.org")
+            get_local_user("olduser@synnefo.org")
+            get_local_user("olduser2@synnefo.org")
+
         cl_olduser = ShibbolethClient()
-        get_local_user("olduser2@synnefo.org")
-        ShibbolethClient()
         cl_newuser = ShibbolethClient()
         cl_newuser2 = Client()
 

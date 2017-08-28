@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -183,7 +183,7 @@ def get_user_projects_table(projects, user, prefix, request=None):
                                     request=request)
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def handle_valid_members_form(request, project_id, addmembers_form):
     if addmembers_form.is_valid():
         try:

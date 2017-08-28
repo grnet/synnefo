@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,31 +44,31 @@ class TransactionTest(TransactionTestCase):
         raise TransactionException
 
     def test_good_transaction(self):
-        django_transaction.commit_on_success(self.good_transaction)()
+        django_transaction.atomic(self.good_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 1)
 
     def test_bad_transaction(self):
         with self.assertRaises(TransactionException):
-            django_transaction.commit_on_success(self.bad_transaction)()
+            django_transaction.atomic(self.bad_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 0)
 
     def test_good_transaction_custom_decorator(self):
-        astakos_transaction.commit_on_success(self.good_transaction)()
+        astakos_transaction.atomic(self.good_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 1)
 
     def test_bad_transaction_custom_decorator(self):
         with self.assertRaises(TransactionException):
-            astakos_transaction.commit_on_success(self.bad_transaction)()
+            astakos_transaction.atomic(self.bad_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 0)
 
     def test_bad_transaction_custom_decorator_incorrect_dbs(self):
         settings.DATABASES['astakos'] = settings.DATABASES['default']
         with self.assertRaises(TransactionException):
-            astakos_transaction.commit_on_success(self.bad_transaction)()
+            astakos_transaction.atomic(self.bad_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 0)
         settings.DATABASES.pop("astakos")
 
     def test_bad_transaction_custom_decorator_using(self):
         with self.assertRaises(TransactionException):
-            astakos_transaction.commit_on_success(using="default")(self.bad_transaction)()
+            astakos_transaction.atomic(using="default")(self.bad_transaction)()
         self.assertEqual(AstakosUser.objects.count(), 0)

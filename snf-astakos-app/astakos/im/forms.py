@@ -650,7 +650,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
 
-    @transaction.commit_on_success()
+    @transaction.atomic()
     def save(self, commit=True, **kwargs):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)

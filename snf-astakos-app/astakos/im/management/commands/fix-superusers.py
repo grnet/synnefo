@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ from astakos.im.auth import fix_superusers
 class Command(SynnefoCommand):
     help = "Transform superusers created by syncdb into AstakosUser instances"
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def handle(self, **options):
         try:
             fixed = fix_superusers()

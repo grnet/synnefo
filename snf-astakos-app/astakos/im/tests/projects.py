@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,50 +32,52 @@ def get_pending_apps(user):
         [user.base_project.uuid]['astakos.pending_app']['usage']
 
 
-class ProjectAPITest(TestCase):
+class ProjectAPITest(TransactionTestCase):
+    fixtures = ["test_projectlock.json"]
 
     def setUp(self):
         self.client = Client()
-        component1 = Component.objects.create(name="comp1")
-        register.add_service(component1, "σέρβις1", "type1", [])
-        # custom service resources
-        resource11 = {"name": u"σέρβις1.ρίσορς11",
-                      "desc": u"ρίσορς11 desc",
-                      "service_type": "type1",
-                      "service_origin": u"σέρβις1",
-                      "ui_visible": True}
-        r, _ = register.add_resource(resource11)
-        register.update_base_default(r, 100)
-        resource12 = {"name": u"σέρβις1.resource12",
-                      "desc": "resource12 desc",
-                      "service_type": "type1",
-                      "service_origin": u"σέρβις1",
-                      "unit": "bytes"}
-        r, _ = register.add_resource(resource12)
-        register.update_base_default(r, 1024)
+        with transaction.atomic():
+            component1 = Component.objects.create(name="comp1")
+            register.add_service(component1, "σέρβις1", "type1", [])
+            # custom service resources
+            resource11 = {"name": u"σέρβις1.ρίσορς11",
+                          "desc": u"ρίσορς11 desc",
+                          "service_type": "type1",
+                          "service_origin": u"σέρβις1",
+                          "ui_visible": True}
+            r, _ = register.add_resource(resource11)
+            register.update_base_default(r, 100)
+            resource12 = {"name": u"σέρβις1.resource12",
+                          "desc": "resource12 desc",
+                          "service_type": "type1",
+                          "service_origin": u"σέρβις1",
+                          "unit": "bytes"}
+            r, _ = register.add_resource(resource12)
+            register.update_base_default(r, 1024)
 
-        # create user
-        self.user1 = get_local_user("test@grnet.gr")
-        self.user2 = get_local_user("test2@grnet.gr")
-        self.user2.uuid = "uuid2"
-        self.user2.save()
-        self.user3 = get_local_user("test3@grnet.gr")
-        self.user4 = get_local_user("test4@grnet.gr", is_active=False)
+            # create user
+            self.user1 = get_local_user("test@grnet.gr")
+            self.user2 = get_local_user("test2@grnet.gr")
+            self.user2.uuid = "uuid2"
+            self.user2.save()
+            self.user3 = get_local_user("test3@grnet.gr")
+            self.user4 = get_local_user("test4@grnet.gr", is_active=False)
 
-        astakos = Component.objects.create(name="astakos")
-        register.add_service(astakos, "astakos_account", "account", [])
-        # create another service
-        pending_app = {"name": "astakos.pending_app",
-                       "desc": "pend app desc",
-                       "service_type": "account",
-                       "service_origin": "astakos_account",
-                       "ui_visible": False,
-                       "api_visible": False}
-        r, _ = register.add_resource(pending_app)
-        register.update_base_default(r, 3)
-        request = {"resources": {r.name: {"member_capacity": 3,
-                                          "project_capacity": 3}}}
-        functions.modify_projects_in_bulk(Q(is_base=True), request)
+            astakos = Component.objects.create(name="astakos")
+            register.add_service(astakos, "astakos_account", "account", [])
+            # create another service
+            pending_app = {"name": "astakos.pending_app",
+                           "desc": "pend app desc",
+                           "service_type": "account",
+                           "service_origin": "astakos_account",
+                           "ui_visible": False,
+                           "api_visible": False}
+            r, _ = register.add_resource(pending_app)
+            register.update_base_default(r, 3)
+            request = {"resources": {r.name: {"member_capacity": 3,
+                                              "project_capacity": 3}}}
+            functions.modify_projects_in_bulk(Q(is_base=True), request)
 
     def create(self, app, headers):
         dump = json.dumps(app)
@@ -147,7 +149,8 @@ class ProjectAPITest(TestCase):
                        **h_owner)
         self.assertEqual(r.status_code, 404)
 
-        status = self.memb_action(1, "accept", h_admin)
+        memb_user1 = ProjectMembership.objects.filter(person=self.user1)[0].id
+        status = self.memb_action(memb_user1, "accept", h_admin)
         self.assertEqual(status, 409)
 
         app1 = {"name": "test.pr",
@@ -674,13 +677,15 @@ class ProjectAPITest(TestCase):
 
         # directly modify a base project
         with assertRaises(functions.ProjectBadRequest):
+            with transaction.atomic():
+                functions.modify_project(self.user1.uuid,
+                                         {"description": "new description",
+                                          "member_join_policy":
+                                          functions.MODERATED_POLICY})
+        with transaction.atomic():
             functions.modify_project(self.user1.uuid,
-                                     {"description": "new description",
-                                      "member_join_policy":
+                                     {"member_join_policy":
                                       functions.MODERATED_POLICY})
-        functions.modify_project(self.user1.uuid,
-                                 {"member_join_policy":
-                                  functions.MODERATED_POLICY})
         r = client.get(reverse("api_project",
                                kwargs={"project_id": self.user1.uuid}),
                        **h_owner)
@@ -776,7 +781,8 @@ class ProjectAPITest(TestCase):
 
         # Deactivate user
         backend = activation_backends.get_backend()
-        backend.deactivate_user(self.user1)
+        with transaction.atomic():
+            backend.deactivate_user(self.user1)
 
         # Check memberships and owned project of deactivated user
         memberships = self.user1.projectmembership_set.all()
@@ -788,7 +794,8 @@ class ProjectAPITest(TestCase):
 
         # Re-activate user
         backend = activation_backends.get_backend()
-        backend.activate_user(self.user1)
+        with transaction.atomic():
+            backend.activate_user(self.user1)
 
         # Check memberships and owned project of re-activated user
         memberships = self.user1.projectmembership_set.all()
@@ -804,7 +811,8 @@ class ProjectAPITest(TestCase):
 
         # Deactivate user
         backend = activation_backends.get_backend()
-        backend.deactivate_user(self.user1)
+        with transaction.atomic():
+            backend.deactivate_user(self.user1)
 
         # check memberships and owned project of deactivated user
         memberships = self.user1.projectmembership_set.all()
@@ -815,10 +823,13 @@ class ProjectAPITest(TestCase):
         self.assertEqual(project.state, project.TERMINATED)
 
 
-class TestProjects(TestCase):
+class TestProjects(TransactionTestCase):
     """
     Test projects.
     """
+
+    fixtures = ["test_projectlock.json"]
+
     def setUp(self):
         # astakos resources
         self.resource = Resource.objects.create(name="astakos.pending_app",
@@ -833,13 +844,14 @@ class TestProjects(TestCase):
                                                 uplimit=100,
                                                 project_default=0,
                                                 service_type="service1")
-        self.admin = get_local_user("projects-admin@synnefo.org")
-        self.admin.uuid = 'uuid1'
-        self.admin.save()
+        with transaction.atomic():
+            self.admin = get_local_user("projects-admin@synnefo.org")
+            self.admin.uuid = 'uuid1'
+            self.admin.save()
 
-        self.user = get_local_user("user@synnefo.org")
-        self.member = get_local_user("member@synnefo.org")
-        self.member2 = get_local_user("member2@synnefo.org")
+            self.user = get_local_user("user@synnefo.org")
+            self.member = get_local_user("member@synnefo.org")
+            self.member2 = get_local_user("member2@synnefo.org")
 
         self.admin_client = get_user_client("projects-admin@synnefo.org")
         self.user_client = get_user_client("user@synnefo.org")
@@ -909,7 +921,8 @@ class TestProjects(TestCase):
                     "project_capacity": 2}
                 }
             }
-        functions.modify_project(self.user.uuid, request)
+        with transaction.atomic():
+            functions.modify_project(self.user.uuid, request)
 
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))

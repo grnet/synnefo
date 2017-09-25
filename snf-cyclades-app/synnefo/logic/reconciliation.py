@@ -47,11 +47,13 @@ import json
 from datetime import datetime, timedelta
 import os
 
+from synnefo.api.util import COMPUTE_API_TAG_PREFIXES
 from synnefo.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                pooled_rapi_client, Network,
                                BackendNetwork, BridgePoolTable,
-                               MacPrefixPoolTable, RescueImage)
+                               MacPrefixPoolTable, RescueImage,
+                               VirtualMachineTag)
 from synnefo.db import pools
 from synnefo.logic import utils, rapi, backend as backend_mod
 from synnefo.lib.utils import merge_time
@@ -204,6 +206,7 @@ class BackendReconciler(object):
 
             self.reconcile_unsynced_operstate(server_id, db_server,
                                               gnt_server)
+            self.reconcile_unsynced_tags(server_id, db_server, gnt_server)
             self.reconcile_unsynced_flavor(server_id, db_server,
                                            gnt_server)
             self.reconcile_unsynced_nics(server_id, db_server, gnt_server)
@@ -253,6 +256,54 @@ class BackendReconciler(object):
                     opcode=fix_opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event',
                     atomic_context=atomic_context)
+                self.log.debug("Simulated Ganeti state event for server '%s'",
+                               server_id)
+
+    @transaction.atomic_context
+    def reconcile_unsynced_tags(self, server_id, db_server, gnt_server,
+                                atomic_context=None):
+        db_tags = db_server.tags.all()
+        gnt_encoded_tags = gnt_server["tags"]
+        gnt_tags = []
+        for ganeti_tag in gnt_encoded_tags:
+            if not any(ganeti_tag.startswith(prefix) for prefix in
+                       COMPUTE_API_TAG_PREFIXES):
+                continue
+            gnt_tag = utils.tag_from_ganeti(ganeti_tag)
+            if gnt_tag is not None:
+                gnt_tags.append(gnt_tag)
+
+        self.log.debug("Server '%s' has tags '%s' in DB and '%s' in Ganeti.",
+                       server_id, [db_tag.tag for db_tag in db_tags], gnt_tags)
+
+        for tag in gnt_tags:
+            if not db_server.tags.filter(tag=tag, status='ACTIVE'):
+                self.log.info("Found unsynced tags %s for server "
+                              "'%s' that do not exist in Cyclades DB (action="
+                              "activate)", tag, server_id)
+                if self.options["fix_unsynced_tags"]:
+                    vm = get_locked_server(server_id)
+                    backend_mod.process_op_status(
+                        vm=vm, etime=self.event_time, jobid=-0,
+                        opcode='OP_TAGS_SET', status='success',
+                        logmsg='Reconciliation: simulated Ganeti event',
+                        atomic_context=atomic_context, tags=gnt_tags)
+                    self.log.debug("Simulated Ganeti state event for server "
+                                   "'%s'", server_id)
+
+        db_tags_del = db_server.tags.exclude(tag__in=gnt_tags)
+        if len(db_tags_del) > 0:
+            self.log.info("Found unsynced tags %s for server %s in Cyclades DB"
+                          " that do not exist in Ganeti (action=delete)",
+                          [db_tag.tag for db_tag in db_tags_del], server_id)
+            if self.options["fix_unsynced_tags"]:
+                vm = get_locked_server(server_id)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode='OP_TAGS_DEL', status='success',
+                    logmsg='Reconciliation: simulated Ganeti event',
+                    atomic_context=atomic_context, tags=[db_tag.tag for db_tag
+                                                         in db_tags_del])
                 self.log.debug("Simulated Ganeti state event for server '%s'",
                                server_id)
 

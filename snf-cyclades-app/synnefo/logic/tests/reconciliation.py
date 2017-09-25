@@ -18,6 +18,7 @@ from django.test import TransactionTestCase
 
 from synnefo.db.models import (VirtualMachine, Network, BackendNetwork,
                                RescueImage)
+from synnefo.api.util import COMPUTE_API_TAG_USER_PREFIX
 from synnefo.db import models_factory as mfactory
 from synnefo.logic import reconciliation
 from mock import patch
@@ -40,6 +41,7 @@ class ServerReconciliationTest(TransactionTestCase):
                    "fix_unsynced_nics": True,
                    "fix_unsynced_disks": True,
                    "fix_unsynced_flavors": True,
+                   "fix_unsynced_tags": True,
                    "fix_unsynced_rescue": True}
         self.reconciler = reconciliation.BackendReconciler(self.backend,
                                                            options=options,
@@ -109,19 +111,19 @@ class ServerReconciliationTest(TransactionTestCase):
         cmrapi = self.reconciler.client
         mrapi().GetInstances.return_value =\
             [{"name": "%s22" % settings.BACKEND_PREFIX_ID,
-             "beparams": {"maxmem": 1024,
-                          "minmem": 1024,
-                          "vcpus": 4},
-             "oper_state": True,
-             "mtime": time(),
-             "disk.sizes": [],
-             "disk.names": [],
-             "disk.uuids": [],
-             "nic.ips": [],
-             "nic.names": [],
-             "nic.macs": [],
-             "nic.networks.names": [],
-             "tags": []}]
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
         self.reconciler.reconcile()
         cmrapi.DeleteInstance\
               .assert_called_once_with("%s22" % settings.BACKEND_PREFIX_ID)
@@ -132,19 +134,19 @@ class ServerReconciliationTest(TransactionTestCase):
                                              operstate="STOPPED")
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
-             "beparams": {"maxmem": 1024,
-                          "minmem": 1024,
-                          "vcpus": 4},
-             "oper_state": True,
-             "mtime": time(),
-             "disk.sizes": [],
-             "disk.names": [],
-             "disk.uuids": [],
-             "nic.ips": [],
-             "nic.names": [],
-             "nic.macs": [],
-             "nic.networks.names": [],
-             "tags": []}]
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
@@ -156,8 +158,9 @@ class ServerReconciliationTest(TransactionTestCase):
                                              rescue=False,
                                              rescue_image=None,
                                              operstate="STOPPED")
-        rescue_image = mfactory.RescueImageFactory(
-                location="test.iso", location_type=RescueImage.FILETYPE_FILE)
+        rescue_image = mfactory.RescueImageFactory(location="test.iso",
+                                                   location_type=RescueImage.
+                                                   FILETYPE_FILE)
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
               "beparams": {"maxmem": 1024,
@@ -281,6 +284,157 @@ class ServerReconciliationTest(TransactionTestCase):
         self.assertEqual(vm1.rescue, False)
         self.assertEqual(vm1.rescue_image, None)
 
+    def test_unsynced_tags_DB_active_ganeti_absent(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm1)
+        db_tag = create_tag()
+        tag1 = db_tag.tag
+
+        tag_prefix = COMPUTE_API_TAG_USER_PREFIX
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        db_tags = vm1.tags.all()
+        self.assertEqual(vm1.operstate, "STARTED")
+        self.assertFalse(len(db_tags.filter(tag=tag1)))
+
+    def test_unsynced_tags_DB_pending_ganeti_absent(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm1)
+        db_tag = create_tag()
+        tag1 = db_tag.tag
+        db_tag.status = 'PENDADD'
+        db_tag.save()
+
+        tag_prefix = COMPUTE_API_TAG_USER_PREFIX
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        db_tags = vm1.tags.all()
+        self.assertEqual(vm1.operstate, "STARTED")
+        self.assertFalse(len(db_tags.filter(tag=tag1)))
+
+    def test_unsynced_tags_DB_pending_ganeti_present(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm1)
+        db_tag = create_tag()
+        tag1 = db_tag.tag
+        db_tag.status = 'PENDADD'
+        db_tag.save()
+
+        tag_prefix = COMPUTE_API_TAG_USER_PREFIX
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": [tag1]}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        db_tags = vm1.tags.all()
+        self.assertEqual(vm1.operstate, "STARTED")
+        self.assertTrue(len(db_tags.filter(tag=tag1, status='ACTIVE')))
+
+    def test_unsynced_tags_DB_absent_ganeti_present(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        tag_prefix = COMPUTE_API_TAG_USER_PREFIX
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": [tag_prefix + 'gnttag-2']}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        db_tags = vm1.tags.all()
+        self.assertEqual(vm1.operstate, "STARTED")
+        self.assertTrue(len(db_tags.filter(tag=tag_prefix + 'gnttag-2',
+                                           status='ACTIVE')))
+
+    def test_unsynced_tags_ganeti_unknown_namespace(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+              "beparams": {"maxmem": 1024,
+                           "minmem": 1024,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": ['gnttag-3']}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        db_tags = vm1.tags.all()
+        self.assertEqual(vm1.operstate, "STARTED")
+        self.assertFalse(db_tags.filter(tag='gnttag-3').exists())
+
     def test_unsynced_flavor(self, mrapi):
         flavor1 = mfactory.FlavorFactory(cpu=2, ram=1024, disk=1,
                                          volume_type__disk_template="drbd")
@@ -291,22 +445,22 @@ class ServerReconciliationTest(TransactionTestCase):
                                              flavor=flavor1,
                                              operstate="STARTED")
         v1 = mfactory.VolumeFactory(machine=vm1, size=flavor1.disk,
-                volume_type=flavor1.volume_type)
+                                    volume_type=flavor1.volume_type)
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
-             "beparams": {"maxmem": 2048,
-                          "minmem": 2048,
-                          "vcpus": 4},
-             "oper_state": True,
-             "mtime": time(),
-             "disk.sizes": [1024],
-             "disk.names": [v1.backend_volume_uuid],
-             "disk.uuids": [v1.backend_disk_uuid],
-             "nic.ips": [],
-             "nic.names": [],
-             "nic.macs": [],
-             "nic.networks.names": [],
-             "tags": []}]
+              "beparams": {"maxmem": 2048,
+                           "minmem": 2048,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [1024],
+              "disk.names": [v1.backend_volume_uuid],
+              "disk.uuids": [v1.backend_disk_uuid],
+              "nic.ips": [],
+              "nic.names": [],
+              "nic.macs": [],
+              "nic.networks.names": [],
+              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
@@ -328,19 +482,19 @@ class ServerReconciliationTest(TransactionTestCase):
         nic = ip.nic
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
-             "beparams": {"maxmem": 2048,
-                          "minmem": 2048,
-                          "vcpus": 4},
-             "oper_state": True,
-             "mtime": time(),
-             "disk.sizes": [],
-             "disk.names": [],
-             "disk.uuids": [],
-             "nic.names": [nic.backend_uuid],
-             "nic.ips": ["192.168.2.5"],
-             "nic.macs": ["aa:00:bb:cc:dd:ee"],
-             "nic.networks.names": [network2.backend_id],
-             "tags": []}]
+              "beparams": {"maxmem": 2048,
+                           "minmem": 2048,
+                           "vcpus": 4},
+              "oper_state": True,
+              "mtime": time(),
+              "disk.sizes": [],
+              "disk.names": [],
+              "disk.uuids": [],
+              "nic.names": [nic.backend_uuid],
+              "nic.ips": ["192.168.2.5"],
+              "nic.macs": ["aa:00:bb:cc:dd:ee"],
+              "nic.networks.names": [network2.backend_id],
+              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)

@@ -59,6 +59,7 @@ class ServerCreationTest(TransactionTestCase):
             "image_id": "safs",
             "networks": [],
             "metadata": {"foo": "bar"},
+            "tags": ["tag-1", "tag-2"],
             "personality": [],
         }
         # no backend!

@@ -62,7 +62,6 @@ class AaiClient(Client):
 
 class TestRestViews(TransactionTestCase):
     reset_sequences = True
-    fixtures = ['users']
 
     def setUp(self):
         settings.USERDATA_MAX_SSH_KEYS_PER_USER = 10

@@ -20,6 +20,7 @@ from astakos.im.models import Project
 from .common import AdminTestCase
 from datetime import datetime
 from datetime import timedelta
+from astakos.im import transaction
 
 
 class TemplateTagsTest(AdminTestCase):
@@ -83,7 +84,8 @@ class TemplateTagsTest(AdminTestCase):
             'description': u'δεσκρίπτιον2',
             'end_date': t2,
         })
-        last_app1 = submit_application(**last_app_data1)
+        with transaction.atomic():
+            last_app1 = submit_application(**last_app_data1)
         project = Project.objects.get(id=project.id)
         output_details = common_output.copy()
         output_details.update({
@@ -110,7 +112,8 @@ class TemplateTagsTest(AdminTestCase):
         last_app_data2.update({
             'limit_on_members_number': 42
         })
-        last_app2 = submit_application(**last_app_data2)
+        with transaction.atomic():
+            last_app2 = submit_application(**last_app_data2)
         project = Project.objects.get(id=project.id)
         output_policies = common_output.copy()
         output_policies.update({
@@ -131,7 +134,8 @@ class TemplateTagsTest(AdminTestCase):
                 'project_capacity': 1025,
                 'member_capacity': 511}}
         })
-        last_app3 = submit_application(**last_app_data3)
+        with transaction.atomic():
+            last_app3 = submit_application(**last_app_data3)
         project = Project.objects.get(id=project.id)
         output_resources = common_output.copy()
         output_resources.update({

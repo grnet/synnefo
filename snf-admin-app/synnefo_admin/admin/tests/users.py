@@ -17,6 +17,7 @@
 #import logging
 from django.core.urlresolvers import reverse
 
+from astakos.im import transaction
 from astakos.im.models import ProjectMembership, Resource
 from astakos.im.functions import remove_membership, enroll_member
 from synnefo.db import models_factory as mf
@@ -131,7 +132,8 @@ class TestAdminUsers(AdminTestCase):
         # Test 2 - Check if get_quotas works properly for projects too.
         #
         # Add member to a project
-        enroll_member(self.project.uuid, self.user)
+        with transaction.atomic():
+            enroll_member(self.project.uuid, self.user)
 
         # These should be the additional quota from the project.
         new_quota = [{'project': self.project,
@@ -148,7 +150,8 @@ class TestAdminUsers(AdminTestCase):
         # Remove member from project
         membership = ProjectMembership.objects.get(project=self.project,
                                                    person=self.user)
-        remove_membership(membership.id)
+        with transaction.atomic():
+            remove_membership(membership.id)
 
         # These should be the new quota from the project. They are zero since
         # the user has not used any of the resources, but they are still

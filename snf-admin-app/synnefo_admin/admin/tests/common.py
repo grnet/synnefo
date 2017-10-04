@@ -20,6 +20,7 @@ import string
 import random
 import mock
 
+from astakos.im import transaction
 from astakos.im.tests.projects import ProjectAPITest
 from astakos.im.functions import approve_application
 from synnefo.db import models_factory as mf
@@ -197,7 +198,8 @@ class AdminTestCase(ProjectAPITest):
         app_id = body["application"]
 
         # Approve the application.
-        self.project = approve_application(app_id, project_id)
+        with transaction.atomic():
+            self.project = approve_application(app_id, project_id)
         self.assertIsNotNone(self.project)
 
         # Alias owner user with a generic name

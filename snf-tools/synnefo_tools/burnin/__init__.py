@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,8 +31,10 @@ from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
 from synnefo_tools.burnin.projects_tests import QuotasTestSuite
 from synnefo_tools.burnin.snapshots import SnapshotsTestSuite
+from synnefo_tools.burnin.volume_tests import VolumeTestSuite
 from synnefo_tools.burnin.stale_tests import \
-    StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
+    StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite, \
+    StaleVolumesTestSuite
 
 
 # --------------------------------------------------------------------
@@ -45,7 +47,8 @@ TESTSUITES = [
     ServerTestSuite,
     NetworkTestSuite,
     QuotasTestSuite,
-    SnapshotsTestSuite
+    SnapshotsTestSuite,
+    VolumeTestSuite
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -54,6 +57,7 @@ STALE_TESTSUITES = [
     StaleServersTestSuite,
     StaleFloatingIPsTestSuite,
     StaleNetworksTestSuite,
+    StaleVolumesTestSuite,
 ]
 STALE_TSUITES_NAMES = [tsuite.__name__ for tsuite in STALE_TESTSUITES]
 
@@ -123,6 +127,29 @@ def parse_arguments(args):
              "instead of a randomly chosen one. Supports both search by name "
              "(reg expression) with \"name:flavor name\" or by id with "
              "\"id:flavor id\"")
+    parser.add_option(
+        "--volume-flavors", action="callback", callback=parse_comma,
+        type="string", default=None, dest="volume_flavors",
+        metavar="VOLUME_FLAVORS",
+        help="Force all server creations on the VolumeTestSuite to use one of"
+             "the specified VOLUME_FLAVORS instead of a randomly chosen one."
+             "Supports both search by name (reg expression) with \"name:flavor"
+             " name\" or by id with \"id:flavor id\". The subset of the "
+             "flavors that will be used, is depended on the selected "
+             " detachable and non detachable volume types. You can set these "
+             "options using the --detachable-volume-type and "
+             "--non-detachable-volume-type respectively."),
+    parser.add_option(
+        "--detachable-volume-type", action="store", type="string",
+        default=None, dest="detachable_volume_type",
+        metavar="DETACHABLE_VOLUME_TYPE",
+        help="Use a specific DETACHABLE_VOLUME_TYPE for the VolumeTestSuite"),
+    parser.add_option(
+        "--non-detachable-volume-type", action="store", type="string",
+        default=None, dest="non_detachable_volume_type",
+        metavar="NON_DETACHABLE_VOLUME_TYPE",
+        help="Use a specific NON_DETACHABLE_VOLUME_TYPE for the"
+             "VolumeTestSuite"),
     parser.add_option(
         "--images", action="callback", callback=parse_comma,
         type="string", default=None, dest="images", metavar="IMAGES",

@@ -110,3 +110,29 @@ as long as the location set accordingly while creating the image.
 
 In order to enable rescue mode (which is disabled by default) the
 RESCUE_ENABLED setting must be set to False.
+
+Volume Tests Suite for Burnin tool
+==================================
+
+A new fully featured test suite (`VolumeTestSuite`) was added in the burnin
+tool in order to test volume functionality. It contains tests both for
+detachable and non detachable volumes. In order to make the suite more
+configurable some extra options were added:
+
+* `--volume-flavors`
+
+Same semantics as the `--flavors` option, but defines the list of flavors to be
+used when executing the volume test cases.
+
+* `--detachable-volume-type`
+
+Defines the volume type to use for the detachable volumes tests. If this is not
+defined one will be selected in random.
+
+* `--non-detachable-volume-type`
+
+Defines the volume type to use for the non detachable volumes tests. If this is
+not defined one will be selected in random.
+
+Note: `--delete-stale` option will also garbage collect stale volumes from test
+runs.

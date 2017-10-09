@@ -352,7 +352,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_PUT, "/%s/tags" % GANETI_RAPI_VERSION,
@@ -369,7 +369,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_DELETE, "/%s/tags" % GANETI_RAPI_VERSION,
@@ -650,7 +650,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_PUT,
@@ -670,7 +670,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_DELETE,

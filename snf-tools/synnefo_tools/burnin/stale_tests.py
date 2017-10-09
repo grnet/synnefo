@@ -153,3 +153,35 @@ class StaleVolumesTestSuite(CycladesTests):
             self.info("Deleting %s stale volumes", len(self.stale_volumes))
             for vlm in self.stale_volumes:
                 self._destroy_volume(vlm)
+
+# pylint: disable=too-many-public-methods
+class StaleKeypairsTestSuite(CycladesTests):
+    """Handle stale Keypairs"""
+    stale_keypairs = Proper(value=None)
+
+    def test_001_show_stale_keypairs(self):
+        """Show staled keypairs (keypairs left from previous runs)"""
+        keypairs = self._get_keypairs()
+        self.stale_keypairs = [
+            key for key in keypairs if key['name'] is not None and
+            key['name'].startswith(SNF_TEST_PREFIX)]
+
+        if len(self.stale_keypairs) == 0:
+            self.info("No stale keypairs found")
+            return
+
+        self.info("Found %s stale keypairs:", len(self.stale_keypairs))
+        for stl in self.stale_keypairs:
+            self.info("  Keypair \"%s\"", stl['name'])
+
+    def test_002_delete_stale_keypairs(self):
+        """Delete staled keypairs (keypairs left from previous runs)"""
+        if not self.delete_stale:
+            self.fail("Use --delete-stale flag to delete stale keypairs")
+            return
+        elif len(self.stale_keypairs) == 0:
+            self.info("No stale keypairs found")
+        else:
+            self.info("Deleting %s stale keypairs", len(self.stale_keypairs))
+            for key in self.stale_keypairs:
+                self._delete_keypair(key)

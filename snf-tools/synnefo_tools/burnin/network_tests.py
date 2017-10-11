@@ -147,8 +147,8 @@ class NetworkTestSuite(CycladesTests):
         cmd = "for i in {1..7}; do if ping -c 3 -w 20 %s > /dev/null; " \
             "then echo 'True'; break; fi; /bin/false; done" % server_b_private_ip
         lines, status = self._ssh_execute(
-            server_a_public_ip, self.server_a['username'],
-            self.server_a['password'], cmd)
+            server_a_public_ip, cmd, username=self.server_a['username'],
+            password=self.server_a['password'])
 
         self.assertEqual(status, 0)
         self.assertEqual(lines, ['True\n'])

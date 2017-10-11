@@ -21,6 +21,7 @@ from synnefo_tools.burnin.common import Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 import random
+import paramiko
 
 
 

@@ -50,7 +50,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
-           volumes=None, helper=False,
+           volumes=None, helper=False, user_data="",
            shared_to_project=False, key_names=None):
 
     userid = credentials.userid
@@ -134,7 +134,8 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         key_names)
 
     return _create_server(vm_id, port_ids, volume_ids, flavor, image,
-                          personality, password, auth_keys, origin_sizes)
+                          personality, user_data, password, auth_keys,
+                          origin_sizes)
 
 
 @transaction.atomic_context
@@ -243,7 +244,7 @@ def allocate_new_server(userid, project, flavor):
 
 @transaction.atomic
 def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
-                   password, auth_keys, origin_sizes):
+                   user_data, password, auth_keys, origin_sizes):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -274,6 +275,9 @@ def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
 
     if auth_keys:
         created_vm_params['auth_keys'] = auth_keys
+
+    if user_data:
+        created_vm_params['cloud_userdata'] = user_data
 
     server_created.send(sender=vm, created_vm_params=created_vm_params)
 

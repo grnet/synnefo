@@ -531,16 +531,17 @@ Request body contents::
       ...
   }
 
-=========== ==================== ======== ==========
-Attributes  Description          Cyclades OS/Compute
-=========== ==================== ======== ==========
-name        The server name      ✔        ✔
-imageRef    Image id             ✔        ✔
-flavorRef   Resources flavor     ✔        ✔
-personality Personality contents ✔        ✔
-metadata    Custom metadata      ✔        ✔
-project     Project assignment   ✔        **✘**
-=========== ==================== ======== ==========
+=========== ===================== ======== ==========
+Attributes  Description           Cyclades OS/Compute
+=========== ===================== ======== ==========
+name        The server name       ✔        ✔
+imageRef    Image id              ✔        ✔
+flavorRef   Resources flavor      ✔        ✔
+user_data   VM user provided data ✔        ✔
+personality Personality contents  ✔        ✔
+metadata    Custom metadata       ✔        ✔
+project     Project assignment    ✔        **✘**
+=========== ===================== ======== ==========
 
 * **name** can be any string
 
@@ -550,6 +551,10 @@ project     Project assignment   ✔        **✘**
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
   There are no semantic limitations, although the ``OS`` and ``USERS`` values
   should rather be defined
+
+* **user_data** (optional) are configuration information of scripts to use upon
+  VM launch. Those data are generally consumed by services running inside the
+  VM like cloud-init. Must be Base64 encoded.
 
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the

@@ -420,6 +420,7 @@ def create_server(request):
         project = server.get("project")
         shared_to_project = server.get("shared_to_project", False)
         key_name = server.get('key_name')
+        user_data = server.get('user_data', "")
         SNF_key_names = server.get('SNF:key_names', [])
         assert isinstance(SNF_key_names, list)
     except (KeyError, AssertionError):
@@ -439,6 +440,10 @@ def create_server(request):
 
     # Verify that personalities are well-formed
     util.verify_personality(personality)
+
+    # Verify that user_data are well-formed
+    util.verify_user_data(user_data)
+
     # Get flavor (ensure it is active and project has access)
     flavor = util.get_flavor(flavor_id, credentials, include_deleted=False,
                              for_project=project)
@@ -468,7 +473,8 @@ def create_server(request):
         key_names = list(set(SNF_key_names))
     vm = servers.create(credentials, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
-                        project=project, networks=networks, volumes=volumes,
+                        user_data=user_data, project=project,
+                        networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
                         key_names=key_names)
 

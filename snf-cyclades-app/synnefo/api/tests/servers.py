@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import base64
 from copy import deepcopy
 
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
@@ -24,6 +25,7 @@ from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
 from synnefo.userdata import models_factory as keymfactory
+from synnefo.logic.servers import server_created
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -850,6 +852,31 @@ class ServerCreateAPITest(ComputeAPITest):
         server = json.loads(response.content)['server']
         self.assertTrue(server['key_name'] in key_names)
         self.assertEqual(len(server['SNF:key_names']), len(key_names))
+
+    def test_create_server_with_userdata(self, mrapi):
+        """Test server creation with user data"""
+        mrapi().CreateInstance.return_value = 12
+        user_data = base64.encodestring("#!/bin/bash\nexit 0").strip()
+        self.request['server']['user_data'] = user_data
+
+        # This is a hack because python 2.x does not support assigning new
+        # values to nonlocal variables
+        vm_params = {}
+        def get_created_params(sender, created_vm_params, **kwargs):
+            vm_params["params"] = created_vm_params
+        server_created.connect(get_created_params)
+
+        response = self.mypost("servers", 'test_user',
+                               json.dumps(self.request), 'json')
+        self.assertEqual(response.status_code, 202)
+        self.assertTrue("params" in vm_params)
+        self.assertTrue("cloud_userdata" in vm_params["params"])
+        self.assertEqual(vm_params['params']['cloud_userdata'], user_data)
+
+        self.request['server']['user_data'] = "***invalid+base64***"
+        response = self.mypost("servers", 'test_user',
+                               json.dumps(self.request), 'json')
+        self.assertEqual(response.status_code, 400)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

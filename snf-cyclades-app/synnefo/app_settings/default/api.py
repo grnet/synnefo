@@ -192,6 +192,9 @@ CYCLADES_VOLUME_MAX_METADATA = 10
 # The volume types that Cyclades allow to be detached
 CYCLADES_DETACHABLE_DISK_TEMPLATES = ("ext_archipelago", "ext_vlmc")
 
+# The maximum number of tags allowed for a Cyclades Virtual Machine
+CYCLADES_VM_MAX_TAGS = 50
+
 # The maximmum allowed metadata items for a Cyclades Virtual Machine
 CYCLADES_VM_MAX_METADATA = 10
 

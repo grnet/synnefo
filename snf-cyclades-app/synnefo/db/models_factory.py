@@ -16,6 +16,7 @@
 import factory
 from factory.fuzzy import FuzzyChoice
 from synnefo.db import models
+from synnefo.api.util import COMPUTE_API_TAG_USER_PREFIX
 from random import choice
 from string import letters, digits
 import json
@@ -177,12 +178,21 @@ class StopedVirtualMachine(VirtualMachineFactory):
     operstate = "STOPED"
 
 
+class VirtualMachineTagFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.VirtualMachineTag
+
+    tag = factory.Sequence(prefix_seq(COMPUTE_API_TAG_USER_PREFIX + 'tag'))
+    status = "ACTIVE"
+    vm = factory.SubFactory(VirtualMachineFactory)
+
+
 class VirtualMachineMetadataFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.VirtualMachineMetadata
 
     meta_key = factory.Sequence(prefix_seq('key'))
     meta_value = factory.Sequence(prefix_seq('pass'))
     vm = factory.SubFactory(VirtualMachineFactory)
+
 
 class NetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Network

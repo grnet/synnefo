@@ -25,11 +25,13 @@ import json
 
 from snf_django.lib.api import faults
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Volume,
-                               VirtualMachineMetadata, IPAddressHistory,
+                               VirtualMachineMetadata, VirtualMachineTag,
+                               IPAddressHistory,
                                IPAddress, Network, Image, RescueImage,
                                RescueProperties, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
@@ -51,7 +53,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None, helper=False,
-           shared_to_project=False, key_names=None):
+           shared_to_project=False, key_names=None, tags=None):
 
     userid = credentials.userid
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
@@ -78,6 +80,9 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         raise faults.BadRequest("Virtual Machines cannot have more than %s "
                                 "metadata items" %
                                 settings.CYCLADES_VM_MAX_METADATA)
+    if len(tags) > settings.CYCLADES_VM_MAX_TAGS:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "tags" % settings.CYCLADES_VM_MAX_TAGS)
     # Get image info
     image = util.get_image_dict(image_id, userid)
 
@@ -127,20 +132,19 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         util.get_keypair(key_name, userid).content for key_name in key_names
     ])
 
-
     vm_id, port_ids, volume_ids, origin_sizes = _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
         project, volumes, helper, shared_to_project,
-        key_names)
+        key_names, tags)
 
     return _create_server(vm_id, port_ids, volume_ids, flavor, image,
-                          personality, password, auth_keys, origin_sizes)
+                          personality, password, auth_keys, origin_sizes, tags)
 
 
 @transaction.atomic_context
 def _db_create_server(
         credentials, name, flavor, image, metadata, networks, use_backend,
-        project, volumes, helper, shared_to_project, key_names,
+        project, volumes, helper, shared_to_project, key_names, tags,
         atomic_context=None):
 
     rescue_properties = RescueProperties()
@@ -213,6 +217,12 @@ def _db_create_server(
             meta_value=val,
             vm=vm)
 
+    # Create instance tags
+    for tag in tags:
+        utils.check_name_length(tag, VirtualMachineTag.TAG_LENGTH,
+                                "Tag is too long")
+        VirtualMachineTag.objects.create(tag=tag, vm=vm)
+
     quotas.issue_and_accept_commission(vm, action="BUILD",
                                        atomic_context=atomic_context)
     return (vm.id,
@@ -243,7 +253,7 @@ def allocate_new_server(userid, project, flavor):
 
 @transaction.atomic
 def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
-                   password, auth_keys, origin_sizes):
+                   password, auth_keys, origin_sizes, tags):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -279,7 +289,8 @@ def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
 
     # send job to Ganeti
     try:
-        jobID = backend.create_instance(vm, nics, volumes, flavor, image)
+        jobID = backend.create_instance(vm, nics, volumes, flavor, image,
+                                        tags)
     except:
         log.exception("Failed create instance '%s'", vm)
         jobID = None
@@ -288,13 +299,14 @@ def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
         vm.save()
         vm.nics.all().update(state="ERROR")
         vm.volumes.all().update(status="ERROR")
+        vm.tags.all().delete()
 
     # At this point the job is enqueued in the Ganeti backend
     vm.backendopcode = "OP_INSTANCE_CREATE"
     vm.backendjobid = jobID
     vm.save()
-    log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
-             vm.userid, vm, nics, vm.backend, str(jobID))
+    log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s, Tags: %s",
+             vm.userid, vm, nics, vm.backend, str(jobID), tags)
 
     # store the new task in the VM
     if jobID is not None:
@@ -693,7 +705,7 @@ def add_floating_ip(server_id, address, credentials):
 
     userid = vm.userid
     _create_port(userid, floating_ip.network, machine=vm,
-                use_ipaddress=floating_ip)
+                 use_ipaddress=floating_ip)
     log.info("User %s attached floating IP %s to VM %s, address: %s,"
              " network %s", credentials.userid, floating_ip.id, vm.id,
              floating_ip.address, floating_ip.network_id)
@@ -760,8 +772,8 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     ipaddress = None
     if isinstance(use_ipaddress, IPAddress):
         # Lock IPAddress instance
-        ipaddress = IPAddress.objects\
-                .select_for_update().get(id=use_ipaddress.id)
+        ipaddress = IPAddress.objects.select_for_update().get(
+            id=use_ipaddress.id)
         if ipaddress.network_id != network.id:
             msg = "IP Address %s does not belong to network %s"
             raise faults.Conflict(msg % (ipaddress.address, network.id))
@@ -819,10 +831,10 @@ def update_port(port_id, credentials, name=None, security_groups=None):
         port.name = name
 
     if security_groups:
-        #clear the old security groups
+        # clear the old security groups
         port.security_groups.clear()
 
-        #add the new groups
+        # add the new groups
         port.security_groups.add(*security_groups)
     port.save()
     log.info("User %s updated port %s", credentials.userid, port_id)
@@ -1131,3 +1143,104 @@ def detach_volume(server_id, volume_id, credentials):
                         exception=faults.BadRequest)
     server_attachments.detach_volume(vm, volume)
     log.info("User %s detached volume %s to VM %s", user_id, volume.id, vm.id)
+
+
+def list_tags(server_id, credentials, prefix):
+    vm = util.get_vm(server_id, credentials)
+    db_tags = vm.tags.filter(tag__startswith=prefix)
+    tags = [db_tag.tag.split(prefix, 1)[1] for db_tag in db_tags]
+    statuses = [db_tag.status for db_tag in db_tags]
+    return tags, statuses
+
+
+@transaction.atomic_context
+def replace_tags(server_id, credentials, prefix, tags, atomic_context=None):
+    if len(tags) > settings.CYCLADES_VM_MAX_TAGS:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "tags" %
+                                settings.CYCLADES_VM_MAX_TAGS)
+
+    for tag in tags:
+        util.check_tag(tag, prefixed=True)
+
+    with commands.ServerCommand(
+            "REPLACETAGS", server_id, credentials,
+            atomic_context=atomic_context) as vm:
+
+        tags_in_db = [db_tag.tag for db_tag in
+                      vm.tags.filter(tag__startswith=prefix, status='ACTIVE')]
+
+        vm.tags.filter(tag__startswith=prefix, status='ACTIVE').delete()
+
+        for tag in tags:
+            db_tag, created = VirtualMachineTag.objects.get_or_create(tag=tag,
+                                                                      vm=vm)
+
+        tags_to_del = [utils.tag_to_ganeti(tag) for tag in tags_in_db]
+        log.debug("Replacing tags %s with %s on VM %s", tags_in_db, tags, vm)
+        job_id = backend.delete_tags(vm, tags_to_del)
+        tags_to_add = [utils.tag_to_ganeti(tag) for tag in tags]
+        job_id2 = backend.add_tags(vm, tags_to_add)
+        log.debug("Delete tags op (job_id %d) and add tags ops (job_id %d)"
+                  "sent to Ganeti", job_id, job_id2)
+
+
+@transaction.atomic_context
+def delete_tags(server_id, credentials, prefix, atomic_context=None):
+    with commands.ServerCommand(
+            "DELETETAGS", server_id, credentials,
+            atomic_context=atomic_context) as vm:
+        tags = [db_tag.tag for db_tag in
+                vm.tags.filter(tag__startswith=prefix, status='ACTIVE')]
+        vm.tags.filter(tag__startswith=prefix, status='ACTIVE').delete()
+
+        tags_to_del = [utils.tag_to_ganeti(tag) for tag in tags]
+        job_id = backend.delete_tags(vm, tags_to_del)
+        log.debug("Deleting tags %s from VM %s (job_id %d)", tags, vm, job_id)
+        return len(tags)
+
+
+def check_tag_exists(server_id, credentials, tag):
+    vm = util.get_vm(server_id, credentials)
+    try:
+        return vm.tags.filter(tag=tag)[0]
+    except IndexError:
+        return None
+
+
+@transaction.atomic_context
+def add_tag(server_id, credentials, tag, atomic_context=None):
+    util.check_tag(tag, prefixed=True)
+
+    with commands.ServerCommand(
+            "ADDTAGS", server_id, credentials,
+            atomic_context=atomic_context) as vm:
+        ntags = vm.tags.filter(status='ACTIVE').count()
+
+        if ntags + 1 > settings.CYCLADES_VM_MAX_TAGS:
+            raise faults.BadRequest("Virtual Machines cannot have more than %s"
+                                    " tags" % settings.CYCLADES_VM_MAX_TAGS)
+
+        db_tag, created = VirtualMachineTag.objects.get_or_create(tag=tag,
+                                                                  vm=vm)
+        encoded_tag = utils.tag_to_ganeti(tag)
+        job_id = backend.add_tags(vm, [encoded_tag])
+        log.info("Adding tag %s encoded as %s to VM %s (job_id %d)", tag,
+                 encoded_tag, vm, job_id)
+        return created
+
+
+@transaction.atomic_context
+def delete_tag(server_id, credentials, tag, atomic_context=None):
+    with commands.ServerCommand(
+            "DELETETAGS", server_id, credentials,
+            atomic_context=atomic_context) as vm:
+
+        deleted = vm.tags.filter(tag=tag, status='ACTIVE').count()
+        vm.tags.filter(tag=tag, status='ACTIVE').delete()
+
+        if deleted == 1:
+            log.info("Deleting tag %s from VM %s", tag, vm)
+            job_id = backend.delete_tags(vm, [utils.tag_to_ganeti(tag)])
+            return True
+        return False

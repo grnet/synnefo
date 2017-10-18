@@ -35,7 +35,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
-                               IPPoolTable, RescueImage)
+                               IPPoolTable, RescueImage, VirtualMachineTag)
 from synnefo.userdata.models import PublicKeyPair
 from synnefo.plankton.backend import PlanktonBackend
 
@@ -44,7 +44,6 @@ from synnefo.cyclades_settings import cyclades_services, BASE_HOST,\
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from synnefo.logic import policy
-
 
 COMPUTE_URL = \
     join_urls(BASE_HOST,
@@ -66,6 +65,12 @@ SUBNETS_URL = join_urls(NETWORK_URL, "subnets/")
 FLOATING_IPS_URL = join_urls(NETWORK_URL, "floatingips/")
 
 PITHOSMAP_PREFIX = "pithosmap://"
+
+COMPUTE_API_TAG_USER_PREFIX = 'cyclades:user:'
+COMPUTE_API_TAG_SYSTEM_PREFIX = 'cyclades:system:'
+COMPUTE_API_TAG_PREFIXES = [COMPUTE_API_TAG_USER_PREFIX,
+                            COMPUTE_API_TAG_SYSTEM_PREFIX]
+COMPUTE_API_TAG_NAMESPACES = ['user', 'system']
 
 log = getLogger('synnefo.api')
 
@@ -457,6 +462,11 @@ def get_nic(nic_id):
         raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
 
+def render_tags(request, tags, statuses, status=200):
+    data = json.dumps({'tags': tags, 'statuses': statuses})
+    return HttpResponse(data, status=status)
+
+
 def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':
         data = render_to_string('metadata.xml', {'metadata': metadata})
@@ -658,3 +668,23 @@ def can_create_flavor(flavor, user):
             if re.compile(flv).match(flavor.name):
                 return True
     return False
+
+
+def check_tag(tag, prefixed=False):
+    if prefixed:
+        for prefix in COMPUTE_API_TAG_PREFIXES:
+            if tag.startswith(prefix):
+                tag = tag.split(prefix, 1)[1]
+                break
+
+    if any(c in set('/,') for c in tag):
+        raise faults.BadRequest("Tag cannot contain '/' or ','")
+    if len(tag) > VirtualMachineTag.TAG_LENGTH:
+        raise faults.BadRequest("Malformed Request. Tag is too long")
+
+
+def make_tag(tag, namespace):
+    if namespace == 'user':
+        return COMPUTE_API_TAG_USER_PREFIX + tag
+    elif namespace == 'system':
+        return COMPUTE_API_TAG_SYSTEM_PREFIX + tag

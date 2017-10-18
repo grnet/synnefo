@@ -20,6 +20,11 @@ from snf_django.lib.api import faults
 from django.conf import settings
 from copy import deepcopy
 from django.utils.encoding import smart_unicode
+from urllib import quote_plus, unquote_plus
+import re
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def id_from_instance_name(name):
@@ -223,3 +228,28 @@ def check_name_length(name, max_length, message):
     name = smart_unicode(name, encoding="utf-8")
     if len(name) > max_length:
         raise faults.BadRequest(message)
+
+
+def tag_to_ganeti(tag):
+    if isinstance(tag, unicode):
+        tag = tag.encode('utf-8')
+    return quote_plus(tag, safe=':').replace('%', '/').replace('_', '*')
+
+
+# Tags to decode come from Ganeti. They consist of alphanumeric characters
+# plus the following: .+*/:-
+# If a Ganeti tag was inserted manually through Ganeti's cmd contains '/', then
+# characters forbidden by OpenStack may be formed through their URL-encoded
+# code.
+# Specifically, ',' (%2C) and '/' (%2F) are not allowed by OpenStack,
+# so we ignore tags that contain them when decoded.
+def tag_from_ganeti(tag):
+    # tag may come in unicode form, but it will always contain ascii.
+    tag = str(tag)
+    # '/2C' and '/2F' will become ',' and '/' respectively when decoded
+    decoded_tag = unquote_plus(tag.replace('*', '_').replace('/', '%'))
+    if any(c in set('/,') for c in decoded_tag):
+        log.info("WARNING: ganeti tag %s decoded as %s contains characters"
+                 " ',' and/or '/'.", tag, decoded_tag)
+        return None
+    return decoded_tag

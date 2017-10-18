@@ -493,6 +493,31 @@ class VirtualMachine(models.Model):
             return repr(str(self._action))
 
 
+class VirtualMachineTag(models.Model):
+    TAG_LENGTH = 60
+
+    STATUSES = (
+        ('PENDADD', 'Pending addition'),
+        ('ACTIVE', 'Active')
+    )
+
+    tag = models.CharField(max_length=TAG_LENGTH)
+    status = models.CharField(choices=STATUSES, max_length=30,
+                              null=False, default="PENDADD")
+    vm = models.ForeignKey(VirtualMachine, related_name='tags',
+                           on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = (('vm', 'tag'),)
+        verbose_name = u'Tag for a VM.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<Tag: %s (%s)>' % (self.tag, self.status)
+
+
 class VirtualMachineMetadata(models.Model):
     KEY_LENGTH = 50
     VALUE_LENGTH = 500
@@ -1353,6 +1378,7 @@ class VolumeTypeSpecs(models.Model):
 
     def __unicode__(self):
         return u'<%s: %s>' % (self.key, self.value)
+
 
 class ProjectBackend(models.Model):
     project = models.CharField(max_length=255)

@@ -20,10 +20,10 @@ from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressHistory,
-                               RescueImage)
+                               RescueImage, VirtualMachineTag)
 from synnefo.logic import utils, ips
 from synnefo import quotas
-from synnefo.api.util import release_resource
+from synnefo.api.util import release_resource, COMPUTE_API_TAG_PREFIXES
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
 from synnefo import volume as volume_actions
@@ -125,7 +125,7 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields,
 
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                       disks=None, job_fields=None, atomic_context=None,
-                      hvparams=None):
+                      hvparams=None, tags=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -201,13 +201,16 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     vm_deleted = False
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
-    if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
-                                                     rapi.JOB_STATUS_ERROR):
-        new_operstate = "ERROR"
-        vm.backendtime = etime
-        # Update state of associated attachments
-        vm.nics.all().update(state="ERROR")
-        vm.volumes.all().update(status="ERROR")
+    if opcode == 'OP_INSTANCE_CREATE':
+        if status == rapi.JOB_STATUS_SUCCESS:
+            update_tags(vm, tags, 'ACTIVATE')
+        elif status in (rapi.JOB_STATUS_CANCELED, rapi.JOB_STATUS_ERROR):
+            new_operstate = "ERROR"
+            vm.backendtime = etime
+            # Update state of associated attachments
+            vm.nics.all().update(state="ERROR")
+            vm.volumes.all().update(status="ERROR")
+            update_tags(vm, tags, 'DELETE')
     elif opcode == 'OP_INSTANCE_REMOVE':
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
@@ -224,7 +227,22 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             vm.rescue_image = None
             new_operstate = state_for_success
             vm.backendtime = etime
+            update_tags(vm, tags, 'DELETE')
             status = rapi.JOB_STATUS_SUCCESS
+    elif opcode == 'OP_TAGS_SET':
+        log.info("opcode: %s, instance: %s, status: %s, tags: %s", opcode, vm,
+                 status, tags)
+        if status == rapi.JOB_STATUS_SUCCESS:
+            update_tags(vm, tags, 'ACTIVATE')
+        elif status in [rapi.JOB_STATUS_ERROR, rapi.JOB_STATUS_CANCELED]:
+            update_tags(vm, tags, 'DELETE')
+    elif opcode == 'OP_TAGS_DEL':
+        log.info("opcode: %s, instance: %s, status: %s, tags: %s", opcode, vm,
+                 status, tags)
+        if status == rapi.JOB_STATUS_SUCCESS:
+            update_tags(vm, tags, 'DELETE')
+        elif status in [rapi.JOB_STATUS_ERROR, rapi.JOB_STATUS_CANCELED]:
+            update_tags(vm, tags, 'ACTIVATE')
 
     if status in rapi.JOB_STATUS_FINALIZED:
         # Job is finalized: Handle quotas/commissioning
@@ -247,6 +265,36 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         vm.flavor = new_flavor
 
     vm.save()
+
+
+def update_tags(vm, ganeti_tags, action):
+    if ganeti_tags is None:
+        return
+    tags = []
+    for ganeti_tag in ganeti_tags:
+        if not any(ganeti_tag.startswith(prefix) for prefix in
+                   COMPUTE_API_TAG_PREFIXES):
+            continue
+        tag = utils.tag_from_ganeti(ganeti_tag)
+        if tag is not None:
+            tags.append(tag)
+
+    # The following block covers these cases:
+    # 1. Tags manually inserted to Ganeti from its API. The code assumes
+    #    that they are prefixed with one of COMPUTE_API_TAG_PREFIXES.
+    # 2. Deleted tags in Cyclades that Ganeti failed to delete are reinstated
+    # 3. New tags added with an expected workflow (through the API or with
+    #    snf-manage)
+    if action == 'ACTIVATE':
+        for i, tag in enumerate(tags):
+            db_tag, created = VirtualMachineTag.objects.get_or_create(tag=tag,
+                                                                      vm=vm)
+            log.info("Sync tags between Cyclades DB and Ganeti: tag: %s"
+                     ", created in Cyclades DB? %s", tag, created)
+            db_tag.status = 'ACTIVE'
+            db_tag.save()
+    elif action == 'DELETE':
+        vm.tags.filter(tag__in=tags).delete()
 
 
 def find_new_flavor(vm, cpu=None, ram=None, disk=None):
@@ -885,7 +933,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, nics, volumes, flavor, image):
+def create_instance(vm, nics, volumes, flavor, image, tags=None):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -971,6 +1019,9 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     # Use opportunistic locking
     kw['opportunistic_locking'] = settings.GANETI_USE_OPPORTUNISTIC_LOCKING
+
+    if tags is not None:
+        kw['tags'] = tags
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
@@ -1620,3 +1671,15 @@ def create_job_dependencies(job_ids=[], job_states=None):
         job_states = list(rapi.JOB_STATUS_FINALIZED)
     assert(type(job_states) == list)
     return [[job_id, job_states] for job_id in job_ids]
+
+
+def add_tags(vm, tags):
+    with pooled_rapi_client(vm) as client:
+        return client.AddInstanceTags(vm.backend_vm_id, tags,
+                                      dry_run=settings.TEST)
+
+
+def delete_tags(vm, tags):
+    with pooled_rapi_client(vm) as client:
+        return client.DeleteInstanceTags(vm.backend_vm_id, tags,
+                                         dry_run=settings.TEST)

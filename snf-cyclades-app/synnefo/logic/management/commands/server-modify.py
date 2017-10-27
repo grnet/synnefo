@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 from optparse import make_option
 
 from snf_django.lib.api import Credentials
@@ -22,7 +23,9 @@ from synnefo.management.common import (get_resource, convert_api_faults,
                                        wait_server_task)
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
-from synnefo.logic import servers
+from synnefo.logic import servers, utils as logic_utils
+from synnefo.api.util import (make_tag, COMPUTE_API_TAG_USER_PREFIX,
+                              COMPUTE_API_TAG_SYSTEM_PREFIX)
 
 
 ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft", "rescue", "unrescue"]
@@ -73,6 +76,35 @@ class Command(SynnefoCommand):
             choices=["True", "False"],
             metavar="True|False",
             help="Wait for Ganeti jobs to complete. [Default: True]"),
+        make_option(
+            '--tag-add',
+            dest='tag_add',
+            metavar='ADD_TAG',
+            help="Add tag to server."),
+        make_option(
+            '--tag-delete',
+            dest='tag_delete',
+            metavar='DELETE_TAG',
+            help="Delete tag from server."),
+        make_option(
+            '--tag-delete-all',
+            action='store_true',
+            dest='tag_delete_all',
+            default=False,
+            help="Delete all tags from server."),
+        make_option(
+            '--tag-replace-all',
+            dest='tag_replace_all',
+            metavar='REPLACE_TAGS',
+            help="Replace all of a server's tags with a new comma-separated "
+                 "list of tags."),
+        make_option(
+            '--tag-namespace',
+            dest='tag_namespace',
+            default='user',
+            choices=['user', 'system'],
+            metavar='user|system',
+            help="Set server tag namespace (default=user)."),
     )
 
     @convert_api_faults
@@ -139,4 +171,49 @@ class Command(SynnefoCommand):
                 server = servers.unrescue(server_id, credentials=credentials)
             else:
                 raise CommandError("Unknown action.")
+            wait_server_task(server, wait, stdout=self.stdout)
+
+        tag_namespace = options.get('tag_namespace')
+        if tag_namespace is None or tag_namespace == 'user':
+            prefix = COMPUTE_API_TAG_USER_PREFIX
+            tag_namespace = 'user'
+        else:
+            prefix = COMPUTE_API_TAG_SYSTEM_PREFIX
+
+        tag_add = options.get('tag_add')
+        if tag_add is not None:
+            tag = make_tag(tag_add, tag_namespace)
+            servers.add_tag(server_id, credentials, tag)
+            self.stdout.write("Added tag '%s' in namespace '%s' to server "
+                              "'%s'\n" % (tag_add, tag_namespace,
+                                          server.name))
+            wait_server_task(server, wait, stdout=self.stdout)
+
+        tag_delete = options.get('tag_delete')
+        if tag_delete is not None:
+            tag = make_tag(tag_delete, tag_namespace)
+            servers.delete_tag(server_id, credentials, tag)
+            self.stdout.write("Deleted tag '%s' in namespace '%s' from server "
+                              "'%s'\n" % (tag_delete, tag_namespace,
+                                          server.name))
+            wait_server_task(server, wait, stdout=self.stdout)
+
+        tag_delete_all = options.get('tag_delete_all')
+        if tag_delete_all:
+            servers.delete_tags(server_id, credentials, prefix)
+            self.stdout.write("Deleted server's '%s' tags in namespace '%s'\n"
+                              % (server.name, tag_namespace))
+            wait_server_task(server, wait, stdout=self.stdout)
+
+        tag_replace_all = options.get('tag_replace_all')
+        if tag_replace_all:
+            tag_replace_all = tag_replace_all.split(',')
+            tags = [make_tag(tag, tag_namespace)
+                    for tag in tag_replace_all]
+            servers.replace_tags(server_id, credentials, prefix, tags)
+            self.stdout.write("Replaced server's '%s' tags in namespace '%s'"
+                              " with the following set: '%s'\n" %
+                              (server.name, tag_namespace,
+                               [tag.encode('utf-8') for tag in
+                                tag_replace_all]))
             wait_server_task(server, wait, stdout=self.stdout)

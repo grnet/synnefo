@@ -102,6 +102,7 @@ OWNER_CANNOT_LEAVE_GROUP = (
 # Field validation fields
 REQUIRED_FIELD = 'This field is required.'
 EMAIL_USED = 'There is already an account with this email address.'
+ACTIVE_USER_SET_EMAIL = 'Failed to set email, user is active.'
 SHIBBOLETH_EMAIL_USED = (
     'This email is already associated with another shibboleth account.')
 SHIBBOLETH_INACTIVE_ACC = (

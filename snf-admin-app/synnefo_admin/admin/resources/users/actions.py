@@ -21,7 +21,7 @@ from astakos.im import user_logic as users
 
 from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
-from astakos.im.user_utils import change_user_email
+from astakos.im.user_utils import change_user_email, set_user_email
 
 
 class UserAction(AdminAction):
@@ -39,9 +39,12 @@ class UserAction(AdminAction):
 
 def check_user_action(action):
     def check(u, action):
-        res, _ = users.validate_user_action(
-            u, action, verification_code=u.verification_code)
-        return res
+        if action == 'SET_EMAIL':
+            return not u.is_active
+        else:
+            res, _ = users.validate_user_action(
+                u, action, verification_code=u.verification_code)
+            return res
 
     return lambda u: check(u, action)
 
@@ -87,6 +90,12 @@ def generate_actions():
                                          f=change_user_email, karma='bad',
                                          caution_level='warning',
                                          data_keys=['new_email'],)
+
+    actions['set_email'] = UserAction(name='Set e&#8209;mail',
+                                         f=set_user_email, karma='bad',
+                                         caution_level='warning',
+                                         data_keys=['new_email'],
+                                         c=check_user_action('SET_EMAIL'),)
 
     update_actions_rbac(actions)
 

@@ -180,7 +180,7 @@ def do_action(request, op, id, data):
         actions[op].apply(user, 'Rejected by the admin')
     elif op == 'contact':
         actions[op].apply(user, request)
-    elif op == 'modify_email':
+    elif op == 'modify_email' or op == 'set_email':
         if isinstance(data, dict):
             actions[op].apply(user, data.get('new_email'))
     else:

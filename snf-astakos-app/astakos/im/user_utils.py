@@ -231,6 +231,23 @@ def change_user_email(user, new_email,
     return email_change
 
 
+def set_user_email(user, new_email):
+
+    validate_email(new_email)
+
+    if AstakosUser.objects.verified_user_exists(new_email):
+        raise ValidationError(_(astakos_messages.EMAIL_USED))
+
+    if user.is_active:
+        raise ValidationError(_(astakos_messages.ACTIVE_USER_SET_EMAIL))
+
+    user.emailchanges.all().delete()
+    user.set_email(new_email)
+    user.save()
+    msg = 'Set email for %s'
+    logger.info(msg, user.log_display)
+
+
 def send_change_email_to_new(ec, email_template_name=(
                       'registration/email_change_email_new_email.txt')):
     url = ec.get_url()

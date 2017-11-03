@@ -94,6 +94,12 @@ Description                                        URI                          
 `Get Meta Item <#get-server-metadata-item>`__      ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
 `Update Meta Item <#update-server-metadata-item>`_ ``/servers/<server-id>/metadata/<key>``   PUT    ✔        ✔
 `Delete Meta Item <#delete-server-metadata>`_      ``/servers/<server-id>/metadata/<key>``   DELETE ✔        ✔
+`List tags <#list-server-tags>`_                   ``/servers/<server-id>/tags``             GET    ✔        ✔
+`Replace tags <#replace-server-tags>`_             ``/servers/<server-id>/tags``             PUT    ✔        ✔
+`Delete tags <#delete-server-tags>`_               ``/servers/<server-id>/tags``             DELETE ✔        ✔
+`Check tag exists <#check-server-tag-exists>`_     ``/servers/<server-id>/tags/<tag>``       GET    ✔        ✔
+`Add tag <#add-server-tag>`_                       ``/servers/<server-id>/tags/<tag>``       PUT    ✔        ✔
+`Delete tag <#delete-server-tag>`_                 ``/servers/<server-id>/tags/<tag>``       DELETE ✔        ✔
 `Actions <#server-actions>`_                       ``/servers/<server id>/action``           POST   ✔        ✔
 ================================================== ========================================= ====== ======== ==========
 
@@ -372,7 +378,8 @@ The server attributes are listed `here <#server-ref>`__.
         "metadata": {
             "os": "debian",
             "users": "root"
-        }
+        },
+        "tags": ["tag1", "tag2"]
       }, {
       {
         "addresses": [
@@ -479,7 +486,8 @@ The server attributes are listed `here <#server-ref>`__.
         "metadata": {
           "os": "debian",
           "users": "root"
-        }
+        },
+        "tags": ["tag1", "tag2"]
       }
     ]
   }
@@ -539,6 +547,7 @@ imageRef    Image id             ✔        ✔
 flavorRef   Resources flavor     ✔        ✔
 personality Personality contents ✔        ✔
 metadata    Custom metadata      ✔        ✔
+tags        Custom tags          ✔        ✔
 project     Project assignment   ✔        **✘**
 =========== ==================== ======== ==========
 
@@ -550,6 +559,13 @@ project     Project assignment   ✔        **✘**
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
   There are no semantic limitations, although the ``OS`` and ``USERS`` values
   should rather be defined
+
+* **tags** are Unicode bytestrings used to group and categorize virtual servers.
+  Tags follow the limitations of OpenStack:
+
+  * tags consist of 60 characters at most
+  * up to 50 tags per virtual server are allowed
+  * tags are non-empty and cannot contain characters '/' and ','
 
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the
@@ -1070,7 +1086,8 @@ Server attributes are explained `here <#server-ref>`__.
       "metadata": {
         "os": "debian",
         "users": "root"
-      }
+      },
+      "tags": ["tag1", "tag2"]
     }
   }
 
@@ -1602,6 +1619,259 @@ Delete a metadata of a virtual server
 URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 ``/servers/<server-id>/metadata/<key>`` DELETE ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+List Server Tags
+----------------
+
+List the tags of a virtual server
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags``           GET    ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+Response body content::
+
+  tags: [<tag1>, <tag2>]
+
+*Example Get Server Tags, JSON*
+
+.. code::
+
+  {"tags": ["tag1", "tag2"]}
+
+Replace Server Tags
+-------------------
+
+Replace the tags of a virtual server
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags``           PUT    ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+Request body content::
+
+  tags: [<tag1>, <tag2>]
+
+*Example Request to Replace Server Tags, JSON*
+
+.. code::
+
+  {"tags": ["tag1", "tag2"]}
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+Response body content::
+
+  tags: [<tag1>, <tag2>]
+
+*Example Replace Server Tags, JSON*
+
+.. code::
+
+  {"tags": ["tag1", "tag2"]}
+
+Delete Server Tags
+------------------
+
+Delete the tags of a virtual server
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags``           DELETE ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+Check Server Tag Exists
+-----------------------
+
+Check that a tag of a virtual server exists
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags/<tag>``     GET    ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+Add Server Tag
+----------------
+
+Add a tag to a virtual server
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags/<tag>``     PUT    ✔        ✔
+======================================= ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Tag has been created successfully
+204 (OK)                    Tag already exists
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadata key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+=============== ========================= ======== ==========
+Response Header Value                     Cyclades OS/Compute
+=============== ========================= ======== ==========
+Location        Full path to the tag      required required
+=============== ========================= ======== ==========
+
+Delete Server Tag
+-----------------
+
+Delete a tag from a virtual server
+
+.. rubric:: Request
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS/Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/tags/<tag>``     DELETE ✔        ✔
 ======================================= ====== ======== ==========
 
 |

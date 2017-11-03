@@ -1064,6 +1064,58 @@ command:
 The user is forbidden to do any action on an administratively suspended VM,
 which is useful for abuse cases.
 
+Tags for Virtual Machine
+========================
+
+Starting with v0.21 users can attach tags to virtual machines. The feature is
+accessible through Kamaki with the following API:
+
+* `kamaki server tags <server_id> [--csv]`
+
+List the tags of a virtual machine (in human readable or csv format).
+
+* `kamaki server tagexists <server_id> -t <tag> [--status]`
+
+Check whether a tag exists for a virtual machine and optionally return the
+tag's status.
+
+* `kamaki server modify <server_id> --tag-add <tag>`
+
+Add a tag to a virtual machine.
+
+* `kamaki server modify <server_id> --tag-del <tag>`
+
+Delete a tag of a virtual machine.
+
+* `kamaki server modify <server_id> --tags-del`
+
+Delete all tags of a virtual machine.
+
+* `kamaki server modify <server_id> --tag-replace <tag> --tag-replace <tag> ...`
+
+Replace all tags of a virtual machine with a new set.
+
+Tag management is also possible via snf-manage commands:
+
+.. code-block:: console
+
+ $ snf-manage server-modify <server_id> --tag-add <tag>
+                                        --tag-delete <tag>
+                                        --tag-replace <tag> --tag-replace <tag>
+ ...
+                                        --tag-delete-all
+
+ $ snf-manage server-tag-exists <server_id> <tag>
+
+ $ snf-manage server-inspect <server_id>
+
+ $ snf-manage server-show <server_id>
+
+The following limitations accompany the use of tags.
+* A tag can contain any UTF-8 character except for '/' and ','.
+* A tag can cotain up to 60 characters.
+* Up to 50 tags are allowed for a specific virtual machine.
+
 Ganeti backends
 ~~~~~~~~~~~~~~~
 

@@ -531,17 +531,19 @@ Request body contents::
       ...
   }
 
-=========== ===================== ======== ==========
-Attributes  Description           Cyclades OS/Compute
-=========== ===================== ======== ==========
-name        The server name       ✔        ✔
-imageRef    Image id              ✔        ✔
-flavorRef   Resources flavor      ✔        ✔
-user_data   VM user provided data ✔        ✔
-personality Personality contents  ✔        ✔
-metadata    Custom metadata       ✔        ✔
-project     Project assignment    ✔        **✘**
-=========== ===================== ======== ==========
+============= ===================== ======== ==========
+Attributes    Description           Cyclades OS/Compute
+============= ===================== ======== ==========
+name          The server name       ✔        ✔
+imageRef      Image id              ✔        ✔
+flavorRef     Resources flavor      ✔        ✔
+user_data     VM user provided data ✔        ✔
+personality   Personality contents  ✔        ✔
+metadata      Custom metadata       ✔        ✔
+key_name      Key pair name         ✔        ✔
+SNF:key_names Key pair name list    ✔        **✘**
+project       Project assignment    ✔        **✘**
+============= ===================== ======== ==========
 
 * **name** can be any string
 
@@ -555,6 +557,11 @@ project     Project assignment    ✔        **✘**
 * **user_data** (optional) are configuration information of scripts to use upon
   VM launch. Those data are generally consumed by services running inside the
   VM like cloud-init. Must be Base64 encoded.
+
+* **key_name** (optional) the name of the key pair to be injected into the VM
+
+* **SNF:key_names** (optional) A list of key pair names to be injected to the
+  VM. This cannot be used in conjunction with *key_name*.
 
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the
@@ -587,9 +594,9 @@ owner                  File owner          ✔        **✘**
 
 .. rubric:: Response
 
-=========================== =====================
+=========================== =============================================
 Return Code                 Description
-=========================== =====================
+=========================== =============================================
 200 (OK)                    Request succeeded
 400 (Bad Request)           Malformed request data
 401 (Unauthorized)          Missing or expired user token
@@ -601,7 +608,7 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   No available backends or service currently
 \                           unavailable
-=========================== =====================
+=========================== ============================================
 
 |
 

@@ -907,8 +907,8 @@ class Network(base.Component):
     @base.run_cmds
     def initialize(self):
         return [
-            "/etc/init.d/rc.local start",
-            "/etc/init.d/ferm start",
+            "systemctl restart rc.local",
+            "systemctl restart ferm",
             ]
 
     @base.run_cmds

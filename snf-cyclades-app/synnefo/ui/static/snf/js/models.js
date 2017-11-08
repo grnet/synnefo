@@ -604,22 +604,6 @@
             return false;
         },
 
-        personality_data_for_keys: function(keys) {
-            return _.map(this.ssh_keys_paths(), function(pathinfo) {
-                var contents = '';
-                _.each(keys, function(key){
-                    contents = contents + key.get("content") + "\n"
-                });
-                contents = $.base64.encode(contents);
-
-                return {
-                    path: pathinfo.path,
-                    contents: contents,
-                    mode: 0600,
-                    owner: pathinfo.user
-                }
-            });
-        }
     });
 
     // Flavor model

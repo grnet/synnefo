@@ -1982,21 +1982,17 @@
             var data = this.get_params();
             var meta = {};
             var extra = {};
-            var personality = [];
 
             if (this.validate(data)) {
                 this.submit_btn.addClass("in-progress");
                 this.submiting = true;
                 if (data.metadata) { meta = data.metadata; }
-                if (data.keys && data.keys.length > 0) {
-                    personality.push(
-                      data.image.personality_data_for_keys(data.keys))
-                }
 
-                if (personality.length) {
-                    extra['personality'] = _.flatten(personality);
-                }
-                
+                extra['SNF:key_names'] = [];
+                _.each(data.keys, function(key) {
+                  extra['SNF:key_names'].push(key.get('name'))
+                });
+
                 extra['networks'] = [];
                 _.each(data.networks, function(n) {
                   extra.networks.push({'uuid': n.get('id')})

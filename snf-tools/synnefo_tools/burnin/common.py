@@ -303,6 +303,7 @@ class BurninTests(unittest.TestCase):
     temp_directory = None
     failfast = None
     temp_containers = []
+    test_rescue = None
 
     quotas = Proper(value=None)
     uuid = Proper(value=None)
@@ -867,6 +868,7 @@ def initialize(opts, testsuites, stale_testsuites):
     # Pass the rest options to BurninTests
     BurninTests.ignore_ssl = opts.ignore_ssl
     BurninTests.use_ipv6 = opts.use_ipv6
+    BurninTests.test_rescue = opts.test_rescue
     BurninTests.action_timeout = opts.action_timeout
     BurninTests.action_warning = opts.action_warning
     BurninTests.query_interval = opts.query_interval

@@ -228,6 +228,10 @@ def parse_arguments(args):
         type="int", default=20 * common.MB, dest="obj_upload_max_size",
         help="Set the max size of the objects to massively be uploaded "
              "(default: 20MB)")
+    parser.add_option(
+        "--no-rescue", action="store_false",
+        default=True, dest="test_rescue",
+        help="Disable server rescue related tests")
 
     (opts, args) = parser.parse_args(args)
 

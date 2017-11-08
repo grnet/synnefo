@@ -94,17 +94,17 @@ class Command(SynnefoCommand):
         except:
             pass
 
-        user_id = options['user_id']
+        user = options['user']
         backend_id = options['backend_id']
-        image_id = options['image_id']
-        flavor_id = options['flavor_id']
+        image = options['image']
+        flavor = options['flavor']
         new_public_nic = options['new_nics']
 
         for field in self.REQUIRED:
             if not locals()[field.replace("-", "_")]:
                 raise CommandError(field + " is mandatory")
 
-        import_server(instance_name, backend_id, flavor_id, image_id, user_id,
+        import_server(instance_name, backend_id, flavor, image, user,
                       new_public_nic, self.stderr)
 
 

@@ -44,7 +44,7 @@
                     <p>You have chosen to <em class="elem lowercase">{{ action.name|safe }}</em>
                     {% if op == "contact" %}
                         to 
-                    {% elif op == "modify_email" or op == "set_email" %}
+                    {% elif op == "modify_email" or op == "set_email" or op == "release_shibboleth" %}
                         for
                     {% endif %}
                     the following <em class="num elem"></em> {{ action.target }}{% if view_type == 'list' %}s{% endif %}:

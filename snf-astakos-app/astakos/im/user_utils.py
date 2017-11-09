@@ -263,6 +263,7 @@ def send_change_email_to_new(ec, email_template_name=(
     msg = 'Sent change email for %s'
     logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
 
+
 def send_change_email_to_old(email_change,
         email_template_name='registration/email_change_email_old_email.txt'):
 
@@ -271,3 +272,20 @@ def send_change_email_to_old(email_change,
 
     send_mail(_(astakos_messages.EMAIL_CHANGE_OLD_EMAIL_SUBJECT), message,
         from_email, [email_change.user.email], connection=get_connection())
+
+
+def has_shibboleth(user):
+    return user.auth_providers.filter(module='shibboleth').exists()
+
+
+def release_shibboleth(user):
+    """Release user's shibboleth provider."""
+    try:
+        shibboleth = user.auth_providers.get(module="shibboleth")
+        shibboleth.delete()
+        msg = 'Released shibboleth for %s'
+    except AstakosUserAuthProvider.DoesNotExist:
+        msg = 'Failed to get shibboleth provider for %s'
+        raise ValidationError(_(astakos_messages.SHIBBOLETH_NOT_FOUND))
+
+    logger.info(msg, user.log_display)

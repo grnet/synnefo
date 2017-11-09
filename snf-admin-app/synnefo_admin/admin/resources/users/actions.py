@@ -21,7 +21,10 @@ from astakos.im import user_logic as users
 
 from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
-from astakos.im.user_utils import change_user_email, set_user_email
+from astakos.im.user_utils import change_user_email, set_user_email, \
+    has_shibboleth, release_shibboleth
+
+logger = logging.getLogger(__name__)
 
 
 class UserAction(AdminAction):
@@ -41,6 +44,8 @@ def check_user_action(action):
     def check(u, action):
         if action == 'SET_EMAIL':
             return not u.is_active
+        elif action == 'RELEASE_SHIBBOLETH':
+            return has_shibboleth(u)
         else:
             res, _ = users.validate_user_action(
                 u, action, verification_code=u.verification_code)
@@ -96,6 +101,11 @@ def generate_actions():
                                          caution_level='warning',
                                          data_keys=['new_email'],
                                          c=check_user_action('SET_EMAIL'),)
+
+    actions['release_shibboleth'] = UserAction(name='Release Shibboleth',
+                                         f=release_shibboleth, karma='bad',
+                                         caution_level='dangerous',
+                                         c=check_user_action('RELEASE_SHIBBOLETH'),)
 
     update_actions_rbac(actions)
 

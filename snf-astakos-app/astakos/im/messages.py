@@ -333,6 +333,9 @@ AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
     "You can add {method_prompt} to your existing account from your "
     " <a href='{profile_url}'>profile page</a>")
 
+LOCAL_PROVIDER_ACTIVE = "Local provider is already active."
+SHIBBOLETH_NOT_FOUND = "Shibboleth provider not found."
+
 # Email subjects
 _SITENAME = branding_settings.SERVICE_NAME
 PLAIN_EMAIL_SUBJECT = 'New e-mail from %s' % _SITENAME

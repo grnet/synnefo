@@ -22,7 +22,8 @@ from astakos.im import user_logic as users
 from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 from astakos.im.user_utils import change_user_email, set_user_email, \
-    has_shibboleth, release_shibboleth
+    has_shibboleth, release_shibboleth, can_enable_local_provider, \
+    enable_local_provider
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,8 @@ def check_user_action(action):
             return not u.is_active
         elif action == 'RELEASE_SHIBBOLETH':
             return has_shibboleth(u)
+        elif action == 'ENABLE_LOCAL':
+            return can_enable_local_provider(u)
         else:
             res, _ = users.validate_user_action(
                 u, action, verification_code=u.verification_code)
@@ -107,6 +110,10 @@ def generate_actions():
                                          caution_level='dangerous',
                                          c=check_user_action('RELEASE_SHIBBOLETH'),)
 
+    actions['enable_local'] = UserAction(name='Enable Local',
+                                         f=enable_local_provider, karma='bad',
+                                         caution_level='warning',
+                                         c=check_user_action('ENABLE_LOCAL'),)
     update_actions_rbac(actions)
 
     return actions

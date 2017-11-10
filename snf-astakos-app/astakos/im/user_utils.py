@@ -30,7 +30,8 @@ from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 
 from astakos.im import settings
-from astakos.im.models import Invitation, EmailChange, AstakosUser
+from astakos.im.models import Invitation, EmailChange, AstakosUser, \
+    AstakosUserAuthProvider
 from astakos.im.fields import validate_email
 import astakos.im.messages as astakos_messages
 
@@ -289,3 +290,38 @@ def release_shibboleth(user):
         raise ValidationError(_(astakos_messages.SHIBBOLETH_NOT_FOUND))
 
     logger.info(msg, user.log_display)
+
+
+def get_local(user):
+    try:
+        local = user.auth_providers.get(module="local")
+    except AstakosUserAuthProvider.DoesNotExist:
+        return None
+    return local
+
+def can_enable_local_provider(user):
+    local = get_local(user)
+    return not local or not local.active
+
+
+def enable_local_provider(user):
+    """Enable user's local auth provider."""
+    local = get_local(user)
+    if local and not local.active:
+        local.active = True
+        local.save()
+        msg = "Activated local provider for user %s"
+        logger.info(msg, user.log_display)
+    elif not local:
+        user.add_auth_provider("local", None, auth_backend="astakos")
+        msg = "Created local provider for user %s"
+        logger.info(msg, user.log_display)
+    else:
+        raise ValidationError(_(astakos_messages.LOCAL_PROVIDER_ACTIVE))
+
+    if not user.has_usable_password():
+        password = AstakosUser.objects.make_random_password()
+        user.set_password(password)
+        user.save()
+        msg = "Updated password for user %s"
+        logger.info(msg, user.log_display)

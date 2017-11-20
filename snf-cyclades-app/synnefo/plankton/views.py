@@ -339,7 +339,7 @@ def list_images(request, detail=False):
             if key not in fields:
                 del image[key]
 
-    data = json.dumps(images, indent=settings.DEBUG)
+    data = json.dumps({"images": images}, indent=settings.DEBUG)
     return HttpResponse(data)
 
 

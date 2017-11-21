@@ -20,6 +20,12 @@ Cyclades
 * Add 'adminPass' API parameter on server creation to support setting
   administrative password by the user
 
+Astakos
+--------
+
+* Support default project (tenant) per user.
+
+
 .. _Changelog-0.20:
 
 v0.20

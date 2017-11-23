@@ -312,9 +312,13 @@ class CycladesTests(BurninTests):
                 self.clients.compute.get_flavor_details(server['flavor']['id'])
             new_changes = [
                 (QDISK, QREMOVE, flavor['disk'], GB),
-                (QVM, QREMOVE, 1, None),
-                (QRAM, QREMOVE, flavor['ram'], MB),
-                (QCPU, QREMOVE, flavor['vcpus'], None)]
+                (QVM, QREMOVE, 1, None)]
+
+            if server['status'] != 'STOPPED':
+                new_changes.extend([
+                    (QRAM, QREMOVE, flavor['ram'], MB),
+                    (QCPU, QREMOVE, flavor['vcpus'], None)])
+
             changes[project].extend(new_changes)
 
         self._check_quotas(changes)

@@ -539,17 +539,18 @@ Request body contents::
       ...
   }
 
-=========== ==================== ======== ==========
-Attributes  Description          Cyclades OS/Compute
-=========== ==================== ======== ==========
-name        The server name      ✔        ✔
-imageRef    Image id             ✔        ✔
-flavorRef   Resources flavor     ✔        ✔
-personality Personality contents ✔        ✔
-metadata    Custom metadata      ✔        ✔
-tags        Custom tags          ✔        ✔
-project     Project assignment   ✔        **✘**
-=========== ==================== ======== ==========
+=========== ====================== ======== ==========
+Attributes  Description            Cyclades OS/Compute
+=========== ====================== ======== ==========
+name        The server name        ✔        ✔
+imageRef    Image id               ✔        ✔
+flavorRef   Resources flavor       ✔        ✔
+personality Personality contents   ✔        ✔
+metadata    Custom metadata        ✔        ✔
+tags        Custom tags            ✔        ✔
+adminPass   Administrator Password ✔        ✔
+project     Project assignment     ✔        **✘**
+=========== ====================== ======== ==========
 
 * **name** can be any string
 
@@ -570,6 +571,16 @@ project     Project assignment   ✔        **✘**
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the
   user).
+
+* **adminPass** (optional) is a password applied to the server upon creation.
+  The password must meet the complexity requirements set by cyclades: It must
+  contain at least one upper case letter, one lower case and one digit. It must
+  also be at least 10 characters long. If these requirements are not met, the
+  server creation will fail.
+
+  If you do not specify a password, the API generates and assigns a random one
+  that it returns in the response object. This password meets the security
+  requirements mentioned above.
 
 * **personality** (optional) is a list of personality injections. A personality
   injection is a way to add a file into a virtual server while creating it.

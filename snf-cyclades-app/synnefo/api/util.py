@@ -93,6 +93,19 @@ class feature_enabled(object):
                 raise faults.FeatureNotEnabled()
         return decorator
 
+def is_password_strong(password):
+    """Check if the given password is at least 10 chars with at least one
+    character from each group: upper case, lower case, digits.
+    """
+
+    has_upper = any(x.isupper() for x in password)
+    has_lower = any(x.islower() for x in password)
+    has_digit = any(x.isdigit() for x in password)
+
+    if has_upper and has_lower and has_digit and len(password) >= 10:
+        return True
+
+    return False
 
 def random_password():
     """Generates a random password

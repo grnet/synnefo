@@ -17,7 +17,8 @@ Cyclades
 --------
 
 * Add support for virtual machine tags.
-
+* Add 'adminPass' API parameter on server creation to support setting
+  administrative password by the user
 
 .. _Changelog-0.20:
 

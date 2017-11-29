@@ -40,6 +40,9 @@ Cyclades
 * Add mechanism for creating, listing, updating and deleting rescue images
 * Add support for rescuing and unrescuing VMs using system defined rescue
   images.
+* Use ssh key API in UI instead of file injection when selecting ssh keys.
+* Implement Openstack's userdata injection mechanism (user_data parameter) in
+  server create API
 
 Astakos
 -------
@@ -52,6 +55,11 @@ Tools
 -----
 
 * Extend snf-burnin to include testing of volumes and keypairs
+
+Admin
+-----
+* Add functionality to set user's email, release shibboleth provider, and
+  enable local provider
 
 
 .. _Changelog-0.19:

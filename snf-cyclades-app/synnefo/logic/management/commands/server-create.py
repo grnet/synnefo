@@ -68,6 +68,8 @@ class Command(SynnefoCommand):
                     default=[]),
         make_option("--floating-ips", dest="floating_ip_ids",
                     help="Comma separated list of port IDs to connect"),
+        make_option("--tags", dest="tags",
+                    help="Comma separated list of tags for server"),
         make_option("--helper", action="store_true", dest="helper_vm",
                     help="Defines that the server will be used for internal"
                          " Synnefo actions.",
@@ -96,6 +98,9 @@ class Command(SynnefoCommand):
         password = options['password']
         volumes = options['volumes']
         helper_vm = options['helper_vm']
+        tags = options['tags']
+        if tags:
+            tags = tags.split(',')
 
         if not name:
             raise CommandError("name is mandatory")
@@ -126,7 +131,7 @@ class Command(SynnefoCommand):
                                 networks=connection_list,
                                 volumes=volumes_list,
                                 use_backend=backend, helper=helper_vm,
-                                project=project)
+                                project=project, tags=tags)
         pprint.pprint_server(server, stdout=self.stdout)
 
         wait = parse_bool(options["wait"])

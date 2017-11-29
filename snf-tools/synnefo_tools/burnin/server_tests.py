@@ -1,4 +1,5 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,6 +101,43 @@ class GeneratedServerTestSuite(CycladesTests):
     def test_005_server_becomes_active(self):
         """Test server becomes ACTIVE"""
         self._insist_on_server_transition(self.server, ["BUILD"], "ACTIVE")
+
+    def test_005a_tags_become_active(self):
+        """Test server's tags become ACTIVE"""
+        self._insist_on_tags_transition(self.server['id'], [],
+                                        ['tag1', 'tag2'])
+
+    def test_005b_replace_tags(self):
+        """Test replacing server's tags"""
+        self.clients.cyclades.replace_tags(self.server['id'],
+                                           [u'tag-rep1', u'tag-νέο'])
+        self._insist_on_tags_transition(self.server['id'], ['tag1', 'tag2'],
+                                        [])
+        self._insist_on_tags_transition(self.server['id'], [],
+                                        [u'tag-rep1', u'tag-νέο'])
+
+    def test_005c_delete_tags(self):
+        """Test deleting server's tags"""
+        self.clients.cyclades.delete_tags(self.server['id'])
+        self._insist_on_tags_transition(self.server['id'],
+                                        ['tag-rep1', u'tag-νέο'], [])
+
+    def test_005d_add_tag(self):
+        """Test adding a server tag"""
+        self.clients.cyclades.add_tag(self.server['id'], u'tag-νέο2')
+        self._insist_on_tags_transition(self.server['id'], [], [u'tag-νέο2'])
+
+    def test_005e_tag_exists(self):
+        """Test whether a server tag exists"""
+        status_code, tag_status = self.clients.cyclades.check_tag_exists(
+            self.server['id'], u'tag-νέο2')
+        self.assertEquals(status_code, 204)
+        self.assertEquals(tag_status, 'ACTIVE')
+
+    def test_005f_delete_tag(self):
+        """Test deleting a server tag"""
+        self.clients.cyclades.delete_tag(self.server['id'], 'tag-νέο2')
+        self._insist_on_tags_transition(self.server['id'], ['tag-νέο2'], [])
 
     def test_006_get_server_oob_console(self):
         """Test getting OOB server console over VNC
@@ -284,7 +322,6 @@ class GeneratedServerTestSuite(CycladesTests):
     def test_025_submit_delete_request(self):
         """Test submit request to delete server"""
         self._delete_servers([self.server])
-
 
 
 # --------------------------------------------------------------------

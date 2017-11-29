@@ -48,7 +48,8 @@ class Command(SynnefoCommand):
 
         display_mails = options['displaymails']
 
-        pprint.pprint_server(vm, display_mails=display_mails, stdout=self.stdout)
+        pprint.pprint_server(vm, display_mails=display_mails,
+                             stdout=self.stdout)
         self.stdout.write("\n")
         pprint.pprint_server_nics(vm, stdout=self.stdout)
         self.stdout.write("\n")

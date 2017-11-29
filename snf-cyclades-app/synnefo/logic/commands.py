@@ -44,6 +44,18 @@ def validate_server_action(vm, action):
     if action == "DESTROY":
         return
 
+    # Add tags to a VM instance
+    if action == "ADDTAGS":
+        return
+
+    # Delete tags from a VM instance
+    if action == "DELETETAGS":
+        return
+
+    # Replace a VM instance's tag
+    if action == "REPLACETAGS":
+        return
+
     # Check that there is no pending action
     pending_action = vm.task
     if pending_action:

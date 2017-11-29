@@ -249,6 +249,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.process_IN_MOVED_TO(event)
 
     def process_IN_MOVED_TO(self, event):
+        self.logger.info("Processing event %s", event.name)
         jobfile = os.path.join(event.path, event.name)
         if not event.name.startswith("job-"):
             self.logger.debug("Not a job file: %s" % event.path)
@@ -261,6 +262,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         data = serializer.LoadJson(data)
         job = jqueue._QueuedJob.Restore(None, data, False, False)
+
+        self.logger.info("Job data: %s", job)
 
         job_id = int(job.id)
 
@@ -357,6 +360,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           instances, op.status)
 
+        tags = get_field(input, "tags") or []
+
         job_fields = {}
         if op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_CREATE"]:
             job_fields = {"nics": get_field(input, "nics"),
@@ -387,7 +392,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         msg = {"type": "ganeti-op-status",
                "instance": instances,
                "operation": op_id,
-               "job_fields": job_fields}
+               "job_fields": job_fields,
+               "tags": tags}
 
         if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
              op.status == "success") or
@@ -461,22 +467,40 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         """
         input = op.input
+        kind = input.kind
         op_id = input.OP_ID
-        if op_id == "OP_TAGS_SET":
-            # NOTE: Check 'dry_run' after 'cluster' because networks and groups
-            # do not support the 'dry_run' option.
-            if (op.status == "waiting" and input.tags and
-               input.kind == "cluster" and input.dry_run):
-                # Special where a prefixed cluster tag operation in dry-run
-                # mode is used in order to trigger eventd to send a
-                # heartbeat message.
-                tag = input.tags[0]
-                if tag.startswith("snf:eventd:heartbeat"):
-                    self.logger.debug("Received heartbeat tag '%s'."
-                                      " Sending response.", tag)
-                    msg = {"type": "eventd-heartbeat",
-                           "cluster": self.cluster_name}
-                    return msg, "eventd.heartbeat"
+        tags = input.tags
+        dry_run = get_field(input, 'dry_run')
+        if kind == "cluster":
+            if op_id == "OP_TAGS_SET":
+                # NOTE: Check 'dry_run' after 'cluster'
+                # because networks and groups
+                # do not support the 'dry_run' option.
+                if op.status == "waiting" and tags and dry_run:
+                    # Special where a prefixed cluster tag operation in dry-run
+                    # mode is used in order to trigger eventd to send a
+                    # heartbeat message.
+                    tag = tags[0]
+                    if tag.startswith("snf:eventd:heartbeat"):
+                        self.logger.debug("Received heartbeat tag '%s'."
+                                          " Sending response.", tag)
+                        msg = {"type": "eventd-heartbeat",
+                               "cluster": self.cluster_name}
+                        return msg, "eventd.heartbeat"
+        elif kind == "instance" and op.status in ['success', 'error',
+                                                  'cancelled']:
+            self.logger.info("Process opcode %s for tags %s", op_id, tags)
+            name = input.name
+            job_fields = {"dry_run": dry_run}
+            msg = {"type": "ganeti-op-status",
+                   "instance": name,
+                   "tags": tags,
+                   "job_fields": job_fields}
+
+            routekey = "ganeti.%s.event.op" % prefix_from_name(name)
+            self.logger.info("Return msg: %s, routekey: %s",
+                             str(msg), routekey)
+            return msg, routekey
 
         return None, None
 

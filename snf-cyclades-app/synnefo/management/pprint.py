@@ -20,6 +20,9 @@ from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo.api.util import (COMPUTE_API_TAG_USER_PREFIX as user_prefix,
+                              COMPUTE_API_TAG_SYSTEM_PREFIX as sys_prefix)
+from synnefo.logic.utils import tag_from_ganeti
 
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.reconciliation import (nics_from_instance,
@@ -276,6 +279,16 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
     ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = server.userid
 
+    tags = []
+    header = ['tag', 'status', 'namespace']
+    for db_tag in server.tags.all():
+        if db_tag.tag.startswith(user_prefix):
+            tags.append([db_tag.tag.split(user_prefix, 1)[1],
+                         db_tag.status, 'user'])
+        elif db_tag.tag.startswith(sys_prefix):
+            tags.append([db_tag.tag.split(sys_prefix, 1)[1],
+                         db_tag.status, 'system'])
+
     try:
         image = get_image(server.imageid, server.userid)['name']
     except:
@@ -309,6 +322,12 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
 
     pprint_table(stdout, server_dict.items(), None, separator=" | ",
                  title=title)
+    if tags:
+        stdout.write("\nTags of server %s in Cyclades DB:\n" % server.name)
+        pprint_table(stdout, tags, header)
+    else:
+        stdout.write("\nTags of server %s in Cyclades DB: no tags\n" %
+                     server.name)
 
 
 def pprint_server_nics(server, stdout=None, title=None):
@@ -372,8 +391,26 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     server_dict = OrderedDict([(k, server_info.get(k))
                               for k in GANETI_INSTANCE_FIELDS])
 
+    ganeti_tags = server_info.get('tags')
+    tags = []
+    header = ['raw tag', 'decoded tag', 'namespace']
+    for gtag in ganeti_tags:
+        tag = tag_from_ganeti(gtag)
+        if tag is None:
+            continue
+        if tag.startswith(user_prefix):
+            tags.append([gtag, tag.split(user_prefix, 1)[1], 'user'])
+        elif tag.startswith(sys_prefix):
+            tags.append([gtag, tag.split(sys_prefix, 1)[1], 'system'])
+
     pprint_table(stdout, server_dict.items(), None, separator=" | ",
                  title=title)
+    if tags:
+        stdout.write("\nTags of server %s in Ganeti:\n" % server_dict['name'])
+        pprint_table(stdout, tags, header)
+    else:
+        stdout.write("\nTags of server %s in Ganeti: no tags\n" %
+                     server_dict['name'])
     stdout.write("\n")
 
     hvparams = server_info.get('hvparams')
@@ -502,6 +539,7 @@ def pprint_volume_type(volume_type, stdout=None, title=None):
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)
+
 
 def pprint_floating_ip(ip, display_mails=False, stdout=None, title=None):
     if stdout is None:

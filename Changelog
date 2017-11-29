@@ -6,6 +6,19 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.21:
+
+v0.21
+=====
+
+Released: UNRELEASED
+
+Cyclades
+--------
+
+* Add support for virtual machine tags.
+
+
 .. _Changelog-0.20:
 
 v0.20

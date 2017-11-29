@@ -25,8 +25,12 @@ from django.core.urlresolvers import reverse
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
+
 from synnefo.api import util
-from synnefo.api.util import VM_PASSWORD_CACHE, feature_enabled
+from synnefo.api.util import (VM_PASSWORD_CACHE, feature_enabled, check_tag,
+                              make_tag, COMPUTE_API_TAG_USER_PREFIX)
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume, snapshots_enabled_for_user
@@ -35,6 +39,7 @@ from synnefo.logic.policy import VMPolicy
 
 from logging import getLogger
 log = getLogger(__name__)
+from urlparse import urljoin
 
 urlpatterns = patterns(
     'synnefo.api.servers',
@@ -43,6 +48,8 @@ urlpatterns = patterns(
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
     (r'^/(\d+)(?:.json|.xml)?/password$', 'demux_server_password'),
     (r'^/(\d+)/action(?:.json|.xml)?$', 'demux_server_action'),
+    (r'^/(\d+)/tags(?:.json|.xml)?$', 'tags_demux'),
+    (r'^/(\d+)/tags/(.+?)(?:.json|.xml)?$', 'tag_demux'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
     (r'^/(\d+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
@@ -89,6 +96,34 @@ def server_demux(request, server_id):
         return update_server_name(request, server_id)
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
+    else:
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
+
+
+def tags_demux(request, server_id):
+    if request.method == 'GET':
+        return list_tags(request, server_id)
+    elif request.method == 'PUT':
+        return replace_tags(request, server_id)
+    elif request.method == 'DELETE':
+        return delete_tags(request, server_id)
+    else:
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
+
+
+def tag_demux(request, server_id, tag):
+    if request.method == 'GET':
+        return check_tag_exists(request, server_id, tag)
+    elif request.method == 'PUT':
+        return add_tag(request, server_id, tag)
+    elif request.method == 'DELETE':
+        return delete_tag(request, server_id, tag)
     else:
         return api.api_method_not_allowed(request,
                                           allowed_methods=['GET',
@@ -215,6 +250,9 @@ def vm_to_dict(vm, detail=False):
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         d['metadata'] = metadata
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        d['tags'] = [db_tag.tag.split(prefix, 1)[1] for db_tag in vm.tags.
+                     filter(tag__startswith=prefix, status='ACTIVE')]
 
         nics = vm.nics.all()
         active_nics = filter(lambda nic: nic.state == "ACTIVE", nics)
@@ -410,6 +448,8 @@ def create_server(request):
         name = server['name']
         metadata = server.get('metadata', {})
         assert isinstance(metadata, dict)
+        tags = server.get('tags', [])
+        assert isinstance(tags, list)
         image_id = server['imageRef']
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
@@ -466,11 +506,14 @@ def create_server(request):
 
         # Remove duplicate key names
         key_names = list(set(SNF_key_names))
+
+    prefixed_tags = [make_tag(tag, 'user') for tag in tags]
+
     vm = servers.create(credentials, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
                         project=project, networks=networks, volumes=volumes,
                         shared_to_project=shared_to_project,
-                        key_names=key_names)
+                        key_names=key_names, tags=prefixed_tags)
 
     log.info("User %s created VM %s, shared: %s", user_id, vm.id,
              shared_to_project)
@@ -693,6 +736,85 @@ def demux_server_action(request, server_id):
     action_args = utils.get_attribute(req, action, required=False,
                                       attr_type=dict)
     return server_actions[action](request, server_id, action_args)
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def check_tag_exists(request, server_id, tag):
+
+    db_tag = servers.check_tag_exists(server_id, request.credentials,
+                                      make_tag(tag, 'user'))
+    if db_tag:
+        response = HttpResponse(status=204)
+        response['tag-status'] = db_tag.status
+        return response
+    else:
+        return HttpResponse(status=404)
+
+
+@api.api_method(http_method='PUT', user_required=True, logger=log)
+def add_tag(request, server_id, tag):
+
+    if not isinstance(tag, basestring):
+        raise faults.BadRequest("Malformed Request. Invalid tag.")
+
+    created = servers.add_tag(server_id, request.credentials, make_tag(tag,
+                              'user'))
+    if created:
+        response = HttpResponse(status=201)
+        response['Location'] = request.build_absolute_uri()
+        return response
+    else:
+        return HttpResponse(status=204)
+
+
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
+def delete_tag(request, server_id, tag):
+
+    found_deleted = servers.delete_tag(server_id, request.credentials,
+                                       make_tag(tag, 'user'))
+    if found_deleted:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=404)
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def list_tags(request, server_id):
+
+    tags, statuses = servers.list_tags(server_id, request.credentials,
+                                       COMPUTE_API_TAG_USER_PREFIX)
+    tags = [tag.encode('utf-8') for tag in tags]
+    return util.render_tags(request, tags, statuses, status=200)
+
+
+@api.api_method(http_method='PUT', user_required=True, logger=log)
+def replace_tags(request, server_id):
+
+    req = utils.get_json_body(request)
+    tags = utils.get_attribute(req, "tags", required=True,
+                               attr_type=list)
+
+    for tag in tags:
+        if not isinstance(tag, basestring):
+            raise faults.BadRequest("Malformed Request. Invalid tag.")
+
+    prefixed_tags = [make_tag(tag, 'user') for tag in tags]
+    servers.replace_tags(server_id, request.credentials,
+                         COMPUTE_API_TAG_USER_PREFIX, prefixed_tags)
+    statuses = ['PENDADD'] * len(tags)
+    return util.render_tags(request, tags, statuses, status=200)
+
+
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
+def delete_tags(request, server_id):
+
+    tags_deleted = servers.delete_tags(server_id, request.credentials,
+                                       COMPUTE_API_TAG_USER_PREFIX)
+    log.info("Deleted all (%d) tags", tags_deleted)
+    if tags_deleted > 0:
+        return HttpResponse(status=204)
+    else:
+        return HttpResponse(status=404)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

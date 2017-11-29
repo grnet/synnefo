@@ -1,4 +1,4 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 # Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
@@ -32,8 +32,9 @@ from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.http import HttpRequest
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.api.util import VM_PASSWORD_CACHE
+from synnefo.api.util import VM_PASSWORD_CACHE, COMPUTE_API_TAG_USER_PREFIX
 from synnefo.api import servers
+from synnefo.api.servers import COMPUTE_API_TAG_USER_PREFIX
 
 from mock import patch, Mock
 
@@ -346,6 +347,7 @@ class ServerCreateAPITest(ComputeAPITest):
                 "metadata": {
                     u"Meta \u2601": u"Meta in the \u2601"
                 },
+                "tags": [u"tag-1", u"tag-νέο"],
                 "personality": []
             }
         }
@@ -867,6 +869,197 @@ class ServerDestroyAPITest(ComputeAPITest):
         response = self.mydelete('servers/%d' % 42, vm.userid)
         self.assertItemNotFound(response)
         self.assertFalse(mrapi.mock_calls)
+
+
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerTagAPITest(ComputeAPITest):
+
+    def setUp(self):
+        self.vm = mfactory.VirtualMachineFactory()
+        super(ServerTagAPITest, self).setUp()
+
+    def test_list_tags(self, mrapi):
+        vm = self.vm
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags = [create_tag(), create_tag(), create_tag()]
+        response = self.myget('servers/%d/tags' % vm.id, vm.userid)
+        self.assertTrue(response.status_code in [200, 203])
+        api_tagdata = json.loads(response.content)['tags']
+        api_tagstatus = json.loads(response.content)['statuses']
+        self.assertEqual(len(api_tagdata), len(db_tags))
+        for i, db_tag in enumerate(db_tags):
+            self.assertTrue(db_tag.tag.split(prefix, 1)[1]
+                            in api_tagdata)
+            self.assertEqual(db_tags[i].status, api_tagstatus[i])
+
+    def test_replace_tags_success(self, mrapi):
+        vm = self.vm
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_to_del = [create_tag(), create_tag(), create_tag()]
+        newtagdata = [u'rep-1', u'rep-2', u'rep-νέο']
+        request = {'tags': newtagdata}
+        response = self.myput('servers/%d/tags' % vm.id,
+                              vm.userid, json.dumps(request), 'json')
+        self.assertSuccess(response)
+        api_tagdata = json.loads(response.content)['tags']
+        self.assertEqual(len(api_tagdata), len(newtagdata))
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        for db_tag in db_tags_to_del:
+            self.assertTrue(db_tag.tag.split(prefix, 1)[1]
+                            not in api_tagdata)
+            self.assertTrue(db_tag not in vm.tags.all())
+        # PENDADD: created in Cyclades DB and submitted to Ganeti
+        active_tags_db = [db_tag.tag.split(prefix, 1)[1]
+                          for db_tag in vm.tags.filter(status='PENDADD')]
+        self.assertEqual(len(newtagdata), len(active_tags_db))
+        for tag in newtagdata:
+            self.assertTrue(tag in api_tagdata)
+            self.assertTrue(tag in active_tags_db)
+
+    def test_replace_tags_malformed(self, mrapi):
+        vm = self.vm
+        newtagdata = ['rep-1', 2]
+        request = {'tags': newtagdata}
+        response = self.myput('servers/%d/tags' % vm.id,
+                              vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_replace_tags_forbidden_char(self, mrapi):
+        vm = self.vm
+        # Contains forbidden character '$'
+        newtagdata = ['rep-1', 'new-tag$']
+        request = {'tags': newtagdata}
+        response = self.myput('servers/%d/tags' % vm.id,
+                              json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_replace_tags_too_long(self, mrapi):
+        vm = self.vm
+        newtagdata = ['rep-01234567890123456789012345678901234'
+                      '5678901234567890123456789']
+        request = {'tags': newtagdata}
+        response = self.myput('servers/%d/tags' % vm.id,
+                              vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_replace_tags_too_many(self, mrapi):
+        vm = self.vm
+        newtagdata = []
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        # Too many tags (>50)
+        for i in range(1, 52):
+            db_tag = create_tag()
+            newtagdata.append(db_tag.tag)
+        request = {'tags': newtagdata}
+        response = self.myput('servers/%d/tags' % vm.id,
+                              vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+    def test_delete_tags(self, mrapi):
+        vm = self.vm
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_to_del = [create_tag(), create_tag(), create_tag()]
+        response = self.mydelete('servers/%d/tags' % vm.id, vm.userid)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(len(vm.tags.all()), 0)
+
+    def test_check_tag_exists_success(self, mrapi):
+        vm = self.vm
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tag = create_tag()
+
+        # Add tag and check whether it exists
+        tag = db_tag.tag.split(prefix, 1)[1]
+        response = self.myget('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response['tag-status'], 'ACTIVE')
+
+    def test_check_tag_exists_random(self, mrapi):
+        vm = self.vm
+        response = self.myget('servers/%d/tags/%s' % (vm.id, 'random-tag'),
+                              vm.userid)
+        self.assertEqual(response.status_code, 404)
+
+    def test_add_tag_success(self, mrapi):
+        vm = self.vm
+        tag = 'new-tag'
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertEqual(response.status_code, 201)
+        tags = [db_tag.tag for db_tag in vm.tags.all()]
+        self.assertTrue(prefix + tag in tags)
+
+        vm.tags.filter(tag=prefix+tag).update(status='ACTIVE')
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertEqual(response.status_code, 204)
+
+    def test_add_tag_int_string(self, mrapi):
+        vm = self.vm
+        tag = 2
+        # Malformed tag (an integer), but it will be treated as a string
+        response = self.myput('servers/%d/tags/%d' % (vm.id, tag),
+                              vm.userid)
+        self.assertEqual(response.status_code, 201)
+
+    def test_add_tag_forbidden_char(self, mrapi):
+        vm = self.vm
+        # Bad requests: contain '/' or ','
+        tag = 'new/tag'
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertBadRequest(response)
+        tag = 'new,tag'
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertBadRequest(response)
+
+    def test_add_tag_unicode(self, mrapi):
+        vm = self.vm
+        tag = u'tag-νέο'
+        response = self.myput('servers/%d/tags/%s' % (vm.id,
+                                                      tag.encode('utf-8')),
+                              vm.userid)
+        self.assertEqual(response.status_code, 201)
+
+    def test_add_tag_too_long(self, mrapi):
+        vm = self.vm
+        # Too long tag (>60)
+        tag = ['rep-01234567890123456789012345678901234567890123'
+               '4567890123456789']
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertBadRequest(response)
+
+    def test_add_tag_too_many(self, mrapi):
+        vm = self.vm
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        newtagdata = []
+        # Too many tags (>50)
+        for i in range(1, 52):
+            db_tag = create_tag()
+            newtagdata.append(db_tag.tag)
+        tag = 'new-tag'
+        response = self.myput('servers/%d/tags/%s' % (vm.id, tag),
+                              vm.userid)
+        self.assertBadRequest(response)
+
+    def test_delete_tag(self, mrapi):
+        vm = self.vm
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tag = create_tag()
+
+        # Add tag and check whether it exists
+        prefix = COMPUTE_API_TAG_USER_PREFIX
+        tag = db_tag.tag.split(prefix, 1)[1]
+        response = self.mydelete('servers/%d/tags/%s' % (vm.id, tag),
+                                 vm.userid)
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(vm.tags.filter(tag=db_tag.tag).exists())
 
 
 class ServerMetadataAPITest(ComputeAPITest):

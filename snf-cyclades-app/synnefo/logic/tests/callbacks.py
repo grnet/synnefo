@@ -150,7 +150,8 @@ class UpdateDBTest(TransactionTestCase):
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
         with transaction.atomic():
-            self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
+            self.assertTrue(nic.network.get_ip_pools()[0].is_available(
+                            ip.address))
         # Check that volumes are deleted
         self.assertFalse(db_vm.volumes.filter(deleted=False))
         # Check quotas
@@ -270,9 +271,9 @@ class UpdateDBTest(TransactionTestCase):
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
                               instance=vm.backend_vm_id,
                               instance_hvparams={
-                                'cdrom_image_path': os.path.join(
-                                    settings.RESCUE_IMAGE_PATH, 'test.iso'),
-                                'boot_order': 'cdrom,disk'},
+                                  'cdrom_image_path': os.path.join(
+                                      settings.RESCUE_IMAGE_PATH, 'test.iso'),
+                                  'boot_order': 'cdrom,disk'},
                               status=status)
         client.reset_mock()
         with mocked_quotaholder():
@@ -294,9 +295,9 @@ class UpdateDBTest(TransactionTestCase):
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
                               instance=vm.backend_vm_id,
                               instance_hvparams={
-                                'cdrom_image_path': os.path.join(
-                                    settings.RESCUE_IMAGE_PATH, 'none.iso'),
-                                'boot_order': 'cdrom,disk'},
+                                  'cdrom_image_path': os.path.join(
+                                      settings.RESCUE_IMAGE_PATH, 'none.iso'),
+                                  'boot_order': 'cdrom,disk'},
                               status=status)
         client.reset_mock()
         with mocked_quotaholder():
@@ -346,8 +347,8 @@ class UpdateDBTest(TransactionTestCase):
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
                               instance=vm.backend_vm_id,
                               instance_hvparams={
-                                'cdrom_image_path': '',
-                                'boot_order': 'disk'},
+                                  'cdrom_image_path': '',
+                                  'boot_order': 'disk'},
                               status=status)
         client.reset_mock()
         with mocked_quotaholder():
@@ -462,6 +463,72 @@ class UpdateDBTest(TransactionTestCase):
         update_db(client, msg)
         pithos_backend().update_object_status\
                         .assert_called_once_with("test_snapshot_id", state=1)
+
+    def test_add_tags_success(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_add = [create_tag(), create_tag(), create_tag()]
+        tags_add = [db_tag.tag for db_tag in db_tags_add]
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        # Default tag state in Factory: ACTIVE
+        db_vm.tags.all().update(status='PENDADD')
+        msg = self.create_msg(operation='OP_TAGS_SET',
+                              instance=vm.backend_vm_id,
+                              tags=tags_add)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_tags = db_vm.tags.filter(status='ACTIVE')
+        self.assertEqual(len(db_tags), len(db_tags_add))
+        for db_tag_add in db_tags_add:
+            self.assertTrue(db_tag_add in db_tags)
+
+    def test_add_tags_error(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_add = [create_tag(), create_tag(), create_tag()]
+        tags_add = [db_tag.tag for db_tag in db_tags_add]
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        db_vm.tags.all().update(status='PENDADD')
+        msg = self.create_msg(operation='OP_TAGS_SET',
+                              instance=vm.backend_vm_id,
+                              tags=tags_add,
+                              status='error')
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        self.assertEqual(len(db_vm.tags.all()), 0)
+
+    def test_delete_tags_success(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_del = [create_tag(), create_tag(), create_tag()]
+        tags_del = [db_tag.tag for db_tag in db_tags_del]
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        # Default tag state in Factory: ACTIVE
+        msg = self.create_msg(operation='OP_TAGS_DEL',
+                              instance=vm.backend_vm_id,
+                              tags=tags_del)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        self.assertEqual(len(db_vm.tags.all()), 0)
+
+    def test_delete_tags_error(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        create_tag = lambda: mfactory.VirtualMachineTagFactory(vm=vm)
+        db_tags_del = [create_tag(), create_tag(), create_tag()]
+        tags_del = [db_tag.tag for db_tag in db_tags_del]
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        db_vm.tags.all().update(status='ACTIVE')
+        msg = self.create_msg(operation='OP_TAGS_DEL',
+                              instance=vm.backend_vm_id,
+                              tags=tags_del,
+                              status='error')
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        self.assertEqual(len(db_vm.tags.all()), 3)
 
 
 @patch('synnefo.lib.amqp.AMQPClient')

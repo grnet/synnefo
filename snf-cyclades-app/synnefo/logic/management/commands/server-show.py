@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import (format_vm_state, get_resource,
@@ -21,6 +22,8 @@ from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from snf_django.management import utils
+from synnefo.api.util import (COMPUTE_API_TAG_USER_PREFIX as user_prefix,
+                              COMPUTE_API_TAG_SYSTEM_PREFIX as sys_prefix)
 
 
 class Command(SynnefoCommand):
@@ -42,6 +45,16 @@ class Command(SynnefoCommand):
         except:
             image_name = "None"
         image = '%s (%s)' % (imageid, image_name)
+
+        tags = []
+        header = ['tag', 'status', 'namespace']
+        for db_tag in server.tags.all():
+            if db_tag.tag.startswith(user_prefix):
+                tags.append([db_tag.tag.split(user_prefix, 1)[1],
+                             db_tag.status, 'user'])
+            elif db_tag.tag.startswith(sys_prefix):
+                tags.append([db_tag.tag.split(sys_prefix, 1)[1],
+                             db_tag.status, 'system'])
 
         usercache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
         kv = {
@@ -68,3 +81,8 @@ class Command(SynnefoCommand):
 
         self.pprint_table([kv.values()], kv.keys(), options["output_format"],
                           vertical=True)
+        if tags:
+            sys.stdout.write("\nTags of server %s:\n" % server.name)
+            self.pprint_table(tags, header, options["output_format"])
+        else:
+            sys.stdout.write("\nTags of server %s: no tags\n" % server.name)

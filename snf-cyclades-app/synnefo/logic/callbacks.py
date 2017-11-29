@@ -175,6 +175,7 @@ def update_db(vm, msg, event_time, atomic_context=None):
     hvparams = msg.get("instance_hvparams", None)
     job_fields = msg.get("job_fields", {})
     result = msg.get("result", [])
+    tags = msg.get("tags", None)
 
     if status in rapi.JOB_STATUS_FINALIZED:
         log.info("Processing ganeti-op-status jobId: %s, operation: %s, "
@@ -219,7 +220,7 @@ def update_db(vm, msg, event_time, atomic_context=None):
                                   operation, status,
                                   logmsg, nics=nics, disks=disks,
                                   hvparams=hvparams, job_fields=job_fields,
-                                  atomic_context=atomic_context)
+                                  atomic_context=atomic_context, tags=tags)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])

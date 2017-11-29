@@ -2,7 +2,7 @@
 #
 
 # Copyright (C) 2010, 2011 Google Inc.
-# Copyright (C) 2013-2016 GRNET S.A.
+# Copyright (C) 2013-2017 GRNET S.A.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -352,7 +352,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_PUT, "/%s/tags" % GANETI_RAPI_VERSION,
@@ -369,7 +369,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_DELETE, "/%s/tags" % GANETI_RAPI_VERSION,
@@ -650,7 +650,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_PUT,
@@ -670,7 +670,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @return: job id
 
     """
-    query = [("tag", t) for t in tags]
+    query = [("tag", tags)]
     _AppendDryRunIf(query, dry_run)
 
     return self._SendRequest(HTTP_DELETE,

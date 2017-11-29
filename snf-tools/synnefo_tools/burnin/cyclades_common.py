@@ -191,16 +191,18 @@ class CycladesTests(BurninTests):
 
         name = image.get('name', image.get('display_name', ''))
         servername = "%s for %s" % (self.run_id, name)
+        tags = ['tag1', 'tag2']
         self.info("Creating a server with name %s", servername)
         self.info("Using image %s with id %s", name, image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
             personality=personality, networks=networks,
-            project_id=project_id, key_name=key_name)
+            project_id=project_id, key_name=key_name, tags=tags)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
+        self.info("Server tags: %s", str(server.get('tags', [])))
 
         self.assertEqual(server['name'], servername)
         self.assertEqual(server['flavor']['id'], flavor['id'])
@@ -343,6 +345,28 @@ class CycladesTests(BurninTests):
         self.assertIsNotNone(ret_user)
         self.info("User's login name: %s", ret_user)
         return ret_user
+
+    def _insist_on_tags_transition(self, server_id, tags_wait, tags_success):
+        """Insist on server transiting from curr_statuses to new_status"""
+        def check_tags():
+            """Check server status"""
+            tags, statuses = self.clients.cyclades.list_tags(server_id)
+            active_tags = [tag for i, tag in enumerate(tags)
+                           if statuses[i] == 'ACTIVE']
+            if set(active_tags) == set(tags_wait):
+                self.info("Still waiting: tags_wait: %s, tags_success: %s",
+                          tags_wait, tags_success)
+                raise Retry()
+            elif set(active_tags) == set(tags_success):
+                return
+            else:
+                msg = "Tags for server with id %s are unexpected: %s"
+                self.error(msg, server_id, str(active_tags))
+                self.fail(msg % (server_id, str(active_tags)))
+        opmsg = "Waiting for the transition of tags of server with id %s"
+        self.info(opmsg, server_id)
+        opmsg = opmsg % server_id
+        self._try_until_timeout_expires(opmsg, check_tags)
 
     def _insist_on_server_transition(self, server, curr_statuses, new_status):
         """Insist on server transiting from curr_statuses to new_status"""

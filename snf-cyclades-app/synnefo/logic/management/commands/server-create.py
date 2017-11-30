@@ -106,8 +106,6 @@ class Command(SynnefoCommand):
             raise CommandError("name is mandatory")
         if not user_id:
             raise CommandError("user is mandatory")
-        if not project:
-            project = user_id
         if not password:
             raise CommandError("password is mandatory")
         if not flavor_id:

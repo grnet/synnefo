@@ -154,6 +154,7 @@ class Command(SynnefoCommand):
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
         drained = parse_bool(options["drained"])
+        credentials = Credentials(user_id)
 
         if name is None:
             name = ""
@@ -175,10 +176,9 @@ class Command(SynnefoCommand):
 
         if not (userid or public):
             raise CommandError("'user' is required for private networks")
-        if not project:
-            project = userid
 
-        network = networks.create(userid=userid, name=name, flavor=flavor,
+        network = networks.create(credentials=credentials, name=name,
+                                  flavor=flavor,
                                   public=public, mode=mode, project=project,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
                                   floating_ip_pool=floating_ip_pool,

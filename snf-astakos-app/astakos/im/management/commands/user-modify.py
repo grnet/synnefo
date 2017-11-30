@@ -25,6 +25,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
+from snf_django.lib.api import faults
 from astakos.im.models import AstakosUser
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
 from astakos.im import user_logic as user_action
@@ -123,6 +124,10 @@ class Command(SynnefoCommand):
                     dest='delete',
                     action='store_true',
                     help="Delete a non-accepted user"),
+        make_option('--set-default-project',
+                    dest='set_default_project',
+                    metavar='<project_id>',
+                    help="Set default project for active user"),
     )
 
     @transaction.atomic
@@ -178,6 +183,14 @@ class Command(SynnefoCommand):
                 self.stderr.write("Failed to accept: %s\n" % res.message)
             else:
                 self.stderr.write("Account accepted and activated\n")
+
+        project_id = options.get('set_default_project')
+        if project_id is not None:
+            try:
+                user_action.set_default_project(user, project_id)
+                self.stderr.write("Default project set successfully\n")
+            except (faults.NotAllowed, faults.ItemNotFound, faults.Forbidden):
+                raise
 
         if options.get('active'):
             res = user_action.activate(user)

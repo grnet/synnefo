@@ -15,7 +15,18 @@
 
 """
 This is the burnin class that tests the Projects functionality
-
+The tests require at least *two* projects to run.
+The second project (the first is the system or base one) should have
+at least the following resources assigned to it:
+- 2 VMs
+- 2 CPUs
+- 1 GB RAM
+- 4GB hard disk
+- 2 floating IPs
+The project can be created through the UI with the default user
+(user@synnefo.org) and can be activated with the command
+snf-manage project-control --approve <application id>
+The application id can be retrieved with the command snf-manage project-list
 """
 
 import random
@@ -35,23 +46,58 @@ class QuotasTestSuite(CycladesTests):
         self._skip_suite_if(len(self.quotas.keys()) < 2,
                             "This user is not a member of 2 or more projects")
 
-    def test_002_create(self):
-        """Create a machine to a different project than base"""
+    def test_002a_create_in_default_project(self):
+        """Set default project to assign new resources"""
         image = random.choice(self._parse_images())
         flavors = self._parse_flavors()
+        user_id = self._get_uuid()
 
-        # We want to create our machine in a project other than 'base'
+        # We want to create our machine in the default project,
+        # which is not the base one
         projects = self.quotas.keys()
-        projects.remove(self._get_uuid())
-        (flavor, project) = self._find_project(flavors, projects)
+        projects.remove(user_id)
+        (flavor, project_id) = self._find_project(flavors, projects)
+
+        # Set default project: a project other than the base one
+        self.info("Set default project: %s", project_id)
+        self.clients.astakos.set_default_project(project_id)
 
         # Create machine
-        self.server = self._create_server(image, flavor, network=True,
-                                          project_id=project)
+        self.server = self._create_server(image, flavor, network=True)
 
         # Wait for server to become active
         self._insist_on_server_transition(
             self.server, ["BUILD"], "ACTIVE")
+
+        # Check tenant_id
+        self.server = self._get_server_details(self.server, quiet=True)
+        self.assertEqual(self.server['tenant_id'], project_id)
+
+    def test_002b_create_in_provided_project(self):
+        """Create a machine and assign it to a different project than base"""
+        image = random.choice(self._parse_images())
+        flavors = self._parse_flavors()
+        user_id = self._get_uuid()
+
+        # Set default project: the base one to secure the test's integrity
+        self.clients.astakos.set_default_project(user_id)
+
+        # We want to create our machine in a project other than 'base'
+        projects = self.quotas.keys()
+        projects.remove(user_id)
+        (flavor, project_id) = self._find_project(flavors, projects)
+
+        # Create machine
+        self.server = self._create_server(image, flavor, network=True,
+                                          project_id=project_id)
+
+        # Wait for server to become active
+        self._insist_on_server_transition(
+            self.server, ["BUILD"], "ACTIVE")
+
+        # Check tenant_id
+        self.server = self._get_server_details(self.server, quiet=True)
+        self.assertEqual(self.server['tenant_id'], project_id)
 
     def test_003_assign(self):
         """Re-Assign the machine to a different project"""

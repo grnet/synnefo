@@ -16,7 +16,7 @@
 
 # Provides automated tests for logic module
 from django.test import TransactionTestCase
-from snf_django.lib.api import faults
+from snf_django.lib.api import faults, Credentials
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import networks
 from synnefo.db import models_factory as mfactory
@@ -31,7 +31,7 @@ class NetworkTest(TransactionTestCase):
     def test_create(self):
         kwargs = {
             "name": "test",
-            "userid": "user",
+            "credentials": Credentials("user"),
             "flavor": "CUSTOM",
         }
         # wrong flavor

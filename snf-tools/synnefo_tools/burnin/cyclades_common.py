@@ -208,8 +208,10 @@ class CycladesTests(BurninTests):
         self.assertEqual(server['flavor']['id'], flavor['id'])
         self.assertEqual(server['image']['id'], image['id'])
         self.assertEqual(server['status'], "BUILD")
+        self.info("project_id: %s, tenant_id: %s", project_id,
+                  server['tenant_id'])
         if project_id is None:
-            project_id = self._get_uuid()
+            project_id = self._get_default_project()
         self.assertEqual(server['tenant_id'], project_id)
 
         # Verify quotas
@@ -662,8 +664,10 @@ class CycladesTests(BurninTests):
         self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas
+        self.info("project_id: %s, tenant_id: %s", project_id,
+                  network['tenant_id'])
         if project_id is None:
-            project_id = self._get_uuid()
+            project_id = self._get_default_project()
         changes = \
             {project_id: [(QNET, QADD, 1, None)]}
         self._check_quotas(changes)
@@ -732,7 +736,8 @@ class CycladesTests(BurninTests):
 
             # Verify quotas
             if project_id is None:
-                project_id = self._get_uuid()
+                project_id = self._get_default_project()
+            self.info("project_id: %s", project_id)
             changes = \
                 {project_id: [(QIP, QADD, 1, None)]}
             self._check_quotas(changes)

@@ -17,6 +17,7 @@
 from astakos.im.tests.common import *
 from astakos.im.settings import astakos_services, BASE_HOST
 from astakos.oa2.backends import DjangoBackend
+from astakos.im.models import AstakosUser
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
@@ -25,7 +26,7 @@ from django.core.urlresolvers import reverse
 
 from datetime import date
 
-#from xml.dom import minidom
+# from xml.dom import minidom
 
 import json
 import time
@@ -622,12 +623,14 @@ class TokensApiTest(TestCase):
         try:
             token = body['access']['token']['id']
             user = body['access']['user']['id']
+            default_project = body['access']['token']['tenant']['id']
             service_catalog = body['access']['serviceCatalog']
         except KeyError:
             self.fail('Invalid response')
 
         self.assertEqual(token, self.user1.auth_token)
         self.assertEqual(user, self.user1.uuid)
+        self.assertEqual(default_project, self.user1.default_project)
         self.assertEqual(len(service_catalog), 3)
 
         # Check successful xml response
@@ -651,6 +654,67 @@ class TokensApiTest(TestCase):
             self.token.code, self.user1.uuid)
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 401)
+
+
+class UserApiTest(TransactionTestCase):
+    def setUp(self):
+        self.client = Client()
+        with transaction.atomic():
+            self.user1 = get_local_user('test1@example.org')
+        assert self.user1.is_active is True
+
+    def test_set_default_project_fail_unauthorised(self):
+        self.assertEqual(self.user1.default_project, self.user1.uuid)
+
+        url = reverse('astakos.api.user.set_default_project')
+        d = dict(project_id=self.user1.uuid)
+        r = self.client.post(url, data=json.dumps(d),
+                            content_type='application/json')
+        self.assertEqual(r.status_code, 401)
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, self.user1.uuid)
+
+    def test_set_default_project_fail_user_rejected(self):
+        self.user1.is_rejected = True
+        self.user1.save()
+        url = reverse('astakos.api.user.set_default_project')
+        d = dict(project_id=self.user1.uuid)
+        r = self.client.post(url, data=json.dumps(d),
+                            content_type='application/json',
+                            HTTP_X_AUTH_TOKEN=self.user1.auth_token)
+        self.assertEqual(r.status_code, 405)  # NotAllowed
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, self.user1.uuid)
+
+    def test_set_default_project_fail_invalid_project(self):
+        self.user1.is_rejected = False
+        self.user1.save()
+        random_project_id = '111111111111111111'
+        d = dict(project_id=random_project_id)
+        url = reverse('astakos.api.user.set_default_project')
+        r = self.client.post(url, data=json.dumps(d),
+                            content_type='application/json',
+                            HTTP_X_AUTH_TOKEN=self.user1.auth_token)
+        self.assertEqual(r.status_code, 404)
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, self.user1.uuid)
+
+    def test_set_default_project_success(self):
+        client = Client()
+        random_project_id = '111111111111111111'
+        self.user1.default_project = random_project_id
+        self.user1.save()
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, random_project_id)
+
+        url = reverse('astakos.api.user.set_default_project')
+        d = dict(project_id=self.user1.uuid)
+        r = self.client.post(url, data=json.dumps(d),
+                            content_type='application/json',
+                            HTTP_X_AUTH_TOKEN=self.user1.auth_token)
+        self.assertEqual(r.status_code, 200)
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, self.user1.uuid)
 
 
 class UserCatalogsTest(TestCase):

@@ -627,6 +627,7 @@ def enable_base_project(user):
     _fill_from_skeleton(project)
     project.activate()
     new_membership(project, user, enroll=True)
+    user.default_project = project.uuid
     quotas.qh_sync_project(project)
 
 
@@ -852,6 +853,20 @@ def submit_application(owner=None,
     return application
 
 
+def validate_project_member_state(user, project_id):
+    try:
+        project = get_project_by_uuid(project_id)
+        checkAlive(project)
+        membership = get_membership(project.id, user.id)
+    except ProjectNotFound:
+        raise
+
+    if membership.state not in ProjectMembership.ACTUALLY_ACCEPTED or \
+       project.state != Project.NORMAL:
+        return _failure(silent=False)
+    return project
+
+
 def validate_resource_policies(policies, admin=False):
     if not isinstance(policies, dict):
         raise ProjectBadRequest("Malformed resource policies")
@@ -1031,7 +1046,8 @@ def approve_application(application_id, project_id=None, request_user=None,
     if QUOTA_POLICY:
         QUOTA_POLICY.check_state_projects([project], 'MODIFY')
 
-    project_notif.application_approved_admins_notify(application, previous_state)
+    project_notif.application_approved_admins_notify(application,
+                                                     previous_state)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
     return project
@@ -1194,8 +1210,8 @@ def validate_project_action(project, action, request_user=None, silent=True):
 
 def _perform_action_project(project_id, action, request_user, reason):
     """
-    This method performs an action regarding to a specific project, e.g. project
-    termination, etc.
+    This method performs an action regarding to a specific project, e.g.
+    project termination, etc.
 
     Args:
         project_id: ID of project.

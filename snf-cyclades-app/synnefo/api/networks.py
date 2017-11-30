@@ -127,7 +127,8 @@ def create_network(request):
     project = network_dict.get('project', None)
     shared_to_project = network_dict.get("shared_to_project", False)
 
-    network = networks.create(userid=userid, name=name, flavor=flavor,
+    network = networks.create(credentials=request.credentials, name=name,
+                              flavor=flavor,
                               public=False, project=project,
                               shared_to_project=shared_to_project)
 

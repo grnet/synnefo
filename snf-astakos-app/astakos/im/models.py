@@ -472,6 +472,8 @@ class AstakosUser(User):
     base_project = models.ForeignKey('Project', related_name="base_user",
                                      null=True)
 
+    default_project = models.CharField(max_length=255, null=True)
+
     objects = AstakosUserManager()
 
     @property
@@ -1575,7 +1577,7 @@ class ProjectResourceGrant(models.Model):
 
         def disp(v, disp_func=None):
             if not disp_func:
-                disp_func = lambda : ''
+                disp_func = lambda: ''
 
             if v == 0:
                 return ''
@@ -1861,6 +1863,11 @@ class Project(models.Model):
 
     def terminate(self, actor=None, reason=None):
         self.set_state(self.TERMINATED, actor=actor, reason=reason)
+        AstakosUser.objects.filter(
+            projectmembership__project=self,
+            projectmembership__state__in=ProjectMembership.ACCEPTED_STATES,
+            projectmembership__project__uuid=models.F('default_project')) \
+            .update(default_project=models.F('uuid'))
         self.name = None
         self.save()
 
@@ -2199,6 +2206,13 @@ class ProjectMembership(models.Model):
             raise ValueError("No such action '%s'" % action)
         if s == self.ACCEPTED:
             self.initialized = True
+        if s == self.REMOVED:
+            member = AstakosUser.objects.select_for_update().get(
+                pk=self.person.pk)
+            if member is not None and \
+               member.default_project == self.project.uuid:
+                member.default_project = member.uuid
+                member.save()
         return self.set_state(s, actor=actor, reason=reason)
 
 

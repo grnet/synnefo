@@ -117,7 +117,7 @@ def create_volume(request):
 
     project = vol_dict.get("project")
     if project is None:
-        project = user_id
+        project = credentials.default_project
     shared_to_project= vol_dict.get("shared_to_project", False)
 
     # Optional parameters

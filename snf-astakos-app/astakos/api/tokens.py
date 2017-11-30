@@ -113,7 +113,7 @@ def authenticate(request):
         d["access"]["token"] = {
             "id": user.auth_token,
             "expires": utils.isoformat(user.auth_token_expires),
-            "tenant": {"id": user.uuid, "name": user.realname}}
+            "tenant": {"id": user.default_project, "name": user.realname}}
         d["access"]["user"] = {
             "id": user.uuid, 'name': user.realname,
             "roles": [dict(id=str(g['id']), name=g['name']) for g in
@@ -148,7 +148,7 @@ def validate_token(request, token_id):
     d = defaultdict(dict)
     d["access"]["token"] = {"id": token.code,
                             "expires": token.expires_at,
-                            "tenant": {"id": token.user.uuid,
+                            "tenant": {"id": token.user.default_project,
                                        "name": token.user.realname}}
     d["access"]["user"] = {"id": token.user.uuid,
                            'name': token.user.realname,

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from astakos.im import activation_backends
+from astakos.im import activation_backends, functions
+import astakos.im.messages as astakos_messages
+
+from snf_django.lib.api import faults
 
 activation_backend = activation_backends.get_backend()
 validate_user_action = activation_backend.validate_user_action
@@ -64,3 +67,29 @@ def send_verification_mail(user):
     """Send verification mail to an unverified user."""
     res = activation_backend.send_user_verification_email(user)
     return res
+
+
+def set_default_project(user, project_id):
+    """Set default project for an active user."""
+    if not user.email_verified:
+        msg = astakos_messages.ACCOUNT_NOT_VERIFIED
+        raise faults.NotAllowed(msg)
+    if not user.moderated:
+        msg = astakos_messages.ACCOUNT_NOT_MODERATED
+        raise faults.NotAllowed(msg)
+    if user.is_rejected:
+        msg = astakos_messages.ACCOUNT_REJECTED
+        raise faults.NotAllowed(msg)
+    if not user.is_active:
+        msg = astakos_messages.ACCOUNT_NOT_ACTIVE
+        raise faults.NotAllowed(msg)
+
+    try:
+        project = functions.validate_project_member_state(user, project_id)
+    except functions.ProjectNotFound as pnf:
+        raise faults.ItemNotFound(pnf.message)
+    except functions.ProjectForbidden as pf:
+        raise faults.Forbidden(pf.message)
+
+    user.default_project = project.uuid
+    user.save()

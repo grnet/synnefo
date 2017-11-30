@@ -53,9 +53,10 @@ def network_command(action):
 
 
 @transaction.atomic_context
-def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
+def create(credentials, name, flavor, link=None, mac_prefix=None, mode=None,
            floating_ip_pool=False, tags=None, public=False, drained=False,
            project=None, shared_to_project=False, atomic_context=None):
+    userid = credentials.userid
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -91,7 +92,7 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         raise faults.BadRequest(msg)
 
     if project is None:
-        project = userid
+        project = credentials.default_project
 
     network = Network.objects.create(
         name=name,

@@ -119,7 +119,7 @@ def create(credentials, name, password, flavor, image_id, metadata={},
         log.warning("Failed to store image info: %s", e)
 
     if project is None:
-        project = userid
+        project = credentials.default_project
 
     if use_backend is None:
         # Allocate server to a Ganeti backend

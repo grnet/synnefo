@@ -853,6 +853,57 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertTrue(server['key_name'] in key_names)
         self.assertEqual(len(server['SNF:key_names']), len(key_names))
 
+    def test_create_server_with_short_adminpass(self, mrapi):
+        """Test server creation with short adminPass"""
+        user = 'test_user'
+        mrapi().CreateInstance.return_value = 42
+
+        self.request['server']['adminPass'] = 'Short1'
+        response = self.mypost("servers", user, json.dumps(self.request),
+                               'json')
+        self.assertBadRequest(response)
+
+    def test_create_server_with_adminpass_without_upper_case(self, mrapi):
+        """Test server creation with adminPass without upper-case characters"""
+        user = 'test_user'
+        mrapi().CreateInstance.return_value = 42
+
+        self.request['server']['adminPass'] = 'nocapital15'
+        response = self.mypost("servers", user, json.dumps(self.request),
+                               'json')
+        self.assertBadRequest(response)
+
+    def test_create_server_with_adminpass_without_lower_case(self, mrapi):
+        """Test server creation with adminPass without lower-case characters"""
+        user = 'test_user'
+        mrapi().CreateInstance.return_value = 42
+
+        self.request['server']['adminPass'] = 'ONLYCAPITAL13'
+        response = self.mypost("servers", user, json.dumps(self.request),
+                               'json')
+        self.assertBadRequest(response)
+
+    def test_create_server_with_adminpass_without_digits(self, mrapi):
+        """Test server creation with adminPass without digits"""
+        user = 'test_user'
+        mrapi().CreateInstance.return_value = 42
+
+        self.request['server']['adminPass'] = 'Passwordwithoutdigits'
+        response = self.mypost("servers", user, json.dumps(self.request),
+                               'json')
+        self.assertBadRequest(response)
+
+    def test_create_server_with_strong_adminpass(self, mrapi):
+        """Test server creation with strong adminPass"""
+        user = 'test_user'
+        mrapi().CreateInstance.return_value = 42
+
+        # Test creation with strong password
+        self.request['server']['adminPass'] = 'AStrongPassword15'
+        response = self.mypost("servers", user, json.dumps(self.request),
+                               'json')
+        self.assertEqual(response.status_code, 202)
+
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerDestroyAPITest(ComputeAPITest):

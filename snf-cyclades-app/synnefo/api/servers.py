@@ -460,6 +460,7 @@ def create_server(request):
         project = server.get("project")
         shared_to_project = server.get("shared_to_project", False)
         key_name = server.get('key_name')
+        password = server.get('adminPass')
         SNF_key_names = server.get('SNF:key_names', [])
         assert isinstance(SNF_key_names, list)
     except (KeyError, AssertionError):
@@ -487,7 +488,13 @@ def create_server(request):
                " see 'allow_create' flavor attribute")
         raise faults.Forbidden(msg % flavor.id)
     # Generate password
-    password = util.random_password()
+    if password:
+        if not util.is_password_strong(password):
+            raise faults.BadRequest(
+                    "Password not strong (must contain upper case, lower case,"
+                    " digits and be at least 10 characters!")
+    else:
+        password = util.random_password()
 
     if key_name is not None:
         # If both key_name and SNF:key_names are provided we should

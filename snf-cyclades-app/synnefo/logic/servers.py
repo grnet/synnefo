@@ -502,8 +502,8 @@ def unrescue(server_id, credentials=None):
         return vm
 
 
-@transaction.atomic
-def console(server_id, console_type, credentials=None):
+@transaction.atomic_context
+def console(server_id, console_type, credentials=None, atomic_context=None):
     """Arrange for an OOB console of the specified type
 
     This method arranges for an OOB console of the specified type.
@@ -552,7 +552,8 @@ def console(server_id, console_type, credentials=None):
         backend.process_op_status(vm, etime=datetime.now(), jobid=0,
                                   opcode="OP_INSTANCE_SHUTDOWN",
                                   status="success",
-                                  logmsg="Reconciliation simulated event")
+                                  logmsg="Reconciliation simulated event",
+                                  atomic_context=atomic_context)
         raise faults.BadRequest('Server not in ACTIVE state.')
 
     # Let vncauthproxy decide on the source port.

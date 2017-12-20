@@ -1945,7 +1945,7 @@ Request Parameter          Value                Cyclades OS/Compute
 ========================== ==================== ======== ==========
 json                       Respond in json      default  **✘**
 xml                        Respond in xml       ✔        **✘**
-os-flavor-access:is_public Flavor visibility    ✔        ✔
+SNF:is_public              Flavor visibility    ✔        **✘**
 SNF:flavor-access          Project access       ✔        **✘**
 ========================== ==================== ======== ==========
 

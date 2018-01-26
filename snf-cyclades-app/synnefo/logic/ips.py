@@ -269,7 +269,7 @@ def reassign_floating_ip(
     floating_ip = util.get_floating_ip_by_id(credentials,
                                              floating_ip_id,
                                              for_update=True)
-    if credentials.userid != floating_ip.userid:
+    if not credentials.is_admin and credentials.userid != floating_ip.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
                                " of the floating IP.")
     validate_ip_action(floating_ip, "REASSIGN", silent=False)

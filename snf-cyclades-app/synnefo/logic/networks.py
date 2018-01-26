@@ -217,7 +217,7 @@ def reassign(network_id, project, shared_to_project, credentials,
     if network.public:
         raise faults.Forbidden("Cannot reassign public network")
 
-    if credentials.userid != network.userid:
+    if not credentials.is_admin and credentials.userid != network.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
                                " of the network.")
 

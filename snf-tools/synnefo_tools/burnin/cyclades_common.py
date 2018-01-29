@@ -42,18 +42,6 @@ from synnefo_tools.burnin.common import BurninTests, MB, GB, QADD, QREMOVE, \
 # pylint: disable=too-many-public-methods
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
-    def _parse_images(self):
-        """Find images given to command line"""
-        if self.images is None:
-            self.info("No --images given. Will use the default %s",
-                      "^Debian Base$")
-            filters = ["name:^Debian Base$"]
-        else:
-            filters = self.images
-        avail_images = self._find_images(filters)
-        self.info("Found %s images to choose from", len(avail_images))
-        return avail_images
-
     def _parse_flavors(self):
         """Find flavors given to command line"""
         flavors = self._get_list_of_flavors(detail=True)

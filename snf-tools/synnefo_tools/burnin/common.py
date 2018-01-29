@@ -739,6 +739,19 @@ class BurninTests(unittest.TestCase):
                            "No matching images found")
         return ret_images
 
+    def _parse_images(self, possible_images=None):
+        """Find images given to command line"""
+        if self.images is None:
+            def_image_pattern = "name:^Debian Base$"
+            self.info("No --images given. Will use the default pattern '%s'",
+                      def_image_pattern)
+            filters = [def_image_pattern]
+        else:
+            filters = self.images
+        avail_images = self._find_images(filters, images=possible_images)
+        self.info("Found %s images to choose from", len(avail_images))
+        return avail_images
+
     # ----------------------------------
     # Pithos
     def _set_pithos_account(self, account):

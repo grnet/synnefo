@@ -56,8 +56,6 @@ class Command(SynnefoCommand):
 
         if not user:
             raise CommandError("'user' is required for floating IP creation")
-        if not project:
-            project = user
 
         if network_id is not None:
             network = common.get_resource("network", network_id)

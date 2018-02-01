@@ -476,7 +476,7 @@ def create_server(request):
 
     # If no project is provided, use the user's system project as default.
     if project is None:
-        project = user_id
+        project = credentials.default_project
 
     # Verify that personalities are well-formed
     util.verify_personality(personality)

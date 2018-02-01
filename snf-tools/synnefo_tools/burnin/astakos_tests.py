@@ -20,6 +20,7 @@ This is the burnin class that tests the Astakos functionality
 
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients import ClientError
+from kamaki.clients.astakos import AstakosClientError
 
 from synnefo_tools.burnin.common import BurninTests, Proper
 
@@ -86,3 +87,63 @@ class AstakosTestSuite(BurninTests):
                         if s['type'] == etype][0]['endpoints'][0]
             self.assertEqual(endpoint, astakos.get_service_endpoints(etype))
         self.info('Endpoint call results match original results')
+
+    def test_020_set_default_project_base(self):
+        """Test set default project for user: the base/system project"""
+        astakos = self.clients.astakos
+        user_id = self._get_uuid()
+
+        r = astakos.set_default_project(user_id)
+        default_project = self._get_default_project()
+        self.assertEqual(default_project, user_id)
+        self.info('Default project %s set successfully for user %s',
+                  user_id, user_id)
+
+    def test_021_set_default_project_invalid(self):
+        """Test set default project for user: invalid project"""
+        astakos = self.clients.astakos
+        user_id = self._get_uuid()
+
+        random_project_id = '4536563342366646756'
+        try:
+            r = astakos.set_default_project(random_project_id)
+        except AstakosClientError as ace:
+            self.info('For random project id catch Astakos client error: %s',
+                      ace)
+            self.assertEqual(ace.status, 404)
+
+    """
+    The following test makes better sense when at least *two* projects
+    are available.
+    The second project (the first is the system or base one) should have
+    at least the following resources assigned to it:
+    - 2 VMs
+    - 2 CPUs
+    - 1 GB RAM
+    - 4GB hard disk
+    - 2 floating IPs
+    The project can be created through the UI with the default user
+    (user@synnefo.org) and can be activated with the command
+    ```snf-manage project-control --approve <application id>```
+    The application id can be retrieved with the command
+    ```snf-manage project-list```
+    """
+    def test_022_set_default_project_valid(self):
+        """Test set default project for user: valid project"""
+        astakos = self.clients.astakos
+        user_id = self._get_uuid()
+
+        r = astakos.set_default_project(user_id)
+        default_project = self._get_default_project()
+        self.assertEqual(default_project, user_id)
+        self.info('Default project %s set successfully for user %s',
+                  user_id, user_id)
+
+        self.quotas = self._get_quotas()
+        for puuid in self.quotas.keys():
+            if puuid != user_id:
+                r = astakos.set_default_project(puuid)
+                default_project = self._get_default_project()
+                self.assertEqual(default_project, puuid)
+                self.info('Default project %s set successfully for user %s',
+                          puuid, user_id)

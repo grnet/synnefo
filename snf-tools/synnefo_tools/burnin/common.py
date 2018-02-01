@@ -388,6 +388,13 @@ class BurninTests(unittest.TestCase):
             self.info("User's uuid is %s", self.uuid)
         return self.uuid
 
+    def _get_default_project(self):
+        """Get our uuid"""
+        authenticate = self.clients.astakos.authenticate()
+        default_project = authenticate['access']['token']['tenant']['id']
+        self.info("User's default project is %s", default_project)
+        return default_project
+
     def _get_username(self):
         """Get our User Name"""
         authenticate = self.clients.astakos.authenticate()

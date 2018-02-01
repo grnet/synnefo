@@ -38,14 +38,16 @@ django_logger = getLogger("django.request")
 
 
 class Credentials(object):
-    def __init__(self, userid, user_projects=None, is_admin=False,
-                 force_quota=False):
+    def __init__(self, userid, user_projects=None, default_project=None,
+                 is_admin=False, force_quota=False):
         self.userid = userid
         if user_projects is None:
             user_projects = []
         self.user_projects = user_projects
         self.is_admin = is_admin
         self.force_quota = force_quota
+        self.default_project = self.userid if default_project is None else \
+            default_project
 
     def no_share(self):
         return Credentials(self.userid,
@@ -107,11 +109,13 @@ def api_method(http_method=None, token_required=True, user_required=True,
                                               logger=logger,
                                               client_ip=client_ip)
                     _user_access = user_info["access"]["user"]
+                    _user_token = user_info["access"]["token"]
                     request.user_uniq = _user_access["id"]
                     request.user_projects = _user_access.get("projects", None)
                     request.user = user_info
-                    request.credentials = Credentials(
-                        request.user_uniq, request.user_projects)
+                    default_project = _user_token["tenant"]["id"]
+                    request.credentials = Credentials(request.user_uniq,
+                        request.user_projects, default_project)
 
                 # Get the response object
                 response = func(request, *args, **kwargs)

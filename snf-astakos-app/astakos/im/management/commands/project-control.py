@@ -95,6 +95,7 @@ class Command(SynnefoCommand):
 
         key, value = opts[0]
         action = actions[key]
+
         try:
             action(value)
         except BaseException as e:

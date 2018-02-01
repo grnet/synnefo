@@ -79,7 +79,7 @@ class Command(SynnefoCommand):
                     ('last login', user.last_login),
                     ('date joined', user.date_joined),
                     ('last update', user.updated),
-                    #('token', user.auth_token),
+                    # ('token', user.auth_token),
                     ('token expiration', user.auth_token_expires),
                     ('providers', user.auth_providers_display),
                     ('groups', [elem.name for elem in user.groups.all()]),
@@ -93,6 +93,7 @@ class Command(SynnefoCommand):
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
                     ('last_login_details', user.last_login_info_display),
+                    ('default_project', user.default_project),
                 ])
 
             if get_latest_terms():

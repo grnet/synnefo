@@ -222,6 +222,10 @@ class AstakosClient(object):
         return join_urls(self.account_prefix, "feedback")
 
     @property
+    def api_user_account(self):
+        return join_urls(self.account_prefix, 'myaccount')
+
+    @property
     def api_projects(self):
         return join_urls(self.account_prefix, "projects")
 
@@ -459,6 +463,27 @@ class AstakosClient(object):
             {'feedback_msg': message, 'feedback_data': data})
         self._call_astakos(self.api_feedback, headers=None,
                            body=req_body, method="POST")
+
+    # ----------------------------------
+    # do a POST to API_USERS/myaccount/default_project
+    def set_default_project(self, project_id):
+        """Set default project for user
+
+        arguments:
+        project_id  -- The project to be set as default for assigning
+                       resources to
+
+        In case of success return nothing.
+        Otherwise raise an AstakosClientException
+
+        """
+        path = join_urls(self.api_user_account, 'default_project')
+        self.logger.info('path for set_default_project: %s', path)
+        req_headers = {'content-type': 'application/json'}
+        body = {'project_id': project_id}
+        req_body = parse_request(body, self.logger)
+        self._call_astakos(path, headers=req_headers, body=req_body,
+                           method="POST")
 
     # -----------------------------------------
     # do a POST to ``API_TOKENS`` with no token

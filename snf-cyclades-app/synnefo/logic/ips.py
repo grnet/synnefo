@@ -194,7 +194,7 @@ def create_floating_ip(credentials, network_id=None, address=None,
                                   floating_ip=True)
 
     if project is None:
-        project = userid
+        project = credentials.default_project
     floating_ip.project = project
     floating_ip.shared_to_project=shared_to_project
     floating_ip.save()

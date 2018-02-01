@@ -34,6 +34,7 @@ astakos_account_v1_0 += patterns(
     'astakos.api.user',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^user_catalogs/?$', 'get_uuid_displayname_catalogs'),
+    url(r'^myaccount/default_project/?$', 'set_default_project'),
 )
 
 astakos_account_v1_0 += patterns(

@@ -43,6 +43,7 @@ ADMIN_GROUPS = settings.ADMIN_API_PERMITTED_GROUPS
 
 logger = logging.getLogger(__name__)
 
+
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False,
                 logger=logger)
@@ -294,6 +295,25 @@ def user_action(request, user_id):
         return http.HttpResponse(data, status=200,
                                  content_type='application/json')
 
+    if 'setDefaultProject' in req:
+        try:
+            user = AstakosUser.objects.select_for_update().get(uuid=user_id)
+        except AstakosUser.DoesNotExist:
+            raise faults.ItemNotFound("User not found")
+
+        res = user_logic.set_default_project(user, project_id)
+        if res.is_error():
+            msg = "Setting default project failed. %s" % res.message
+            raise faults.Conflict(msg)
+
+        user_data = {
+            'id': user.uuid,
+            'default_project': user.default_project
+        }
+        data = json.dumps({'user': user_data})
+        return http.HttpResponse(data, status=200,
+                                 content_type='application/json')
+
     raise faults.BadRequest("Invalid action")
 
 
@@ -366,3 +386,27 @@ def user_detail(request, user_id):
     user_data = user_to_dict(user, detail=True)
     data = json.dumps({'user': user_data})
     return http.HttpResponse(data, status=200, content_type='application/json')
+
+
+@api.api_method(http_method="POST", token_required=True, user_required=False)
+@user_from_token
+@transaction.atomic
+def set_default_project(request):
+    user_id = request.user.uuid
+    req = api.utils.get_json_body(request)
+    project_id = req.get('project_id', None)
+
+    if project_id is None:
+        raise faults.Forbidden('Project id not specified')
+
+    try:
+        user = AstakosUser.objects.select_for_update().get(uuid=user_id)
+    except AstakosUser.DoesNotExist:
+        raise faults.ItemNotFound("User not found")
+
+    try:
+        user_logic.set_default_project(user, project_id)
+    except (faults.NotAllowed, faults.ItemNotFound, faults.Forbidden):
+        raise
+
+    return http.HttpResponse(status=200)

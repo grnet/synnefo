@@ -28,7 +28,7 @@ def find(f, seq):
 
 
 def get_pending_apps(user):
-    return quotas.get_user_quotas(user)\
+    return quotas.get_user_quotas(user) \
         [user.base_project.uuid]['astakos.pending_app']['usage']
 
 
@@ -355,8 +355,12 @@ class ProjectAPITest(TransactionTestCase):
         self.assertEqual(status, 409)
 
         # Remove member
+        self.user1.default_project = project_id  # Just nail it for testing
+        self.user1.save()
         status = self.memb_action(memb_id, "remove", h_owner)
         self.assertEqual(status, 200)
+        user1 = AstakosUser.objects.get(pk=self.user1.pk)
+        self.assertEqual(user1.default_project, user1.uuid)
 
         # Enroll a removed member
         status, body = self.enroll(project_id, self.user1, h_owner)
@@ -388,7 +392,7 @@ class ProjectAPITest(TransactionTestCase):
         self.assertEqual(status, 409)
 
         # Get projects
-        ## Simple user mode
+        # Simple user mode
         r = client.get(reverse("api_projects"), **h_plain)
         body = json.loads(r.content)
         self.assertEqual(len(body), 2)
@@ -396,7 +400,7 @@ class ProjectAPITest(TransactionTestCase):
         with assertRaises(KeyError):
             p["pending_application"]
 
-        ## Owner mode
+        # Owner mode
         filters = {"state": "active"}
         r = client.get(reverse("api_projects"), filters, **h_owner)
         body = json.loads(r.content)
@@ -457,8 +461,12 @@ class ProjectAPITest(TransactionTestCase):
         self.assertEqual(status, 409)
 
         # Terminate
+        self.user1.default_project = project_id  # Just nail it for testing
+        self.user1.save()
         status = self.project_action(project_id, "terminate", headers=h_admin)
         self.assertEqual(status, 200)
+        user1 = AstakosUser.objects.get(pk=self.user1.pk)
+        self.assertEqual(user1.default_project, user1.uuid)
 
         # Join failed
         status, _ = self.join(project_id, h_admin)
@@ -550,7 +558,6 @@ class ProjectAPITest(TransactionTestCase):
                                 kwargs={"project_id": 1}),
                         action, content_type="application/json", **h_owner)
         self.assertEqual(r.status_code, 400)
-
 
         ap_base = {
             "owner": self.user1.uuid,

@@ -16,8 +16,9 @@
 from django.test import TestCase
 from astakos.im.user_logic import (validate_user_action, verify, accept,
                                    activate, deactivate, reject,
-                                   send_verification_mail)
+                                   send_verification_mail, set_default_project)
 from astakos.im.auth import make_local_user
+from astakos.im.functions import enable_base_project
 from astakos.im.models import AstakosUser
 from snf_django.lib.api import faults
 from django.core import mail
@@ -216,3 +217,50 @@ class TestUserActions(TestCase):
         with self.assertRaises(Exception) as cm:
             send_verification_mail(self.user1)
         self.assertEqual(cm.exception.message, "User email already verified.")
+
+
+    def test_set_default_project_fail_wrong_user_states_invalid_project(self):
+        """Test that default project fails for wrong user states and invalid
+           project."""
+        # Fail for unverified user
+        with self.assertRaises(faults.NotAllowed):
+            set_default_project(self.user1, self.user1.uuid)
+
+        # Fail for not moderated user
+        res = verify(self.user1, self.user1.verification_code)
+        self.assertFalse(res.is_error())
+        with self.assertRaises(faults.NotAllowed):
+            set_default_project(self.user1, self.user1.uuid)
+
+        # Fail for inactive user
+        self.user1.moderated = True
+        self.user1.save()
+        with self.assertRaises(faults.NotAllowed):
+            set_default_project(self.user1, self.user1.uuid)
+
+        self.user1.is_active = True
+        self.user1.save()
+        random_project_id = '1234567890987654321'
+        enable_base_project(self.user1)
+        self.assertEqual(self.user1.default_project, self.user1.uuid)
+
+        # Fail for random project
+        with self.assertRaises(faults.ItemNotFound):
+            set_default_project(self.user1, random_project_id)
+
+    def test_set_default_project_success(self):
+        """Test that default project is set correctly."""
+        # Verify, moderate, and activate the user.
+        res = verify(self.user1, self.user1.verification_code)
+        self.assertFalse(res.is_error())
+        self.user1.moderated = True
+        self.user1.is_active = True
+        self.user1.save()
+
+        enable_base_project(self.user1)
+        random_project_id = '1234567890987654321'
+        self.user1.default_project = random_project_id
+        self.user1.save()
+        set_default_project(self.user1, self.user1.uuid)
+        user1 = AstakosUser.objects.get(uuid=self.user1.uuid)
+        self.assertEqual(user1.default_project, self.user1.uuid)

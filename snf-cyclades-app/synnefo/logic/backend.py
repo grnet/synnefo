@@ -933,7 +933,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, nics, volumes, flavor, image, tags=None):
+def create_instance(vm, nics, volumes, flavor, image, tags):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -1020,7 +1020,7 @@ def create_instance(vm, nics, volumes, flavor, image, tags=None):
     # Use opportunistic locking
     kw['opportunistic_locking'] = settings.GANETI_USE_OPPORTUNISTIC_LOCKING
 
-    if tags is not None:
+    if tags:
         kw['tags'] = tags
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS

@@ -99,8 +99,11 @@ class Command(SynnefoCommand):
         volumes = options['volumes']
         helper_vm = options['helper_vm']
         tags = options['tags']
+
         if tags:
             tags = tags.split(',')
+        else:
+            tags = []
 
         if not name:
             raise CommandError("name is mandatory")

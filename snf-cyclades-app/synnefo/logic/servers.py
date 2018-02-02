@@ -53,7 +53,7 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None, helper=False,
-           shared_to_project=False, key_names=None, tags=None):
+           shared_to_project=False, key_names=None, tags=[]):
 
     userid = credentials.userid
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,

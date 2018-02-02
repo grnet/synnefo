@@ -796,11 +796,11 @@ class Image(base.Component):
         image = config.debian_base_image
         return [
             "test -e %s || wget -4 %s -O %s" % (image, url, image),
-            "mv /etc/default/snf-image /etc/default/snf-image.orig",
+            "mv /etc/snf-image/snf-image.conf /etc/snf-image/snf-image.conf.orig",
             ]
 
     def _configure(self):
-        tmpl = "/etc/default/snf-image"
+        tmpl = "/etc/snf-image/snf-image.conf"
         replace = {
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,

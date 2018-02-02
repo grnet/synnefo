@@ -24,7 +24,7 @@ from snf_django.management.utils import parse_bool
 from synnefo.db.models import Network
 from synnefo.logic import networks, subnets
 from synnefo.management import pprint
-
+from snf_django.lib.api import Credentials
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 

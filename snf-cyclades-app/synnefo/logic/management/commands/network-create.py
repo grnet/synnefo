@@ -154,7 +154,7 @@ class Command(SynnefoCommand):
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
         drained = parse_bool(options["drained"])
-        credentials = Credentials(user_id)
+        credentials = Credentials(userid)
 
         if name is None:
             name = ""

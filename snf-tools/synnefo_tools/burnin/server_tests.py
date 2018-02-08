@@ -61,7 +61,8 @@ class GeneratedServerTestSuite(CycladesTests):
 
         self.server = self._create_server(
             self.use_image, self.use_flavor,
-            personality=self.personality, network=True)
+            personality=self.personality, network=True,
+            tags=['tag1', 'tag2'])
         self.username = self._get_connection_username(self.server)
         self.password = self.server['adminPass']
 
@@ -129,9 +130,8 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_005e_tag_exists(self):
         """Test whether a server tag exists"""
-        status_code, tag_status = self.clients.cyclades.check_tag_exists(
+        tag_status = self.clients.cyclades.get_tag_status(
             self.server['id'], u'tag-νέο2')
-        self.assertEquals(status_code, 204)
         self.assertEquals(tag_status, 'ACTIVE')
 
     def test_005f_delete_tag(self):

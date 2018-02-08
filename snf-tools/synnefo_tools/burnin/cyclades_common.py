@@ -179,7 +179,8 @@ class CycladesTests(BurninTests):
 
     # pylint: disable=too-many-arguments
     def _create_server(self, image, flavor, personality=None,
-                       network=False, project_id=None, key_name=None):
+                       network=False, project_id=None, key_name=None,
+                       tags=[]):
         """Create a new server"""
         if network:
             fip = self._create_floating_ip(project_id=project_id)
@@ -191,7 +192,6 @@ class CycladesTests(BurninTests):
 
         name = image.get('name', image.get('display_name', ''))
         servername = "%s for %s" % (self.run_id, name)
-        tags = ['tag1', 'tag2']
         self.info("Creating a server with name %s", servername)
         self.info("Using image %s with id %s", name, image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
@@ -349,15 +349,16 @@ class CycladesTests(BurninTests):
         return ret_user
 
     def _insist_on_tags_transition(self, server_id, tags_wait, tags_success):
-        """Insist on server transiting from curr_statuses to new_status"""
+        """Insist on active tags transiting from tags_wait set to tags_success
+        set"""
         def check_tags():
             """Check server status"""
-            tags, statuses = self.clients.cyclades.list_tags(server_id)
+            resp = self.clients.cyclades.list_tags(server_id)
+            tags = resp['tags']
+            statuses = resp['statuses']
             active_tags = [tag for i, tag in enumerate(tags)
                            if statuses[i] == 'ACTIVE']
             if set(active_tags) == set(tags_wait):
-                self.info("Still waiting: tags_wait: %s, tags_success: %s",
-                          tags_wait, tags_success)
                 raise Retry()
             elif set(active_tags) == set(tags_success):
                 return

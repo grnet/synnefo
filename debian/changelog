@@ -1,3 +1,9 @@
+synnefo (0.20-1~jessie) jessie; urgency=medium
+
+  * New upstream version
+
+ -- Filippos Giannakos <philipgian@grnet.gr>  Tue, 20 Mar 2018 14:35:09 +0200
+
 synnefo (0.19-1~jessie) jessie; urgency=medium
 
   * New upstream version

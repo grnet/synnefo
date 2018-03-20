@@ -157,11 +157,9 @@ class SynnefoCommand(BaseCommand):
                 file_handler.setLevel(logging.DEBUG)
                 file_handler.setFormatter(formatter)
 
-                # Change all loggers to use our new file_handler
-                all_loggers = logging.Logger.manager.loggerDict.keys()
-                for logger_name in all_loggers:
-                    logger = logging.getLogger(logger_name)
-                    logger.addHandler(file_handler)
+                # Change root logger to use our new file_handler
+                root_logger = logging.getLogger('')
+                root_logger.addHandler(file_handler)
 
                 # Create our new logger
                 logger = logging.getLogger(basename)

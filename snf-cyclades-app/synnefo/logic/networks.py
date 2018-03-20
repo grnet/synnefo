@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,12 +33,18 @@ log = getLogger(__name__)
 def validate_network_action(network, action):
     if network.deleted:
         raise faults.BadRequest("Network has been deleted.")
+    if action in ["DRAIN", "UNDRAIN"]:
+        if not network.public:
+            raise faults.BadRequest("Network is not public.")
+        if action == "DRAIN" and network.drained:
+            raise faults.BadRequest("Network is drained.")
+        if action == "UNDRAIN" and not network.drained:
+            raise faults.BadRequest("Network is not drained.")
 
 
 def network_command(action):
     def decorator(func):
         @wraps(func)
-        @transaction.commit_on_success()
         def wrapper(network, *args, **kwargs):
             validate_network_action(network, action)
             return func(network, *args, **kwargs)
@@ -46,10 +52,10 @@ def network_command(action):
     return decorator
 
 
-@transaction.commit_on_success
+@transaction.atomic_context
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
            floating_ip_pool=False, tags=None, public=False, drained=False,
-           project=None, shared_to_project=False):
+           project=None, shared_to_project=False, atomic_context=None):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -110,9 +116,9 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.
-    # Note: the following call does a commit!
     if not public:
-        quotas.issue_and_accept_commission(network)
+        quotas.issue_and_accept_commission(
+            network, atomic_context=atomic_context)
 
     return network
 
@@ -127,8 +133,41 @@ def create_network_in_backends(network):
     return job_ids
 
 
-@network_command("RENAME")
-def rename(network, name):
+@transaction.atomic
+def drain(network_id, credentials):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot set network's drained flag.")
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    validate_network_action(network, "DRAIN")
+    log.info("Draining %s", network)
+    network.drained = True
+    network.save()
+
+
+@transaction.atomic
+def undrain(network_id, credentials):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot unset network's drained flag.")
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    validate_network_action(network, "UNDRAIN")
+    log.info("Undraining %s", network)
+    network.drained = False
+    network.save()
+
+
+@transaction.atomic
+def rename(network_id, name, credentials):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    if network.public:
+        raise faults.Forbidden("Cannot rename the public network.")
+    return _rename(network, name)
+
+
+def _rename(network, name):
+    validate_network_action(network, "RENAME")
     utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
                             "is too long")
     network.name = name
@@ -136,8 +175,15 @@ def rename(network, name):
     return network
 
 
-@network_command("DESTROY")
-def delete(network):
+@transaction.atomic_context
+def delete(network_id, credentials, atomic_context=None):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+    if network.public and not credentials.is_admin:
+        raise faults.Forbidden("Cannot delete the public network.")
+
+    validate_network_action(network, "DESTROY")
+
     if network.nics.exists():
         raise faults.Conflict("Cannot delete network. There are ports still"
                               " configured on network network %s" % network.id)
@@ -157,12 +203,25 @@ def delete(network):
         backend_mod.delete_network(network, bnet.backend)
     else:
         # If network does not exist in any backend, update the network state
-        backend_mod.update_network_state(network)
+        backend_mod.update_network_state(
+            network, atomic_context=atomic_context)
     return network
 
 
-@network_command("REASSIGN")
-def reassign(network, project, shared_to_project):
+@transaction.atomic_context
+def reassign(network_id, project, shared_to_project, credentials,
+             atomic_context=None):
+    network = util.get_network(network_id, credentials,
+                               for_update=True, non_deleted=True)
+
+    if network.public:
+        raise faults.Forbidden("Cannot reassign public network")
+
+    if not credentials.is_admin and credentials.userid != network.userid:
+        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
+                               " of the network.")
+
+    validate_network_action(network, "REASSIGN")
     if network.project == project:
         if network.shared_to_project != shared_to_project:
             log.info("%s network %s to project %s",
@@ -178,5 +237,6 @@ def reassign(network, project, shared_to_project):
         network.shared_to_project = shared_to_project
         network.save()
         quotas.issue_and_accept_commission(network, action="REASSIGN",
-                                           action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return network

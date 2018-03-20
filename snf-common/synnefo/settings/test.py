@@ -8,6 +8,8 @@ DEBUG = False
 TEMPLATE_DEBUG = False
 TEST = True
 
+BACKEND_DB_CONNECTION = 'sqlite:////tmp/synnefo_backend_db.sqlite'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

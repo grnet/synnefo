@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,6 @@
 
 import string
 from optparse import make_option
-from synnefo.db import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.quotas import util
@@ -146,7 +145,6 @@ class Command(SynnefoCommand):
         check_unknown_left(resources_soft, soft=True)
         return handlers
 
-    @transaction.commit_on_success
     def handle(self, *args, **options):
         write = self.stderr.write
         if options["list_resources"]:

@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,10 +18,11 @@
 
 from random import randint
 
-from django.test import TestCase
+from django.test import TransactionTestCase
 
 from synnefo.db.models import (VirtualMachine, IPAddress, BackendNetwork,
-                               Network, BridgePoolTable, MacPrefixPoolTable)
+                               Network, BridgePoolTable, MacPrefixPoolTable,
+                               RescueImage)
 from synnefo.db import models_factory as mfactory
 from synnefo.lib.utils import split_time
 from datetime import datetime
@@ -31,15 +32,18 @@ from synnefo.logic.callbacks import (update_db, update_network,
                                      update_build_progress)
 from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic.rapi import GanetiApiError
+from synnefo.db import transaction
+from synnefo import settings
 
 now = datetime.now
 from time import time
 import json
+import os
 
 
 # Test Callbacks
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateDBTest(TestCase):
+class UpdateDBTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-eventd message"""
         msg = {'event_time': split_time(time())}
@@ -133,7 +137,8 @@ class UpdateDBTest(TestCase):
         # Also create a NIC
         ip = mfactory.IPv4AddressFactory(nic__machine=vm)
         nic = ip.nic
-        nic.network.get_ip_pools()[0].reserve(nic.ipv4_address)
+        with transaction.atomic():
+            nic.network.get_ip_pools()[0].reserve(nic.ipv4_address)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
         with mocked_quotaholder() as m:
@@ -144,7 +149,8 @@ class UpdateDBTest(TestCase):
         self.assertTrue(db_vm.deleted)
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
-        self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
+        with transaction.atomic():
+            self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
         # Check that volumes are deleted
         self.assertFalse(db_vm.volumes.filter(deleted=False))
         # Check quotas
@@ -163,9 +169,10 @@ class UpdateDBTest(TestCase):
         nic1 = mfactory.NetworkInterfaceFactory(machine=vm2)
         fp1.nic = nic1
         fp1.save()
-        pool = network.get_ip_pools()[0]
-        pool.reserve(fp1.address)
-        pool.save()
+        with transaction.atomic():
+            pool = network.get_ip_pools()[0]
+            pool.reserve(fp1.address)
+            pool.save()
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm2.backend_vm_id)
         with mocked_quotaholder():
@@ -175,9 +182,10 @@ class UpdateDBTest(TestCase):
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
         self.assertEqual(IPAddress.objects.get(id=fp1.id).nic, None)
-        pool = network.get_ip_pools()[0]
-        # Test that floating ips are not released
-        self.assertFalse(pool.is_available(fp1.address))
+        with transaction.atomic():
+            pool = network.get_ip_pools()[0]
+            # Test that floating ips are not released
+            self.assertFalse(pool.is_available(fp1.address))
 
     @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
     def test_remove_error(self, rapi, client):
@@ -251,6 +259,105 @@ class UpdateDBTest(TestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, vm.operstate)
         self.assertEqual(db_vm.backendtime, vm.backendtime)
+
+    def test_rescue_with_known_image(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm.operstate = "STOPPED"
+        status = "success"
+        vm.save()
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': os.path.join(
+                                    settings.RESCUE_IMAGE_PATH, 'test.iso'),
+                                'boot_order': 'cdrom,disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_rescue_with_unknown_image(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        rescue_image = mfactory.RescueImageFactory(
+            location='known.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm.operstate = "STOPPED"
+        status = "success"
+        vm.save()
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': os.path.join(
+                                    settings.RESCUE_IMAGE_PATH, 'none.iso'),
+                                'boot_order': 'cdrom,disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertTrue(db_vm.rescue)
+        self.assertTrue(db_vm.rescue_image is None)
+
+    def test_start_rescued_vm(self, client):
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm = mfactory.VirtualMachineFactory(rescue=True,
+                                            rescue_image=rescue_image)
+        msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
+                              instance=vm.backend_vm_id)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        # VM should start normally and the rescue flag
+        # should remain true
+        self.assertEqual(db_vm.operstate, "STARTED")
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_shutdown_rescued_vm(self, client):
+        rescue_image = mfactory.RescueImageFactory(
+            location='test.iso', location_type=RescueImage.FILETYPE_FILE)
+        vm = mfactory.VirtualMachineFactory(rescue=True,
+                                            rescue_image=rescue_image)
+        msg = self.create_msg(operation='OP_INSTANCE_SHUTDOWN',
+                              instance=vm.backend_vm_id)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, 'STOPPED')
+        self.assertTrue(db_vm.rescue)
+        self.assertEqual(db_vm.rescue_image, rescue_image)
+
+    def test_unrescue(self, client):
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED", rescue=True)
+        status = "success"
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              instance_hvparams={
+                                'cdrom_image_path': '',
+                                'boot_order': 'disk'},
+                              status=status)
+        client.reset_mock()
+        with mocked_quotaholder():
+            update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, vm.operstate)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertFalse(db_vm.rescue)
+        self.assertTrue(db_vm.rescue_image is None)
 
     def test_resize_msg(self, client):
         vm = mfactory.VirtualMachineFactory()
@@ -358,7 +465,7 @@ class UpdateDBTest(TestCase):
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateNetTest(TestCase):
+class UpdateNetTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-hook message"""
         msg = {'event_time': split_time(time())}
@@ -418,9 +525,10 @@ class UpdateNetTest(TestCase):
         network = ip.network
         subnet = ip.subnet
         vm = ip.nic.machine
-        pool = subnet.get_ip_pools()[0]
-        pool.reserve("10.0.0.2")
-        pool.save()
+        with transaction.atomic():
+            pool = subnet.get_ip_pools()[0]
+            pool.reserve("10.0.0.2")
+            pool.save()
 
         msg = self.create_msg(instance_nics=[{'network': network.backend_id,
                                               'ip': '10.0.0.3',
@@ -435,14 +543,15 @@ class UpdateNetTest(TestCase):
         self.assertEqual(nics[0].index, 0)
         self.assertEqual(nics[0].ipv4_address, '10.0.0.3')
         self.assertEqual(nics[0].mac, 'aa:bb:cc:00:11:22')
-        pool = subnet.get_ip_pools()[0]
-        self.assertTrue(pool.is_available('10.0.0.2'))
-        self.assertFalse(pool.is_available('10.0.0.3'))
-        pool.save()
+        with transaction.atomic():
+            pool = subnet.get_ip_pools()[0]
+            self.assertTrue(pool.is_available('10.0.0.2'))
+            self.assertFalse(pool.is_available('10.0.0.3'))
+            pool.save()
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateNetworkTest(TestCase):
+class UpdateNetworkTest(TransactionTestCase):
     def create_msg(self, **kwargs):
         """Create snf-ganeti-eventd message"""
         msg = {'event_time': split_time(time())}
@@ -558,9 +667,11 @@ class UpdateNetworkTest(TestCase):
                 net.state = 'ACTIVE'
                 net.flavor = flavor
                 if flavor == 'PHYSICAL_VLAN':
-                    net.link = allocate_resource('bridge')
+                    with transaction.atomic():
+                        net.link = allocate_resource('bridge')
                 if flavor == 'MAC_FILTERED':
-                    net.mac_prefix = allocate_resource('mac_prefix')
+                    with transaction.atomic():
+                        net.mac_prefix = allocate_resource('mac_prefix')
                 net.save()
                 msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                                       network=net.backend_id,
@@ -574,11 +685,13 @@ class UpdateNetworkTest(TestCase):
                 self.assertEqual(db_net.state, 'DELETED', flavor)
                 self.assertTrue(db_net.deleted)
                 if flavor == 'PHYSICAL_VLAN':
-                    pool = BridgePoolTable.get_pool()
-                    self.assertTrue(pool.is_available(net.link))
+                    with transaction.atomic():
+                        pool = BridgePoolTable.get_pool()
+                        self.assertTrue(pool.is_available(net.link))
                 if flavor == 'MAC_FILTERED':
-                    pool = MacPrefixPoolTable.get_pool()
-                    self.assertTrue(pool.is_available(net.mac_prefix))
+                    with transaction.atomic():
+                        pool = MacPrefixPoolTable.get_pool()
+                        self.assertTrue(pool.is_available(net.mac_prefix))
 
     @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
     def test_remove_error(self, rapi, client):
@@ -665,10 +778,11 @@ class UpdateNetworkTest(TestCase):
                                                                "10.0.0.20"]})
         update_network(client, msg)
         self.assertTrue(client.basic_ack.called)
-        pool = network.get_ip_pools()[0]
-        self.assertTrue(pool.is_reserved('10.0.0.10'))
-        self.assertTrue(pool.is_reserved('10.0.0.20'))
-        pool.save()
+        with transaction.atomic():
+            pool = network.get_ip_pools()[0]
+            self.assertTrue(pool.is_reserved('10.0.0.10'))
+            self.assertTrue(pool.is_reserved('10.0.0.20'))
+            pool.save()
         # Check that they are not released
         msg = self.create_msg(operation='OP_NETWORK_SET_PARAMS',
                               network=network.backend_id,
@@ -677,13 +791,14 @@ class UpdateNetworkTest(TestCase):
                                   "remove_reserved_ips": ["10.0.0.10",
                                                           "10.0.0.20"]})
         update_network(client, msg)
-        pool = network.get_ip_pools()[0]
-        self.assertTrue(pool.is_reserved('10.0.0.10'))
-        self.assertTrue(pool.is_reserved('10.0.0.20'))
+        with transaction.atomic():
+            pool = network.get_ip_pools()[0]
+            self.assertTrue(pool.is_reserved('10.0.0.10'))
+            self.assertTrue(pool.is_reserved('10.0.0.20'))
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
-class UpdateBuildProgressTest(TestCase):
+class UpdateBuildProgressTest(TransactionTestCase):
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
 

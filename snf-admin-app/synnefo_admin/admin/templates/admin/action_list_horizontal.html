@@ -3,7 +3,11 @@
     {% for op, action in action_dict.items %}
     {% if action|can_apply:item %}
     <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma="{{ action.karma }}" data-caution="{{ action.caution_level }}" class="custom-btn">
+        {% if action.name == "Set e&#8209;mail" %}
+        <span data-toggle="popover" data-content="Without verification" data-trigger="hover">{{ action.name|safe }}</span>
+        {% else %}
         <span>{{ action.name|safe }}</span>
+        {% endif %}
     </a>
     {% endif %}
     {% endfor %}

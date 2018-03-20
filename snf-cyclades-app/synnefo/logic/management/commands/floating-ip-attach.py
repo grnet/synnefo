@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import servers
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(SynnefoCommand):
@@ -35,7 +35,6 @@ class Command(SynnefoCommand):
             help='The server id the floating-ip will be attached to'),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args or len(args) > 1:
@@ -48,10 +47,10 @@ class Command(SynnefoCommand):
             raise CommandError('Please give either a server or a router id')
 
         #get the vm
-        vm = common.get_resource("server", device, for_update=True)
-        floating_ip = common.get_resource("floating-ip", floating_ip_id,
-                                          for_update=True)
-        servers.create_port(vm.userid, floating_ip.network,
-                            use_ipaddress=floating_ip, machine=vm)
+        vm = common.get_resource("server", device)
+        floating_ip = common.get_resource("floating-ip", floating_ip_id)
+        credentials = Credentials(vm.userid)
+        servers.create_port(credentials, floating_ip.network_id,
+                            address=floating_ip.address, machine_id=device)
 
         self.stdout.write("Attached %s to %s.\n" % (floating_ip, vm))

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
 from synnefo.logic.utils import check_name_length
 from synnefo.api.util import get_vm
+from synnefo.logic.policy import VolumePolicy
 
 log = getLogger('synnefo.volume')
 
@@ -88,12 +89,12 @@ def get_volume_attachments(volume):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def create_volume(request):
     """Create a new Volume."""
 
     req = utils.get_json_body(request)
-    user_id = request.user_uniq
+    credentials = request.credentials
+    user_id = credentials.userid
 
     log.debug("User: %s, Action: create_volume, Request: %s",
               user_id, req)
@@ -148,26 +149,17 @@ def create_volume(request):
     # Get server ID to attach the volume.
     server_id = utils.get_attribute(vol_dict, "server_id", required=False)
 
-    server = None
-    if server_id:
-        try:
-            server = get_vm(server_id, user_id, request.user_projects,
-                            for_update=True, non_deleted=True)
-        except faults.ItemNotFound:
-            raise faults.BadRequest("Server %s not found" % server_id)
-
     # Create the volume
-    volume = volumes.create(user_id=user_id, size=size, name=name,
+    volume = volumes.create(credentials, size=size, name=name,
                             source_volume_id=source_volume_id,
                             source_snapshot_id=source_snapshot_id,
                             source_image_id=source_image_id,
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server=server, project_id=project,
+                            server_id=server_id, project_id=project,
                             shared_to_project=shared_to_project)
 
-    server_id = server.id if server else None
     log.info("User %s created volume %s attached to server %s, shared: %s",
              user_id, volume.id, server_id, shared_to_project)
 
@@ -178,10 +170,9 @@ def create_volume(request):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_volumes(request, detail=False):
-    volumes = Volume.objects.for_user(userid=request.user_uniq,
-                                      projects=request.user_projects)\
-                            .prefetch_related("metadata")\
-                            .order_by("id")
+    volumes = VolumePolicy.filter_list(request.credentials)\
+                          .prefetch_related("metadata")\
+                          .order_by("id")
 
     volumes = utils.filter_modified_since(request, objects=volumes)
 
@@ -192,23 +183,23 @@ def list_volumes(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_volume(request, volume_id):
+    credentials = request.credentials
+    userid = credentials.userid
+
     log.debug("User: %s, Volume: %s Action: delete_volume",
-              request.user_uniq, volume_id)
+              userid, volume_id)
 
-    volume = util.get_volume(request.user_uniq, request.user_projects,
-                             volume_id, for_update=True, non_deleted=True)
-    volumes.delete(volume)
+    volumes.delete(volume_id, credentials)
 
-    log.info("User %s deleted volume %s", request.user_uniq, volume.id)
+    log.info("User %s deleted volume %s", userid, volume_id)
 
     return HttpResponse(status=202)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def get_volume(request, volume_id):
-    volume = util.get_volume(request.user_uniq, request.user_projects,
+    volume = util.get_volume(request.credentials,
                              volume_id, non_deleted=False)
 
     data = json.dumps({'volume': volume_to_dict(volume, detail=True)})
@@ -216,14 +207,11 @@ def get_volume(request, volume_id):
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
-@transaction.commit_on_success
 def update_volume(request, volume_id):
+    credentials = request.credentials
     req = utils.get_json_body(request)
     log.debug("User: %s, Volume: %s Action: update_volume, Request: %s",
-              request.user_uniq, volume_id, req)
-
-    volume = util.get_volume(request.user_uniq, request.user_projects,
-                             volume_id, for_update=True, non_deleted=True)
+              credentials.userid, volume_id, req)
 
     vol_req = utils.get_attribute(req, "volume", attr_type=dict,
                                   required=True)
@@ -238,11 +226,11 @@ def update_volume(request, volume_id):
     if name is None and description is None and\
        delete_on_termination is None:
         raise faults.BadRequest("Nothing to update.")
-    else:
-        volume = volumes.update(volume, name, description,
-                                delete_on_termination)
 
-    log.info("User %s updated volume %s", request.user_uniq, volume.id)
+    volume = volumes.update(volume_id, name, description,
+                            delete_on_termination, credentials=credentials)
+
+    log.info("User %s updated volume %s", credentials.userid, volume_id)
 
     data = json.dumps({'volume': volume_to_dict(volume, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
@@ -250,7 +238,7 @@ def update_volume(request, volume_id):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_volume_metadata(request, volume_id):
-    volume = util.get_volume(request.user_uniq, request.user_projects,
+    volume = util.get_volume(request.credentials,
                              volume_id, for_update=False, non_deleted=False)
     metadata = volume.metadata.values_list('key', 'value')
     data = json.dumps({"metadata": dict(metadata)})
@@ -258,11 +246,12 @@ def list_volume_metadata(request, volume_id):
 
 
 @api.api_method(user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def update_volume_metadata(request, volume_id, reset=False):
+    credentials = request.credentials
     req = utils.get_json_body(request)
     log.debug("User: %s, Volume: %s Action: update_metadata, Request: %s",
-              request.user_uniq, volume_id, req)
+              credentials.userid, volume_id, req)
 
     meta_dict = utils.get_attribute(req, "metadata", required=True,
                                     attr_type=dict)
@@ -271,7 +260,7 @@ def update_volume_metadata(request, volume_id, reset=False):
                           "Metadata key is too long.")
         check_name_length(value, VolumeMetadata.VALUE_LENGTH,
                           "Metadata value is too long.")
-    volume = util.get_volume(request.user_uniq, request.user_projects,
+    volume = util.get_volume(request.credentials,
                              volume_id, for_update=True, non_deleted=True)
     if reset:
         if len(meta_dict) > settings.CYCLADES_VOLUME_MAX_METADATA:
@@ -300,7 +289,7 @@ def update_volume_metadata(request, volume_id, reset=False):
                 # Or create a new one
                 volume.metadata.create(key=key, value=value)
 
-    log.info("User %s updated metadata for volume %s", request.user_uniq,
+    log.info("User %s updated metadata for volume %s", credentials.userid,
              volume.id)
 
     metadata = volume.metadata.values_list('key', 'value')
@@ -309,31 +298,32 @@ def update_volume_metadata(request, volume_id, reset=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_volume_metadata_item(request, volume_id, key):
+    credentials = request.credentials
     log.debug("User: %s, Volume: %s Action: delete_metadata, Key: %s",
-              request.user_uniq, volume_id, key)
+              credentials.userid, volume_id, key)
 
-    volume = util.get_volume(request.user_uniq, request.user_projects,
+    volume = util.get_volume(request.credentials,
                              volume_id, for_update=False, non_deleted=True)
     try:
         volume.metadata.get(key=key).delete()
     except VolumeMetadata.DoesNotExist:
         raise faults.BadRequest("Metadata key not found")
 
-    log.info("User %s deleted metadata for volume %s", request.user_uniq,
+    log.info("User %s deleted metadata for volume %s", credentials.userid,
              volume.id)
 
     return HttpResponse(status=200)
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def reassign_volume(request, volume_id, args):
+    credentials = request.credentials
     req = utils.get_json_body(request)
 
     log.debug("User: %s, Volume: %s Action: reassign_volume, Request: %s",
-              request.user_uniq, volume_id, args)
+              credentials.userid, volume_id, args)
 
     shared_to_project = args.get("shared_to_project", False)
     if shared_to_project and not settings.CYCLADES_SHARED_RESOURCES_ENABLED:
@@ -344,17 +334,10 @@ def reassign_volume(request, volume_id, args):
     if project is None:
         raise faults.BadRequest("Missing 'project' attribute.")
 
-    volume = util.get_volume(request.user_uniq, request.user_projects,
-                             volume_id, for_update=True, non_deleted=True)
-
-    if request.user_uniq != volume.userid:
-        raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
-                               " of the volume.")
-
-    volumes.reassign_volume(volume, project, shared_to_project)
+    volumes.reassign_volume(volume_id, project, shared_to_project, credentials)
 
     log.info("User %s reassigned volume %s to project %s, shared: %s",
-             request.user_uniq, volume.id, project, shared_to_project)
+             credentials.userid, volume_id, project, shared_to_project)
 
     return HttpResponse(status=200)
 
@@ -391,21 +374,18 @@ def snapshot_to_dict(snapshot, detail=True):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@transaction.commit_on_success
 def create_snapshot(request):
     """Create a new Snapshot."""
     util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
-    user_id = request.user_uniq
+    credentials = request.credentials
+    user_id = credentials.userid
 
     log.debug("User: %s, Action: create_snapshot, Request: %s", user_id, req)
 
     snap_dict = utils.get_attribute(req, "snapshot", required=True,
                                     attr_type=dict)
     volume_id = utils.get_attribute(snap_dict, "volume_id", required=True)
-    volume = util.get_volume(user_id, request.user_projects, volume_id,
-                             for_update=True, non_deleted=True,
-                             exception=faults.BadRequest)
 
     metadata = utils.get_attribute(snap_dict, "metadata", required=False,
                                    attr_type=dict, default={})
@@ -420,9 +400,10 @@ def create_snapshot(request):
     force = utils.get_attribute(req, "force", required=False, attr_type=bool,
                                 default=False)
 
-    snapshot = snapshots.create(user_id=user_id, volume=volume, name=name,
+    snapshot = snapshots.create(user_id=user_id, volume_id=volume_id,
+                                name=name,
                                 description=description, metadata=metadata,
-                                force=force)
+                                force=force, credentials=credentials)
 
     log.info("User %s created snapshot %s", user_id, snapshot["id"])
 
@@ -433,9 +414,10 @@ def create_snapshot(request):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_snapshots(request, detail=False):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
     since = utils.isoparse(request.GET.get('changes-since'))
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with backend.PlanktonBackend(credentials.userid) as b:
         snapshots = b.list_snapshots()
         if since:
             updated_since = lambda snap:\
@@ -454,35 +436,38 @@ def list_snapshots(request, detail=False):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_snapshot(request, snapshot_id):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
     log.debug("User: %s, Snapshot: %s Action: delete",
-              request.user_uniq, snapshot_id)
+              credentials.userid, snapshot_id)
 
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     snapshots.delete(snapshot)
 
-    log.info("User %s deleted snapshot %s", request.user_uniq, snapshot["id"])
+    log.info("User %s deleted snapshot %s", credentials.userid, snapshot["id"])
 
     return HttpResponse(status=202)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def get_snapshot(request, snapshot_id):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
 def update_snapshot(request, snapshot_id):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
     log.debug("User: %s, Snapshot: %s Action: update",
-              request.user_uniq, snapshot_id)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+              credentials.userid, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
 
     snap_dict = utils.get_attribute(req, "snapshot", attr_type=dict,
                                     required=True)
@@ -497,7 +482,7 @@ def update_snapshot(request, snapshot_id):
     snapshot = snapshots.update(snapshot, name=new_name,
                                 description=new_description)
 
-    log.info("User %s updated snapshot %s", request.user_uniq, snapshot["id"])
+    log.info("User %s updated snapshot %s", credentials.userid, snapshot["id"])
 
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
@@ -505,40 +490,43 @@ def update_snapshot(request, snapshot_id):
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_snapshot_metadata(request, snapshot_id):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     metadata = snapshot["properties"]
     data = json.dumps({"metadata": dict(metadata)})
     return HttpResponse(data, content_type="application/json", status=200)
 
 
 @api.api_method(user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def update_snapshot_metadata(request, snapshot_id, reset=False):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
     req = utils.get_json_body(request)
     log.debug("User: %s, Snapshot: %s Action: update_metadata",
-              request.user_uniq, snapshot_id)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+              credentials.userid, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     meta_dict = utils.get_attribute(req, "metadata", required=True,
                                     attr_type=dict)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with backend.PlanktonBackend(credentials.userid) as b:
         b.update_properties(snapshot_id, meta_dict, replace=reset)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     metadata = snapshot["properties"]
     data = json.dumps({"metadata": dict(metadata)})
     return HttpResponse(data, content_type="application/json", status=200)
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@transaction.commit_on_success
+@transaction.atomic
 def delete_snapshot_metadata_item(request, snapshot_id, key):
+    credentials = request.credentials
     util.assert_snapshots_enabled(request)
     log.debug("User: %s, Snapshot: %s Action: delete_metadata",
-              request.user_uniq, snapshot_id)
-    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+              credentials.userid, snapshot_id)
+    snapshot = util.get_snapshot(credentials.userid, snapshot_id)
     if key in snapshot["properties"]:
-        with backend.PlanktonBackend(request.user_uniq) as b:
+        with backend.PlanktonBackend(credentials.userid) as b:
             b.remove_property(snapshot_id, key)
     return HttpResponse(status=200)
 
@@ -548,7 +536,9 @@ def volume_type_to_dict(volume_type):
         "id": volume_type.id,
         "name": volume_type.name,
         "deleted": volume_type.deleted,
-        "SNF:disk_template": volume_type.disk_template}
+        "SNF:disk_template": volume_type.disk_template,
+        "SNF:detachable": volume_type.name in
+            settings.CYCLADES_DETACHABLE_DISK_TEMPLATES}
     return vtype_info
 
 

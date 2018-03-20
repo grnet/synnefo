@@ -6,6 +6,62 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.20:
+
+v0.20
+=====
+
+Released: Tue Mar 20 16:33:05 EET 2018
+
+Synnefo-wide
+------------
+
+* snf-manage now records the synnefo logs to synnefo.log, similar to gunicorn.
+* snf-manage now drops priviledges to 'synnefo:synnefo' user by default.
+
+Cyclades
+--------
+
+* Add 'SNF:key_names' API parameter on server creation to support multiple
+  SSH key-pairs injection while spawning a VM.
+* Add Volume type specs which provide extra Key-Value based specs to volume
+  types.
+* Volume type specs prefixed with 'GNT-EXTP:' are propagated to Ganeti ext-
+  storage scripts.
+* Add 'public' flag to Flavors and FlavorAccess to assign access to flavors
+  only to specific projects.
+* Add Flavor specs which provide extra Key-Value based specs to flavors
+* Introduce a policy module to gradually collect all resource access
+  checks.
+* Migrate transaction handling to Django's atomic(). Use a transaction
+  context to schedule external operations on transaction exit.
+* Move transactions to the logic level, so that all clients (API,
+  snf-manage, admin app) consistently run the same operations.
+* Add mechanism for creating, listing, updating and deleting rescue images
+* Add support for rescuing and unrescuing VMs using system defined rescue
+  images.
+* Use ssh key API in UI instead of file injection when selecting ssh keys.
+* Implement Openstack's userdata injection mechanism (user_data parameter) in
+  server create API
+
+Astakos
+-------
+
+* Fix multiple local authentication providers in user accounts.
+* Return only active project memberships when authenticating user token
+* Migrate transaction handling to Django's atomic().
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of volumes and keypairs
+
+Admin
+-----
+* Add functionality to set user's email, release shibboleth provider, and
+  enable local provider
+
+
 .. _Changelog-0.19:
 
 v0.19

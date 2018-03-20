@@ -20,15 +20,23 @@ from astakos.im.models import Project
 from .common import AdminTestCase
 from datetime import datetime
 from datetime import timedelta
+from astakos.im import transaction
 
 
 class TemplateTagsTest(AdminTestCase):
     def test_flatten_dict_to_dl(self):
+
+        def test_output(output, tags):
+            for tag in tags:
+                assert tag in output
+            self.assertEqual(sum([len(tag) for tag in tags]), len(output))
+
+
         input1 = {
             'foo': 'bar'
         }
-        output1 = '<dt>foo</dt><dd>bar</dd>'
-        self.assertEqual(admin_tags.flatten_dict_to_dl(input1), output1)
+        tags = ['<dt>foo</dt><dd>bar</dd>']
+        test_output(admin_tags.flatten_dict_to_dl(input1), tags)
 
         input2 = {
             'foo': 'bar',
@@ -36,22 +44,22 @@ class TemplateTagsTest(AdminTestCase):
                 'foo1': 'bar1'
             }
         }
-        output2 = '<dt>foo</dt><dd>bar</dd><dt>foo1</dt><dd>bar1</dd>'
-        self.assertEqual(admin_tags.flatten_dict_to_dl(input2), output2)
+
+        tags = ['<dt>foo</dt><dd>bar</dd>', '<dt>foo1</dt><dd>bar1</dd>']
+        test_output(admin_tags.flatten_dict_to_dl(input2), tags)
 
         input3 = [1, 2, 3]
-        output3 = ''
-        self.assertEqual(admin_tags.flatten_dict_to_dl(input3), output3)
+        test_output(admin_tags.flatten_dict_to_dl(input3), [])
 
         input4 = {
             'foo': ''
         }
-        output4 = '<dt>foo</dt><dd>-</dd>'
-        self.assertEqual(admin_tags.flatten_dict_to_dl(input4), output4)
+        tags = ['<dt>foo</dt><dd>-</dd>']
+        test_output(admin_tags.flatten_dict_to_dl(input4), tags)
 
         input5 = input4
-        output5 = '<dt>foo</dt><dd>boo</dd>'
-        self.assertEqual(admin_tags.flatten_dict_to_dl(input5, 'boo'), output5)
+        tags = ['<dt>foo</dt><dd>boo</dd>']
+        test_output(admin_tags.flatten_dict_to_dl(input5, 'boo'), tags)
 
     def test_diff_cls(self):
         self.assertEqual(admin_tags.diff_cls(213231), 'diff-positive')
@@ -83,7 +91,8 @@ class TemplateTagsTest(AdminTestCase):
             'description': u'δεσκρίπτιον2',
             'end_date': t2,
         })
-        last_app1 = submit_application(**last_app_data1)
+        with transaction.atomic():
+            last_app1 = submit_application(**last_app_data1)
         project = Project.objects.get(id=project.id)
         output_details = common_output.copy()
         output_details.update({
@@ -110,7 +119,8 @@ class TemplateTagsTest(AdminTestCase):
         last_app_data2.update({
             'limit_on_members_number': 42
         })
-        last_app2 = submit_application(**last_app_data2)
+        with transaction.atomic():
+            last_app2 = submit_application(**last_app_data2)
         project = Project.objects.get(id=project.id)
         output_policies = common_output.copy()
         output_policies.update({
@@ -131,7 +141,8 @@ class TemplateTagsTest(AdminTestCase):
                 'project_capacity': 1025,
                 'member_capacity': 511}}
         })
-        last_app3 = submit_application(**last_app_data3)
+        with transaction.atomic():
+            last_app3 = submit_application(**last_app_data3)
         project = Project.objects.get(id=project.id)
         output_resources = common_output.copy()
         output_resources.update({

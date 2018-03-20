@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ def delete_user(username, only_stats=True, dry=True):
         print "User entries removed."
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def merge_user(username):
     vms = VirtualMachine.objects.filter(userid__iexact=username)
     networks = Network.objects.filter(userid__iexact=username)

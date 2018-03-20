@@ -174,7 +174,8 @@ class GeneratedServerTestSuite(CycladesTests):
             # If the IP is reachable, test if we can SSH to the server, to
             # make sure that is wasn't attached to another VM.
             self._insist_get_hostname_over_ssh(
-                self.ipv4[0], self.username, self.password, should_fail=True)
+                self.ipv4[0], username=self.username, password=self.password,
+                should_fail=True)
 
     def test_011b_attach_network(self):
         """Re-Attach a public IP to our server"""
@@ -217,7 +218,7 @@ class GeneratedServerTestSuite(CycladesTests):
         self._skip_if(not self._image_is(self.use_image, "linux"),
                       "only valid for Linux servers")
         hostname = self._insist_get_hostname_over_ssh(
-            self.ipv4[0], self.username, self.password)
+            self.ipv4[0], username=self.username, password=self.password)
 
         # The hostname must be of the form 'prefix-id'
         self.assertTrue(hostname.endswith("-%d" % self.server['id']))
@@ -228,7 +229,7 @@ class GeneratedServerTestSuite(CycladesTests):
                       "only valid for Linux servers")
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
         hostname = self._insist_get_hostname_over_ssh(
-            self.ipv6[0], self.username, self.password)
+            self.ipv6[0], username=self.username, password=self.password)
         # The hostname must be of the form 'prefix-id'
         self.assertTrue(hostname.endswith("-%d" % self.server['id']))
 
@@ -272,9 +273,20 @@ class GeneratedServerTestSuite(CycladesTests):
         """Destroy the floating IPs"""
         self._disconnect_from_network(self.server)
 
-    def test_023_submit_delete_request(self):
+    def test_023_rescue_server(self):
+        """Test rescue mode"""
+        self._skip_if(not self.test_rescue, "--no-rescue flag enabled")
+        self._rescue_server(self.server)
+
+    def test_024_unrescue_server(self):
+        """Test revert rescue mode"""
+        self._skip_if(not self.test_rescue, "--no-rescue flag enabled")
+        self._unrescue_server(self.server, start_server=True)
+
+    def test_025_submit_delete_request(self):
         """Test submit request to delete server"""
         self._delete_servers([self.server])
+
 
 
 # --------------------------------------------------------------------

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,48 +35,49 @@ ROOT = "/%s/%s/%s/" % (
 u = lambda url: ROOT + url
 
 
-class QuotaAPITest(TestCase):
+class QuotaAPITest(TransactionTestCase):
     def test_0(self):
         client = Client()
-        backend = activation_backends.get_backend()
+        with transaction.atomic():
+            backend = activation_backends.get_backend()
 
-        component1 = Component.objects.create(name="comp1")
-        register.add_service(component1, "service1", "type1", [])
-        # custom service resources
-        resource11 = {"name": u"service1.ρίσορς11",
-                      "desc": "ρίσορς11 desc",
-                      "service_type": "type1",
-                      "service_origin": "service1",
-                      "ui_visible": True}
-        r, _ = register.add_resource(resource11)
-        register.update_base_default(r, 100)
-        resource12 = {"name": "service1.resource12",
-                      "desc": "ρίσορς11 desc",
-                      "service_type": "type1",
-                      "service_origin": "service1",
-                      "unit": "bytes"}
-        r, _ = register.add_resource(resource12)
-        register.update_base_default(r, 1024)
+            component1 = Component.objects.create(name="comp1")
+            register.add_service(component1, "service1", "type1", [])
+            # custom service resources
+            resource11 = {"name": u"service1.ρίσορς11",
+                          "desc": "ρίσορς11 desc",
+                          "service_type": "type1",
+                          "service_origin": "service1",
+                          "ui_visible": True}
+            r, _ = register.add_resource(resource11)
+            register.update_base_default(r, 100)
+            resource12 = {"name": "service1.resource12",
+                          "desc": "ρίσορς11 desc",
+                          "service_type": "type1",
+                          "service_origin": "service1",
+                          "unit": "bytes"}
+            r, _ = register.add_resource(resource12)
+            register.update_base_default(r, 1024)
 
-        # create user
-        user = get_local_user('test@grnet.gr')
-        backend.accept_user(user)
-        non_moderated_user = get_local_user('nonmon@example.com',
-                                            is_active=False)
-        r_user = get_local_user('rej@example.com',
-                                is_active=False, email_verified=True)
-        backend.reject_user(r_user, "reason")
+            # create user
+            user = get_local_user('test@grnet.gr')
+            backend.accept_user(user)
+            non_moderated_user = get_local_user('nonmon@example.com',
+                                                is_active=False)
+            r_user = get_local_user('rej@example.com',
+                                    is_active=False, email_verified=True)
+            backend.reject_user(r_user, "reason")
 
-        component2 = Component.objects.create(name="comp2")
-        register.add_service(component2, "service2", "type2", [])
-        # create another service
-        resource21 = {"name": "service2.resource21",
-                      "desc": "ρίσορς11 desc",
-                      "service_type": "type2",
-                      "service_origin": "service2",
-                      "ui_visible": False}
-        r, _ = register.add_resource(resource21)
-        register.update_base_default(r, 3)
+            component2 = Component.objects.create(name="comp2")
+            register.add_service(component2, "service2", "type2", [])
+            # create another service
+            resource21 = {"name": "service2.resource21",
+                          "desc": "ρίσορς11 desc",
+                          "service_type": "type2",
+                          "service_origin": "service2",
+                          "ui_visible": False}
+            r, _ = register.add_resource(resource21)
+            register.update_base_default(r, 3)
 
         resource_names = [res['name'] for res in
                           [resource11, resource12, resource21]]

@@ -1,5 +1,5 @@
 # vim: set fileencoding=utf-8 :
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,14 +16,15 @@
 
 # Provides automated tests for logic module
 from django.test import TransactionTestCase
-#from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
 from synnefo.logic import backend
+from synnefo.logic.backend import GNT_EXTP_VOLTYPESPEC_PREFIX
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
+from synnefo.db import transaction
 from mock import patch, Mock
 
-from snf_django.lib.api import faults
+from snf_django.lib.api import faults, Credentials
 from snf_django.utils.testing import mocked_quotaholder, override_settings
 from django.conf import settings
 from copy import deepcopy
@@ -45,10 +46,13 @@ fixed_image.return_value = {'location': 'pithos://foo',
 @patch('synnefo.api.util.get_image', fixed_image)
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCreationTest(TransactionTestCase):
+    def setUp(self):
+        self.credentials = Credentials("test")
+
     def test_create(self, mrapi):
         flavor = mfactory.FlavorFactory()
         kwargs = {
-            "userid": "test",
+            "credentials": self.credentials,
             "name": "test_vm",
             "password": "1234",
             "flavor": flavor,
@@ -84,8 +88,24 @@ class ServerCreationTest(TransactionTestCase):
 
         # test ext settings:
         req = deepcopy(kwargs)
+        vlmt = mfactory.VolumeTypeFactory(disk_template='ext_archipelago')
+        # Generate 4 specs. 2 prefixed with GNT_EXTP_VOLTYPESPEC_PREFIX
+        # and 2 with an other prefix that should be omitted
+        volume_type_specs = [
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sbar' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sfoo' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='other-prefx-baz'),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='another-prefix-biz'),
+        ]
+
+        gnt_prefixed_specs = filter(lambda s: s.key.startswith(
+            GNT_EXTP_VOLTYPESPEC_PREFIX), volume_type_specs)
         ext_flavor = mfactory.FlavorFactory(
-            volume_type__disk_template="ext_archipelago",
+            volume_type=vlmt,
             disk=1)
         req["flavor"] = ext_flavor
         mrapi().CreateInstance.return_value = 42
@@ -102,7 +122,7 @@ class ServerCreationTest(TransactionTestCase):
         with mocked_quotaholder():
             with override_settings(settings, **osettings):
                 with patch(
-                    'synnefo.logic.backend_allocator.update_backends_disk_templates'
+                    'synnefo.logic.backend_allocator.update_backends_disk_templates'  # noqa E265
                 ) as update_disk_templates_mock:
                     # Check that between the `get_available_backends` call
                     # and the `update_backend_disk_templates` call
@@ -112,18 +132,22 @@ class ServerCreationTest(TransactionTestCase):
 
         update_disk_templates_mock.assert_called_once_with([backend])
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
-        self.assertEqual(kwargs["disks"][0],
-                         {"provider": "archipelago",
-                          "origin": "test_mapfile",
-                          "origin_size": 1000,
-                          "name": vm.volumes.all()[0].backend_volume_uuid,
-                          "foo": "mpaz",
-                          "lala": "lolo",
-                          "size": 1024})
+        disk_kwargs = {"provider": "archipelago",
+                       "origin": "test_mapfile",
+                       "origin_size": 1000,
+                       "name": vm.volumes.all()[0].backend_volume_uuid,
+                       "foo": "mpaz",
+                       "lala": "lolo",
+                       "size": 1024}
+        disk_kwargs.update({spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                            spec.value
+                            for spec in gnt_prefixed_specs})
+        self.assertEqual(kwargs["disks"][0], disk_kwargs)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerTest(TransactionTestCase):
+
     def test_connect_network(self, mrapi):
         # Common connect
         for dhcp in [True, False]:
@@ -136,7 +160,9 @@ class ServerTest(TransactionTestCase):
             mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
             mrapi().ModifyInstance.return_value = 42
             with override_settings(settings, GANETI_USE_HOTPLUG=True):
-                servers.connect(vm, net)
+                with transaction.atomic():
+                    port = servers._create_port(vm.userid, net)
+                    servers.connect_port(vm, net, port)
             pool = net.get_ip_pools(locked=False)[0]
             self.assertFalse(pool.is_available("192.168.2.2"))
             args, kwargs = mrapi().ModifyInstance.call_args
@@ -154,7 +180,9 @@ class ServerTest(TransactionTestCase):
         net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         with override_settings(settings, GANETI_USE_HOTPLUG=True):
-            servers.connect(vm, net)
+            with transaction.atomic():
+                port = servers._create_port(vm.userid, net)
+                servers.connect_port(vm, net, port)
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
@@ -162,6 +190,59 @@ class ServerTest(TransactionTestCase):
         self.assertEqual(nics[1], "-1")
         self.assertEqual(nics[2]["ip"], None)
         self.assertEqual(nics[2]["network"], net.backend_id)
+
+    def test_attach_volume_type_specs(self, mrapi):
+        """Test volume type spces propagation when attaching a
+           volume to an instance
+        """
+        vlmt = mfactory.VolumeTypeFactory(disk_template='ext_archipelago')
+        # Generate 4 specs. 2 prefixed with GNT_EXTP_VOLTYPESPEC_PREFIX
+        # and 2 with an other prefix that should be omitted
+        volume_type_specs = [
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sbar' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='%sfoo' % GNT_EXTP_VOLTYPESPEC_PREFIX),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='other-prefx-baz'),
+            mfactory.VolumeTypeSpecsFactory(
+                volume_type=vlmt, key='another-prefix-biz'),
+        ]
+
+        gnt_prefixed_specs = filter(lambda s: s.key.startswith(
+            GNT_EXTP_VOLTYPESPEC_PREFIX), volume_type_specs)
+        volume = mfactory.VolumeFactory(volume_type=vlmt, size=1)
+        vm = volume.machine
+        osettings = {
+            "GANETI_DISK_PROVIDER_KWARGS": {
+                "archipelago": {
+                    "foo": "mpaz",
+                    "lala": "lolo"
+                }
+            }
+        }
+
+        with override_settings(settings, **osettings):
+            mrapi().ModifyInstance.return_value = 1
+            jobid = backend.attach_volume(vm, volume)
+            self.assertEqual(jobid, 1)
+            name, args, kwargs = mrapi().ModifyInstance.mock_calls[-1]
+
+            disk_kwargs = {"provider": "archipelago",
+                           "name": vm.volumes.all()[0].backend_volume_uuid,
+                           "reuse_data": 'False',
+                           "foo": "mpaz",
+                           "lala": "lolo",
+                           "size": 1024}
+            disk_kwargs.update({spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                                spec.value
+                                for spec in gnt_prefixed_specs})
+
+        # Should be "disks": [('add', '-1', {disk_kwargs}), ]
+        disk = kwargs["disks"][0]
+        self.assertEqual(disk[0], 'add')
+        self.assertEqual(disk[1], '-1')
+        self.assertEqual(disk[2], disk_kwargs)
 
     def test_attach_wait_for_sync(self, mrapi):
         """Test wait_for_sync when attaching volume to instance.
@@ -194,45 +275,57 @@ class ServerTest(TransactionTestCase):
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCommandTest(TransactionTestCase):
+    def setUp(self):
+        self.credentials = Credentials("admin_id", is_admin=True)
+
     def test_pending_task(self, mrapi):
         vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
-        self.assertRaises(faults.BuildInProgress, servers.start, vm)
+        self.assertRaises(faults.BuildInProgress, servers.start, vm.id,
+                          credentials=self.credentials)
         # Assert always succeeds
         vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
         mrapi().DeleteInstance.return_value = 1
         with mocked_quotaholder():
-            servers.destroy(vm)
+            servers.destroy(vm.id, credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
         with mocked_quotaholder():
-            servers.destroy(vm)
+            servers.destroy(vm.id, credentials=self.credentials)
 
     def test_deleted_vm(self, mrapi):
         vm = mfactory.VirtualMachineFactory(deleted=True)
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          self.credentials)
 
     def test_invalid_operstate_for_action(self, mrapi):
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        self.assertRaises(faults.BadRequest, servers.start, vm)
+        self.assertRaises(faults.BadRequest, servers.start, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
-        self.assertRaises(faults.BadRequest, servers.stop, vm)
+        self.assertRaises(faults.BadRequest, servers.stop, vm.id,
+                          credentials=self.credentials)
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         flavor = mfactory.FlavorFactory()
-        self.assertRaises(faults.BadRequest, servers.resize, vm, flavor)
+        self.assertRaises(faults.BadRequest, servers.resize, vm.id, flavor,
+                          credentials=self.credentials)
         # Check that connect/disconnect is allowed only in STOPPED vms
         # if hotplug is disabled.
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         network = mfactory.NetworkFactory(state="ACTIVE")
         with override_settings(settings, GANETI_USE_HOTPLUG=False):
-            self.assertRaises(faults.BadRequest, servers.connect, vm, network)
-            self.assertRaises(faults.BadRequest, servers.disconnect, vm,
-                              network)
-        #test valid
+            port = servers._create_port(vm.userid, network)
+            self.assertRaises(
+                faults.BadRequest, servers.connect_port, vm, network, port)
+            self.assertRaises(faults.BadRequest, servers.disconnect_port,
+                              vm, network)
+        # test valid
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder():
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
+        vm = models.VirtualMachine.objects.get(id=vm.id)
         vm.task = None
         vm.task_job_id = None
         vm.save()
@@ -240,7 +333,7 @@ class ServerCommandTest(TransactionTestCase):
             quotas.accept_resource_serial(vm)
         mrapi().RebootInstance.return_value = 1
         with mocked_quotaholder():
-            servers.reboot(vm, "HARD")
+            servers.reboot(vm.id, "HARD", credentials=self.credentials)
 
     def test_commission(self, mrapi):
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
@@ -248,21 +341,23 @@ class ServerCommandTest(TransactionTestCase):
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=200,
                                                       resolved=False,
                                                       pending=True)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
             with self.assertRaises(quotas.ResolveError):
-                servers.start(vm)
+                servers.start(vm.id, credentials=self.credentials)
         # Not pending, rejct
         vm.task = None
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=400,
                                                       resolved=False,
                                                       pending=False,
                                                       accept=False)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
             m.resolve_commissions.assert_called_once_with([],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
@@ -272,10 +367,11 @@ class ServerCommandTest(TransactionTestCase):
                                                       resolved=False,
                                                       pending=False,
                                                       accept=True)
+        vm.save()
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            servers.start(vm.id, credentials=self.credentials)
             m.resolve_commissions.assert_called_once_with([serial.serial],
                                                           [])
             self.assertTrue(m.issue_one_commission.called)
@@ -283,10 +379,11 @@ class ServerCommandTest(TransactionTestCase):
         mrapi().StartupInstance.side_effect = ValueError
         vm.task = None
         vm.serial = None
+        vm.save()
         # Test reject if Ganeti erro
         with mocked_quotaholder() as m:
             try:
-                servers.start(vm)
+                servers.start(vm.id, credentials=self.credentials)
             except Exception:
                 (accept, reject), kwargs = m.resolve_commissions.call_args
                 self.assertEqual(accept, [])
@@ -305,18 +402,21 @@ class ServerCommandTest(TransactionTestCase):
         with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STOPPED"
-            servers.start(vm)
+            vm.save()
+            servers.start(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "START")
             self.assertEqual(vm.task_job_id, 1)
         with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STARTED"
-            servers.stop(vm)
+            vm.save()
+            servers.stop(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "STOP")
             self.assertEqual(vm.task_job_id, 2)
         with mocked_quotaholder():
             vm.task = None
-            servers.reboot(vm)
+            vm.save()
+            servers.reboot(vm.id, credentials=self.credentials)
             self.assertEqual(vm.task, "REBOOT")
             self.assertEqual(vm.task_job_id, 3)
 
@@ -325,7 +425,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, False)
+            vm = servers.reassign(vm.id, another_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -337,7 +438,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = volume.machine
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, True)
+            vm = servers.reassign(vm.id, another_project, True,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, True)
             vol = vm.volumes.get(id=volume.id)
@@ -350,7 +452,8 @@ class ServerCommandTest(TransactionTestCase):
         original_project = vm.project
         another_project = "another_project"
         with mocked_quotaholder():
-            servers.reassign(vm, another_project, False)
+            vm = servers.reassign(vm.id, another_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -360,8 +463,9 @@ class ServerCommandTest(TransactionTestCase):
         backend.public = False
         backend.save()
         with mocked_quotaholder():
-            self.assertRaises(faults.BadRequest, servers.reassign, vm,
-                              original_project, False)
+            self.assertRaises(faults.Forbidden, servers.reassign, vm.id,
+                              original_project, False,
+                              credentials=self.credentials)
             self.assertEqual(vm.project, another_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
@@ -370,8 +474,137 @@ class ServerCommandTest(TransactionTestCase):
         mfactory.ProjectBackendFactory(project=original_project,
                                        backend=backend)
         with mocked_quotaholder():
-            servers.reassign(vm, original_project, False)
+            vm = servers.reassign(vm.id, original_project, False,
+                                  credentials=self.credentials)
             self.assertEqual(vm.project, original_project)
             self.assertEqual(vm.shared_to_project, False)
             vol = vm.volumes.get(id=volume.id)
             self.assertEqual(vol.project, original_project)
+
+    def test_reassign_vm_flavors(self, mrapi):
+        volume = mfactory.VolumeFactory()
+        vm = volume.machine
+        vm_id = vm.id
+        original_project = vm.project
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm_id, another_project, False,
+                             credentials=self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
+            self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        vm = models.VirtualMachine.objects.get(id=vm_id)
+        flavor = vm.flavor
+        flavor.public = False
+        flavor.save()
+        with mocked_quotaholder():
+            self.assertRaises(faults.Forbidden, servers.reassign, vm_id,
+                              original_project, False, self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
+            self.assertEqual(vm.project, another_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        mfactory.FlavorAccessFactory(project=original_project,
+                                     flavor=flavor)
+        with mocked_quotaholder():
+            servers.reassign(vm_id, original_project, False,
+                             credentials=self.credentials)
+            vm = models.VirtualMachine.objects.get(id=vm_id)
+            self.assertEqual(vm.project, original_project)
+            self.assertEqual(vm.shared_to_project, False)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertEqual(vol.project, original_project)
+
+
+class ServerRescueTest(TransactionTestCase):
+
+    def setUp(self):
+        self.debian_rescue_image = mfactory.RescueImageFactory(
+            target_os_family='linux', target_os='debian',
+            location='test-path.iso', name='Test Rescue Image')
+        self.windows_rescue_image = mfactory.RescueImageFactory(
+            target_os_family='windows', target_os='windows',
+            location='test-path-win.iso', name='Test Windows Rescue Image',
+            is_default=True)
+        self.vm = mfactory.VirtualMachineFactory()
+        self.credentials = Credentials("test")
+
+    def test_rescue_started_vm(self):
+        """Test rescue a started VM"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STARTED"
+            print(self.credentials)
+            with self.assertRaises(faults.BadRequest):
+                servers.rescue(self.vm, credentials=self.credentials)
+
+    def test_rescue_stopped_rescued_vm(self):
+        """Test rescue a stopped VM while in rescue mode"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = True
+            with self.assertRaises(faults.BadRequest):
+                servers.rescue(self.vm, credentials=self.credentials)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_rescue_stopped_vm(self, mrapi):
+        """Test rescue a stopped VM"""
+        mrapi().ModifyInstance.return_value = 1
+        # Since we are not using rescue properties, the default
+        # image should be used.
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.rescue = False
+            self.vm.operstate = "STOPPED"
+            servers.rescue(self.vm, credentials=self.credentials)
+            self.assertEqual(self.vm.task_job_id, 1)
+            self.assertFalse(self.vm.rescue_image is None)
+            self.assertTrue(self.vm.rescue_image.is_default)
+
+    def test_unrescue_started_vm(self):
+        """Test unrescue a started VM"""
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STARTED"
+            with self.assertRaises(faults.BadRequest):
+                servers.unrescue(self.vm, credentials=self.credentials)
+
+    def test_unrescue_stopped_unrescued_vm(self):
+        """Test unrescue a VM that is not in rescue mode"""
+        with mocked_quotaholder():
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = False
+            with self.assertRaises(faults.BadRequest):
+                servers.unrescue(self.vm, credentials=self.credentials)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_unrescue_stopped_vm(self, mrapi):
+        """Test unrescue a stopped VM in rescue mode"""
+        mrapi().ModifyInstance.return_value = 1
+        with mocked_quotaholder():
+            self.vm.task = None
+            self.vm.operstate = "STOPPED"
+            self.vm.rescue = True
+            self.vm.rescue_image = self.debian_rescue_image
+            servers.unrescue(self.vm, credentials=self.credentials)
+            self.assertEqual(self.vm.task_job_id, 1)
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_rescue_vm_rescue_properties(self, mrapi):
+        """Test rescue a VM using rescue properties"""
+        mrapi().ModifyInstance.return_value = 1
+        vm = mfactory.VirtualMachineFactory(
+             rescue_properties__os_family='linux',
+             rescue_properties__os='debian')
+        with mocked_quotaholder():
+            vm.task = None
+            vm.operstate = "STOPPED"
+            servers.rescue(vm, credentials=self.credentials)
+            self.assertEqual(vm.task_job_id, 1)
+            self.assertEqual(vm.rescue_image, self.debian_rescue_image)

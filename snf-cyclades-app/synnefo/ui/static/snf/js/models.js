@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+// Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -604,22 +604,6 @@
             return false;
         },
 
-        personality_data_for_keys: function(keys) {
-            return _.map(this.ssh_keys_paths(), function(pathinfo) {
-                var contents = '';
-                _.each(keys, function(key){
-                    contents = contents + key.get("content") + "\n"
-                });
-                contents = $.base64.encode(contents);
-
-                return {
-                    path: pathinfo.path,
-                    contents: contents,
-                    mode: 0600,
-                    owner: pathinfo.user
-                }
-            });
-        }
     });
 
     // Flavor model
@@ -680,6 +664,19 @@
 
           var val = getter.call(this, key);
           return parser(val);
+        },
+
+        unique_quotas: function() {
+            var cpu = this.get('cpu');
+            var ram = this.get('ram');
+            var disk = this.get('disk');
+            ret = {}
+
+            ret['cpu_{0}'.format(cpu)] = cpu;
+            ret['ram_{0}'.format(ram)] = ram;
+            ret['disk_{0}'.format(disk)] = disk;
+
+            return ret;
         },
 
         quotas: function() {
@@ -799,8 +796,13 @@
         has_status: true,
         proxy_attrs: {
           'disk_template': [
-            ['flavor'], function() {
+            ['flavor', 'is_ghost'], function() {
+              if (this.get('is_ghost')) { return undefined }
               var flv = synnefo.storage.flavors.get(this.get('flavor'));
+              if (!flv) {
+                storage.flavors.update_unknown_id(this.get('flavor'));
+                flv = storage.flavors.get(this.get('flavor'));
+              }
               return flv && flv.get('disk_template');
             }
           ],
@@ -1261,6 +1263,14 @@
                                     !this.get('project').get('missing');
         },
 
+        can_rescue: function() {
+            return this.get('status') == 'STOPPED' &&
+                    !this.get('SNF:rescue');
+        },
+        can_unrescue: function() {
+            return this.get('status') == 'STOPPED' &&
+                    this.get('SNF:rescue');
+        },
         can_reassign: function() {
           return true;
         },
@@ -1478,7 +1488,7 @@
 
         get_resize_flavors: function() {
           var vm_flavor = this.get_flavor();
-          var flavors = synnefo.storage.flavors.filter(function(f){
+          var flavors = synnefo.storage.flavors.active(this.get('project')).filter(function(f){
               return f.get('disk_template') ==
               vm_flavor.get('disk_template') && f.get('disk') ==
               vm_flavor.get('disk');
@@ -1533,7 +1543,16 @@
         // depending on the vm state/status
         get_available_actions: function() {
             if (this.get('suspended')) { return [] }
-            return models.VM.AVAILABLE_ACTIONS[this.state()];
+            // Copy the array since we might append something
+            var actions = models.VM.AVAILABLE_ACTIONS[this.state()].slice();
+            if(this.state() == "STOPPED") {
+                if(this.get('SNF:rescue')) {
+                    actions.push('unrescue');
+                } else {
+                    actions.push('rescue');
+                }
+            }
+            return actions;
         },
 
         set_profile: function(profile, net_id) {
@@ -1731,6 +1750,26 @@
                                          },  
                                          error, 'resize', params);
                     break;
+                case 'rescue':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {rescue: {}}, // payload
+                                         function() {
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },
+                                         error, 'rescue', params);
+                    break;
+                case 'unrescue':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {unrescue: {}}, // payload
+                                         function() {
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },
+                                         error, 'unrescue', params);
+                    break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
                                          "delete", // create so that sync later uses POST to make the call
@@ -1862,7 +1901,9 @@
         'destroy',
         'resize',
         'reassign',
-        'snapshot'
+        'snapshot',
+        'rescue',
+        'unrescue'
     ]
 
     models.VM.TASK_STATE_STATUS_MAP = {
@@ -2189,40 +2230,43 @@
         comparator: function(flv) {
             return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
-          
+
         unavailable_values_for_quotas: function(quotas, flavors, extra) {
             var flavors = flavors || this.active();
             var index = {cpu:[], disk:[], ram:[]};
             var extra = extra == undefined ? {cpu:0, disk:0, ram:0} : extra;
-            
-            _.each(flavors, function(el) {
 
-                var disk_available = quotas['disk'] + extra.disk;
-                var disk_size = el.get_disk_size();
-                if (index.disk.indexOf(disk_size) == -1) {
-                  var disk = el.disk_to_bytes();
-                  if (disk > disk_available) {
-                    index.disk.push(el.get('disk'));
-                  }
-                }
-                
-                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
-                var ram_size = el.get_ram_size();
-                if (index.ram.indexOf(ram_size) == -1) {
-                  var ram = el.ram_to_bytes();
-                  if (ram > ram_available) {
-                    index.ram.push(el.get('ram'))
-                  }
-                }
-
-                var cpu = el.get('cpu');
-                var cpu_available = quotas['cpu'] + extra.cpu;
-                if (index.cpu.indexOf(cpu) == -1) {
-                  if (cpu > cpu_available) {
-                    index.cpu.push(el.get('cpu'))
-                  }
-                }
+            var all_values = {}
+            _.each(flavors, function(flv) {
+                _.extend(all_values, flv.unique_quotas())
             });
+
+            var is_flavor_valid = function(flv) {
+
+                var cpu_available = quotas['cpu'] + extra.cpu;
+                var cpu = flv.get('cpu');
+                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
+                var ram = flv.ram_to_bytes()
+                var disk_available = quotas['disk'] + extra.disk * 1024 * 1024;
+                var disk = flv.disk_to_bytes();
+
+                return cpu_available >= cpu & ram_available >= ram & disk_available >= disk;
+            }
+
+            var available_values = {}
+            _.each(flavors, function(flv) {
+                if(!is_flavor_valid(flv)) { return }
+                _.extend(available_values, flv.unique_quotas())
+            });
+
+            /* Unavailable values = All Values 0 Available Values */
+            _.each(all_values, function(value, key) {
+                if(available_values[key]) { return }
+                var value_type = key.split("_")[0];
+
+                index[value_type].push(value);
+            });
+
             return index;
         },
 
@@ -2258,14 +2302,14 @@
         },
         
         get_data: function(lst) {
-            var data = {'cpu': [], 'mem':[], 'disk':[], 'disk_template':[]};
+            var data = {'cpu': [], 'ram':[], 'disk':[], 'disk_template':[]};
 
             _.each(lst, function(flv) {
                 if (data.cpu.indexOf(flv.get("cpu")) == -1) {
                     data.cpu.push(flv.get("cpu"));
                 }
-                if (data.mem.indexOf(flv.get("ram")) == -1) {
-                    data.mem.push(flv.get("ram"));
+                if (data.ram.indexOf(flv.get("ram")) == -1) {
+                    data.ram.push(flv.get("ram"));
                 }
                 if (data.disk.indexOf(flv.get("disk")) == -1) {
                     data.disk.push(flv.get("disk"));
@@ -2275,11 +2319,27 @@
                 }
             })
             
+            // Javascript by default performs lexicographical sorting
+            // that means, 2 > 10 so we need to define a number comparison
+            // function
+            var num_cmp = function(a, b) { return a - b }
+            data.cpu.sort(num_cmp);
+            data.ram.sort(num_cmp);
+            data.disk.sort(num_cmp);
+            data.disk_template.sort();
+
             return data;
         },
 
-        active: function() {
-            return this.filter(function(flv){return flv.get('status') != "DELETED"});
+        active: function(project) {
+            return this.filter(function(flv) {
+                is_active = flv.get('status') != "DELETED";
+                if(project !== undefined) {
+                    is_active &= flv.get('os-flavor-access:is_public') |
+                                 flv.get('SNF:flavor-access').indexOf(project.get('id')) >= 0;
+                }
+                return is_active;
+            });
         }
             
     })

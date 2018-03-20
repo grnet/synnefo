@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -119,3 +119,71 @@ class StaleNetworksTestSuite(CycladesTests):
         else:
             self.info("Deleting %s stale networks", len_stale)
             self._delete_networks(self.stale_networks)
+
+
+# pylint: disable=too-many-public-methods
+class StaleVolumesTestSuite(CycladesTests):
+    """Handle stale Volumes"""
+    stale_volumes = Proper(value=None)
+
+    def test_001_show_stale_volumes(self):
+        """Show staled volumes (volumes left from previous runs)"""
+        volumes = self._get_volume_list(detail=True)
+        self.stale_volumes = [
+            vlm for vlm in volumes if vlm['display_name'] is not None and
+            vlm['display_name'].startswith(SNF_TEST_PREFIX)]
+
+        if len(self.stale_volumes) == 0:
+            self.info("No stale volumes found")
+            return
+
+        self.info("Found %s stale volumes:", len(self.stale_volumes))
+        for stl in self.stale_volumes:
+            self.info("  Volume \"%s\" with id %s", stl['display_name'],
+                                                    stl['id'])
+
+    def test_002_delete_stale_volumes(self):
+        """Delete staled volumes (volumes left from previous runs)"""
+        len_stale = len(self.stale_volumes)
+        if not self.delete_stale and len_stale != 0:
+            self.fail("Use --delete-stale flag to delete stale volumes")
+            return
+        elif len_stale == 0:
+            self.info("No stale volumes found")
+        else:
+            self.info("Deleting %s stale volumes", len(self.stale_volumes))
+            for vlm in self.stale_volumes:
+                self._destroy_volume(vlm)
+
+# pylint: disable=too-many-public-methods
+class StaleKeypairsTestSuite(CycladesTests):
+    """Handle stale Keypairs"""
+    stale_keypairs = Proper(value=None)
+
+    def test_001_show_stale_keypairs(self):
+        """Show staled keypairs (keypairs left from previous runs)"""
+        keypairs = self._get_keypairs()
+        self.stale_keypairs = [
+            key for key in keypairs if key['name'] is not None and
+            key['name'].startswith(SNF_TEST_PREFIX)]
+
+        if len(self.stale_keypairs) == 0:
+            self.info("No stale keypairs found")
+            return
+
+        self.info("Found %s stale keypairs:", len(self.stale_keypairs))
+        for stl in self.stale_keypairs:
+            self.info("  Keypair \"%s\"", stl['name'])
+
+    def test_002_delete_stale_keypairs(self):
+        """Delete staled keypairs (keypairs left from previous runs)"""
+        len_stale = len(self.stale_keypairs)
+        if not self.delete_stale and len_stale != 0:
+            self.fail("Use --delete-stale flag to delete stale keypairs")
+            return
+        elif len_stale == 0:
+            self.info("No stale keypairs found")
+        else:
+            self.info("Deleting %s stale keypairs", len(self.stale_keypairs))
+            for key in self.stale_keypairs:
+                self._delete_keypair(key)

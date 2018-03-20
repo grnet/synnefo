@@ -1,4 +1,4 @@
-// Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+// Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -440,7 +440,9 @@
             el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 45));
             el.find(".fqdn").val(vm.get("fqdn") || vm.get_hostname());
             // set the state (i18n ??)
-            el.find(".state-label").text(STATE_TEXTS[vm.state()]);
+            var vm_state = STATE_TEXTS[vm.state()];
+            if (vm.get('SNF:rescue')) vm_state += ' (Rescue)';
+            el.find(".state-label").text(vm_state);
             // set state class
             el.find(".state").removeClass().addClass(views.SingleView.STATE_CLASSES[vm.state()].join(" "));
             // os icon

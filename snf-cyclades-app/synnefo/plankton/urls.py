@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ def demux_members(request, image_id, member):
 
 image_v1_patterns = patterns(
     '',
-    (r'^images/$', demux),
+    (r'^images(?:/)?$', demux),
     (r'^images/detail$', views.list_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),
     (r'^images/([\w-]+)/members$', demux_image_members),

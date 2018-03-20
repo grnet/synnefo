@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ class Command(ListCommand):
         return VirtualMachine.objects.filter(flavor=flavor, deleted=False)\
                                      .count()
 
+    def get_specs(flavor):
+        return ', '.join([str(spec) for spec in flavor.specs.all()])
+
     FIELDS = {
         "id": ("id", "Flavor's unique ID"),
         "name": ("name", "Flavor's unique name"),
@@ -38,8 +41,10 @@ class Command(ListCommand):
         "template": ("volume_type.disk_template", "Disk template"),
         "allow_create": ("allow_create", "Whether servers can be created from"
                                          " this flavor"),
-        "vms": (get_vms, "Number of active servers using this flavor")
+        "public": ("public", "Whether this flavor is public"),
+        "vms": (get_vms, "Number of active servers using this flavor"),
+        "specs": (get_specs, "Key value pair specs assosicated with flavor"),
     }
 
     fields = ["id", "name", "cpu", "ram", "disk", "template", "volume_type",
-              "allow_create", "vms"]
+              "allow_create", "public", "vms", "specs"]

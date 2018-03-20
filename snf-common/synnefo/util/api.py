@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,4 +13,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .memory_cache import *
+
+def build_version_object(url, version_id, path, status, **extra_args):
+    """Generates a version object
+
+    The version object is structured based on the OpenStack
+    API. `extra_args` is for supporting extra information about
+    the version such as media types, extra links etc
+    """
+    base_version = {
+        'id': 'v%s' % version_id,
+        'status': status,
+        'links': [
+            {
+                'rel': 'self',
+                'href': '%s/%s/' % (url, path),
+            },
+        ],
+    }
+    return dict(base_version, **extra_args)

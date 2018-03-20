@@ -268,15 +268,17 @@ class AMQPPukaClient(object):
         # Persisent messages by default!
         headers['delivery_mode'] = 2
 
-        if self.confirms:
-            callback = self.handle_publisher_confirm
-        else:
-            callback = None
+        kwargs = {
+            'exchange': exchange,
+            'routing_key': routing_key,
+            'body': body,
+            'headers': headers
+        }
 
-        promise = self.client.basic_publish(exchange=exchange,
-                                            routing_key=routing_key,
-                                            body=body, headers=headers,
-                                            callback=callback)
+        if self.confirms:
+            kwargs['callback'] = self.handle_publisher_confirm
+
+        promise = self.client.basic_publish(**kwargs)
 
         if self.confirms:
             self.unacked[promise] = (exchange, routing_key, body)

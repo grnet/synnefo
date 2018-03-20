@@ -234,7 +234,7 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertFault(response, 409, "conflict")
 
         # Used by instance
-        with transaction.commit_on_success():
+        with transaction.atomic():
             self.pool.reserve_address("192.168.2.20")
         request = {"floatingip": {
             "floating_network_id": self.pool.id,

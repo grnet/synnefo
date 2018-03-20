@@ -62,7 +62,6 @@ class AaiClient(Client):
 
 class TestRestViews(TransactionTestCase):
     reset_sequences = True
-    fixtures = ['users']
 
     def setUp(self):
         settings.USERDATA_MAX_SSH_KEYS_PER_USER = 10
@@ -201,9 +200,11 @@ class TestRestViews(TransactionTestCase):
                                 content_type='application/json')
 
         self.assertEqual(resp.status_code, 422)
-        self.assertEqual(resp.content,
-                         """{"non_field_key": "__all__", "errors": """
-                         """{"name": ["This field cannot be blank."]}}""")
+        resp = json.loads(resp.content)
+        assert 'errors' in resp
+        assert 'non_field_key' in resp
+        self.assertEqual(resp['non_field_key'], "__all__")
+        self.assertEqual(resp['errors'], {"name": ["This field cannot be blank."]})
 
         settings.USERDATA_MAX_SSH_KEYS_PER_USER = 2
 
@@ -221,9 +222,11 @@ class TestRestViews(TransactionTestCase):
                                             'content': """key 1 content"""}),
                                 content_type='application/json')
         self.assertEqual(resp.status_code, 422)
-        self.assertEqual(resp.content,
-                         """{"non_field_key": "__all__", "errors": """
-                         """{"__all__": ["SSH keys limit exceeded."]}}""")
+        resp = json.loads(resp.content)
+        assert 'errors' in resp
+        assert 'non_field_key' in resp
+        self.assertEqual(resp['non_field_key'], "__all__")
+        self.assertEqual(resp['errors'], {"__all__": ["SSH keys limit exceeded."]})
 
     def test_existing_name(self):
         # test existing key name
@@ -236,6 +239,8 @@ class TestRestViews(TransactionTestCase):
                                             'content': """key 2 content"""}),
                                 content_type='application/json')
         self.assertEqual(resp.status_code, 422)
-        self.assertEqual(resp.content,
-                         """{"non_field_key": "__all__", "errors": """
-                         """{"__all__": ["Public key pair with this User and Name already exists."]}}""")
+        resp = json.loads(resp.content)
+        assert 'errors' in resp
+        assert 'non_field_key' in resp
+        self.assertEqual(resp['non_field_key'], "__all__")
+        self.assertEqual(resp['errors'], {"__all__": ["Public key pair with this User and Name already exists."]})

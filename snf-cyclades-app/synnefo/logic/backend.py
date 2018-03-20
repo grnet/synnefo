@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,14 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
-from synnefo.db import transaction
 import json
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, IPAddress, IPAddressHistory)
+                               Flavor, IPAddress, IPAddressHistory,
+                               RescueImage)
 from synnefo.logic import utils, ips
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -29,6 +29,7 @@ from synnefo.logic import rapi
 from synnefo import volume as volume_actions
 from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
                                       OBJECT_ERROR)
+from synnefo.db import transaction
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -47,9 +48,11 @@ NIC_FIELDS = SIMPLE_NIC_FIELDS + COMPLEX_NIC_FIELDS
 DISK_FIELDS = ["status", "size", "index"]
 UNKNOWN_NIC_PREFIX = "unknown-nic-"
 UNKNOWN_DISK_PREFIX = "unknown-disk-"
+GNT_EXTP_VOLTYPESPEC_PREFIX = "GNT-EXTP:"
 
 
-def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
+def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields,
+                     atomic_context=None):
     """Handle quotas for updated VirtualMachine.
 
     Update quotas for the updated VirtualMachine based on the job that run on
@@ -77,11 +80,15 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # failed server
         serial = vm.serial
         if job_status == rapi.JOB_STATUS_SUCCESS:
-            quotas.accept_resource_serial(vm)
+            quotas.mark_resource_serial_as_accepted(vm)
+            atomic_context.add_on_success_job(
+                transaction.Job(quotas.accept_serial, args=(serial,)))
         elif job_status in [rapi.JOB_STATUS_ERROR, rapi.JOB_STATUS_CANCELED]:
             log.debug("Job %s failed. Rejecting related serial %s", job_id,
                       serial)
-            quotas.reject_resource_serial(vm)
+            quotas.mark_resource_serial_as_rejected(vm)
+            atomic_context.add_on_success_job(
+                transaction.Job(quotas.reject_serial, args=(serial,)))
     elif job_status == rapi.JOB_STATUS_SUCCESS:
         commission_info = quotas.get_commission_info(resource=vm,
                                                      action=action,
@@ -101,7 +108,14 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
                     action_fields=job_fields,
                     commission_name=reason,
                     force=True,
-                    auto_accept=True)
+                    auto_accept=False)
+                quotas.mark_resource_serial_as_accepted(vm)
+                atomic_context.add_on_success_job(
+                    transaction.Job(quotas.accept_serial, args=(serial,)))
+                atomic_context.add_on_failure_job(
+                    transaction.Job(quotas.reject_serial,
+                                    args=(serial,),
+                                    kwargs={'force': True}))
             except:
                 log.exception("Error while handling new commission")
                 raise
@@ -109,9 +123,9 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
     return vm
 
 
-@transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
-                      disks=None, job_fields=None):
+                      disks=None, job_fields=None, atomic_context=None,
+                      hvparams=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -181,6 +195,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             # job!
             disk_changes, deferred_jobs = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
+            atomic_context.add_on_success_jobs(deferred_jobs)
+        if hvparams is not None:
+            update_hvparams(vm, hvparams)
 
     vm_deleted = False
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
@@ -203,6 +220,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                 remove_nic_ips(nic)
                 nic.delete()
             vm.deleted = True
+            vm.rescue = False
+            vm.rescue_image = None
             new_operstate = state_for_success
             vm.backendtime = etime
             status = rapi.JOB_STATUS_SUCCESS
@@ -210,7 +229,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     if status in rapi.JOB_STATUS_FINALIZED:
         # Job is finalized: Handle quotas/commissioning
         vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
-                              job_status=status, job_fields=job_fields)
+                              job_status=status, job_fields=job_fields,
+                              atomic_context=atomic_context)
         # and clear task fields
         if vm.task_job_id == jobid:
             vm.task = None
@@ -227,10 +247,6 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         vm.flavor = new_flavor
 
     vm.save()
-
-    # Before exiting, do any deferred jobs that are left.
-    for (job, args, kwargs) in deferred_jobs:
-        job(*args, **kwargs)
 
 
 def find_new_flavor(vm, cpu=None, ram=None, disk=None):
@@ -374,6 +390,52 @@ def update_vm_nics(vm, nics, etime=None):
                                        version=6)
 
     return []
+
+
+def update_hvparams(vm, hvparams):
+    """Update VM's state to match the hypervisor parameters of Ganeti.
+
+    This function will parse the hypervisor parameters of the Ganeti
+    instance and will update the fields of the VirtualMachine object
+    accordingly. For example if `cdrom_image_path` is set and
+    `boot_order` is set to disk priority, the field rescue will be
+    set to True.
+
+    @param vm: The VirtualMachine the disks belong to
+    @type vm: VirtualMachine object
+    @param hvparams: The hypervisor parameters of the Ganeti instance
+    @type hvparams: Dictionary with key-value hypervisor parameters
+    """
+    log.info("Updating hvparams %s for vm %s" % (hvparams, vm))
+
+    boot_order = hvparams['boot_order']
+    cdrom_image_path = hvparams['cdrom_image_path']
+
+    if (len(cdrom_image_path) > 0 and boot_order.startswith('cdrom')):
+        # Server is on rescue state in ganeti
+        vm.rescue = True
+
+        if (vm.rescue_image is None or
+                vm.rescue_image.location != cdrom_image_path):
+            # Server is on rescue mode with a different location
+            # find the image with the corresponding location and
+            # assign it to the VM model.
+            try:
+                location = cdrom_image_path
+                if location.startswith(settings.RESCUE_IMAGE_PATH):
+                    # If the location is cyclades prefixed, remove
+                    # the prefix
+                    location = location[
+                            (len(settings.RESCUE_IMAGE_PATH) + 1):]
+                rescue_image = RescueImage.objects.get(
+                    deleted=False, location=location)
+                vm.rescue_image = rescue_image
+            except RescueImage.DoesNotExist:
+                # If the image is not found
+                vm.rescue_image = None
+    else:
+        vm.rescue = False
+        vm.rescue_image = None
 
 
 def remove_nic_ips(nic, version=None):
@@ -543,7 +605,7 @@ def update_vm_disks(vm, disks, etime=None):
                 # to be deleted.
                 fn = volume_actions.volumes.delete_volume_from_helper
                 args = (db_disk, vm)
-                deferred_jobs.append((fn, args, {}))
+                deferred_jobs.append(transaction.Job(fn, args=args))
 
             # Update the disk in DB with the values from Ganeti disk
             [setattr(db_disk, f, gnt_disk[f]) for f in DISK_FIELDS]
@@ -644,8 +706,8 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
                                                   state=state)
 
 
-@transaction.commit_on_success
-def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
+def process_network_status(back_network, etime, jobid, opcode, status, logmsg,
+                           atomic_context=None):
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise Network.InvalidBackendMsgError(opcode, status)
 
@@ -679,10 +741,10 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
     back_network.save()
     # Also you must update the state of the Network!!
-    update_network_state(network)
+    update_network_state(network, atomic_context=atomic_context)
 
 
-def update_network_state(network):
+def update_network_state(network, atomic_context=None):
     """Update the state of a Network based on BackendNetwork states.
 
     Update the state of a Network based on the operstate of the networks in the
@@ -747,17 +809,13 @@ def update_network_state(network):
 
         # Issue commission
         if network.userid:
-            quotas.issue_and_accept_commission(network, action="DESTROY")
-            # the above has already saved the object and committed;
-            # a second save would override others' changes, since the
-            # object is now unlocked
-            return
+            quotas.issue_and_accept_commission(network, action="DESTROY",
+                                               atomic_context=atomic_context)
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()
 
 
-@transaction.commit_on_success
 def process_network_modify(back_network, etime, jobid, opcode, status,
                            job_fields):
     assert (opcode == "OP_NETWORK_SET_PARAMS")
@@ -779,7 +837,6 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
     back_network.save()
 
 
-@transaction.commit_on_success
 def process_create_progress(vm, etime, progress):
 
     percentage = int(progress)
@@ -810,7 +867,6 @@ def process_create_progress(vm, etime, progress):
     vm.save()
 
 
-@transaction.commit_on_success
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                details=None):
     """
@@ -862,6 +918,15 @@ def create_instance(vm, nics, volumes, flavor, image):
                                         .get(provider)
             if extra_disk_params is not None:
                 disk.update(extra_disk_params)
+
+            volume_type_specs = {spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                                 spec.value for spec in
+                                 volume.volume_type.specs.filter(
+                                 key__startswith=GNT_EXTP_VOLTYPESPEC_PREFIX)}
+
+            if volume_type_specs:
+                disk.update(volume_type_specs)
+
         disks.append(disk)
 
     kw["disks"] = disks
@@ -1237,6 +1302,42 @@ def disconnect_from_network(vm, nic):
         return job_id
 
 
+def rescue_instance(vm, rescue_image_ref):
+    log.debug("Rescuing instance %d with image %s", vm, rescue_image_ref)
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "hvparams": {
+            "boot_order": "cdrom",
+            "cdrom_image_path": rescue_image_ref,
+        }
+    }
+
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
+def unrescue_instance(vm):
+    log.debug("Unrescuing instance %d", vm)
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "hvparams": {
+            "cdrom_image_path": "",
+            "boot_order": "disk"
+        }
+    }
+
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
 def set_firewall_profile(vm, profile, nic):
     uuid = nic.backend_uuid
     try:
@@ -1294,13 +1395,22 @@ def attach_volume(vm, volume, depends=[]):
     if disk_provider is not None:
         disk["provider"] = disk_provider
 
+        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                    .get(disk_provider)
+
+        if extra_disk_params is not None:
+            disk.update(extra_disk_params)
+
+        volume_type_specs = {spec.key[len(GNT_EXTP_VOLTYPESPEC_PREFIX):]:
+                             spec.value for spec in
+                             volume.volume_type.specs.filter(
+                             key__startswith=GNT_EXTP_VOLTYPESPEC_PREFIX)}
+
+        if volume_type_specs:
+            disk.update(volume_type_specs)
+
     if volume.origin is not None:
         disk["origin"] = volume.origin
-
-    extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
-                                .get(disk_provider)
-    if extra_disk_params is not None:
-        disk.update(extra_disk_params)
 
     if volume_actions.util.is_volume_type_detachable(volume.volume_type):
         add_attach_params(volume, disk)

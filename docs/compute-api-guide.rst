@@ -353,6 +353,7 @@ The server attributes are listed `here <#server-ref>`__.
         "hostId": "",
         "SNF:fqdn": "snf-42.vm.example.org",
         "key_name": null,
+        "SNF:key_names": [],
         "name": "My Server",
         "created": "2014-02-12T08:31:37.834542+00:00",
         "tenant_id": "s0m5-u5e7-1d",
@@ -459,6 +460,7 @@ The server attributes are listed `here <#server-ref>`__.
         "hostId": "",
         "SNF:fqdn": "snf-84.vm.example.org",
         "key_name": null,
+        "SNF:key_names": [],
         "name": "My Other Server",
         "created": "2014-02-21T08:31:37.834542+00:00",
         "tenant_id": "s0m5-u5e7-1d",
@@ -529,16 +531,19 @@ Request body contents::
       ...
   }
 
-=========== ==================== ======== ==========
-Attributes  Description          Cyclades OS/Compute
-=========== ==================== ======== ==========
-name        The server name      ✔        ✔
-imageRef    Image id             ✔        ✔
-flavorRef   Resources flavor     ✔        ✔
-personality Personality contents ✔        ✔
-metadata    Custom metadata      ✔        ✔
-project     Project assignment   ✔        **✘**
-=========== ==================== ======== ==========
+============= ===================== ======== ==========
+Attributes    Description           Cyclades OS/Compute
+============= ===================== ======== ==========
+name          The server name       ✔        ✔
+imageRef      Image id              ✔        ✔
+flavorRef     Resources flavor      ✔        ✔
+user_data     VM user provided data ✔        ✔
+personality   Personality contents  ✔        ✔
+metadata      Custom metadata       ✔        ✔
+key_name      Key pair name         ✔        ✔
+SNF:key_names Key pair name list    ✔        **✘**
+project       Project assignment    ✔        **✘**
+============= ===================== ======== ==========
 
 * **name** can be any string
 
@@ -548,6 +553,15 @@ project     Project assignment   ✔        **✘**
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
   There are no semantic limitations, although the ``OS`` and ``USERS`` values
   should rather be defined
+
+* **user_data** (optional) are configuration information of scripts to use upon
+  VM launch. Those data are generally consumed by services running inside the
+  VM like cloud-init. Must be Base64 encoded.
+
+* **key_name** (optional) the name of the key pair to be injected into the VM
+
+* **SNF:key_names** (optional) A list of key pair names to be injected to the
+  VM. This cannot be used in conjunction with *key_name*.
 
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the
@@ -580,9 +594,9 @@ owner                  File owner          ✔        **✘**
 
 .. rubric:: Response
 
-=========================== =====================
+=========================== =============================================
 Return Code                 Description
-=========================== =====================
+=========================== =============================================
 200 (OK)                    Request succeeded
 400 (Bad Request)           Malformed request data
 401 (Unauthorized)          Missing or expired user token
@@ -594,7 +608,7 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   No available backends or service currently
 \                           unavailable
-=========================== =====================
+=========================== ============================================
 
 |
 
@@ -1049,6 +1063,7 @@ Server attributes are explained `here <#server-ref>`__.
       "hostId": "",
       "SNF:fqdn": "snf-84.vm.example.org",
       "key_name": null,
+      "SNF:key_names": [],
       "name": "My Other Server",
       "created": "2014-02-21T08:31:37.834542+00:00",
       "tenant_id": "s0m5-u5e7-1d",
@@ -1645,6 +1660,8 @@ Operations                                      Cyclades OS/Compute
 `Change Admin Password <#os-compute-specific>`_ **✘**    ✔
 `Rebuild <#os-compute-specific>`_               **✘**    ✔
 `Resize <#resize-server>`_                      ✔        ✔
+`Rescue <#rescue-server>`_                      ✔        ✔
+`Unrescue <#unrescue-server>`_                  ✔        ✔
 `Confirm Resized <#os-compute-specific>`_       **✘**    ✔
 `Revert Resized <#os-compute-specific>`_        **✘**    ✔
 `Create Image <#os-compute-specific>`__         **✘**    ✔
@@ -1739,6 +1756,45 @@ Request body contents::
 .. code::
 
   {"resize" : { "flavorRef": 153}}
+
+Rescue Server
+.............
+
+This operation transitions a server into rescue mode. Synnefo and OS/Compute
+APIs offer an option `rescue_image_ref` parameter which can be used to rescue
+a server with a specific rescue image.
+
+This action requires that the server is shutoff.
+
+Request body contents::
+
+  rescue: {rescue_image_ref: <rescue image ID>}
+
+Note: The `rescue_image_ref` parameter expects an integer ID of the rescue
+image, whereas OS/Compute expects an OS/Glance Image ID.
+
+*Example Resize Server: JSON*
+
+.. code-block:: javascript
+
+  {"rescue" : { "rescue_image_ref": 3}}
+
+Unrescue Server
+...............
+
+This operation transitions a server out of rescue mode.
+
+This action requires that the server is shutoff.
+
+Request body contents::
+
+  unrescue: {}
+
+*Example Resize Server: JSON*
+
+.. code-block:: javascript
+
+  {"unrescue": {}}
 
 Shutdown server
 ...............
@@ -1884,12 +1940,14 @@ X-Auth-Token    User authentication token required required
 
 |
 
-================= ===============
-Request Parameter Value
-================= ===============
-json              Respond in json
-xml               Respond in xml
-================= ===============
+========================== ==================== ======== ==========
+Request Parameter          Value                Cyclades OS/Compute
+========================== ==================== ======== ==========
+json                       Respond in json      default  **✘**
+xml                        Respond in xml       ✔        **✘**
+SNF:is_public              Flavor visibility    ✔        **✘**
+SNF:flavor-access          Project access       ✔        **✘**
+========================== ==================== ======== ==========
 
 .. note:: Request body should be empty
 
@@ -1985,6 +2043,8 @@ only ``id`` and ``name`` attributes.
         "SNF:disk_template": "drbd",
         "disk": 20,
         "vcpus": 1,
+        "os-flavor-access:is_public": true,
+        "SNF:flavor-access": [],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1",
@@ -2002,6 +2062,10 @@ only ``id`` and ``name`` attributes.
         "SNF:disk_template": "drbd",
         "disk": 40,
         "vcpus": 4,
+        "os-flavor-access:is_public": false,
+        "SNF:flavor-access": [
+            "c0f0188f-2644-4768-8781-cccae7b61344"
+        ],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/3",
@@ -2083,6 +2147,8 @@ All flavor attributes are listed `here <#flavor-ref>`__.
         "SNF:disk_template": "drbd",
         "disk": 20,
         "vcpus": 1,
+        "os-flavor-access:is_public": true,
+        "SNF:flavor-access": [],
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1",
@@ -3150,7 +3216,8 @@ security_groups     ✔        **✘**
 attachments         ✔        **✘**
 config_drive        ✔        **✘**
 SNF:fqdn            ✔        **✘**
-key_name            ✔        **✘**
+key_name            ✔        ✔
+SNF:key_names       ✔        **✘**
 SNF:port_forwarding ✔        **✘**
 SNF:task_state      ✔        **✘**
 diagnostics         ✔        **✘**
@@ -3189,6 +3256,10 @@ deleted             ✔        **✘**
   creation
 
 * **attachments** List of connection ports. Details `here <#attachments-ref>`__.
+
+* **key_name** The name of the SSH key to be inserted to the server.
+
+* **SNF:key_names** A list of SSH key names to be inserted to the server.
 
 .. _status-ref:
 
@@ -3250,18 +3321,20 @@ Flavor
 A flavor is a hardware configuration for a server. It contains the following
 information:
 
-================= ==================== ======== ==========
-Flavor Attributes Description          Cyclades OS/Compute
-================= ==================== ======== ==========
-id                The flavor id        ✔        ✔
-name              The flavor name      ✔        ✔
-ram               Server RAM size      ✔        ✔
-SNF:disk_template Storage mechanism    ✔        **✘**
-disk              Server disk size     ✔        ✔
-vcpus             # of Virtual CPUs    ✔        ✔
-links rel         Atom link rel field  ✔        ✔
-links href        Atom link href field ✔        ✔
-================= ==================== ======== ==========
+========================== ==================== ======== ==========
+Flavor Attributes          Description          Cyclades OS/Compute
+========================== ==================== ======== ==========
+id                         The flavor id        ✔        ✔
+name                       The flavor name      ✔        ✔
+ram                        Server RAM size      ✔        ✔
+SNF:disk_template          Storage mechanism    ✔        **✘**
+disk                       Server disk size     ✔        ✔
+vcpus                      # of Virtual CPUs    ✔        ✔
+SNF:flavor-access          Project access       ✔        **✘**
+os-flavor-access:is_public Flavor visibility    ✔        ✔
+links rel                  Atom link rel field  ✔        ✔
+links href                 Atom link href field ✔        ✔
+========================== ==================== ======== ==========
 
 * **id** is the flavor unique id (a positive integer)
 * **name** is the flavor name (a string)
@@ -3269,6 +3342,8 @@ links href        Atom link href field ✔        ✔
 * **SNF:disk_template** is a reference to the underlying storage mechanism
   used by the Cyclades server (e.g., drdb, ext_elmc).
 * **disk** the servers disk size in GB
+* **SNF:flavor-access** Projects the user is a member of that grant access to the flavor
+* **os-flavor-access:is_public** Whether this flavor is public or scoped to a set of projects
 * **vcpus** refer to the number of virtual CPUs assigned to a server
 * **link ref** and **link href** refer to the Atom link attributes that are
   `used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.

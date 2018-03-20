@@ -7,7 +7,7 @@ The `snf-deploy` tool allows you to automatically deploy Synnefo.
 You can use `snf-deploy` to deploy Synnefo, in two ways:
 
 1. Create a virtual cluster on your local machine and then deploy on that cluster.
-2. Deploy on a pre-existent cluster of physical nodes running Debian Wheezy.
+2. Deploy on a pre-existent cluster of physical nodes running Debian Jessie.
 
 Currently, `snf-deploy` is mostly useful for testing/demo installations and is
 not recommended for production environment Synnefo deployments. If you want to
@@ -306,7 +306,7 @@ will reside in which node.
 Node Requirements
 -----------------
 
- - OS: Debian Wheezy
+ - OS: Debian Jessie
  - authentication: `root` user with corresponding for each node password
  - primary network interface: `eth0`
  - spare network interfaces: `eth1`, `eth2` (or vlans on `eth0`)

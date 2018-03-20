@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +15,12 @@
 
 import logging
 
-from functools import wraps
-from synnefo.db import transaction
+from synnefo.db import models
 
 from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo import quotas
-from synnefo.db.models import VirtualMachine
+from synnefo.api import util
 
 
 log = logging.getLogger(__name__)
@@ -30,6 +29,16 @@ log = logging.getLogger(__name__)
 def validate_server_action(vm, action):
     if vm.deleted:
         raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
+
+    if action == "SUSPEND":
+        if vm.suspended:
+            raise faults.BadRequest("Server already suspended.")
+        return
+
+    if action == "UNSUSPEND":
+        if not vm.suspended:
+            raise faults.BadRequest("Server already unsuspended.")
+        return
 
     # Destroying a server should always be permitted
     if action == "DESTROY":
@@ -62,17 +71,24 @@ def validate_server_action(vm, action):
           and not settings.GANETI_USE_HOTPLUG) or \
          (action in ["ATTACH_VOLUME", "DETACH_VOLUME", "DELETE_VOLUME"]
           and operstate != "STOPPED"
-          and not settings.GANETI_USE_HOTPLUG):
+          and not settings.GANETI_USE_HOTPLUG) or \
+         (action == "RESCUE" and operstate != "STOPPED") or\
+         (action == "UNRESCUE" and operstate != "STOPPED"):
         raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
+    elif action == "RESCUE" and vm.rescue:
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
+                                " in rescue mode." % action)
+    elif action == "UNRESCUE" and not vm.rescue:
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
+                                " not in rescue mode." % action)
     return
 
 
-def server_command(action, action_fields=None, for_user=None):
+class ServerCommand(object):
     """Handle execution of a server action.
 
-    Helper function to validate and execute a server action, handle quota
-    commission and update the 'task' of the VM in the DB.
+    Helper manager to validate a server action and handle quota commission.
 
     1) Check if action can be performed. If it can, then there must be no
        pending task (with the exception of DESTROY).
@@ -84,69 +100,37 @@ def server_command(action, action_fields=None, for_user=None):
        the commission can safely be rejected, and the dispatcher will generate
        the correct ones!
     3) Issue new commission and associate it with the VM. Also clear the task.
-    4) Send job to ganeti
-    5) Update task and commit
     """
-    def decorator(func):
-        @wraps(func)
-        @transaction.commit_on_success
-        def wrapper(vm, *args, **kwargs):
-            user_id = for_user
-            if user_id is None:
-                user_id = vm.userid
 
-            validate_server_action(vm, action)
-            vm.action = action
+    def __init__(self, action, vm, credentials=None, atomic_context=None,
+                 action_fields=None, for_user=None):
+        if not isinstance(vm, models.VirtualMachine):
+            vm = util.get_vm(vm, credentials,
+                             for_update=True, non_deleted=True,
+                             non_suspended=not credentials.is_admin)
+        self.vm = vm
+        user_id = for_user
+        if user_id is None:
+            user_id = vm.userid
 
-            commission_name = "client: api, resource: %s" % vm
-            quotas.handle_resource_commission(vm, action=action,
-                                              action_fields=action_fields,
-                                              commission_name=commission_name,
-                                              for_user=user_id)
-            vm.save()
+        if action == "BUILD":
+            raise AssertionError(
+                "decorator does not support action 'BUILD'")
 
-            # XXX: Special case for server creation!
-            if action == "BUILD":
-                serial = vm.serial
-                serial.pending = False
-                serial.accept = True
-                serial.save()
-                # Perform a commit, because the VirtualMachine must be saved to
-                # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
-                # Otherwise, messages will arrive from snf-dispatcher about
-                # this instance, before the VM is stored in DB.
-                transaction.commit()
-                # After committing the locks are released. Refetch the instance
-                # to guarantee x-lock.
-                vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-                # XXX: Special case for server creation: we must accept the
-                # commission because the VM has been stored in DB. Also, if
-                # communication with Ganeti fails, the job will never reach
-                # Ganeti, and the commission will never be resolved.
-                quotas.accept_resource_serial(vm)
+        validate_server_action(vm, action)
+        vm.action = action
 
-            # Send the job to Ganeti and get the associated jobID
-            try:
-                job_id = func(vm, *args, **kwargs)
-            except Exception as e:
-                if vm.serial is not None and action != "BUILD":
-                    # Since the job never reached Ganeti, reject the commission
-                    log.debug("Rejecting commission: '%s', could not perform"
-                              " action '%s': %s" % (vm.serial,  action, e))
-                    transaction.rollback()
-                    quotas.reject_serial(vm.serial)
-                    transaction.commit()
-                raise
+        commission_name = "client: api, resource: %s" % vm
+        serial = quotas.handle_resource_commission(
+            vm, action=action,
+            action_fields=action_fields,
+            commission_name=commission_name,
+            for_user=user_id)
+        if serial is not None:
+            quotas.set_serial(atomic_context, serial)
 
-            log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
-                     user_id, vm.id, action, job_id, vm.serial)
+    def __enter__(self):
+        return self.vm
 
-            # store the new task in the VM
-            if job_id is not None:
-                vm.task = action
-                vm.task_job_id = job_id
-            vm.save()
-
-            return vm
-        return wrapper
-    return decorator
+    def __exit__(self, type, value, traceback):
+        pass

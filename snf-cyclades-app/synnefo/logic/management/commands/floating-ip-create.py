@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import ips
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(SynnefoCommand):
@@ -44,7 +44,6 @@ class Command(SynnefoCommand):
             help="Unique identifier of the project of the floating IP"),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
@@ -61,19 +60,17 @@ class Command(SynnefoCommand):
             project = user
 
         if network_id is not None:
-            network = common.get_resource("network", network_id,
-                                          for_update=True)
+            network = common.get_resource("network", network_id)
             if network.deleted:
                 raise CommandError("Network '%s' is deleted" % network.id)
             if not network.floating_ip_pool:
                 raise CommandError("Network '%s' is not a floating IP pool."
                                    % network)
-        else:
-            network = None
 
-        floating_ip = ips.create_floating_ip(userid=user,
+        credentials = Credentials(user)
+        floating_ip = ips.create_floating_ip(credentials,
                                              project=project,
-                                             network=network,
+                                             network_id=network_id,
                                              address=address)
 
         self.stdout.write("Created floating IP '%s'.\n" % floating_ip)

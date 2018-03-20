@@ -236,6 +236,14 @@
     synnefo.util.IP_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
     synnefo.i18n.API_ERROR_MESSAGES = {
+        '403': {
+            'non_critical': true,
+            'allow_report': false,
+            'allow_reload': false,
+            'allow_details': false,
+            'details': false,
+            'title': 'API error'
+        },
         'timeout': {
             'title': 'API error',
             'message': 'TIMEOUT', 
@@ -348,73 +356,80 @@
     synnefo.util.publicKeyTypesMap = {
         "ecdsa-sha2-nistp256": "ecdsa",
         "ssh-dss" : "dsa",
-        "ssh-rsa": "rsa"
+        "ssh-rsa": "rsa",
+        "ssh-ed25519": "eddsa",
+        "ecdsa-sha2-nistp384": "ecdsa",
+        "ecdsa-sha2-nistp521": "ecdsa",
     }
 
+    /*
+    * This function implements client side validation of the user provided key.
+    * The process is as follows:
+    * 0) Split the input to extract the first two parts, which represent
+    *    the key-type and the key-content as a base64 formatted string.
+    * 1) base64 decode the key contents
+    * 2) From the key header extract the key type
+    * 3) Validated the type of the key
+    * 4) Return the verified key
+    *
+    * In case the key is invalid an exception will be raised
+    */
     synnefo.util.validatePublicKey = function(key) {
-        var b64 = _(key).trim().split("\n").join("").split("\r\n").join("");
-        var type = "rsa";
 
-        // in case key starts with something like ssh-rsa
-        if (b64.split(" ").length > 1) {
-            var parts = key.split(" ");
-            
-            // identify key type
-            type_key = parts[0];
-            if (parseInt(type_key) >= 768) {
-                type = "rsa1";
-                
-                if (parts[1] == 65537) {
-                    if (parts.length == 3) {
-                        return [parts[0], parts[1], parts[2]].join(" ")
-                    }
-                }
-                // invalid rsa1 key
-                throw "Invalid rsa1 key";
-            }
-            
-            b64 = parts[1];
-            if (!synnefo.util.publicKeyTypesMap[type_key]) { throw "Invalid rsa key (cannot identify encryption)" }
+        ERR_INVALID_CONTENT = "Invalid key content";
+        ERR_INVALID_TYPE = "Invalid or unknown key type"
 
-            try {
-                var data = $.base64.decode(b64);
-                return [parts[0], parts[1]].join(" ");
-            } catch (err) {
-                throw "Invalid key content";
-            }
+        var parts = key.split(/[\r\n]/).join("").split(/\s+/);
 
-            throw "Invalid key content";
-        }
-        
-        // no type defined check rsa
-        if (_(b64).startsWith("AAAAB3NzaC1yc2EA")) {
-            try {
-                var data = $.base64.decode(b64);
-                return ["ssh-rsa", b64].join(" ");
-            } catch (err) {
-                throw "Invalid content for rsa key";
-            }
+        var key_type = parts[0];
+        var key_content = parts[1];
+
+        if (!key_type && !key_content) {
+            throw ERR_INVALID_CONTENT;
+        } else if (!key_content) {
+            key_content = parts[0];
         }
 
-        if (_(b64).startsWith("AAAAE2Vj")) {
-            try {
-                var data = $.base64.decode(b64);
-                return ["ecdsa-sha2-nistp256", b64].join(" ");
-            } catch (err) {
-                throw "Invalid content for ecdsa key";
-            }
+        var header = {
+            type: {
+                SIZE: 4,
+                length: null,
+                content: null
+            },
         }
 
-        if (_(b64).startsWith("AAAAB3N")) {
-            try {
-                var data = $.base64.decode(b64);
-                return ["ssh-dss", b64].join(" ");
-            } catch (err) {
-                throw "Invalid content for dss key (" + err + ")";
-            }
+        var checksum;
+        try {
+            checksum = $.base64.decode(key_content);
+        } catch (err) {
+            throw ERR_INVALID_CONTENT;
         }
 
-        throw "Invalid key content";
+        // Public Key header
+        //
+        // +------------------+-------------+-------------------------+----------+----------------------+
+        // | Type Length (tl) | Type string | Length of exponent (el) | Exponent | Checksum length (cl) |
+        // +------------------+-------------+-------------------------+----------+----------------------+
+        // |      4 Bytes     |  tl Bytes   |         4 Bytes         | el Bytes |       4 Bytes        |
+        // +------------------+-------------+-------------------------+----------+----------------------+
+        //
+
+        // Construct the length of key type based on the bytes of the respective
+        // header field
+        header.type.length = Array.from(checksum.slice(0, header.type.SIZE)).reduce(function(acc, v, i) {
+            return acc + v.charCodeAt(0) << 8 * (header.type.SIZE - i - 1);
+        }, 0)
+
+        header.type.content = checksum.slice(header.type.SIZE,
+                                             header.type.SIZE + header.type.length);
+
+        if (synnefo.util.publicKeyTypesMap[header.type.content]
+           && (header.type.content == key_type || !key_type)) {
+            return [header.type.content, key_content].join(" ");
+        } else {
+            throw ERR_INVALID_TYPE;
+        }
+
     }
     
     // detect flash `like a boss`

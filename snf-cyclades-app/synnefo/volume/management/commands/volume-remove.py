@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ from synnefo.volume import volumes
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from snf_django.management.commands import RemoveCommand
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(RemoveCommand):
@@ -37,12 +37,12 @@ class Command(RemoveCommand):
             help="Wait for Ganeti jobs to complete."),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
             raise CommandError("Please provide a volume ID")
 
+        credentials = Credentials("snf_manage", is_admin=True)
         force = options['force']
         message = "volumes" if len(args) > 1 else "volume"
         self.confirm_deletion(force, message, args)
@@ -50,9 +50,8 @@ class Command(RemoveCommand):
         for volume_id in args:
             self.stdout.write("\n")
             try:
-                volume = common.get_resource("volume", volume_id,
-                                             for_update=True)
-                volumes.delete(volume)
+                volume = common.get_resource("volume", volume_id)
+                volumes.delete(volume.id, credentials)
 
                 wait = parse_bool(options["wait"])
                 if volume.machine is not None:

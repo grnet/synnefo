@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -191,9 +191,11 @@ class SubnetTest(BaseAPITest):
                              json.dumps(request), "json")
         self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
-        self.assertEqual([{"start": "10.0.3.2", "end": "10.0.3.100"},
-                          {"start": "10.0.3.200", "end": "10.0.3.220"}],
-                         resp['allocation_pools'])
+        self.assertEqual(2, len(resp['allocation_pools']))
+        self.assertTrue({"start": "10.0.3.2", "end": "10.0.3.100"}
+                        in resp['allocation_pools'])
+        self.assertTrue({"start": "10.0.3.200", "end": "10.0.3.220"}
+                        in resp['allocation_pools'])
 
     def test_create_subnet_with_gateway(self):
         """Test create a subnet with a gateway"""
@@ -210,9 +212,11 @@ class SubnetTest(BaseAPITest):
         self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual("10.0.3.150", resp['gateway_ip'])
-        self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.149"},
-                          {"start": "10.0.3.151", "end": "10.0.3.254"}],
-                         resp['allocation_pools'])
+        self.assertEqual(2, len(resp['allocation_pools']))
+        self.assertTrue({"start": "10.0.3.1", "end": "10.0.3.149"}
+                        in resp['allocation_pools'])
+        self.assertTrue({"start": "10.0.3.151", "end": "10.0.3.254"}
+                        in resp['allocation_pools'])
 
     def test_create_subnet_with_gateway_inside_of_ip_pool_range(self):
         """Test create a subnet with a gateway IP inside the IP pool range"""

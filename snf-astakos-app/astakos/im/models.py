@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -745,7 +745,11 @@ class AstakosUser(User):
         return ",".join(["%s:%s" % (p.module, p.identifier or '') for p in
                          self.get_enabled_auth_providers()])
 
-    def add_auth_provider(self, module='local', identifier=None, **params):
+    def add_auth_provider(self, module='local', identifier='', **params):
+        if identifier is None:
+            logger.warn('Found identifier = None, '
+                        'should be empty string instead')
+            identifier = ''
         provider = auth.get_provider(module, self, identifier, **params)
         provider.add_to_user()
 
@@ -996,8 +1000,8 @@ class AstakosUserAuthProvider(models.Model):
     module = models.CharField(_('Provider'), max_length=255, blank=False,
                               default='local')
     identifier = models.CharField(_('Third-party identifier'),
-                                  max_length=255, null=True,
-                                  blank=True)
+                                  max_length=255, null=False,
+                                  blank=True, default='')
     active = models.BooleanField(default=True)
     auth_backend = models.CharField(_('Backend'), max_length=255, blank=False,
                                     default='astakos')

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ had grown too much.
 """
 
 import time
+import re
 import IPy
 import base64
 import socket
@@ -28,6 +29,9 @@ import random
 import paramiko
 import tempfile
 import subprocess
+import StringIO
+import binascii
+import json
 
 from kamaki.clients import ClientError
 
@@ -38,18 +42,6 @@ from synnefo_tools.burnin.common import BurninTests, MB, GB, QADD, QREMOVE, \
 # pylint: disable=too-many-public-methods
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
-    def _parse_images(self):
-        """Find images given to command line"""
-        if self.images is None:
-            self.info("No --images given. Will use the default %s",
-                      "^Debian Base$")
-            filters = ["name:^Debian Base$"]
-        else:
-            filters = self.images
-        avail_images = self._find_images(filters)
-        self.info("Found %s images to choose from", len(avail_images))
-        return avail_images
-
     def _parse_flavors(self):
         """Find flavors given to command line"""
         flavors = self._get_list_of_flavors(detail=True)
@@ -62,6 +54,41 @@ class CycladesTests(BurninTests):
 
         self.info("Found %s flavors to choose from", len(avail_flavors))
         return avail_flavors
+
+    def _parse_volume_flavors(self, detachable_vlm_t, non_detachable_vlm_t):
+        """
+        Parse flavors given from the command line. This function will subset
+        the flavors based on the given detachable and non detachable volume
+        types.
+        """
+        flavors = self._get_list_of_flavors(detail=True)
+
+        # Flavor names are in a C{cores}R{ram_size}D{disk_size}{disk_template}
+        # format. Therefore we can subset them by checking if the given
+        # volume type is contained in the flavor name
+        d_regex = re.compile("^C\d+R\d+D\d+%s$" %
+                detachable_vlm_t['SNF:disk_template'])
+        detachable_flavors = [f for f in flavors if d_regex.match(f['name'])
+                                                    is not None]
+
+        nd_regex = re.compile("^C\d+R\d+D\d+%s$" %
+                non_detachable_vlm_t['SNF:disk_template'])
+        non_detachable_flavors = [f for f in flavors if
+            nd_regex.match(f['name']) is not None]
+
+        if self.volume_flavors is not None:
+            detachable_flavors = self._find_flavors(
+                    self.volume_flavors, flavors=detachable_flavors)
+            non_detachable_flavors = self._find_flavors(
+                    self.volume_flavors, flavors=non_detachable_flavors)
+        else:
+            self.info("No --volume-flavors given. Will use all of them")
+
+        self.info("Found %s flavors with detachable volume type to choose "
+                  "from", len(detachable_flavors))
+        self.info("Found %s flavors with non detachable volume type to choose "
+                  "from", len(non_detachable_flavors))
+        return detachable_flavors, non_detachable_flavors
 
     def _try_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
@@ -140,7 +167,7 @@ class CycladesTests(BurninTests):
 
     # pylint: disable=too-many-arguments
     def _create_server(self, image, flavor, personality=None,
-                       network=False, project_id=None):
+                       network=False, project_id=None, key_name=None):
         """Create a new server"""
         if network:
             fip = self._create_floating_ip(project_id=project_id)
@@ -158,7 +185,7 @@ class CycladesTests(BurninTests):
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
             personality=personality, networks=networks,
-            project_id=project_id)
+            project_id=project_id, key_name=key_name)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -217,6 +244,51 @@ class CycladesTests(BurninTests):
         # Verify quotas
         self._verify_quotas_deleted(servers)
 
+    def _shutdown_if_active(self, server):
+        """Shutdown server if currently active"""
+        active = False
+        srv = self._get_server_details(server, quiet=True)
+        if srv['status'] == "ACTIVE":
+            active = True
+            self.info("Server %s is ACTIVE. Shuting down", server['id'])
+            self.clients.cyclades.shutdown_server(srv['id'])
+            self._insist_on_server_transition(
+                    self.server, ["ACTIVE"], "STOPPED")
+        return active
+
+    def _start_if_shutoff(self, server):
+        """Start the server if currently shutoff"""
+        stopped = False
+        srv = self._get_server_details(server, quiet=True)
+        if srv['status'] == "STOPPED":
+            stopped = True
+            self.info("Server %s is STOPPED. Starting", server['id'])
+            self.clients.cyclades.start_server(srv['id'])
+            self._insist_on_server_transition(
+                    self.server, ["STOPPED"], "ACTIVE")
+        return stopped
+
+    def _rescue_server(self, server, rescue_image_ref=None):
+        """Rescuing a server"""
+        self.info("Rescuing server %s", server['id'])
+
+        self._shutdown_if_active(server)
+        self.clients.compute.rescue_server(self.server['id'])
+        self._insist_on_server_field_transition(server, 'SNF:rescue',
+                                                False, True)
+        return
+
+    def _unrescue_server(self, server, start_server=False):
+        # If the server was initially, active, unrescue it and restart it
+        self.info("Unrescuing server %s", server['id'])
+
+        self._shutdown_if_active(server)
+        self.clients.compute.unrescue_server(self.server['id'])
+        self._insist_on_server_field_transition(server, 'SNF:rescue',
+                                                True, False)
+        if start_server:
+            self._start_if_shutoff(server)
+
     def _verify_quotas_deleted(self, servers):
         """Verify quotas for a number of deleted servers"""
         changes = dict()
@@ -228,9 +300,13 @@ class CycladesTests(BurninTests):
                 self.clients.compute.get_flavor_details(server['flavor']['id'])
             new_changes = [
                 (QDISK, QREMOVE, flavor['disk'], GB),
-                (QVM, QREMOVE, 1, None),
-                (QRAM, QREMOVE, flavor['ram'], MB),
-                (QCPU, QREMOVE, flavor['vcpus'], None)]
+                (QVM, QREMOVE, 1, None)]
+
+            if server['status'] != 'STOPPED':
+                new_changes.extend([
+                    (QRAM, QREMOVE, flavor['ram'], MB),
+                    (QCPU, QREMOVE, flavor['vcpus'], None)])
+
             changes[project].extend(new_changes)
 
         self._check_quotas(changes)
@@ -276,6 +352,45 @@ class CycladesTests(BurninTests):
         opmsg = "Waiting for server \"%s\" with id %s to become %s"
         self.info(opmsg, server['name'], server['id'], new_status)
         opmsg = opmsg % (server['name'], server['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_ip_attached(self, server, version=4):
+        def check_fun():
+            ips = self._get_server_details(server)['attachments']
+            ips_v4 = [ip for ip in ips if ip['ipv4'] != '']
+            ips_v6 = [ip for ip in ips if ip['ipv6'] != '']
+            if version == 4 and len(ips_v4) > 0:
+                return
+            if version == 6 and len(ips_v6) > 0:
+                return
+            raise Retry()
+        opmsg = ("Waiting for server \"%s\" with id %s to have an IPv%s "
+                " attached")
+        self.info(opmsg, server['name'], server['id'], version)
+        opmsg = opmsg % (server['name'], server['id'], version)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+
+    def _insist_on_server_field_transition(self, server, field,
+                                           old_val, new_val):
+        """Insist on server field transiting from old_val to new_val"""
+        def check_fun():
+            """Check server status"""
+            srv = self._get_server_details(server, quiet=True)
+            current_field_value = srv.get(field)
+            if current_field_value is None:
+                raise
+            if current_field_value == old_val:
+                raise Retry()
+            elif current_field_value == new_val:
+                return
+            else:
+                msg = "Server's %s field %s went to unexpected status %s"
+                self.error(msg, server['id'], field, current_field_value)
+                self.fail(msg, server['id'], field, current_field_value)
+        opmsg = "Waiting for server's %s field %s to become %s"
+        self.info(opmsg, server['id'], field, new_val)
+        opmsg = opmsg % (server['id'], field, new_val)
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_snapshot_transition(self, snapshot,
@@ -430,12 +545,18 @@ class CycladesTests(BurninTests):
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
     # pylint: disable=no-self-use
-    def _ssh_execute(self, hostip, username, password, command):
+    def _ssh_execute(self, hostip, command, username=None, password=None,
+                                            private_key=None):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(hostip, username=username, password=password)
+            if (private_key is not None and
+                    not isinstance(private_key, paramiko.PKey)):
+                private_key = paramiko.RSAKey.from_private_key(
+                    StringIO.StringIO(private_key))
+            ssh.connect(hostip, username=username, password=password,
+                        pkey=private_key)
         except (paramiko.SSHException, socket.error, EOFError) as err:
             self.warning("%s", err.message)
             raise Retry()
@@ -445,14 +566,16 @@ class CycladesTests(BurninTests):
         ssh.close()
         return output, status
 
-    def _insist_get_hostname_over_ssh(self, hostip, username, password,
+    def _insist_get_hostname_over_ssh(self, hostip, username=None,
+                                      password=None, private_key=None,
                                       should_fail=False):
         """Connect to server using ssh and get it's hostname"""
         def check_fun():
             """Get hostname"""
             try:
-                lines, status = self._ssh_execute(
-                    hostip, username, password, "hostname")
+                lines, status = self._ssh_execute(hostip, "hostname",
+                    username=username, password=password,
+                    private_key=private_key)
                 self.assertEqual(status, 0)
                 self.assertEqual(len(lines), 1)
                 # Remove new line
@@ -762,6 +885,89 @@ class CycladesTests(BurninTests):
         #
         # return random.choice(results)
 
+    # ----------------------------------
+    # Volumes
+
+    def _insist_on_volume_transition(self, volume, curr_statuses, new_status):
+        """Insist on volume transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check volume status"""
+            vlm = self._get_volume_details(volume)
+            if vlm['status'] in curr_statuses:
+                raise Retry()
+            elif vlm['status'] == new_status:
+                return
+            else:
+                msg = "Volume %s went to unexpected status %s"
+                self.error(msg, vlm['id'], vlm['status'])
+                self.fail(msg % (vlm['id'], vlm['status']))
+        opmsg = "Waiting for volume %s to become %s"
+        self.info(opmsg, volume['id'], new_status)
+        opmsg = opmsg % (volume['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _create_detachable_volume(self, volume_type, size=5):
+        volume = self.clients.block_storage.create_volume(
+                size=size, display_name="%s" % self.run_id,
+                volume_type=volume_type['id'])
+        self._insist_on_volume_transition(volume, ["creating"], "available")
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QADD, size, GB)]
+        }
+        self._check_quotas(changes)
+        return volume
+
+    def _create_non_detachable_volume(self, volume_type, size=5,
+                                      server_id=None):
+        volume = self.clients.block_storage.create_volume(
+                size=size, display_name="%s" % self.run_id,
+                volume_type=volume_type['id'], server_id=server_id)
+        self._insist_on_volume_transition(volume, ["creating"], "in_use")
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QADD, size, GB)]
+        }
+        self._check_quotas(changes)
+        return volume
+
+    def _destroy_volume(self, volume):
+        self.clients.block_storage.delete_volume(volume['id'])
+        project_id = self._get_uuid()
+        changes = {
+            project_id: [(QDISK, QREMOVE, volume['size'], GB)]
+        }
+        self._insist_on_volume_transition(volume,
+                                          ["available", "deleting"], "deleted")
+        self._check_quotas(changes)
+
+    def _attach_volume(self, server, volume):
+        self.clients.cyclades.attach_volume(server['id'], volume['id'])
+        self._insist_on_volume_transition(volume, ["attaching"], "in_use")
+
+    def _detach_volume(self, server, volume):
+        self.clients.cyclades.delete_volume_attachment(server['id'],
+                                                       volume['id'])
+        self._insist_on_volume_transition(volume, ["in-use", "detaching"],
+                                          "available")
+
+    def _get_attached_volumes(self, server):
+        return self.clients.cyclades.list_volume_attachments(server['id'])
+
+    # Keypairs
+    def _generate_keypair(self):
+        return self.clients.compute.create_key("%s-gen" % self.run_id)
+
+    def _upload_keypair(self, public_key=None):
+        return self.clients.compute.create_key("%s-uploaded" % self.run_id,
+                public_key=public_key)
+
+    def _get_keypairs(self):
+        keypairs_list = self.clients.compute.list_keypairs()
+        return [key['keypair'] for key in keypairs_list]
+
+    def _delete_keypair(self, keypair):
+        return self.clients.compute.delete_keypair(keypair['name'])
 
 class Retry(Exception):
     """Retry the action

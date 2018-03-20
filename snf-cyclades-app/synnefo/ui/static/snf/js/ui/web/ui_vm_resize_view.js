@@ -45,7 +45,8 @@
             views.FlavorOptionsView.__super__.initialize.apply(this);
             _.bindAll(this);
             this.$el = $(this.el);
-            this.flavors = options.flavors || synnefo.storage.flavors.active();
+            this.project = options.project;
+            this.flavors = options.flavors || synnefo.storage.flavors.active(this.project);
             this.collection = options.collection || synnefo.storage.flavors;
             this.choices = options.choices || ['cpu', 'ram', 'disk', 
                                                'disk_template'];
@@ -53,7 +54,6 @@
             this.quotas = options.quotas || synnefo.storage.quotas;
             this.selected_flavor = options.selected_flavor || undefined;
             this.extra_quotas = options.extra_quotas || undefined;
-            this.project = options.project;
             this.render();
             if (this.selected_flavor) { this.set_flavor(this.selected_flavor)}
         },
@@ -84,33 +84,33 @@
             this.init_handlers();
         },
         
-        get_current: function(choice, value) {
-          var found = false;
-          _.each(this.flavors, _.bind(function(f){
-              if (found) { return }
-              if (f.get(choice) == value) {
-                  found = true;
-                  to_select = f;
-              }
-          }, this));
+        get_flavor_by_value: function(choice, value) {
+            var ret = undefined;
+            _.each(this.flavors, function(flv) {
+                if(ret) { return };
+                if(flv.get(choice) == value) {
+                    ret = flv;
+                }
+            })
+            return ret;
         },
-
         init_handlers: function() {
             this.$el.on('click', 'li.choice', _.bind(function(e) {
                 var el = $(e.target).closest('li');
+                if(el.hasClass("disabled")) { return }
                 var choice = el.data('type');
                 var value = el.data('value');
                 var to_select = this.selected_flavor;
                 if (to_select) {
                     var attrs = _.clone(to_select.attributes);
                     attrs[choice] = value;
-                    to_select = this.collection.get_flavor(attrs.cpu, attrs.ram, 
-                                                           attrs.disk, 
+                    to_select = this.collection.get_flavor(attrs.cpu, attrs.ram,
+                                                           attrs.disk,
                                                            attrs.disk_template);
                 }
 
                 if (!to_select) {
-                  to_select = this.get_current(choice, value);
+                  to_select = this.get_flavor_by_value(choice, value);
                 }
                 this.set_flavor(to_select);
             }, this));
@@ -144,8 +144,8 @@
             var quotas = this.project.quotas.get_available_for_vm({'active': true});
             var extra_quotas = this.extra_quotas;
             var user_excluded = storage.flavors.unavailable_values_for_quotas(
-              quotas, 
-              storage.flavors.active(), extra_quotas);
+              quotas,
+              storage.flavors.active(this.project), extra_quotas);
             _.each(user_excluded, _.bind(function(values, key) {
                 _.each(values, _.bind(function(value) {
                     var choice_el = this.select_choice(key, value);
@@ -165,7 +165,6 @@
                 var el = this[choice + '_el'].find("ul");
                 el.empty();
                 var key = choice;
-                if (key == 'ram') { key = 'mem'}
                 var values = data[key];
                 if (!values) { return }
                 _.each(values, _.bind(function(value) {
@@ -181,12 +180,18 @@
                 }, this));
             });
         },
+        flavor_is_valid: function(flavor) {
+            var quotas = this.project.quotas.get_available_for_vm({'active': true});
+            var extra_quotas = this.extra_quotas || {'cpu': 0, 'ram': 0, 'disk': 0};
+
+            return (quotas['cpu'] + extra_quotas.cpu >= flavor.get('cpu') &&
+                    quotas['ram'] + extra_quotas.ram * 1024 * 1024 >= flavor.ram_to_bytes() &&
+                    quotas['disk'] + extra_quotas.disk * 1024 * 1024 >= flavor.disk_to_bytes())
+        },
 
         set_flavor: function(flavor) {
+            if (!flavor || !this.flavor_is_valid(flavor)) { return }
             this.$el.find("li").removeClass("selected");
-            if (!flavor) {this.selected_flavor = undefined; return}
-            var no_select = false;
-            var self = this;
             this.each_choice(function(choice){
                 var el = this[choice + '_el'];
                 var choice = el.find('.choice-'+choice+'[data-value='+flavor.get(choice)+']');
@@ -292,7 +297,7 @@
             this.$(".flavor-options-inner-cont").append("<div>");
             var extra_quota = this.vm.get_flavor_quotas();
             if (!this.vm.is_active()) {
-              extra_quota = undefined;
+                extra_quota['cpu'] = extra_quota['ram'] = 0
             }
             this.flavors_view = new snf.views.FlavorOptionsView({
                 flavors:this.vm.get_resize_flavors(),

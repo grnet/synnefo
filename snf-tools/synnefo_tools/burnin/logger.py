@@ -240,7 +240,7 @@ class Log(object):
         if curr_time is None:
             curr_time = datetime.datetime.now()
         timestamp = datetime.datetime.strftime(
-            curr_time, "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
+            curr_time, "%Y%m%d%H%M%S")
         file_name = timestamp + ".log"
         self.file_location = os.path.join(output_dir, file_name)
 
@@ -326,7 +326,9 @@ class Log(object):
         """
         assert section, "Section can not be empty"
 
-        msg = "  " + _list_to_string(msg, "  ")
+        mycurr_time = datetime.datetime.now()
+        mytimestamp = datetime.datetime.strftime(mycurr_time, "%Y%m%d%H%M%S")
+        msg = mytimestamp + "  " + _list_to_string(msg, "  ")
         if self.verbose >= 1:
             colored_msg = self._color_message(None, msg, *args)
             self._write_to_stdout(section, colored_msg)

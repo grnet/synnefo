@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ from snf_django.utils.testing import with_settings, override_settings, \
     assertIn, assertGreater, assertRaises
 
 from django.test import Client
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.core import mail
 from django.http import SimpleCookie, HttpRequest, QueryDict
 from django.utils.importlib import import_module
@@ -37,6 +37,7 @@ from astakos.im import settings as astakos_settings
 from astakos.im import forms
 from astakos.im import activation_backends
 from astakos.im import auth as auth_functions
+from astakos.im import transaction
 
 from urllib import quote
 from datetime import timedelta

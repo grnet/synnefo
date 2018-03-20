@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -259,7 +259,7 @@ def projects(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def get_projects(request):
     user = request.user
     filters = {}
@@ -306,7 +306,7 @@ def _get_projects(query, mode="default", request_user=None):
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def create_project(request):
     user = request.user
     app_data = utils.get_json_body(request)
@@ -325,7 +325,7 @@ def project(request, project_id):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def get_project(request, project_id):
     user = request.user
     with ExceptionHandler():
@@ -343,7 +343,7 @@ def _get_project(project_id, request_user=None):
 
 @api.api_method(http_method="PUT", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def modify_project(request, project_id):
     user = request.user
     app_data = utils.get_json_body(request)
@@ -543,7 +543,7 @@ APP_ACTION_FUNCS = APPLICATION_ACTION.values()
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def project_action(request, project_id):
     user = request.user
     input_data = utils.get_json_body(request)
@@ -580,7 +580,7 @@ def make_membership_query(input_data):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def get_memberships(request):
     user = request.user
     query = make_membership_query(request.GET)
@@ -631,7 +631,7 @@ MEMBERSHIPS_ACTION = {
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def post_memberships(request):
     user = request.user
     input_data = utils.get_json_body(request)
@@ -641,7 +641,7 @@ def post_memberships(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def membership(request, memb_id):
     user = request.user
     with ExceptionHandler():
@@ -668,7 +668,7 @@ MEMBERSHIP_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@transaction.commit_on_success
+@transaction.atomic
 def membership_action(request, memb_id):
     user = request.user
     input_data = utils.get_json_body(request)

@@ -820,13 +820,18 @@ Currently the available disk templates are the following:
   - `ext_archipelago`: External shared storage provided by
     `Archipelago <http://www.synnefo.org/docs/archipelago/latest/index.html>`_.
 
+In addition, volume types contain a list of key value pair specs. The specs
+which their keys are prefixed with `GNT-EXTP:` are propagated to Ganeti
+ext-storage scripts in case the disk template is `ext`.
+
 Volume types are created by the administrator using the `snf-manage
-volume-type-create` command and providing the `disk template` and a
-human-friendly name:
+volume-type-create` command and providing the `disk template`, a
+human-friendly name as well as some optional key-value specs.:
 
 .. code-block:: console
 
  $ snf-manage volume-type-create --disk-template=drbd --name=DRBD
+ $ snf-manage volume-type-create --disk-template=ext_rbd --name=RBD --specs GNT-EXTP:RBD_POOL=poola
 
 Flavors are created by the administrator using `snf-manage flavor-create`
 command. The command takes as argument number of CPUs, amount of RAM, the size
@@ -856,6 +861,23 @@ or not, by setting the `allow_create` attribute:
 Flavors that are marked with `allow_create=False` cannot be used by users to
 create new servers. However, they can still be used to resize existing VMs.
 
+Flavors that are marked with `public=False` are not publicly accessible and
+cannot be used by everyone. Access is explicitly granted to members of a
+project through `flavor-access` objects.
+The relevant commands are:
+
+.. code-block:: console
+
+  $ snf-manage flavor-access-list
+  $ snf-manage flavor-access-add --flavor <flavor_id> --project <project_uuid>
+  $ snf-manage flavor-access-remove <flavor_access_id>
+
+
+The explicitly assigned flavors can only be used by VMs that belong to the
+projects that have access to the flavor. This apply both to create and to
+resize actions. Furhtermore, project re-assignment is forbidden if the new
+project does not have access to the current flavor either explicitly or
+implicitly through the `public` flavor attribute.
 
 Images
 ~~~~~~
@@ -929,6 +951,74 @@ owner uuid is listed in the ``UI_IMAGE_LISTING_USERS`` Cyclades setting (in
 ``/etc/synnefo/20-snf-cyclades-app-ui.conf``) will be displayed in a separate
 section in the installation wizard. The name of the new section will be the
 value of the ``LISTING_SECTION`` image property.
+
+Rescue Images
+~~~~~~~~~~~~~
+
+Rescue Images are a special kind of images that can be used when a user wants
+to rescue their VM. Conceptually, they are different to Images used to create
+servers, since they are used as bootable CD-ROMs in Ganeti instances and also
+the storage mechanism is more flexible. For example a rescue image can be
+either an HTTP link or an ISO file in a node. Alongside with the URI of the
+image, Cyclades store properties of the image such the Operating System and the
+Operating System family. In order to create a new rescue image, the
+administrator has to provide either a valid HTTP link or a filename that maps
+to an image file under a pre-configured directory.
+
+When rescuing a VM, Cyclades issue an `InstanceModify` command that mounts a
+CDROM with the rescue image's location to the instance. In case the location
+provided is a filepath Ganeti will make sure the file exists. In case it is an
+HTTP link, Ganeti will make sure the link is working, but it will not verify if
+it links to a valid image. After the rescue operation is successful, the user
+can start their VM which will always boot from the rescue image, while being in
+rescue mode.
+
+The properties of the image are used while a rescue action is issued, in order
+to optimally select the rescue image for the specified VM. In case the user has
+not selected a specific image or the system is unable to intelligently
+determine an image, Cyclades will use a fallback default image.
+
+Rescue images, can be manipulated (list, create, modify, remove) though the
+`snf-manage` interface.
+
+Examples:
+`````````
+
+- Create a Rescue Image
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-create --name "Linux Rescue Image" --default True \
+                                --location "https://cdimage.debian.org/debian-cd/current-live/amd64/iso-hybrid/debian-live-8.8.0-amd64-cinnamon-desktop.iso"
+                                --target-os-family "Linux" \
+                                --target-os "Debian"
+
+Note that the above command will fail in case there already exists a default
+rescue image. In case it succeeds, the above command will create a new rescue
+image with the name "Linux Rescue Image". Since the default flag is set to
+True, the system will use this image in case it cannot determine a better fit,
+as explained in the rescue functionality above. The --target-os-family and
+`--target-os` parameters, mean that this image is best fitting for Debian
+servers and a good fit for Linux servers in general.
+
+- Make an existing Rescue Image default
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-modify 2 --default True
+
+Note that **only one rescue image can be default**.
+
+- Delete an Image
+
+.. code-block:: console
+
+ $ snf-manage rescue-image-remove 2
+
+The above example will work only if there are no active VMs using the image. If
+an administrator wants to delete an image and is unsure whether the image is in
+use or not, they can either use the `snf-manage rescue-image-list` command
+which provides the number of VMs currently using an image.
 
 
 Virtual Servers
@@ -3130,7 +3220,7 @@ Upgrade Notes
 Changelog, NEWS
 ===============
 
-
+* v0.19 :ref:`Changelog <Changelog-0.19>`, :ref:`NEWS <NEWS-0.19>`
 * v0.18.1 :ref:`Changelog <Changelog-0.18.1>`, :ref:`NEWS <NEWS-0.18.1>`
 * v0.17 :ref:`Changelog <Changelog-0.17>`, :ref:`NEWS <NEWS-0.17>`
 * v0.16.2 :ref:`Changelog <Changelog-0.16.2>`, :ref:`NEWS <NEWS-0.16.2>`

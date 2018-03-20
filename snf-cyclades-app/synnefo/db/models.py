@@ -71,6 +71,7 @@ class Flavor(models.Model):
     deleted = models.BooleanField('Deleted', default=False)
     # Whether the flavor can be used to create new servers
     allow_create = models.BooleanField(default=True, null=False)
+    public = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -87,6 +88,41 @@ class Flavor(models.Model):
 
     def __unicode__(self):
         return u"<%s:%s>" % (self.id, self.name)
+
+
+class FlavorAccess(models.Model):
+    project = models.CharField(max_length=255)
+    flavor = models.ForeignKey(Flavor, related_name='access')
+
+    class Meta:
+        unique_together = (('project', 'flavor'),)
+        verbose_name = u'Flavor access per project.'
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.flavor_id, self.project)
+
+
+class FlavorSpecs(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+
+    key = models.CharField("Spec Key", max_length=KEY_LENGTH)
+    value = models.CharField("Spec Value", max_length=VALUE_LENGTH)
+
+    flavor = models.ForeignKey("Flavor", related_name="specs")
+
+    class Meta:
+        verbose_name = u'Flavor specs'
+        unique_together = (('key', 'flavor'),)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.key, self.value)
 
 
 class Backend(models.Model):
@@ -154,7 +190,7 @@ class Backend(models.Model):
 
     @staticmethod
     def put_client(client):
-            put_rapi_client(client)
+        put_rapi_client(client)
 
     def create_hash(self):
         """Create a hash for this backend. """
@@ -242,28 +278,6 @@ class QuotaHolderSerial(models.Model):
         return u"<serial: %s>" % self.serial
 
 
-class VirtualMachineManager(models.Manager):
-    """Custom manager for :class:`VirtualMachine` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return VMs that are accessible by the user.
-
-        VMs that are accessible by the user are those that are owned by the
-        user and those that are shared to the projects that the user is member.
-
-        """
-
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
     ACTIONS = (
@@ -276,6 +290,8 @@ class VirtualMachine(models.Model):
         ('RESIZE', 'Resize a VM'),
         ('ADDFLOATINGIP', 'Add floating IP to VM'),
         ('REMOVEFLOATINGIP', 'Add floating IP to VM'),
+        ('RESCUE', 'Rescue VM'),
+        ('UNRESCUE', 'Unrescue VM'),
     )
 
     # The internal operating state of a VM
@@ -346,8 +362,6 @@ class VirtualMachine(models.Model):
 
     VIRTUAL_MACHINE_NAME_LENGTH = 255
 
-    objects = VirtualMachineManager()
-
     name = models.CharField('Virtual Machine Name',
                             max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
@@ -362,10 +376,11 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
-    key_name = models.CharField(max_length=100, null=True)
+    key_names = models.TextField(null=True, default='[]')
     image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
-    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
+    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT,
+                               related_name="virtual_machines")
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
@@ -395,11 +410,21 @@ class VirtualMachine(models.Model):
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
+    rescue_properties = models.ForeignKey('RescueProperties', null=True)
+    rescue = models.BooleanField('Rescue', default=False, db_index=True)
+    rescue_image = models.ForeignKey('RescueImage', null=True)
 
     # Latest action and corresponding Ganeti job ID, for actions issued
     # by the API
     task = models.CharField(max_length=64, null=True)
     task_job_id = models.BigIntegerField(null=True)
+
+    def record_job(self, job_id):
+        if job_id is not None:
+            # Note that self.action is the current action
+            self.task = self.action
+            self.task_job_id = job_id
+            self.save()
 
     def get_client(self):
         if self.backend:
@@ -415,7 +440,7 @@ class VirtualMachine(models.Model):
 
     @staticmethod
     def put_client(client):
-            put_rapi_client(client)
+        put_rapi_client(client)
 
     def save(self, *args, **kwargs):
         # Store hash for first time saved vm
@@ -442,6 +467,7 @@ class VirtualMachine(models.Model):
 
     # Error classes
     class InvalidBackendIdError(ValueError):
+
         def __init__(self, value):
             self.value = value
 
@@ -449,15 +475,17 @@ class VirtualMachine(models.Model):
             return repr(self.value)
 
     class InvalidBackendMsgError(Exception):
+
         def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
 
         def __str__(self):
             return repr('<opcode: %s, status: %s>' % (self.opcode,
-                        self.status))
+                                                      self.status))
 
     class InvalidActionError(Exception):
+
         def __init__(self, action):
             self._action = action
 
@@ -484,6 +512,12 @@ class VirtualMachineMetadata(models.Model):
         return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
 
 
+class RescueProperties(models.Model):
+
+    os = models.CharField(max_length=256, null=True)
+    os_family = models.CharField(max_length=256, null=True)
+
+
 class Image(models.Model):
     """Model representing Images of created VirtualMachines.
 
@@ -508,29 +542,27 @@ class Image(models.Model):
         unique_together = (('uuid', 'version'),)
 
 
-class NetworkManager(models.Manager):
-    """Custom manager for :class:`Network` model."""
+class RescueImage(models.Model):
 
-    def for_user(self, userid=None, projects=None, public=True):
-        """Return networks that are accessible by the user.
+    FILETYPE_HTTP = 'http'
+    FILETYPE_FILE = 'file'
 
-        Networks that are accessible by the user are those that are owned by
-        the user, those that are shared to the projects that the user is
-        member, and public networks.
+    name = models.CharField(max_length=256, null=False)
+    location = models.TextField()
+    location_type = models.CharField(max_length=32, default=FILETYPE_FILE)
 
-        """
+    deleted = models.BooleanField(default=False, null=False)
+    is_default = models.BooleanField(default=False, null=False)
 
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
-                        models.Q(project__in=projects))
-        if public:
-            _filter |= models.Q(public=True)
-
-        return self.get_queryset().filter(_filter)
+    os = models.CharField(max_length=256, null=True)
+    os_family = models.CharField(max_length=256, null=True)
+    # These fields will be used for determining the image that should be used
+    # once a user wants to rescue a VM. Conceptually, the os,os_family fields
+    # hold information about the image itself(e.g. for a Debian Live CD, these
+    # fields will be os_family=Linux, os=Debian whereas target{os,os_family}
+    # can be any arbitary value
+    target_os = models.CharField(max_length=256, null=True)
+    target_os_family = models.CharField(max_length=256, null=True)
 
 
 class Network(models.Model):
@@ -591,8 +623,6 @@ class Network(models.Model):
     }
 
     NETWORK_NAME_LENGTH = 128
-
-    objects = NetworkManager()
 
     name = models.CharField('Network Name', max_length=NETWORK_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=128,
@@ -706,6 +736,7 @@ class Network(models.Model):
         return total, free
 
     class InvalidBackendIdError(ValueError):
+
         def __init__(self, value):
             self.value = value
 
@@ -713,6 +744,7 @@ class Network(models.Model):
             return repr(self.value)
 
     class InvalidBackendMsgError(Exception):
+
         def __init__(self, opcode, status):
             self.opcode = opcode
             self.status = status
@@ -722,6 +754,7 @@ class Network(models.Model):
                         % (self.opcode, self.status))
 
     class InvalidActionError(Exception):
+
         def __init__(self, action):
             self._action = action
 
@@ -729,26 +762,8 @@ class Network(models.Model):
             return repr(str(self._action))
 
 
-class SubnetManager(models.Manager):
-    """Custom manager for :class:`Subnet` model."""
-
-    def for_user(self, userid=None, projects=None, public=True):
-        """Return subnets that are accessible by the user.
-
-        Subnets that are accessible by the user are those that belong
-        to a network that is accessible by the user.
-
-        """
-
-        networks = Network.objects.for_user(userid, projects, public=public)
-
-        return self.get_queryset().filter(network__in=networks)
-
-
 class Subnet(models.Model):
     SUBNET_NAME_LENGTH = 128
-
-    objects = SubnetManager()
 
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
@@ -863,30 +878,7 @@ class BackendNetwork(models.Model):
         return u'<BackendNetwork %s@%s>' % (self.network, self.backend)
 
 
-class IPAddressManager(models.Manager):
-    """Custom manager for :class:`IPAddress` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return IP addresses that are accessible by the user.
-
-        IP addresses that are accessible by the user are those that are owned
-        by the user or are shared to a project that the user is member.
-
-        """
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class IPAddress(models.Model):
-    objects = IPAddressManager()
-
     subnet = models.ForeignKey("Subnet", related_name="ips", null=False,
                                on_delete=models.PROTECT)
     network = models.ForeignKey(Network, related_name="ips", null=False,
@@ -970,7 +962,7 @@ class IPAddressHistory(models.Model):
     server_id = models.IntegerField("Server", null=False, db_index=True)
     network_id = models.IntegerField("Network", null=False, db_index=True)
     user_id = models.CharField("IP user", max_length=128, null=False,
-                              db_index=True)
+                               db_index=True)
     action = models.CharField("Action", max_length=255, null=False)
     action_date = models.DateTimeField("Datetime of IP action",
                                        default=datetime.datetime.now)
@@ -985,36 +977,6 @@ class IPAddressHistory(models.Model):
             " Date: %s Action: %s>"\
             % (self.address, self.server_id, self.network_id, self.user_id,
                self.action_date, self.action)
-
-
-class NetworkInterfaceManager(models.Manager):
-    """Custom manager for :class:`NetworkInterface` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return ports (NetworkInterfaces) that are accessible by the user.
-
-        Ports that are accessible by the user are those that:
-        * are owned by the user
-        * are attached to a VM that is accessible by the user
-        * are attached to a Network that is accessible by the user (but
-          not public)
-
-        """
-
-        vms = VirtualMachine.objects.for_user(userid, projects)
-        networks = Network.objects.for_user(userid, projects, public=False)\
-                                  .filter(public=False)
-        ips = IPAddress.objects.for_user(userid, projects).filter(floating_ip=True)
-
-        _filter = models.Q()
-        if userid:
-            _filter |= models.Q(userid=userid)
-
-        _filter |= models.Q(machine__in=vms)
-        _filter |= models.Q(network__in=networks)
-        _filter |= models.Q(ips__in=ips)
-
-        return self.get_queryset().filter(_filter)
 
 
 class NetworkInterface(models.Model):
@@ -1032,8 +994,6 @@ class NetworkInterface(models.Model):
     )
 
     NETWORK_IFACE_NAME_LENGTH = 128
-
-    objects = NetworkInterfaceManager()
 
     name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
                             null=True, default="")
@@ -1157,23 +1117,23 @@ class IPPoolTable(PoolTable):
 
 @contextmanager
 def pooled_rapi_client(obj):
-        if isinstance(obj, (VirtualMachine, BackendNetwork)):
-            backend = obj.backend
-        else:
-            backend = obj
+    if isinstance(obj, (VirtualMachine, BackendNetwork)):
+        backend = obj.backend
+    else:
+        backend = obj
 
-        if backend.offline:
-            log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable("Cannot connect to offline"
-                                            " backend: %s" % backend)
+    if backend.offline:
+        log.warning("Trying to connect with offline backend: %s", backend)
+        raise faults.ServiceUnavailable("Cannot connect to offline"
+                                        " backend: %s" % backend)
 
-        b = backend
-        client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
-                                 b.username, b.password)
-        try:
-            yield client
-        finally:
-            put_rapi_client(client)
+    b = backend
+    client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
+                             b.username, b.password)
+    try:
+        yield client
+    finally:
+        put_rapi_client(client)
 
 
 class VirtualMachineDiagnosticManager(models.Manager):
@@ -1197,7 +1157,7 @@ class VirtualMachineDiagnosticManager(models.Manager):
 
     def since(self, vm, created_since, **kwargs):
         return self.get_queryset().filter(vm=vm, created__gt=created_since,
-                                           **kwargs)
+                                          **kwargs)
 
 
 class VirtualMachineDiagnostic(models.Model):
@@ -1228,28 +1188,6 @@ class VirtualMachineDiagnostic(models.Model):
         ordering = ['-created']
 
 
-class VolumeManager(models.Manager):
-    """Custom manager for :class:`Volume` model."""
-
-    def for_user(self, userid=None, projects=None):
-        """Return volumes that are accessible by the user.
-
-        Volumes that are accessible by the user are those that are owned by the
-        user and those that are shared to the projects that the user is member.
-
-        """
-
-        _filter = models.Q()
-
-        if userid:
-            _filter |= models.Q(userid=userid)
-        if projects:
-            _filter |= (models.Q(shared_to_project=True) &\
-                        models.Q(project__in=projects))
-
-        return self.get_queryset().filter(_filter)
-
-
 class Volume(models.Model):
     """Model representing a detachable block storage device."""
 
@@ -1275,7 +1213,6 @@ class Volume(models.Model):
     SOURCE_SNAPSHOT_PREFIX = "snapshot:"
     SOURCE_VOLUME_PREFIX = "volume:"
 
-    objects = VolumeManager()
     name = models.CharField("Name", max_length=NAME_LENGTH, null=True)
     description = models.CharField("Description",
                                    max_length=DESCRIPTION_LENGTH, null=True)
@@ -1397,6 +1334,25 @@ class VolumeMetadata(Metadata):
         unique_together = (("volume", "key"),)
         verbose_name = u"Key-Value pair of Volumes metadata"
 
+
+class VolumeTypeSpecs(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+
+    key = models.CharField("Spec Key", max_length=KEY_LENGTH)
+    value = models.CharField("Spec Value", max_length=VALUE_LENGTH)
+
+    volume_type = models.ForeignKey("VolumeType", related_name="specs")
+
+    class Meta:
+        verbose_name = u'Volume type specs'
+        unique_together = (('key', 'volume_type'),)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u'<%s: %s>' % (self.key, self.value)
 
 class ProjectBackend(models.Model):
     project = models.CharField(max_length=255)

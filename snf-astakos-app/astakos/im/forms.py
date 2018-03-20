@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -650,7 +650,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     def __init__(self, user, *args, **kwargs):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
 
-    @transaction.commit_on_success()
+    @transaction.atomic()
     def save(self, commit=True, **kwargs):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)
@@ -660,7 +660,12 @@ class ExtendedSetPasswordForm(SetPasswordForm):
 
             provider = auth_providers.get_provider('local', self.user)
             if provider.get_add_policy:
-                provider.add_to_user()
+                try:
+                    local_provider = provider.get_user_module_providers()[0]
+                    local_provider.active = True
+                    local_provider.save()
+                except IndexError:
+                    provider.add_to_user()
 
         except BaseException, e:
             logger.exception(e)

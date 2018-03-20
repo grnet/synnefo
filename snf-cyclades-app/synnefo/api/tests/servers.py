@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import base64
 from copy import deepcopy
 
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
@@ -23,6 +24,8 @@ from django.test.utils import override_settings as django_override_settings
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
+from synnefo.userdata import models_factory as keymfactory
+from synnefo.logic.servers import server_created
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -38,6 +41,7 @@ from mock import patch, Mock
 
 
 class ComputeAPITest(BaseAPITest):
+
     def __init__(self, *args, **kwargs):
         super(ComputeAPITest, self).__init__(*args, **kwargs)
         self.compute_path = get_service_path(cyclades_services, 'compute',
@@ -61,6 +65,7 @@ class ComputeAPITest(BaseAPITest):
 
 
 class ServerAPITest(ComputeAPITest):
+
     def setUp(self):
         self.user1 = 'user1'
         self.user2 = 'user2'
@@ -163,15 +168,15 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "vm.example.org")
         # Formatted settings
-        with override_settings(settings, CYCLADES_SERVERS_FQDN=
-                               "snf-%(id)s.vm.example.org"):
+        with override_settings(
+                settings, CYCLADES_SERVERS_FQDN="snf-%(id)s.vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"],
                              "snf-%d.vm.example.org" % vm.id)
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN=
-                               "snf-%(id)s.vm-%(id)s.example.org"):
+        with override_settings(
+                settings,
+                CYCLADES_SERVERS_FQDN="snf-%(id)s.vm-%(id)s.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
@@ -201,7 +206,7 @@ class ServerAPITest(ComputeAPITest):
 
         def _port_from_ip(ip, base):
             fields = ip.split('.', 4)
-            return (base + 256*int(fields[2]) + int(fields[3]))
+            return (base + 256 * int(fields[2]) + int(fields[3]))
 
         ports = {
             22: lambda ip, id, fqdn, user:
@@ -311,6 +316,7 @@ class ServerAPITest(ComputeAPITest):
         response = self.mypost('servers/42/metadata/foo')
         self.assertMethodNotAllowed(response)
 
+
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
                             'mapfile': '1234',
@@ -329,6 +335,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
 @patch('synnefo.volume.util.get_snapshot', fixed_image)
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerCreateAPITest(ComputeAPITest):
+
     def setUp(self):
         self.flavor = mfactory.FlavorFactory()
         self.backend = mfactory.BackendFactory()
@@ -403,8 +410,8 @@ class ServerCreateAPITest(ComputeAPITest):
         request.method = 'INVALID'
         with patch('snf_django.lib.api.api_method_not_allowed') as mocked:
             servers.demux_server_password(request, vm.userid)
-            mocked.assert_called_once_with(request, allowed_methods=['GET', 'DELETE'])
-
+            mocked.assert_called_once_with(
+                request, allowed_methods=['GET', 'DELETE'])
 
     def test_get_server_password(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
@@ -427,7 +434,6 @@ class ServerCreateAPITest(ComputeAPITest):
 
         self.assertEqual(returned_password, password)
 
-
     def test_delete_server_password(self, mrapi):
         # If a password is set the view should produce a
         # 204(No Content) status code and return a JSON dict containing
@@ -436,12 +442,12 @@ class ServerCreateAPITest(ComputeAPITest):
         memory_cache = VM_PASSWORD_CACHE
         memory_cache.set(str(vm.pk), password)
 
-        response = self.mydelete('servers/' + str(vm.pk) + '/password', vm.userid)
+        response = self.mydelete(
+            'servers/' + str(vm.pk) + '/password', vm.userid)
 
         self.assertEqual(response.status_code, 204)
 
         self.assertIsNone(memory_cache.get(str(vm.pk)))
-
 
     def test_create_server_wrong_flavor(self, mrapi):
         # Test with a flavor that does not exist
@@ -462,8 +468,40 @@ class ServerCreateAPITest(ComputeAPITest):
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 403)
 
-    @django_override_settings(CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE= \
-                              {'admins': ['.*']})
+        # Test with an flavor that is not public
+        flavor = mfactory.FlavorFactory(public=False)
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertItemNotFound(response)
+
+        # Test with an flavor that it does not have access
+        flavor = mfactory.FlavorFactory(public=False)
+        mfactory.FlavorAccessFactory(flavor=flavor, project='proj')
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertItemNotFound(response)
+
+        request["server"]["flavorRef"] = flavor.id
+        request["server"]["project"] = 'proj'
+        mrapi().CreateInstance.return_value = 12
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json',
+                                       _projects=['proj'])
+        # The user is not a member of the 'proj' project, but since we
+        # mock quotaholder that provides this info this check, this call
+        # succeeds
+        self.assertSuccess202(response)
+
+    @django_override_settings(
+        CYCLADES_FLAVOR_OVERRIDE_ALLOW_CREATE={'admins': ['.*']})
     def test_override_flavor_allow_create(self, mrapi):
         # Test with an flavor that is not allowed
         flavor = mfactory.FlavorFactory(allow_create=False)
@@ -533,7 +571,8 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # User requested public networks
         # but no floating IP..
-        s1 = mfactory.IPv4SubnetFactory(network__public=True, network__floating_ip_pool=True)
+        s1 = mfactory.IPv4SubnetFactory(
+            network__public=True, network__floating_ip_pool=True)
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"uuid": s1.network_id}]
         response = self.mypost('servers', "test", json.dumps(request), 'json')
@@ -769,9 +808,80 @@ class ServerCreateAPITest(ComputeAPITest):
                                    json.dumps(request), 'json')
         self.assertBadRequest(response)
 
+    def test_create_server_with_keys(self, mrapi):
+        """Test server creation with SSH key injection"""
+        user = 'test_user'
+        keys = [keymfactory.PublicKeyPairFactory(user=user) for _
+                in range(0, 2)]
+        key_names = [k.name for k in keys]
+        mrapi().CreateInstance.return_value = 42
+        request = deepcopy(self.request)
+
+        # Test creation with invalid key
+        request['server']['key_name'] = 'invalid'
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 404)
+
+        # Test creation with valid key and only key_name set
+        request['server']['key_name'] = keys[0].name
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server = json.loads(response.content)['server']
+        self.assertEqual(server['key_name'], keys[0].name)
+        self.assertEqual(server['SNF:key_names'][0], keys[0].name)
+
+        # Test creation with both SNF:key_names and key_name set
+        request['server']['key_name'] = key_names[0]
+        request['server']['SNF:key_names'] = key_names
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
+        # Test server creation with a list of keys and only SNF:key_names set
+        request = deepcopy(self.request)
+        request["server"]["SNF:key_names"] = key_names
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server = json.loads(response.content)['server']
+        self.assertTrue(server['key_name'] in key_names)
+        self.assertEqual(len(server['SNF:key_names']), len(key_names))
+
+    def test_create_server_with_userdata(self, mrapi):
+        """Test server creation with user data"""
+        mrapi().CreateInstance.return_value = 12
+        user_data = base64.encodestring("#!/bin/bash\nexit 0").strip()
+        self.request['server']['user_data'] = user_data
+
+        # This is a hack because python 2.x does not support assigning new
+        # values to nonlocal variables
+        vm_params = {}
+        def get_created_params(sender, created_vm_params, **kwargs):
+            vm_params["params"] = created_vm_params
+        server_created.connect(get_created_params)
+
+        response = self.mypost("servers", 'test_user',
+                               json.dumps(self.request), 'json')
+        self.assertEqual(response.status_code, 202)
+        self.assertTrue("params" in vm_params)
+        self.assertTrue("cloud_userdata" in vm_params["params"])
+        self.assertEqual(vm_params['params']['cloud_userdata'], user_data)
+
+        self.request['server']['user_data'] = "***invalid+base64***"
+        response = self.mypost("servers", 'test_user',
+                               json.dumps(self.request), 'json')
+        self.assertEqual(response.status_code, 400)
+
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerDestroyAPITest(ComputeAPITest):
+
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
         mrapi().DeleteInstance.return_value = 12
@@ -787,6 +897,7 @@ class ServerDestroyAPITest(ComputeAPITest):
 
 
 class ServerMetadataAPITest(ComputeAPITest):
+
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
         self.metadata = mfactory.VirtualMachineMetadataFactory(vm=self.vm)
@@ -794,7 +905,7 @@ class ServerMetadataAPITest(ComputeAPITest):
 
     def test_get_metadata(self):
         vm = self.vm
-        create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)
+        create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)  # noqa: E731, E501
         metadata = [create_meta(), create_meta(), create_meta()]
         response = self.myget('servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
@@ -860,6 +971,7 @@ class ServerMetadataAPITest(ComputeAPITest):
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerActionAPITest(ComputeAPITest):
+
     def test_actions(self, mrapi, mimage):
         actions = ['start', 'shutdown', 'reboot']
         vm = mfactory.VirtualMachineFactory()
@@ -973,6 +1085,7 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
+
         # Check success
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
         flavor4 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
@@ -989,6 +1102,47 @@ class ServerActionAPITest(ComputeAPITest):
         self.assertEqual(kwargs["beparams"]["vcpus"], 4)
         self.assertEqual(kwargs["beparams"]["minmem"], 2048)
         self.assertEqual(kwargs["beparams"]["maxmem"], 2048)
+
+        # Check private flavor with no flavor-access
+        flavor5 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
+                                         disk=flavor.disk, cpu=1, ram=2048,
+                                         public=False)
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertItemNotFound(response)
+
+        # Check private flavor the user has access, but it is different
+        # from the VM's project
+        mfactory.FlavorAccessFactory(flavor=flavor5, project='foo')
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json',
+                               _projects=['foo'])
+        self.assertForbidden(response)
+
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        mfactory.FlavorAccessFactory(flavor=flavor5, project=vm.project)
+        # Checking flavor with flavor-access from the same project the VM
+        # belongs to is meaningless, since the membership check is performed by
+        # the quotaholder, which is mocked and always succeeds
+        #
+        # request = {'resize': {'flavorRef': flavor5.id}}
+        # response = self.mypost('servers/%d/action' % vm.id,
+        #                        vm.userid, json.dumps(request), 'json',
+        #                        _projects = ['foo'])
+        # self.assertForbidden(response)
+
+        # Check private flavor with user access to the same project as the VM's
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        mfactory.FlavorAccessFactory(flavor=flavor5, project=vm.project)
+        request = {'resize': {'flavorRef': flavor5.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json',
+                               _projects=['foo', vm.project])
+        self.assertSuccess202(response)
 
     def test_action_on_resizing_vm(self, mrapi, mimage):
         vm = mfactory.VirtualMachineFactory()
@@ -1014,6 +1168,7 @@ class ServerActionAPITest(ComputeAPITest):
 
 
 class ServerVNCConsole(ComputeAPITest):
+
     def test_not_active_server(self):
         """Test console req for not ACTIVE server returns badRequest"""
         vm = mfactory.VirtualMachineFactory(operstate="BUILD")
@@ -1064,6 +1219,7 @@ class ServerVNCConsole(ComputeAPITest):
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerAttachments(ComputeAPITest):
+
     def test_list_attachments(self, mrapi):
         # Test default volume
         vol = mfactory.VolumeFactory()

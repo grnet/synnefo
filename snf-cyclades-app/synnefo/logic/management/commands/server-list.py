@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,13 +91,14 @@ class Command(ListCommand):
                  "The IPv6 addresses of the server"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
+        "rescue": ("rescue", "Whether the server is in rescue mode or not"),
         "suspended": ("suspended", "Whether the server is administratively"
                       " suspended"),
         "project": ("project", "The project UUID"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "flavor", "image.id",
-              "backend"]
+              "backend", "rescue"]
 
     def handle_args(self, *args, **options):
         if options["suspended"]:

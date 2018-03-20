@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from snf_django.lib.api import utils
 from synnefo.db.models import Subnet
 from synnefo.logic import subnets
 from synnefo.api import util
+from synnefo.logic.policy import SubnetPolicy
 
 import ipaddr
 
@@ -65,9 +66,8 @@ def subnet_demux(request, sub_id):
 def list_subnets(request, detail=True):
     """List all subnets of a user"""
 
-    subnets_list = Subnet.objects.for_user(request.user_uniq,
-                                           request.user_projects,
-                                           public=True).order_by('id')
+    subnets_list = SubnetPolicy.filter_list(
+        request.credentials, include_public=True).order_by('id')
     subnets_list = subnets_list.prefetch_related("ip_pools")
 
     subnets_list = api.utils.filter_modified_since(request,
@@ -87,7 +87,7 @@ def create_subnet(request):
 
     """
     dictionary = utils.get_json_body(request)
-    user_id = request.user_uniq
+    user_id = request.credentials.userid
     log.info('create subnet user: %s request: %s', user_id, dictionary)
 
     try:
@@ -149,8 +149,7 @@ def create_subnet(request):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_subnet(request, sub_id):
     """Show info of a specific subnet"""
-    user_id = request.user_uniq
-    subnet = subnets.get_subnet(sub_id, user_id, request.user_projects)
+    subnet = subnets.get_subnet(sub_id, request.credentials)
 
     subnet_dict = subnet_to_dict(subnet)
     data = json.dumps({'subnet': subnet_dict})
@@ -174,7 +173,7 @@ def update_subnet(request, sub_id):
     """
 
     dictionary = utils.get_json_body(request)
-    user_id = request.user_uniq
+    user_id = request.credentials.userid
 
     try:
         subnet = dictionary['subnet']

@@ -140,7 +140,7 @@ $(document).ready(function() {
 		inputsNames = inputsNames.map(function(item) {
 			return item.slice(1, -1); // remove extra quotes
 		});
-		if (modalID == '#user-modify_email') {
+		if (modalID == '#user-modify_email' || modalID == '#user-set_email') {
 			tpl = snf.modals.html.singleItemInfoWithEmailInput;
 			html = _.template(tpl,
 				{
@@ -193,7 +193,7 @@ $(document).ready(function() {
 		if($modal.attr('data-type') === 'contact') {
 			noError = snf.modals.validateContactForm($modal);
 		}
-		if($modal.attr('data-type') === 'modify_email') {
+		if($modal.attr('data-type') === 'modify_email' || $modal.attr('data-type') === 'set_email') {
 			var validForm = snf.modals.validateModifyEmailForm($modal);
 			noError = noError && validForm;
 		}

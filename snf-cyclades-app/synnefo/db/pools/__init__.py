@@ -285,6 +285,14 @@ class MacPrefixPool(PoolManager):
 
     @staticmethod
     def validate_mac(value):
+        # We require that the mac is locally administered (second least
+        # significant bit of the first octed == 1) and that the mac is meant
+        # for unicast transmission (the least significant bit of the first
+        # octet of an address is set to == 0)
+        #
+        # Note that this also affects the actual usable size of the
+        # MacPrefixPool as it marks as externally reserved the calculated MAC
+        # addresses that do not adhere to this restriction.
         hex_ = value.replace(":", "")
         bin_ = bin(int(hex_, 16))[2:].zfill(8)
         return bin_[6] == '1' and bin_[7] == '0'

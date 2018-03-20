@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,9 +17,8 @@ from optparse import make_option
 
 from snf_django.management.commands import SynnefoCommand, CommandError
 from synnefo.management import common
-#from snf_django.management.utils import parse_bool
 from synnefo.volume import snapshots
-from synnefo.db import transaction
+from snf_django.lib.api import Credentials
 
 
 class Command(SynnefoCommand):
@@ -40,13 +39,13 @@ class Command(SynnefoCommand):
             help="Display description of the snapshot"),
     )
 
-    @transaction.commit_on_success
     @common.convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a volume ID")
 
-        volume = common.get_resource("volume", args[0], for_update=True)
+        volume = common.get_resource("volume", args[0])
+        credentials = Credentials(volume.user_id)
 
         name = options.get("name")
         if name is None:
@@ -57,10 +56,11 @@ class Command(SynnefoCommand):
             description = "Snapshot of Volume '%s'" % volume.id
 
         snapshot = snapshots.create(volume.userid,
-                                    volume,
+                                    volume.id,
                                     name=name,
                                     description=description,
-                                    metadata={})
+                                    metadata={},
+                                    credentials=credentials)
 
         msg = ("Created snapshot of volume '%s' with ID %s\n"
                % (volume.id, snapshot["id"]))

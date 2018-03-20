@@ -119,8 +119,9 @@ class ImagesTestSuite(BurninTests):
     def test_007_download_image(self):
         """Download image from Pithos"""
         # Find the 'Debian Base' image
-        images = self._find_images(["name:^Debian Base$"],
-                                   images=self.system_images)
+        images = self._parse_images(possible_images=self.system_images)
+        self.assertGreater(len(images), 0, msg="Could not detect any suitable "
+                                               "images to download")
         image = images[0]
         self.info("Will use %s with id %s", image['name'], image['id'])
         image_location = \

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@ from synnefo.db.models import VolumeType
 from logging import getLogger
 log = getLogger(__name__)
 
+def get_specs(vtype):
+    return  ', '.join([str(spec) for spec in vtype.specs.all()])
 
 def get_flavors(vtype):
     return vtype.flavors.filter(deleted=False).count()
@@ -48,6 +50,7 @@ class Command(ListCommand):
         "flavors": (get_flavors, "Number of flavors using this volume type"),
         "volumes": (get_volumes, "Number of volumes using this volume type"),
         "deleted": ("deleted", "Whether volume type is deleted or not"),
+        "specs": (get_specs, "The key-value pair specs of the volume type"),
     }
 
-    fields = ["id", "name", "disk_template", "flavors", "volumes", "deleted"]
+    fields = ["id", "name", "disk_template", "flavors", "volumes", "deleted", "specs"]

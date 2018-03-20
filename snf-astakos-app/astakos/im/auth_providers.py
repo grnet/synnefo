@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -233,7 +233,7 @@ class AuthProvider(object):
             raise Exception("Cannot add an existing provider")
 
         create = False
-        if self.get_user_providers().count() == 0:
+        if self.get_user_active_providers().count() == 0:
             create = True
 
         if create and not self.get_create_policy:
@@ -379,10 +379,17 @@ class AuthProvider(object):
         return self.get_username_msg
 
     def get_user_providers(self):
+        return self.user.auth_providers.filter(
+            module__in=astakos_settings.IM_MODULES)
+
+    def get_user_active_providers(self):
         return self.user.auth_providers.active().filter(
             module__in=astakos_settings.IM_MODULES)
 
     def get_user_module_providers(self):
+        return self.user.auth_providers.filter(module=self.module)
+
+    def get_user_module_active_providers(self):
         return self.user.auth_providers.active().filter(module=self.module)
 
     def get_existing_providers(self):
@@ -401,11 +408,11 @@ class AuthProvider(object):
             return default
 
         if policy == 'remove' and default is True:
-            return self.get_user_providers().count() > 1
+            return self.get_user_active_providers().count() > 1
 
         if policy == 'add' and default is True:
             limit = self.get_policy('limit')
-            if limit <= self.get_user_module_providers().count():
+            if limit <= self.get_user_module_active_providers().count():
                 return False
 
             if self.identifier:
@@ -740,10 +747,13 @@ class LDAPAuthProvider(AuthProvider):
 
 
 # Utility method
-def get_provider(module, user_obj=None, identifier=None, **params):
+def get_provider(module, user_obj=None, identifier='', **params):
     """
     Return a provider instance from the auth providers registry.
     """
+    if identifier is None:
+        logger.warn('Found identifier = None, should be empty string instead')
+        identifier = ''
     if module not in PROVIDERS:
         raise InvalidProvider('Invalid auth provider "%s"' % module)
 

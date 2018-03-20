@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -152,7 +152,7 @@ def users_list(request, action='list', detail=False):
 
 
 @user_api_method('POST')
-@transaction.commit_on_success
+@transaction.atomic
 def users_create(request):
     user_id = request.user_uniq
     req = api.utils.get_json_body(request)
@@ -224,7 +224,7 @@ def users_create(request):
 
 
 @user_api_method('POST')
-@transaction.commit_on_success
+@transaction.atomic
 def user_action(request, user_id):
     admin_id = request.user_uniq
     req = api.utils.get_json_body(request)
@@ -298,7 +298,7 @@ def user_action(request, user_id):
 
 
 @user_api_method('PUT')
-@transaction.commit_on_success
+@transaction.atomic
 def user_update(request, user_id):
     admin_id = request.user_uniq
     req = api.utils.get_json_body(request)

@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ def project_view(get=True, post=False, transaction=False):
         methods.append("POST")
 
     if transaction:
-        transaction_method = transaction.commit_on_success
+        transaction_method = transaction.atomic
     else:
         transaction_method = no_transaction
 
@@ -174,7 +174,7 @@ def project_add_or_modify(request, project_uuid=None):
         'object': project
     }
 
-    with transaction.commit_on_success():
+    with transaction.atomic():
         template_name = 'im/projects/projectapplication_form.html'
         summary_template_name = \
             'im/projects/projectapplication_form_summary.html'
@@ -223,7 +223,7 @@ def project_add_or_modify(request, project_uuid=None):
 @project_view(get=False, post=True)
 def project_app_cancel(request, project_uuid, application_id):
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             cancel_application(application_id, project_uuid,
                                request_user=request.user)
             messages.success(request,
@@ -404,7 +404,7 @@ def project_search(request):
 def project_join(request, project_uuid):
     project = get_object_or_404(Project, uuid=project_uuid)
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             membership = join_project(project_uuid, request.user)
             if membership.state != membership.REQUESTED:
                 m = _(astakos_messages.USER_JOINED_PROJECT)
@@ -418,7 +418,7 @@ def project_join(request, project_uuid):
 def project_leave(request, project_uuid):
     project = get_object_or_404(Project, uuid=project_uuid)
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             memb_id = request.user.get_membership(project).pk
             auto_accepted = leave_project(memb_id, request.user)
             if auto_accepted:
@@ -433,7 +433,7 @@ def project_leave(request, project_uuid):
 def project_cancel_join(request, project_uuid):
     project = get_object_or_404(Project, uuid=project_uuid)
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             project = get_object_or_404(Project, uuid=project_uuid)
             memb_id = request.user.get_membership(project).pk
             cancel_membership(memb_id, request.user)
@@ -445,7 +445,7 @@ def project_cancel_join(request, project_uuid):
 @project_view(get=False, post=True)
 def project_app_approve(request, project_uuid, application_id):
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             approve_application(application_id, project_uuid,
                                 request_user=request.user)
             messages.success(request, _(astakos_messages.APPLICATION_APPROVED))
@@ -456,7 +456,7 @@ def project_app_approve(request, project_uuid, application_id):
 def project_app_deny(request, project_uuid, application_id):
     with ExceptionHandler(request):
         reason = request.POST.get("reason", "")
-        with transaction.commit_on_success():
+        with transaction.atomic():
             deny_application(application_id, project_uuid,
                              request_user=request.user, reason=reason)
             messages.success(request, _(astakos_messages.APPLICATION_DENIED))
@@ -466,7 +466,7 @@ def project_app_deny(request, project_uuid, application_id):
 @project_view(get=False, post=True)
 def project_app_dismiss(request, project_uuid, application_id):
     with ExceptionHandler(request):
-        with transaction.commit_on_success():
+        with transaction.atomic():
             dismiss_application(application_id, project_uuid,
                                 request_user=request.user)
             messages.success(request,
@@ -600,7 +600,7 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
     for member_id in member_ids:
         member_id = int(member_id)
         with ExceptionHandler(request):
-            with transaction.commit_on_success():
+            with transaction.atomic():
                 try:
                     m = action_func(member_id, request.user)
                 except ProjectError as e:

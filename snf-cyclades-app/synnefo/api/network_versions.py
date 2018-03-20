@@ -19,7 +19,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 import json
 from synnefo.cyclades_settings import NETWORK_ROOT_URL
-from synnefo.api.util import build_version_object
+from synnefo.util.api import build_version_object
 
 from snf_django.lib import api
 
@@ -60,7 +60,8 @@ NETWORK_RESOURCES_V2_0 = [
 ]
 
 
-@api.api_method(http_method='GET', user_required=False, logger=log)
+@api.api_method(http_method='GET', token_required=False, user_required=False,
+                logger=log)
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503
@@ -73,7 +74,7 @@ def versions_list(request):
     return HttpResponse(data)
 
 
-@api.api_method('GET', user_required=True, logger=log)
+@api.api_method('GET', token_required=False, user_required=True, logger=log)
 def version_details(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),

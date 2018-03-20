@@ -151,6 +151,22 @@
                         <button class="no">X</button>
                     </div>
                 </div>
+                {% if rescue_enabled %}
+                <div class="action-container rescue">
+                    <a herf="#" class="action-rescue">{% trans "Rescue" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                 </div>
+                 <div class="action-container unrescue">
+                    <a herf="#" class="action-unrescue">{% trans "Unrescue" %}</a>
+                    <div class="confirm_single">
+                        <button class="yes">{% trans "Confirm" %}</button>
+                        <button class="no">X</button>
+                    </div>
+                 </div>
+                {% endif %}
                 <div class="action-container destroy">
                     <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
                     <div class="confirm_single">

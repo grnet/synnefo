@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ from factory.fuzzy import FuzzyChoice
 from synnefo.db import models
 from random import choice
 from string import letters, digits
+import json
 
 
 def prefix_seq(x):
@@ -53,6 +54,14 @@ class VolumeTypeFactory(factory.DjangoModelFactory):
     deleted = False
 
 
+class VolumeTypeSpecsFactory(factory.DjangoModelFactory):
+
+    FACTORY_FOR = models.VolumeTypeSpecs
+    key = factory.Sequence(prefix_seq('key'))
+    value = factory.Sequence(prefix_seq('value'))
+    volume_type = factory.SubFactory(VolumeTypeFactory)
+
+
 class FlavorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Flavor
 
@@ -61,6 +70,14 @@ class FlavorFactory(factory.DjangoModelFactory):
     disk = factory.Sequence(lambda n: n * 1, type=int)
     volume_type = factory.SubFactory(VolumeTypeFactory)
     deleted = False
+    public = True
+
+
+class FlavorAccessFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.FlavorAccess
+
+    project = factory.Sequence(prefix_seq("project"))
+    flavor = factory.SubFactory(FlavorFactory)
 
 
 class BackendFactory(factory.DjangoModelFactory):
@@ -92,6 +109,20 @@ class OfflineBackend(BackendFactory):
     offline = True
 
 
+class RescuePropertiesFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.RescueProperties
+
+
+class RescueImageFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.RescueImage
+
+    location = 'foo-rescue.iso'
+    os_family = 'linux'
+    os = 'debian'
+    name = "test_rescue_image"
+    is_default = False
+
+
 class VirtualMachineFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.VirtualMachine
 
@@ -102,9 +133,13 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     flavor = factory.SubFactory(FlavorFactory)
     deleted = False
     suspended = False
-    #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
+    key_names = []
+    # operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
     project = factory.LazyAttribute(lambda a: a.userid)
+    rescue = False
+    rescue_image = factory.SubFactory(RescueImageFactory)
+    rescue_properties = factory.SubFactory(RescuePropertiesFactory)
 
 
 class VolumeFactory(factory.DjangoModelFactory):
@@ -148,7 +183,6 @@ class VirtualMachineMetadataFactory(factory.DjangoModelFactory):
     meta_key = factory.Sequence(prefix_seq('key'))
     meta_value = factory.Sequence(prefix_seq('pass'))
     vm = factory.SubFactory(VirtualMachineFactory)
-
 
 class NetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Network

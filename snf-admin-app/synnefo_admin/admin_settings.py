@@ -90,6 +90,9 @@ DEFAULT_ADMIN_RBAC = {
         'resend_verification': [ADMIN_GROUP],
         'contact': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
         'modify_email': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
+        'set_email': [ADMIN_GROUP],
+        'release_shibboleth': [ADMIN_GROUP],
+        'enable_local': [ADMIN_GROUP],
     }, 'vm': {
         'start': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
         'shutdown': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],

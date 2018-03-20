@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
+import re
 
 from django.db import IntegrityError
 from snf_django.management.commands import SynnefoCommand, CommandError
@@ -38,6 +39,11 @@ class Command(SynnefoCommand):
             dest="disk_template",
             default=None,
             help="The disk template of the volume type"),
+        make_option(
+            "--specs",
+            dest="specs",
+            help="Comma separated spec key, value pairs "
+                 "Example --specs key1=value1,key2=value2")
     )
 
     @common.convert_api_faults
@@ -66,6 +72,19 @@ class Command(SynnefoCommand):
         except IntegrityError as e:
             raise CommandError("Failed to create volume type: %s" % e)
 
+        specs = options.get('specs')
+        if specs:
+            spec_regex = re.compile(r'^(?P<key>.+?)=(?P<value>.+)$')
+            specs = specs.split(',')
+            for spec in specs:
+                match = spec_regex.match(spec)
+                if match is None:
+                    raise CommandError("Incorrect spec format. Expected: "
+                                       " <key>=<value> ,found: \'%s\' " % spec)
+                k, v = match.group('key'), match.group('value')
+                spec = vtype.specs.create(key=k)
+                spec.value = v
+                spec.save()
         self.stdout.write("Created volume Type '%s' in DB:\n" % vtype.id)
 
         pprint.pprint_volume_type(vtype, stdout=self.stdout)

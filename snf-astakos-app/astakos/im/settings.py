@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from logging import INFO
 from django.conf import settings
-from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
 from astakos.api.services import astakos_services as vanilla_astakos_services
 from synnefo.lib import join_urls
@@ -36,6 +36,7 @@ VIEWS_PREFIX = astakos_services['astakos_ui']['prefix']
 KEYSTONE_PREFIX = astakos_services['astakos_identity']['prefix']
 WEBLOGIN_PREFIX = astakos_services['astakos_weblogin']['prefix']
 ADMIN_PREFIX = astakos_services['astakos_admin']['prefix']
+KEYSTONE_ROOT_URL = join_urls(BASE_URL, KEYSTONE_PREFIX)
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -166,7 +167,6 @@ EMAILCHANGE_ACTIVATION_DAYS = getattr(
     settings, 'ASTAKOS_EMAILCHANGE_ACTIVATION_DAYS', 10)
 
 # Set the astakos main functions logging severity (None to disable)
-from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
 # Set how many objects should be displayed per page

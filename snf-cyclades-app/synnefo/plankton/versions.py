@@ -19,7 +19,7 @@ from django.http import HttpResponse
 import json
 
 from synnefo.cyclades_settings import IMAGE_ROOT_URL
-from synnefo.api.util import build_version_object
+from synnefo.util.api import build_version_object
 
 from snf_django.lib import api
 
@@ -42,7 +42,8 @@ VERSIONS = [
 ]
 
 
-@api.api_method(http_method='GET', user_required=False, logger=log)
+@api.api_method(http_method='GET', token_required=False, user_required=False,
+                logger=log)
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503

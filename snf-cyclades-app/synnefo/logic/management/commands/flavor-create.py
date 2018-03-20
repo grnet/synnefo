@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +15,12 @@
 
 from itertools import product
 from optparse import make_option
+import re
 
 from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
+from snf_django.management.utils import parse_bool
 from synnefo.db.models import Flavor, VolumeType
 
 from logging import getLogger
@@ -48,6 +50,18 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option("-n", "--dry-run", dest="dry_run", action="store_true"),
+        make_option(
+            '--public',
+            dest='public',
+            choices=["True", "False"],
+            metavar="True|False",
+            default="True",
+            help="Mark the flavors as public"),
+        make_option(
+            "--specs",
+            dest="specs",
+            help="Comma separated spec key value pairs "
+                 "Example --specs key1=value1,key2=value2")
     )
     args = "<cpu>[,<cpu>,...] " \
            "<ram>[,<ram>,...] " \
@@ -61,6 +75,7 @@ class Command(SynnefoCommand):
         cpus = args[0].split(',')
         rams = args[1].split(',')
         disks = args[2].split(',')
+        public = parse_bool(options['public'], strict=True)
 
         for i, r in enumerate(rams):
             value = int(r)
@@ -95,14 +110,32 @@ class Command(SynnefoCommand):
         for cpu, ram, disk, volume_type in flavors:
             if options["dry_run"]:
                 flavor = Flavor(cpu=cpu, ram=ram, disk=disk,
-                                volume_type=volume_type)
+                                volume_type=volume_type, public=public)
                 self.stdout.write("Creating flavor '%s'\n" % (flavor.name,))
             else:
+                specs = options.get('specs')
                 flavor, created = \
                     Flavor.objects.get_or_create(cpu=cpu, ram=ram, disk=disk,
                                                  volume_type=volume_type)
                 if created:
                     self.stdout.write("Created flavor '%s'\n" % (flavor.name,))
+
+                    flavor.public = public
+                    flavor.save()
+
+                    if specs:
+                        spec_regex = re.compile(r'(?P<key>.+?)=(?P<value>.+)$')
+                        specs = specs.split(',')
+                        for spec in specs:
+                            match = spec_regex.match(spec)
+                            if match is None:
+                                raise CommandError("Incorrect spec format. "
+                                                   "Expected <key>=<value>."
+                                                   " found: \'%s\'" % spec)
+                            k, v = match.group('key'), match.group('value')
+                            spec = flavor.specs.create(key=k)
+                            spec.value = v
+                            spec.save()
                 else:
                     self.stdout.write("Flavor '%s' already exists\n"
                                       % flavor.name)
@@ -111,4 +144,18 @@ class Command(SynnefoCommand):
                               " Use 'snf-manage flavor-modify' to" \
                               " restore this flavor\n" \
                               % flavor.name
+                        self.stdout.write(msg)
+                    elif flavor.public != public:
+                        status = 'public' if public else 'private'
+                        msg = "Flavor '%s' is not %s." \
+                              " Use 'snf-manage flavor-modify' to" \
+                              " make this flavor %s\n" \
+                              % (flavor.name, status, status)
+                        self.stdout.write(msg)
+
+                    if specs:
+                        msg = "In order to add/update specs to flavor %s, "\
+                              "use 'snf-manage flavor-modify %s "\
+                              "--spec-add %s'"\
+                              % (flavor.name, flavor.id, specs)
                         self.stdout.write(msg)

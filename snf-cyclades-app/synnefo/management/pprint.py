@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2015 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -298,6 +298,8 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
         ("deleted", server.deleted),
         ("action", server.action),
         ("task", server.task),
+        ("rescue", server.rescue),
+        ("rescue_image", server.rescue_image),
         ("task_job_id", server.task_job_id),
         ("backendjobid", server.backendjobid),
         ("backendopcode", server.backendopcode),
@@ -373,6 +375,15 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     pprint_table(stdout, server_dict.items(), None, separator=" | ",
                  title=title)
     stdout.write("\n")
+
+    hvparams = server_info.get('hvparams')
+    HVPARAMS_FIELDS = ('cdrom_image_path', 'boot_order')
+    if hvparams is not None:
+        hvparams_dict = OrderedDict([(k, hvparams.get(k))
+                                    for k in HVPARAMS_FIELDS])
+        pprint_table(stdout, hvparams_dict.items(), None, separator=" | ",
+                     title="Hypervisor parameters of Server %s in Ganeti" %
+                     server.id)
 
     nics = nics_from_instance(server_info)
     nics_keys = ["ip", "mac", "name", "network"]
@@ -482,10 +493,12 @@ def pprint_volume_type(volume_type, stdout=None, title=None):
     if title is None:
         title = "Volume Type %s" % volume_type.id
 
+    specs_str = ", ".join(str(s) for s in volume_type.specs.all())
     vtype_info = OrderedDict([
         ("name", volume_type.name),
         ("disk template", volume_type.disk_template),
         ("deleted", volume_type.deleted),
+        ("specs", specs_str),
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)
@@ -516,3 +529,27 @@ def pprint_floating_ip(ip, display_mails=False, stdout=None, title=None):
     ])
 
     pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)
+
+
+def pprint_flavor(flavor, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "Flavor %s" % flavor.name
+
+    flavor_specs = ', '.join([str(spec) for spec in flavor.specs.all()])
+
+    flavor_info = OrderedDict([
+        ("id", flavor.id),
+        ("name", flavor.name),
+        ("cpu", flavor.cpu),
+        ("ram", flavor.ram),
+        ("disk", flavor.disk),
+        ("volume_type", flavor.volume_type_id),
+        ("template", flavor.volume_type.disk_template),
+        ("allow_create", flavor.allow_create),
+        ("public", flavor.public),
+        ("specs", flavor_specs),
+    ])
+
+    pprint_table(stdout, flavor_info.items(), separator=" | ", title=title)

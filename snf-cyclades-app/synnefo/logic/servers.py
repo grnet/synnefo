@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from os import path
 
 from datetime import datetime
 from socket import getfqdn
@@ -27,15 +28,19 @@ from django.conf import settings
 from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.db.models import (NetworkInterface, VirtualMachine,
+from synnefo.db.models import (NetworkInterface, VirtualMachine, Volume,
                                VirtualMachineMetadata, IPAddressHistory,
-                               IPAddress, Network, Image, pooled_rapi_client)
+                               IPAddress, Network, Image, RescueImage,
+                               RescueProperties, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
 from synnefo.volume.util import get_volume, assign_volume_to_server
 from synnefo.logic import commands
+from synnefo.logic import server_attachments
+from synnefo.logic.policy import FlavorPolicy
 from synnefo import quotas
+from snf_django.lib import api
 
 log = logging.getLogger(__name__)
 
@@ -43,12 +48,12 @@ log = logging.getLogger(__name__)
 server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 
-@transaction.commit_on_success
-def create(userid, name, password, flavor, image_id, metadata={},
+def create(credentials, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
-           volumes=None, helper=False, user_projects=None,
-           shared_to_project=False, key_name=None):
+           volumes=None, helper=False, user_data="",
+           shared_to_project=False, key_names=None):
 
+    userid = credentials.userid
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
 
@@ -103,6 +108,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
             img.os = image["metadata"].get("OS", "unknown")
             img.osfamily = image["metadata"].get("OSFAMILY", "unknown")
             img.save()
+
     except Exception as e:
         # Image info is not critical. Continue if it fails for any reason
         log.warning("Failed to store image info: %s", e)
@@ -114,21 +120,55 @@ def create(userid, name, password, flavor, image_id, metadata={},
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, project, flavor)
 
+    if key_names is None:
+        key_names = []
+
+    auth_keys = '\n'.join([
+        util.get_keypair(key_name, userid).content for key_name in key_names
+    ])
+
+
+    vm_id, port_ids, volume_ids, origin_sizes = _db_create_server(
+        credentials, name, flavor, image, metadata, networks, use_backend,
+        project, volumes, helper, shared_to_project,
+        key_names)
+
+    return _create_server(vm_id, port_ids, volume_ids, flavor, image,
+                          personality, user_data, password, auth_keys,
+                          origin_sizes)
+
+
+@transaction.atomic_context
+def _db_create_server(
+        credentials, name, flavor, image, metadata, networks, use_backend,
+        project, volumes, helper, shared_to_project, key_names,
+        atomic_context=None):
+
+    rescue_properties = RescueProperties()
+    try:
+        rescue_properties.os = image["metadata"].get("OSFAMILY", '')
+        rescue_properties.os_family = image["metadata"].get("OS", '')
+    except KeyError as e:
+        log.error("Failed to parse iamge info: %s", e)
+
+    rescue_properties.save()
+
     # Create the ports for the server
-    ports = create_instance_ports(userid, user_projects, networks)
+    ports = create_instance_ports(credentials, networks)
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(name=name,
                                        backend=use_backend,
-                                       userid=userid,
+                                       userid=credentials.userid,
                                        project=project,
                                        shared_to_project=shared_to_project,
                                        imageid=image["id"],
                                        image_version=image["version"],
-                                       key_name=key_name,
+                                       key_names=json.dumps(key_names),
                                        flavor=flavor,
                                        operstate="BUILD",
+                                       rescue_properties=rescue_properties,
                                        helper=helper)
     log.info("Created entry in DB for VM '%s'", vm)
 
@@ -144,7 +184,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
             uuid = vol_info["source_uuid"]
-            v = get_volume(userid, user_projects, uuid, for_update=True,
+            v = get_volume(credentials, uuid, for_update=True,
                            non_deleted=True, exception=faults.BadRequest)
             if v.volume_type_id != server_vtype.id:
                 msg = ("Volume '%s' has type '%s' while flavor's volume type"
@@ -155,7 +195,8 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                         " status" % v.status)
             v.delete_on_termination = vol_info["delete_on_termination"]
         else:
-            v = _create_volume(user_id=userid, volume_type=server_vtype,
+            v = _create_volume(user_id=credentials.userid,
+                               volume_type=server_vtype,
                                project=project, index=index,
                                shared_to_project=shared_to_project,
                                **vol_info)
@@ -173,19 +214,15 @@ def create(userid, name, password, flavor, image_id, metadata={},
             meta_value=val,
             vm=vm)
 
-    public_key = None
-    if key_name is not None:
-        keypair = util.get_keypair(key_name, userid)
-        public_key = keypair.content
-
-    # Create the server in Ganeti.
-    vm = create_server(vm, ports, server_volumes, flavor, image, personality,
-                       password, public_key)
-
-    return vm
+    quotas.issue_and_accept_commission(vm, action="BUILD",
+                                       atomic_context=atomic_context)
+    return (vm.id,
+            [port.id for port in ports],
+            [volume.id for volume in server_volumes],
+            {v.id: v.origin_size for v in server_volumes})
 
 
-@transaction.commit_on_success
+@transaction.atomic
 def allocate_new_server(userid, project, flavor):
     """Allocate a new server to a Ganeti backend.
 
@@ -205,12 +242,21 @@ def allocate_new_server(userid, project, flavor):
     return use_backend
 
 
-@commands.server_command("BUILD")
-def create_server(vm, nics, volumes, flavor, image, personality, password,
-                  public_key):
+@transaction.atomic
+def _create_server(vm_id, port_ids, volume_ids, flavor, image, personality,
+                   user_data, password, auth_keys, origin_sizes):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
+
+    vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
+    nics = NetworkInterface.objects.select_for_update().filter(
+        id__in=port_ids)
+    volumes = Volume.objects.select_for_update().filter(
+        id__in=volume_ids)
+
+    for v in volumes:
+        v.origin_size = origin_sizes.get(v.id)
 
     # If the root volume has a provider, then inform snf-image to not fill
     # the volume with data
@@ -227,8 +273,11 @@ def create_server(vm, nics, volumes, flavor, image, personality, password,
         'img_properties': json.dumps(image['metadata']),
     }
 
-    if public_key is not None:
-        created_vm_params['auth_keys'] = public_key
+    if auth_keys:
+        created_vm_params['auth_keys'] = auth_keys
+
+    if user_data:
+        created_vm_params['cloud_userdata'] = user_data
 
     server_created.send(sender=vm, created_vm_params=created_vm_params)
 
@@ -251,78 +300,112 @@ def create_server(vm, nics, volumes, flavor, image, personality, password,
     log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
              vm.userid, vm, nics, vm.backend, str(jobID))
 
-    return jobID
+    # store the new task in the VM
+    if jobID is not None:
+        vm.task = "BUILD"
+        vm.task_job_id = jobID
+    vm.save()
+    return vm
 
 
-@commands.server_command("DESTROY")
-def destroy(vm, shutdown_timeout=None):
-    # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
-    # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
-    # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
-    if (vm.backendopcode == "OP_INSTANCE_CREATE" and
-       vm.backendjobstatus not in rapi.JOB_STATUS_FINALIZED and
-       backend.job_is_still_running(vm) and
-       not backend.vm_exists_in_backend(vm)):
-            raise faults.BuildInProgress("Server is being build")
-    log.info("Deleting VM %s", vm)
-    return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
+@transaction.atomic_context
+def destroy(server_id, shutdown_timeout=None, credentials=None,
+            atomic_context=None):
+    with commands.ServerCommand("DESTROY", server_id, credentials,
+                                atomic_context) as vm:
+        # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
+        # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
+        # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
+        if (vm.backendopcode == "OP_INSTANCE_CREATE" and
+           vm.backendjobstatus not in rapi.JOB_STATUS_FINALIZED and
+           backend.job_is_still_running(vm) and
+           not backend.vm_exists_in_backend(vm)):
+                raise faults.BuildInProgress("Server is being build")
+        log.info("Deleting VM %s", vm)
+        job_id = backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("START")
-def start(vm):
-    log.info("Starting VM %s", vm)
-    return backend.startup_instance(vm)
+@transaction.atomic_context
+def start(server_id, credentials, atomic_context=None):
+    with commands.ServerCommand(
+            "START", server_id, credentials, atomic_context) as vm:
+        log.info("Starting VM %s", vm)
+        job_id = backend.startup_instance(vm)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("STOP")
-def stop(vm, shutdown_timeout=None):
-    log.info("Stopping VM %s", vm)
-    return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
+@transaction.atomic_context
+def stop(server_id, shutdown_timeout=None, credentials=None,
+         atomic_context=None):
+    with commands.ServerCommand(
+            "STOP", server_id, credentials, atomic_context) as vm:
+        log.info("Stopping VM %s", vm)
+        job_id = backend.shutdown_instance(
+            vm, shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-@commands.server_command("REBOOT")
-def reboot(vm, reboot_type, shutdown_timeout=None):
-    if reboot_type not in ("SOFT", "HARD"):
-        raise faults.BadRequest("Malformed request. Invalid reboot"
-                                " type %s" % reboot_type)
-    log.info("Rebooting VM %s. Type %s", vm, reboot_type)
+@transaction.atomic_context
+def reboot(server_id, reboot_type, shutdown_timeout=None, credentials=None,
+           atomic_context=None):
+    with commands.ServerCommand(
+            "REBOOT", server_id, credentials, atomic_context) as vm:
+        if reboot_type not in ("SOFT", "HARD"):
+            raise faults.BadRequest("Malformed request. Invalid reboot"
+                                    " type %s" % reboot_type)
+        log.info("Rebooting VM %s. Type %s", vm, reboot_type)
 
-    return backend.reboot_instance(vm, reboot_type.lower(),
-                                   shutdown_timeout=shutdown_timeout)
+        job_id = backend.reboot_instance(vm, reboot_type.lower(),
+                                         shutdown_timeout=shutdown_timeout)
+        vm.record_job(job_id)
+        return vm
 
 
-def resize(vm, flavor):
+@transaction.atomic_context
+def resize(server_id, flavor_id, credentials=None, atomic_context=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    flavor = util.get_flavor(flavor_id, credentials, include_deleted=False,
+                             for_project=vm.project)
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
-    comm = commands.server_command("RESIZE", action_fields=action_fields)
-    return comm(_resize)(vm, flavor)
+    with commands.ServerCommand(
+            "RESIZE", server_id, credentials, atomic_context,
+            action_fields=action_fields) as vm:
+        old_flavor = vm.flavor
+        # User requested the same flavor
+        if old_flavor.id == flavor.id:
+            raise faults.BadRequest("Server '%s' flavor is already '%s'."
+                                    % (vm, flavor))
+        # Check that resize can be performed
+        if old_flavor.disk != flavor.disk:
+            raise faults.BadRequest("Cannot change instance's disk size.")
+        if old_flavor.volume_type_id != flavor.volume_type_id:
+            raise faults.BadRequest("Cannot change instance's volume type.")
+
+        log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
+        job_id = backend.resize_instance(
+            vm, vcpus=flavor.cpu, memory=flavor.ram)
+        vm.record_job(job_id)
+        return vm
 
 
-def _resize(vm, flavor):
-    old_flavor = vm.flavor
-    # User requested the same flavor
-    if old_flavor.id == flavor.id:
-        raise faults.BadRequest("Server '%s' flavor is already '%s'."
-                                % (vm, flavor))
-    # Check that resize can be performed
-    if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Cannot change instance's disk size.")
-    if old_flavor.volume_type_id != flavor.volume_type_id:
-        raise faults.BadRequest("Cannot change instance's volume type.")
-
-    log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
-    return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
-
-
-@transaction.commit_on_success
-def reassign(vm, project, shared_to_project):
+@transaction.atomic_context
+def reassign(server_id, project, shared_to_project, credentials=None,
+             atomic_context=None):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
     commands.validate_server_action(vm, "REASSIGN")
 
     if vm.project == project:
         if vm.shared_to_project != shared_to_project:
             log.info("%s VM %s to project %s",
-                "Sharing" if shared_to_project else "Unsharing",
-                vm, project)
+                     "Sharing" if shared_to_project else "Unsharing",
+                     vm, project)
             vm.shared_to_project = shared_to_project
             vm.volumes.filter(index=0, deleted=False)\
                       .update(shared_to_project=shared_to_project)
@@ -330,49 +413,97 @@ def reassign(vm, project, shared_to_project):
     else:
         action_fields = {"to_project": project, "from_project": vm.project}
         log.info("Reassigning VM %s from project %s to %s, shared: %s",
-                vm, vm.project, project, shared_to_project)
+                 vm, vm.project, project, shared_to_project)
         if not (vm.backend.public or
                 vm.backend.projects.filter(project=project).exists()):
-            raise faults.BadRequest("Cannot reassign VM. Target project "
-                                    "doesn't have access to the VM's backend.")
+            raise faults.Forbidden("Cannot reassign VM. Target project "
+                                   "doesn't have access to the VM's backend.")
+        if not FlavorPolicy.has_access_to_flavor(vm.flavor, credentials,
+                                                 project=project):
+            raise faults.Forbidden("Cannot reassign VM. Target project "
+                                   "doesn't have access to the VM's flavor.")
         vm.project = project
         vm.shared_to_project = shared_to_project
         vm.save()
-        vm.volumes.filter(index=0, deleted=False).update(project=project,
-            shared_to_project=shared_to_project)
+        vm.volumes.filter(index=0, deleted=False)\
+                  .update(project=project, shared_to_project=shared_to_project)
         quotas.issue_and_accept_commission(vm, action="REASSIGN",
-                action_fields=action_fields)
+                                           action_fields=action_fields,
+                                           atomic_context=atomic_context)
     return vm
 
 
-@commands.server_command("SET_FIREWALL_PROFILE")
-def set_firewall_profile(vm, profile, nic):
-    log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
+@transaction.atomic_context
+def set_firewall_profile(server_id, profile, nic_id, credentials=None,
+                         atomic_context=None):
+    with commands.ServerCommand("SET_FIREWALL_PROFILE", server_id,
+                                credentials, atomic_context) as vm:
+        nic = util.get_vm_nic(vm, nic_id)
+        log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
 
-    if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
-        raise faults.BadRequest("Unsupported firewall profile")
-    backend.set_firewall_profile(vm, profile=profile, nic=nic)
-    return None
-
-
-@commands.server_command("CONNECT")
-def connect(vm, network, port=None):
-    if port is None:
-        port = _create_port(vm.userid, network)
-    associate_port_with_machine(port, vm)
-
-    log.info("Creating NIC %s with IPv4 Address %s", port, port.ipv4_address)
-
-    return backend.connect_to_network(vm, port)
+        if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
+            raise faults.BadRequest("Unsupported firewall profile")
+        backend.set_firewall_profile(vm, profile=profile, nic=nic)
+        return vm
 
 
-@commands.server_command("DISCONNECT")
-def disconnect(vm, nic):
-    log.info("Removing NIC %s from VM %s", nic, vm)
-    return backend.disconnect_from_network(vm, nic)
+def connect_port(vm, network, port):
+    with commands.ServerCommand("CONNECT", vm):
+        associate_port_with_machine(port, vm)
+        log.info("Creating NIC %s with IPv4 Address %s",
+                 port, port.ipv4_address)
+        job_id = backend.connect_to_network(vm, port)
+        vm.record_job(job_id)
+        return vm
 
 
-def console(vm, console_type):
+def disconnect_port(vm, nic):
+    with commands.ServerCommand("DISCONNECT", vm):
+        log.info("Removing NIC %s from VM %s", nic, vm)
+        job_id = backend.disconnect_from_network(vm, nic)
+        vm.record_job(job_id)
+        return vm
+
+
+@transaction.atomic
+def rescue(server_id, rescue_image_ref=None, credentials=None):
+
+    with commands.ServerCommand(
+            "RESCUE", server_id, credentials=credentials) as vm:
+        if rescue_image_ref is None:
+            # If the user does not provide an image, the system should decide
+            # one based on the VM rescue properties
+            rescue_properties = vm.rescue_properties
+            rescue_image = util.get_rescue_image(properties=rescue_properties)
+        else:
+            rescue_image = util.get_rescue_image(image_id=rescue_image_ref)
+
+        # Rescue image field acts a 'RESCUING' state and should be assigned
+        # when a rescue action is issued
+        location = rescue_image.location
+
+        if rescue_image.location_type == RescueImage.FILETYPE_FILE:
+            location = path.join(settings.RESCUE_IMAGE_PATH, location)
+
+        vm.rescue_image = rescue_image
+        log.info("Rescuing VM %s with image %s", vm, location)
+        job_id = backend.rescue_instance(vm, location)
+        vm.record_job(job_id)
+        return vm
+
+
+@transaction.atomic
+def unrescue(server_id, credentials=None):
+    with commands.ServerCommand(
+            "UNRESCUE", server_id, credentials=credentials) as vm:
+        log.info("Unrescuing VM %s", vm)
+        job_id = backend.unrescue_instance(vm)
+        vm.record_job(job_id)
+        return vm
+
+
+@transaction.atomic_context
+def console(server_id, console_type, credentials=None, atomic_context=None):
     """Arrange for an OOB console of the specified type
 
     This method arranges for an OOB console of the specified type.
@@ -383,6 +514,9 @@ def console(vm, console_type):
     VNC connection info to the caller.
 
     """
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+
     log.info("Get console  VM %s, type %s", vm, console_type)
 
     if vm.operstate != "STARTED":
@@ -418,7 +552,8 @@ def console(vm, console_type):
         backend.process_op_status(vm, etime=datetime.now(), jobid=0,
                                   opcode="OP_INSTANCE_SHUTDOWN",
                                   status="success",
-                                  logmsg="Reconciliation simulated event")
+                                  logmsg="Reconciliation simulated event",
+                                  atomic_context=atomic_context)
         raise faults.BadRequest('Server not in ACTIVE state.')
 
     # Let vncauthproxy decide on the source port.
@@ -462,8 +597,11 @@ def console(vm, console_type):
     return console
 
 
-def rename(server, new_name):
+@transaction.atomic
+def rename(server_id, new_name, credentials=None):
     """Rename a VirtualMachine."""
+    server = util.get_vm(server_id, credentials,
+                         for_update=True, non_deleted=True, non_suspended=True)
     utils.check_name_length(new_name,
                             VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
@@ -475,12 +613,39 @@ def rename(server, new_name):
     return server
 
 
+@transaction.atomic_context
+def suspend(server_id, credentials=None, atomic_context=None):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot suspend vm.")
+    with commands.ServerCommand("SUSPEND", server_id,
+                                credentials, atomic_context) as vm:
+        vm.suspended = True
+        vm.save()
+        log.info("Suspended %s", vm)
+        return vm
+
+
+@transaction.atomic_context
+def unsuspend(server_id, credentials=None, atomic_context=None):
+    if not credentials.is_admin:
+        raise faults.Forbidden("Cannot unsuspend vm.")
+    with commands.ServerCommand("UNSUSPEND", server_id,
+                                credentials, atomic_context) as vm:
+        vm.suspended = False
+        vm.save()
+        log.info("Unsuspended %s", vm)
+        return vm
+
+
 def show_owner_change(vmid, from_user, to_user):
     return "[OWNER CHANGE vm: %s, from: %s, to: %s]" % (
         vmid, from_user, to_user)
 
 
-def change_owner(server, new_owner):
+@transaction.atomic
+def change_owner(server_id, new_owner, credentials):
+    server = util.get_vm(server_id, credentials,
+                         for_update=True, non_deleted=True)
     old_owner = server.userid
     server.userid = new_owner
     old_project = server.project
@@ -524,20 +689,60 @@ def change_owner(server, new_owner):
             action_reason=show_owner_change(server.id, old_owner, new_owner))
 
 
-@transaction.commit_on_success
-def create_port(*args, **kwargs):
-    vm = kwargs.get("machine", None)
-    if vm is None and len(args) >= 3:
-        vm = args[2]
-    if vm is not None:
+@transaction.atomic
+def add_floating_ip(server_id, address, credentials):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+    floating_ip = util.get_floating_ip_by_address(
+        credentials, address, for_update=True)
+
+    userid = vm.userid
+    _create_port(userid, floating_ip.network, machine=vm,
+                use_ipaddress=floating_ip)
+    log.info("User %s attached floating IP %s to VM %s, address: %s,"
+             " network %s", credentials.userid, floating_ip.id, vm.id,
+             floating_ip.address, floating_ip.network_id)
+
+
+@transaction.atomic
+def create_port(credentials, network_id, machine_id=None,
+                address=None, name="", security_groups=None,
+                device_owner=None):
+    user_id = credentials.userid
+    vm = None
+    if machine_id is not None:
+        vm = util.get_vm(machine_id, credentials,
+                         for_update=True, non_deleted=True, non_suspended=True)
         if vm.nics.count() == settings.GANETI_MAX_NICS_PER_INSTANCE:
             raise faults.BadRequest("Maximum ports per server limit reached")
-    return _create_port(*args, **kwargs)
+
+    network = util.get_network(network_id, credentials,
+                               non_deleted=True, for_update=True)
+
+    ipaddress = None
+    if network.public:
+        # Creating a port to a public network is only allowed if the user has
+        # already a floating IP address in this network which is specified
+        # as the fixed IP address of the port
+        if address is None:
+            msg = ("'fixed_ips' attribute must contain a floating IP address"
+                   " in order to connect to a public network.")
+            raise faults.BadRequest(msg)
+        ipaddress = util.get_floating_ip_by_address(credentials,
+                                                    address,
+                                                    for_update=True)
+    port = _create_port(user_id, network, machine=vm, use_ipaddress=ipaddress,
+                        name=name,
+                        security_groups=security_groups,
+                        device_owner=device_owner)
+
+    log.info("User %s created port %s, network: %s, machine: %s, ip: %s",
+             user_id, port.id, network, vm, ipaddress)
+    return port
 
 
 def _create_port(userid, network, machine=None, use_ipaddress=None,
-                 address=None, name="", security_groups=None,
-                 device_owner=None):
+                 name="", security_groups=None, device_owner=None):
     """Create a new port on the specified network.
 
     Create a new Port(NetworkInterface model) on the specified Network. If
@@ -558,10 +763,11 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
                             "Port name is too long")
 
     ipaddress = None
-    if use_ipaddress is not None:
-        # Use an existing IPAddress object.
-        ipaddress = use_ipaddress
-        if ipaddress and (ipaddress.network_id != network.id):
+    if isinstance(use_ipaddress, IPAddress):
+        # Lock IPAddress instance
+        ipaddress = IPAddress.objects\
+                .select_for_update().get(id=use_ipaddress.id)
+        if ipaddress.network_id != network.id:
             msg = "IP Address %s does not belong to network %s"
             raise faults.Conflict(msg % (ipaddress.address, network.id))
     else:
@@ -573,10 +779,10 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         # the user specified or a random one.
         if network.subnets.filter(ipversion=4).exists():
             ipaddress = ips.allocate_ip(network, userid=userid,
-                                        address=address)
-        elif address is not None:
+                                        address=use_ipaddress)
+        elif use_ipaddress is not None:
             raise faults.BadRequest("Address %s is not a valid IP for the"
-                                    " defined network subnets" % address)
+                                    " defined network subnets" % use_ipaddress)
 
     if ipaddress is not None and ipaddress.nic is not None:
         raise faults.Conflict("IP address '%s' is already in use" %
@@ -585,7 +791,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     port = NetworkInterface.objects.create(network=network,
                                            state="DOWN",
                                            userid=userid,
-                                           device_owner=None,
+                                           device_owner=device_owner,
                                            public=network.public,
                                            name=name)
 
@@ -600,7 +806,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
 
     if machine is not None:
         # Connect port to the instance.
-        machine = connect(machine, network, port)
+        machine = connect_port(machine, network, port)
         jobID = machine.task_job_id
         log.info("Created Port %s with IP %s. Ganeti Job: %s",
                  port, ipaddress, jobID)
@@ -608,6 +814,23 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         log.info("Created Port %s with IP %s not attached to any instance",
                  port, ipaddress)
 
+    return port
+
+
+@transaction.atomic
+def update_port(port_id, credentials, name=None, security_groups=None):
+    port = util.get_port(port_id, credentials, for_update=True)
+    if name:
+        port.name = name
+
+    if security_groups:
+        #clear the old security groups
+        port.security_groups.clear()
+
+        #add the new groups
+        port.security_groups.add(*security_groups)
+    port.save()
+    log.info("User %s updated port %s", credentials.userid, port_id)
     return port
 
 
@@ -640,8 +863,49 @@ def associate_port_with_machine(port, machine):
     return port
 
 
-@transaction.commit_on_success
-def delete_port(port):
+@transaction.atomic
+def remove_floating_ip(server_id, address, credentials):
+    vm = util.get_vm(server_id, credentials,
+                     for_update=True, non_deleted=True, non_suspended=True)
+
+    # This must be replaced by proper permission handling
+    # This is currently needed to allow the user to remove a shared IP from a
+    # VM that does not belong to the user, nor it is shared to a common
+    # project.
+    ip_credentials = api.Credentials(vm.userid, credentials.user_projects)
+    floating_ip = util.get_floating_ip_by_address(
+        ip_credentials, address, for_update=True)
+    if floating_ip.nic is None:
+        raise faults.BadRequest("Floating IP %s not attached to instance"
+                                % address)
+
+    _delete_port(floating_ip.nic)
+
+    log.info("User %s detached floating IP %s from VM %s",
+             credentials.userid, floating_ip.id, vm.id)
+
+
+@transaction.atomic
+def delete_port(port_id, credentials):
+    user_id = credentials.userid
+    port = util.get_port(port_id, credentials, for_update=True)
+
+    # Deleting port that is connected to a public network is allowed only if
+    # the port has an associated floating IP address.
+    if port.network.public and not port.ips.filter(floating_ip=True,
+                                                   deleted=False).exists():
+        raise faults.Forbidden("Cannot disconnect from public network.")
+
+    vm = port.machine
+    if vm is not None and vm.suspended:
+        raise faults.Forbidden("Administratively Suspended VM.")
+
+    _delete_port(port)
+
+    log.info("User %s deleted port %s", user_id, port_id)
+
+
+def _delete_port(port):
     """Delete a port by removing the NIC card from the instance.
 
     Send a Job to remove the NIC card from the instance. The port
@@ -652,7 +916,7 @@ def delete_port(port):
 
     vm = port.machine
     if vm is not None and not vm.deleted:
-        vm = disconnect(port.machine, port)
+        vm = disconnect_port(port.machine, port)
         log.info("Removing port %s, Job: %s", port, vm.task_job_id)
     else:
         backend.remove_nic_ips(port)
@@ -662,23 +926,23 @@ def delete_port(port):
     return port
 
 
-def create_instance_ports(user_id, user_projects, networks=None):
+def create_instance_ports(credentials, networks=None):
     # First connect the instance to the networks defined by the admin
-    forced_ports = create_ports_for_setting(user_id, category="admin")
+    forced_ports = create_ports_for_setting(credentials, category="admin")
     if networks is None:
         # If the user did not asked for any networks, connect instance to
         # default networks as defined by the admin
-        ports = create_ports_for_setting(user_id, category="default")
+        ports = create_ports_for_setting(credentials, category="default")
     else:
         # Else just connect to the networks that the user defined
-        ports = create_ports_for_request(user_id, user_projects, networks)
+        ports = create_ports_for_request(credentials, networks)
     total_ports = forced_ports + ports
     if len(total_ports) > settings.GANETI_MAX_NICS_PER_INSTANCE:
         raise faults.BadRequest("Maximum ports per server limit reached")
     return total_ports
 
 
-def create_ports_for_setting(user_id, category):
+def create_ports_for_setting(credentials, category):
     if category == "admin":
         network_setting = settings.CYCLADES_FORCED_SERVER_NETWORKS
         exception = faults.ServiceUnavailable
@@ -698,7 +962,8 @@ def create_ports_for_setting(user_id, category):
         for network_id in network_ids:
             success = False
             try:
-                ports.append(_port_from_setting(user_id, network_id, category))
+                ports.append(
+                    _port_from_setting(credentials, network_id, category))
                 # Port successfully created in one of the networks. Skip the
                 # the rest.
                 success = True
@@ -724,20 +989,20 @@ def create_ports_for_setting(user_id, category):
     return ports
 
 
-def _port_from_setting(user_id, network_id, category):
+def _port_from_setting(credentials, network_id, category):
     # TODO: Fix this..you need only IPv4 and only IPv6 network
     if network_id == "SNF:ANY_PUBLIC_IPV4":
-        return create_public_ipv4_port(user_id, user_projects=None,
+        return create_public_ipv4_port(credentials.no_share(),
                                        category=category)
     elif network_id == "SNF:ANY_PUBLIC_IPV6":
-        return create_public_ipv6_port(user_id, category=category)
+        return create_public_ipv6_port(credentials, category=category)
     elif network_id == "SNF:ANY_PUBLIC":
         try:
-            return create_public_ipv4_port(user_id, user_projects=None,
+            return create_public_ipv4_port(credentials.no_share(),
                                            category=category)
         except faults.Conflict as e1:
             try:
-                return create_public_ipv6_port(user_id, category=category)
+                return create_public_ipv6_port(credentials, category=category)
             except faults.Conflict as e2:
                 log.error("Failed to connect server to a public IPv4 or IPv6"
                           " network. IPv4: %s, IPv6: %s", e1, e2)
@@ -746,16 +1011,16 @@ def _port_from_setting(user_id, network_id, category):
                 raise faults.Conflict(msg)
     else:  # Case of network ID
         if category in ["user", "default"]:
-            return _port_for_request(user_id, {"uuid": network_id})
+            return _port_for_request(credentials, {"uuid": network_id})
         elif category == "admin":
-            network = util.get_network(network_id, user_id, None,
+            network = util.get_network(network_id, credentials.no_share(),
                                        non_deleted=True)
-            return _create_port(user_id, network)
+            return _create_port(credentials.userid, network)
         else:
             raise ValueError("Unknown category: %s" % category)
 
 
-def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
+def create_public_ipv4_port(credentials, network=None, address=None,
                             category="user"):
     """Create a port in a public IPv4 network.
 
@@ -765,11 +1030,12 @@ def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
     create a port to the public network (without floating IPs or quotas).
 
     """
+    user_id = credentials.userid
     if category in ["user", "default"]:
         if address is None:
             ipaddress = ips.get_free_floating_ip(user_id, network)
         else:
-            ipaddress = util.get_floating_ip_by_address(user_id, user_projects,
+            ipaddress = util.get_floating_ip_by_address(credentials,
                                                         address,
                                                         for_update=True)
     elif category == "admin":
@@ -784,20 +1050,20 @@ def create_public_ipv4_port(user_id, user_projects, network=None, address=None,
     return _create_port(user_id, network, use_ipaddress=ipaddress)
 
 
-def create_public_ipv6_port(user_id, category=None):
+def create_public_ipv6_port(credentials, category=None):
     """Create a port in a public IPv6 only network."""
     networks = Network.objects.filter(public=True, deleted=False,
                                       drained=False, subnets__ipversion=6)\
                               .exclude(subnets__ipversion=4)
     if networks:
-        return _create_port(user_id, networks[0])
+        return _create_port(credentials.userid, networks[0])
     else:
         msg = "No available IPv6 only network!"
         log.error(msg)
         raise faults.Conflict(msg)
 
 
-def create_ports_for_request(user_id, user_projects, networks):
+def create_ports_for_request(credentials, networks):
     """Create the server ports requested by the user.
 
     Create the ports for the new servers as requested in the 'networks'
@@ -812,37 +1078,61 @@ def create_ports_for_request(user_id, user_projects, networks):
     """
     if not isinstance(networks, list):
         raise faults.BadRequest("Malformed request. Invalid 'networks' field")
-    return [_port_for_request(user_id, user_projects, network)
+    return [_port_for_request(credentials, network)
             for network in networks]
 
 
-def _port_for_request(user_id, user_projects, network_dict):
+def _port_for_request(credentials, network_dict):
     if not isinstance(network_dict, dict):
         raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     port_id = network_dict.get("port")
     network_id = network_dict.get("uuid")
     if port_id is not None:
-        return util.get_port(port_id, user_id, user_projects, for_update=True)
+        return util.get_port(port_id, credentials, for_update=True)
     elif network_id is not None:
         address = network_dict.get("fixed_ip")
-        network = util.get_network(network_id, user_id, user_projects,
+        network = util.get_network(network_id, credentials,
                                    non_deleted=True)
         if network.public:
             if network.subnet4 is not None:
                 if "fixed_ip" not in network_dict:
-                    return create_public_ipv4_port(user_id, user_projects,
-                                                   network)
+                    return create_public_ipv4_port(credentials, network)
                 elif address is None:
                     msg = "Cannot connect to public network"
                     raise faults.BadRequest(msg % network.id)
                 else:
-                    return create_public_ipv4_port(user_id, user_projects,
+                    return create_public_ipv4_port(credentials,
                                                    network, address)
             else:
                 raise faults.Forbidden("Cannot connect to IPv6 only public"
                                        " network '%s'" % network.id)
         else:
-            return _create_port(user_id, network, address=address)
+            return _create_port(
+                credentials.userid, network, use_ipaddress=address)
     else:
         raise faults.BadRequest("Network 'uuid' or 'port' attribute"
                                 " is required.")
+
+
+@transaction.atomic_context
+def attach_volume(server_id, volume_id, credentials, atomic_context=None):
+    user_id = credentials.userid
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+
+    volume = get_volume(credentials, volume_id,
+                        for_update=True, non_deleted=True,
+                        exception=faults.BadRequest)
+    server_attachments.attach_volume(vm, volume, atomic_context)
+    log.info("User %s attached volume %s to VM %s", user_id, volume.id, vm.id)
+    return volume
+
+
+@transaction.atomic
+def detach_volume(server_id, volume_id, credentials):
+    user_id = credentials.userid
+    vm = util.get_vm(server_id, credentials, for_update=True, non_deleted=True)
+    volume = get_volume(credentials, volume_id,
+                        for_update=True, non_deleted=True,
+                        exception=faults.BadRequest)
+    server_attachments.detach_volume(vm, volume)
+    log.info("User %s detached volume %s to VM %s", user_id, volume.id, vm.id)

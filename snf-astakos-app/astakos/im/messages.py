@@ -102,6 +102,7 @@ OWNER_CANNOT_LEAVE_GROUP = (
 # Field validation fields
 REQUIRED_FIELD = 'This field is required.'
 EMAIL_USED = 'There is already an account with this email address.'
+ACTIVE_USER_SET_EMAIL = 'Failed to set email, user is active.'
 SHIBBOLETH_EMAIL_USED = (
     'This email is already associated with another shibboleth account.')
 SHIBBOLETH_INACTIVE_ACC = (
@@ -331,6 +332,9 @@ AUTH_PROVIDER_ACCOUNT_INACTIVE = 'Your account is disabled.'
 AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
     "You can add {method_prompt} to your existing account from your "
     " <a href='{profile_url}'>profile page</a>")
+
+LOCAL_PROVIDER_ACTIVE = "Local provider is already active."
+SHIBBOLETH_NOT_FOUND = "Shibboleth provider not found."
 
 # Email subjects
 _SITENAME = branding_settings.SERVICE_NAME

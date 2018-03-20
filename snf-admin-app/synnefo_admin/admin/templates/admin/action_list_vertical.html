@@ -4,7 +4,11 @@
         <div class="btn-group-vertical">
         {% for op, action in action_dict.items %}
         <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-caution="{{ action.caution_level }}" class="disabled custom-btn">
+                {% if action.name == "Set e&#8209;mail" %}
+                <span data-toggle="popover" data-content="Without verification" data-trigger="hover" data-placement="bottom">{{ action.name|safe }}</span>
+                {% else %}
                 <span>{{ action.name|safe }}</span>
+                {% endif %}
             </a>
         {% endfor %}
         </div>

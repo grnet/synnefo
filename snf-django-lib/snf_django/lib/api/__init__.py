@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A. and individual contributors
+# Copyright (C) 2010-2017 GRNET S.A. and individual contributors
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,6 +35,22 @@ import itertools
 
 log = getLogger(__name__)
 django_logger = getLogger("django.request")
+
+
+class Credentials(object):
+    def __init__(self, userid, user_projects=None, is_admin=False,
+                 force_quota=False):
+        self.userid = userid
+        if user_projects is None:
+            user_projects = []
+        self.user_projects = user_projects
+        self.is_admin = is_admin
+        self.force_quota = force_quota
+
+    def no_share(self):
+        return Credentials(self.userid,
+                           is_admin=self.is_admin,
+                           force_quota=self.force_quota)
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
@@ -94,7 +110,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
                     request.user_uniq = _user_access["id"]
                     request.user_projects = _user_access.get("projects", None)
                     request.user = user_info
-
+                    request.credentials = Credentials(
+                        request.user_uniq, request.user_projects)
 
                 # Get the response object
                 response = func(request, *args, **kwargs)

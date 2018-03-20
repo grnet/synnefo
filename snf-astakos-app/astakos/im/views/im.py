@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2016 GRNET S.A.
+# Copyright (C) 2010-2017 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -131,7 +131,7 @@ def index(request, authenticated_redirect='landing',
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-@transaction.commit_on_success
+@transaction.atomic
 def update_token(request):
     """
     Update api token view.
@@ -146,7 +146,7 @@ def update_token(request):
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @valid_astakos_user_required
-@transaction.commit_on_success
+@transaction.atomic
 def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
@@ -274,7 +274,7 @@ def api_access(request, template_name='im/api_access.html',
 @login_required
 @cookie_fix
 @signed_terms_required
-@transaction.commit_on_success
+@transaction.atomic
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
@@ -364,7 +364,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                                                         extra_context))
 
 
-@transaction.commit_on_success
+@transaction.atomic
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def signup(request, template_name='im/signup.html', on_success='index',
@@ -491,9 +491,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
             message = result.message
             activation_backend.send_result_notifications(result, user)
 
-            # commit user entry
-            transaction.commit()
-
             if user and user.is_active:
                 # activation backend directly activated the user
                 # log him in
@@ -615,7 +612,7 @@ def logout(request, template='registration/logged_out.html',
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
@@ -725,7 +722,7 @@ def approval_terms(request, term_id=None,
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def request_change_email(request,
                  email_to_new_template_name='registration/email_change_email_new_email.txt',
                  form_template_name='registration/email_change_form.html',
@@ -777,51 +774,45 @@ def request_change_email(request,
 
 @require_http_methods(["GET"])
 @cookie_fix
-@transaction.commit_on_success
-def change_email(request, activation_key=None,
-                 confirm_template_name='registration/email_change_done.html',
-                 extra_context=None):
-    extra_context = extra_context or {}
+def change_email(request, activation_key=None):
+    try:
+        return _change_email(request, activation_key)
+    except ValueError as e:
+        messages.error(request, e)
+        return HttpResponseRedirect(reverse('index'))
+
+
+@transaction.atomic
+def _change_email(request, activation_key=None):
 
     if not activation_key:
         return HttpResponseNotFound()
 
     try:
-        try:
-            email_change = EmailChange.objects.get(
-                activation_key=activation_key)
-        except EmailChange.DoesNotExist:
-            logger.error("[change-email] Invalid or used activation "
-                         "code, %s", activation_key)
-            raise Http404
+        email_change = EmailChange.objects.get(
+            activation_key=activation_key)
+    except EmailChange.DoesNotExist:
+        logger.error("[change-email] Invalid or used activation "
+                     "code, %s", activation_key)
+        raise Http404
 
-        if (
-            request.user.is_authenticated() and
-            request.user == email_change.user or not
-            request.user.is_authenticated()
-        ):
-            user = EmailChange.objects.change_email(activation_key)
-            msg = _(astakos_messages.EMAIL_CHANGED)
-            messages.success(request, msg)
-            return HttpResponseRedirect(reverse('edit_profile'))
-        else:
-            logger.error("[change-email] Access from invalid user, %s %s",
-                         email_change.user, request.user.log_display)
-            raise PermissionDenied
-    except ValueError, e:
-        messages.error(request, e)
-        transaction.rollback()
-        return HttpResponseRedirect(reverse('index'))
-
-    return render_response(confirm_template_name,
-                           modified_user=user if 'user' in locals()
-                           else None,
-                           context_instance=get_context(request,
-                                                        extra_context))
+    if (
+        request.user.is_authenticated() and
+        request.user == email_change.user or not
+        request.user.is_authenticated()
+    ):
+        user = EmailChange.objects.change_email(activation_key)
+        msg = _(astakos_messages.EMAIL_CHANGED)
+        messages.success(request, msg)
+        return HttpResponseRedirect(reverse('edit_profile'))
+    else:
+        logger.error("[change-email] Access from invalid user, %s %s",
+                     email_change.user, request.user.log_display)
+        raise PermissionDenied
 
 
 @cookie_fix
-@transaction.commit_on_success
+@transaction.atomic
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 

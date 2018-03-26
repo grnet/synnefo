@@ -281,9 +281,9 @@ class VolumesTest(QuotaAssertions, django.test.TransactionTestCase):
             volumes.create(**kwargs)
 
         # Conflicting volume types (ext_archipelago != file)
-        conflict_msg = "Cannot create a volume with type '{}' to a server" \
-                       " with volume type '{}'.".format(
-                           self.archip_vt.id, self.file_vt.id)
+        conflict_msg = "Cannot create a volume with template '{}' to a " \
+                       "server with volume template '{}'".format(
+                            self.archip_vt.template, self.file_vt.template)
         kwargs = self.create_kwargs(volume_type_id=self.archip_vt.id,
                                     server_id=self.file_vm.id)
         with self.assertRaisesMessage(faults.BadRequest, conflict_msg):
@@ -465,7 +465,7 @@ class VolumesTest(QuotaAssertions, django.test.TransactionTestCase):
             volumes.attach(self.archip_vm.id, vol.id, self.credentials)
 
         # Fail to attach a volume to a server with a different volume type
-        message = "Volume and server must have the same volume type"
+        message = "Volume and server must have the same volume template"
         vol.status = "AVAILABLE"
         vol.save()
         with self.assertRaises(faults.BadRequest) as e:

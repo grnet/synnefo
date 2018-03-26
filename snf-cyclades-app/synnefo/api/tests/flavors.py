@@ -120,7 +120,7 @@ class FlavorAPITest(BaseAPITest):
 
     def test_flavor_list_filter_public(self):
         """Test listing only public flavors"""
-        response = self.myget('flavors/detail', data={'is_public': 'true'})
+        response = self.myget('flavors/detail', data={'SNF:is_public': 'true'})
         self.assertSuccess(response)
 
         api_flavors = json.loads(response.content)['flavors']
@@ -130,7 +130,7 @@ class FlavorAPITest(BaseAPITest):
 
     def test_flavor_list_filter_non_public(self):
         """Test listing only non-public flavors"""
-        response = self.myget('flavors/detail', data={'is_public': 'false'})
+        response = self.myget('flavors/detail', data={'SNF:is_public': 'false'})
         self.assertSuccess(response)
 
         api_flavors = json.loads(response.content)['flavors']
@@ -158,7 +158,7 @@ class FlavorAPITest(BaseAPITest):
     def test_flavor_list_filter_public_and_project(self):
         """Test listing based public flag and project access"""
         response = self.myget('flavors/detail',
-                              data={'is_public': True,
+                              data={'SNF:is_public': True,
                                     'SNF:flavor-access': self.project1})
         self.assertSuccess(response)
 
@@ -171,7 +171,7 @@ class FlavorAPITest(BaseAPITest):
                 self.assertTrue(access in self.projects)
 
         response = self.myget('flavors/detail',
-                              data={'is_public': False,
+                              data={'SNF:is_public': False,
                                     'SNF:flavor-access': self.project1})
         self.assertSuccess(response)
 

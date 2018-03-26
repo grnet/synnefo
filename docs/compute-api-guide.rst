@@ -539,18 +539,21 @@ Request body contents::
       ...
   }
 
-=========== ====================== ======== ==========
-Attributes  Description            Cyclades OS/Compute
-=========== ====================== ======== ==========
-name        The server name        ✔        ✔
-imageRef    Image id               ✔        ✔
-flavorRef   Resources flavor       ✔        ✔
-personality Personality contents   ✔        ✔
-metadata    Custom metadata        ✔        ✔
-tags        Custom tags            ✔        ✔
-adminPass   Administrator Password ✔        ✔
-project     Project assignment     ✔        **✘**
-=========== ====================== ======== ==========
+============= ====================== ======== ==========
+Attributes    Description            Cyclades OS/Compute
+============= ====================== ======== ==========
+name          The server name        ✔        ✔
+imageRef      Image id               ✔        ✔
+flavorRef     Resources flavor       ✔        ✔
+user_data     VM user provided data  ✔        ✔
+personality   Personality contents   ✔        ✔
+metadata      Custom metadata        ✔        ✔
+key_name      Key pair name          ✔        ✔
+SNF:key_names Key pair name list     ✔        **✘**
+tags          Custom tags            ✔        ✔
+adminPass     Administrator Password ✔        ✔
+project       Project assignment     ✔        **✘**
+============= ====================== ======== ==========
 
 * **name** can be any string
 
@@ -567,6 +570,15 @@ project     Project assignment     ✔        **✘**
   * tags consist of 60 characters at most
   * up to 50 tags per virtual server are allowed
   * tags are non-empty and cannot contain characters '/' and ','
+
+* **user_data** (optional) are configuration information of scripts to use upon
+  VM launch. Those data are generally consumed by services running inside the
+  VM like cloud-init. Must be Base64 encoded.
+
+* **key_name** (optional) the name of the key pair to be injected into the VM
+
+* **SNF:key_names** (optional) A list of key pair names to be injected to the
+  VM. This cannot be used in conjunction with *key_name*.
 
 * **project** (optional) is the project where the VM is to be assigned. If not
   given, user's system project is assumed (identified with the same uuid as the
@@ -609,9 +621,9 @@ owner                  File owner          ✔        **✘**
 
 .. rubric:: Response
 
-=========================== =====================
+=========================== =============================================
 Return Code                 Description
-=========================== =====================
+=========================== =============================================
 200 (OK)                    Request succeeded
 400 (Bad Request)           Malformed request data
 401 (Unauthorized)          Missing or expired user token
@@ -623,7 +635,7 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   No available backends or service currently
 \                           unavailable
-=========================== =====================
+=========================== ============================================
 
 |
 
@@ -2214,7 +2226,7 @@ Request Parameter          Value                Cyclades OS/Compute
 ========================== ==================== ======== ==========
 json                       Respond in json      default  **✘**
 xml                        Respond in xml       ✔        **✘**
-os-flavor-access:is_public Flavor visibility    ✔        ✔
+SNF:is_public              Flavor visibility    ✔        **✘**
 SNF:flavor-access          Project access       ✔        **✘**
 ========================== ==================== ======== ==========
 

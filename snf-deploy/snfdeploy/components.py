@@ -907,8 +907,8 @@ class Network(base.Component):
     @base.run_cmds
     def initialize(self):
         return [
-            "/etc/init.d/rc.local start",
-            "/etc/init.d/ferm start",
+            "systemctl restart rc.local",
+            "systemctl restart ferm",
             ]
 
     @base.run_cmds
@@ -1539,7 +1539,12 @@ awk 'END {print $1}')""" % (cpu_flavor, int(ram_flavor) * 1024, disk_flavor,
 
         # Get an image by parsing the `snf-manage image-list` command.
         image_uuid = "$(snf-manage image-list | awk 'END {print $1}')"
+        # TODO: This should probably be handled in the snf-manage command
         cmd = """
+for i in $(snf-manage server-list --filter-by=helper=true,operstate=ERROR \
+         | tail -n +3 | awk '{print $1}');
+    do snf-manage server-remove -f $i
+done
 snf-manage helper-servers-sync --flavor %s --user %s --password %s --image %s
 """ % (flavor_id, context.user_uuid, config.user_passwd, image_uuid)
 
@@ -1786,7 +1791,8 @@ class Kamaki(base.Component):
         return [
             "kamaki config set cloud.default.url %s" % url,
             "kamaki config set cloud.default.token %s" % token,
-            "kamaki container create images",
+            "kamaki container info images > /dev/null 2>&1 \
+                || kamaki container create images",
             ]
 
     def _fetch_image(self):
@@ -1807,14 +1813,14 @@ class Kamaki(base.Component):
         local = config.debian_base_image
         remote = config.debian_base_name
         return [
-            "kamaki file upload --container images %s %s" % (local, remote)
+            "kamaki file upload -f --container images %s %s" % (local, remote)
             ]
 
     def _upload_image_meta(self):
         local = config.debian_base_image + ".meta"
         remote = config.debian_base_name + ".meta"
         return [
-            "kamaki file upload --container images %s %s" % (local, remote)
+            "kamaki file upload -f --container images %s %s" % (local, remote)
             ]
 
     def _register_image(self):

@@ -144,10 +144,11 @@ class StaleVolumesTestSuite(CycladesTests):
 
     def test_002_delete_stale_volumes(self):
         """Delete staled volumes (volumes left from previous runs)"""
-        if not self.delete_stale:
+        len_stale = len(self.stale_volumes)
+        if not self.delete_stale and len_stale != 0:
             self.fail("Use --delete-stale flag to delete stale volumes")
             return
-        elif len(self.stale_volumes) == 0:
+        elif len_stale == 0:
             self.info("No stale volumes found")
         else:
             self.info("Deleting %s stale volumes", len(self.stale_volumes))
@@ -176,10 +177,11 @@ class StaleKeypairsTestSuite(CycladesTests):
 
     def test_002_delete_stale_keypairs(self):
         """Delete staled keypairs (keypairs left from previous runs)"""
-        if not self.delete_stale:
+        len_stale = len(self.stale_keypairs)
+        if not self.delete_stale and len_stale != 0:
             self.fail("Use --delete-stale flag to delete stale keypairs")
             return
-        elif len(self.stale_keypairs) == 0:
+        elif len_stale == 0:
             self.info("No stale keypairs found")
         else:
             self.info("Deleting %s stale keypairs", len(self.stale_keypairs))

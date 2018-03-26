@@ -313,10 +313,12 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_023_rescue_server(self):
         """Test rescue mode"""
+        self._skip_if(not self.test_rescue, "--no-rescue flag enabled")
         self._rescue_server(self.server)
 
     def test_024_unrescue_server(self):
         """Test revert rescue mode"""
+        self._skip_if(not self.test_rescue, "--no-rescue flag enabled")
         self._unrescue_server(self.server, start_server=True)
 
     def test_025_submit_delete_request(self):

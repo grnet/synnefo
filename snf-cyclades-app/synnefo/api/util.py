@@ -72,6 +72,9 @@ COMPUTE_API_TAG_PREFIXES = [COMPUTE_API_TAG_USER_PREFIX,
                             COMPUTE_API_TAG_SYSTEM_PREFIX]
 COMPUTE_API_TAG_NAMESPACES = ['user', 'system']
 
+BASE64_REGEXP = re.compile(
+        "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
+
 log = getLogger('synnefo.api')
 
 
@@ -521,6 +524,15 @@ def verify_personality(personality):
                 raise faults.OverLimit("Maximum size of personality exceeded")
         except (AssertionError, TypeError):
             raise faults.BadRequest("Malformed personality in request")
+
+
+def verify_user_data(user_data):
+    """Verify that the user_data value is valid base64 encoded value"""
+
+    if BASE64_REGEXP.match(user_data):
+        return
+
+    raise faults.BadRequest("Marformed user_data request")
 
 
 def values_from_flavor(flavor):

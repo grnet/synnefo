@@ -442,7 +442,7 @@ def reassign_volume(volume_id, project, shared_to_project, credentials,
     volume = util.get_volume(credentials,
                              volume_id, for_update=True, non_deleted=True)
 
-    if credentials.userid != volume.userid:
+    if not credentials.is_admin and credentials.userid != volume.userid:
         raise faults.Forbidden("Action 'reassign' is allowed only to the owner"
                                " of the volume.")
 

@@ -734,7 +734,7 @@ $(document).ready(function() {
 			var validForm = snf.modals.validateContactForm($modal);
 			noError = noError && validForm;
 		}
-		if($modal.attr('data-type') === 'modify_email') {
+		if($modal.attr('data-type') === 'modify_email' || $modal.attr('data-type') === 'set_email') {
 			var validForm = snf.modals.validateModifyEmailForm($modal);
 			noError = noError && validForm;
 		}
@@ -851,7 +851,7 @@ $(document).ready(function() {
 			}
 		}
 
-		else if(modalType === "modify_email") {
+		else if(modalType === "modify_email" || modalType === "set_email") {
 			uniqueProp = 'id';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);

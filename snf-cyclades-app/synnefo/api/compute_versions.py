@@ -59,7 +59,8 @@ DESCRIBED_BY = [
 ]
 
 
-@api.api_method(http_method='GET', user_required=False, logger=log)
+@api.api_method(http_method='GET', token_required=False, user_required=False,
+                logger=log)
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503
@@ -72,7 +73,7 @@ def versions_list(request):
     return HttpResponse(data)
 
 
-@api.api_method('GET', user_required=False, logger=log)
+@api.api_method('GET', token_required=False, user_required=False, logger=log)
 def version_details(request, api_version):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),

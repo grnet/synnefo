@@ -69,7 +69,12 @@ def list_flavors(request, detail=False):
 
     log.debug('list_flavors detail=%s', detail)
 
-    public = request.GET.get('is_public')
+    # We remove the is_public filter as it can "confuse" OpenStack clients
+    # expecting all the flavors the user has access to, when the query has the
+    # is_public=true option. Removing it should not require any changes on the
+    # Cyclades UI, but we should revert the relevant changes made in kamaki.
+    # We substitute is_public with the Cyclades-specific SNF:is_public.
+    public = request.GET.get('SNF:is_public')
     project = request.GET.get('SNF:flavor-access')
 
     credentials = request.credentials

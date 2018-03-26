@@ -303,6 +303,7 @@ class BurninTests(unittest.TestCase):
     temp_directory = None
     failfast = None
     temp_containers = []
+    test_rescue = None
 
     quotas = Proper(value=None)
     uuid = Proper(value=None)
@@ -745,6 +746,19 @@ class BurninTests(unittest.TestCase):
                            "No matching images found")
         return ret_images
 
+    def _parse_images(self, possible_images=None):
+        """Find images given to command line"""
+        if self.images is None:
+            def_image_pattern = "name:^Debian Base$"
+            self.info("No --images given. Will use the default pattern '%s'",
+                      def_image_pattern)
+            filters = [def_image_pattern]
+        else:
+            filters = self.images
+        avail_images = self._find_images(filters, images=possible_images)
+        self.info("Found %s images to choose from", len(avail_images))
+        return avail_images
+
     # ----------------------------------
     # Pithos
     def _set_pithos_account(self, account):
@@ -874,6 +888,7 @@ def initialize(opts, testsuites, stale_testsuites):
     # Pass the rest options to BurninTests
     BurninTests.ignore_ssl = opts.ignore_ssl
     BurninTests.use_ipv6 = opts.use_ipv6
+    BurninTests.test_rescue = opts.test_rescue
     BurninTests.action_timeout = opts.action_timeout
     BurninTests.action_warning = opts.action_warning
     BurninTests.query_interval = opts.query_interval

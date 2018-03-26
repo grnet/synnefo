@@ -30,7 +30,8 @@ from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 
 from astakos.im import settings
-from astakos.im.models import Invitation, EmailChange, AstakosUser
+from astakos.im.models import Invitation, EmailChange, AstakosUser, \
+    AstakosUserAuthProvider
 from astakos.im.fields import validate_email
 import astakos.im.messages as astakos_messages
 
@@ -231,6 +232,23 @@ def change_user_email(user, new_email,
     return email_change
 
 
+def set_user_email(user, new_email):
+
+    validate_email(new_email)
+
+    if AstakosUser.objects.verified_user_exists(new_email):
+        raise ValidationError(_(astakos_messages.EMAIL_USED))
+
+    if user.is_active:
+        raise ValidationError(_(astakos_messages.ACTIVE_USER_SET_EMAIL))
+
+    user.emailchanges.all().delete()
+    user.set_email(new_email)
+    user.save()
+    msg = 'Set email for %s'
+    logger.info(msg, user.log_display)
+
+
 def send_change_email_to_new(ec, email_template_name=(
                       'registration/email_change_email_new_email.txt')):
     url = ec.get_url()
@@ -246,6 +264,7 @@ def send_change_email_to_new(ec, email_template_name=(
     msg = 'Sent change email for %s'
     logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
 
+
 def send_change_email_to_old(email_change,
         email_template_name='registration/email_change_email_old_email.txt'):
 
@@ -254,3 +273,55 @@ def send_change_email_to_old(email_change,
 
     send_mail(_(astakos_messages.EMAIL_CHANGE_OLD_EMAIL_SUBJECT), message,
         from_email, [email_change.user.email], connection=get_connection())
+
+
+def has_shibboleth(user):
+    return user.auth_providers.filter(module='shibboleth').exists()
+
+
+def release_shibboleth(user):
+    """Release user's shibboleth provider."""
+    try:
+        shibboleth = user.auth_providers.get(module="shibboleth")
+        shibboleth.delete()
+        msg = 'Released shibboleth for %s'
+    except AstakosUserAuthProvider.DoesNotExist:
+        msg = 'Failed to get shibboleth provider for %s'
+        raise ValidationError(_(astakos_messages.SHIBBOLETH_NOT_FOUND))
+
+    logger.info(msg, user.log_display)
+
+
+def get_local(user):
+    try:
+        local = user.auth_providers.get(module="local")
+    except AstakosUserAuthProvider.DoesNotExist:
+        return None
+    return local
+
+def can_enable_local_provider(user):
+    local = get_local(user)
+    return not local or not local.active
+
+
+def enable_local_provider(user):
+    """Enable user's local auth provider."""
+    local = get_local(user)
+    if local and not local.active:
+        local.active = True
+        local.save()
+        msg = "Activated local provider for user %s"
+        logger.info(msg, user.log_display)
+    elif not local:
+        user.add_auth_provider("local", None, auth_backend="astakos")
+        msg = "Created local provider for user %s"
+        logger.info(msg, user.log_display)
+    else:
+        raise ValidationError(_(astakos_messages.LOCAL_PROVIDER_ACTIVE))
+
+    if not user.has_usable_password():
+        password = AstakosUser.objects.make_random_password()
+        user.set_password(password)
+        user.save()
+        msg = "Updated password for user %s"
+        logger.info(msg, user.log_display)

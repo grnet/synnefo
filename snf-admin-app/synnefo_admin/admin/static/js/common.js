@@ -368,9 +368,12 @@ function sticker() {
     var pos = s.position();
 
     $(window).scroll(function() {
+        // Attach stick class to #sticker only if #sticker is visible
+        // in the view port
+        var s_visible = s.position().top + s.height() < $(window).height();
         var windowpos = $(window).scrollTop();
         // 80 the navbar fixed height
-        if (windowpos >= pos.top - 80) {
+        if (windowpos >= pos.top - 80 && s_visible) {
             s.addClass("stick");
         } else {
             s.removeClass("stick");

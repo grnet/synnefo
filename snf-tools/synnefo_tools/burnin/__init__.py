@@ -156,9 +156,10 @@ def parse_arguments(args):
     parser.add_option(
         "--images", action="callback", callback=parse_comma,
         type="string", default=None, dest="images", metavar="IMAGES",
-        help="Force all server creations to use one of the specified IMAGES "
-             "instead of the default one (a Debian Base image). Just like the "
-             "--flavors option, it supports both search by name and id")
+        help="Force all server creations and image downloads to use one of "
+             "the specified IMAGES instead of the default one (a Debian Base "
+             "image). Just like the --flavors option, it supports both search "
+             "by name and id")
     parser.add_option(
         "--system-user", action="store",
         type="string", default=None, dest="system_user",
@@ -228,6 +229,10 @@ def parse_arguments(args):
         type="int", default=20 * common.MB, dest="obj_upload_max_size",
         help="Set the max size of the objects to massively be uploaded "
              "(default: 20MB)")
+    parser.add_option(
+        "--no-rescue", action="store_false",
+        default=True, dest="test_rescue",
+        help="Disable server rescue related tests")
 
     (opts, args) = parser.parse_args(args)
 

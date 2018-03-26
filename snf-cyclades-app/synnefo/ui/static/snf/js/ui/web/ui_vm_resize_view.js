@@ -186,7 +186,7 @@
 
             return (quotas['cpu'] + extra_quotas.cpu >= flavor.get('cpu') &&
                     quotas['ram'] + extra_quotas.ram * 1024 * 1024 >= flavor.ram_to_bytes() &&
-                    quotas['disk'] + extra_quotas.disk * 1024 * 1024 * 1024 >= flavor.disk_to_bytes())
+                    quotas['disk'] + extra_quotas.disk * 1024 * 1024 >= flavor.disk_to_bytes())
         },
 
         set_flavor: function(flavor) {
@@ -297,7 +297,7 @@
             this.$(".flavor-options-inner-cont").append("<div>");
             var extra_quota = this.vm.get_flavor_quotas();
             if (!this.vm.is_active()) {
-              extra_quota = undefined;
+                extra_quota['cpu'] = extra_quota['ram'] = 0
             }
             this.flavors_view = new snf.views.FlavorOptionsView({
                 flavors:this.vm.get_resize_flavors(),

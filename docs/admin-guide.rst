@@ -861,6 +861,23 @@ or not, by setting the `allow_create` attribute:
 Flavors that are marked with `allow_create=False` cannot be used by users to
 create new servers. However, they can still be used to resize existing VMs.
 
+Flavors that are marked with `public=False` are not publicly accessible and
+cannot be used by everyone. Access is explicitly granted to members of a
+project through `flavor-access` objects.
+The relevant commands are:
+
+.. code-block:: console
+
+  $ snf-manage flavor-access-list
+  $ snf-manage flavor-access-add --flavor <flavor_id> --project <project_uuid>
+  $ snf-manage flavor-access-remove <flavor_access_id>
+
+
+The explicitly assigned flavors can only be used by VMs that belong to the
+projects that have access to the flavor. This apply both to create and to
+resize actions. Furhtermore, project re-assignment is forbidden if the new
+project does not have access to the current flavor either explicitly or
+implicitly through the `public` flavor attribute.
 
 Images
 ~~~~~~

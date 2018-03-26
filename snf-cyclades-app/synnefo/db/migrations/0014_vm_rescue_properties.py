@@ -13,9 +13,10 @@ class Migration(migrations.Migration):
 
         for vm in VirtualMachine.objects.filter(deleted=False):
             try:
-                vm_image = Image.objects.get(uuid=vm.imageid)
-            except VirtualMachine.DoesNotExist as e:
-                print("Image %d for vm %d could not be found. Using default "
+                vm_image = Image.objects.get(uuid=vm.imageid,
+                                             version=vm.image_version)
+            except Image.DoesNotExist:
+                print("Image %s for vm %d could not be found. Using default "
                       "properties" % (vm.imageid, vm.id))
                 ri = RescueProperties(os='', os_family='')
             else:

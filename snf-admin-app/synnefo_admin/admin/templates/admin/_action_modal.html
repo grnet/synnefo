@@ -44,12 +44,15 @@
                     <p>You have chosen to <em class="elem lowercase">{{ action.name|safe }}</em>
                     {% if op == "contact" %}
                         to 
-                    {% elif op == "modify_email" %}
+                    {% elif op == "modify_email" or op == "set_email" or op == "release_shibboleth" or op == "enable_local" %}
                         for
                     {% endif %}
                     the following <em class="num elem"></em> {{ action.target }}{% if view_type == 'list' %}s{% endif %}:
                         <a data-error="no-selected" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" data-content="There are no selected items to complete this action." rel="tooltip"></a>
                     </p>
+                    {% if op == "set_email" %}
+                    <p><em class="elem snf-exclamation-sign"></em><em class="elem"> Warning </em> <b><i>No verification e-mail will be sent to the user{% if view_type == 'list' %}s{% endif %}.</i></b></p>
+                    {% endif %}
                     {% if view_type == "list" %}
                     <table class="table-selected table table-bordered">
                         <tbody>
